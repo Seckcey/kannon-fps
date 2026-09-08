@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { PlayerState, Slot } from '../../shared/protocol';
+import { createAccentImpact, type CharacterImpactKind } from './CharacterImpact';
 
 const geometryCache = new Map<string, THREE.BufferGeometry>();
 function rounded(w: number, h: number, d: number, radius = 0.035) {
@@ -38,12 +39,15 @@ export interface CharacterModel {
   update(player: PlayerState, dt: number, time: number, local: boolean, motion?: { aim: boolean; grounded: boolean }): void;
   muzzle: THREE.Object3D;
   recoil(): void;
+  impact(kind: CharacterImpactKind): void;
   dispose(): void;
 }
 
 /** Original articulated scout armor, with separate joints rather than a rigid placeholder. */
 export function createCharacter(color: string): CharacterModel {
   const accent = new THREE.MeshStandardMaterial({ color, roughness: 0.48, metalness: 0.25 });
+  const impactEffect = createAccentImpact(accent);
+  let disposed = false;
   const root = new THREE.Group();
   const hips = new THREE.Group(); hips.position.y = 0.88; root.add(hips);
   box(hips, dark, [0.43, 0.24, 0.29], [0, 0.03, 0]);
@@ -137,7 +141,10 @@ export function createCharacter(color: string): CharacterModel {
   return {
     root, muzzle,
     recoil() { kick = 1; },
+    impact(kind) { impactEffect.impact(kind); },
     update(player, dt, time, local) {
+      if (disposed) return;
+      impactEffect.update(player);
       const speed = Math.hypot(player.vx, player.vz);
       const moving = Math.min(speed / 6.5, 1.35);
       cycle += dt * speed * 1.75;
@@ -159,7 +166,11 @@ export function createCharacter(color: string): CharacterModel {
       protectionMaterial.opacity = (local ? 0.035 : 0.11) + Math.sin(time * 0.005) * 0.018;
       root.visible = player.health > 0 && player.connected;
     },
-    dispose() { accent.dispose(); protection.geometry.dispose(); protectionMaterial.dispose(); },
+    dispose() {
+      if (disposed) return;
+      disposed = true; impactEffect.dispose();
+      accent.dispose(); protection.geometry.dispose(); protectionMaterial.dispose();
+    },
   };
 }
 

@@ -18,6 +18,8 @@ Sunbreak V3 is live at **https://kpop.8westventures.com** on Coastline. Its veri
 
 ## Sunbreak V3 art and motion
 
+The next [combat-feedback candidate](docs/COMBAT_FEEDBACK.md) adds per-pellet impacts, shield/armor reactions and correctly placed respawn effects. Its 108 automated tests, desktop/touch input checks and isolated eight-player Linux acceptance passed. Public deployment is pending; the V3 release above remains live.
+
 The deployed [art-depth release](docs/ART_DEPTH.md) adds fuller coastal scenery, more defined architecture, an athletic weapon-ready stance and revised locomotion. It preserves the map collision, fixed loadout, movement speeds and match rules. [Public rendered practice](docs/verification/sunbreak-v3-live.json) verified release `884e24d` over HTTPS/WSS: all three rivals moved and fired, each matching V3 model downloaded once, and explicit exit produced no application errors. Source, controller, real-input and deployment checks remain separate forms of evidence.
 
 The scout's geometry, rig, surfaces, weapon poses and six actions remain original. Walk and Run lower-body motion now derive from the CMU Graphics Lab's selected `09_01` capture, retargeted and timed in Blender. [Source provenance and separate data terms](art/source/motion/cmu-09/CMU-USAGE-NOTICE.md) and a [public credit notice](public/models/scout-motion-NOTICE.txt) accompany the model. The motion is not CC0 and must not be sold directly as motion data or an animation pack. `.gitattributes` preserves the exact publisher bytes used by the provenance hashes.

@@ -1,5 +1,15 @@
 # Release verification
 
+## Combat feedback — release candidate
+
+This change makes accepted shots easier to read: every shotgun pellet has its own contact effect, shield and armor responses reflect accepted damage, and respawn feedback waits for the player's new living position. Fixed-capacity render batches bound combat effects during sustained firing. The Blender scout retains its mapped surface detail during impact pulses. Weapon balance, movement, collision, scoring and both shipped models are unchanged.
+
+The [combat feedback record](COMBAT_FEEDBACK.md) separates automated correctness, actual desktop/touch input, controlled rendering, Linux transport and deployment evidence. Candidate `40b5c82928673ec83cecb7e70691ca8ec9245b13` passed all 108 tests, asset checks, TypeScript and the production build, ten built-client input acceptance groups and independent review. Eleven controlled actual-GameView checks additionally cover fresh-life sequencing, stale/hidden events, the shield bar and disposal. A fixed-resolution eight-character desktop stress fixture measured 49–51 FPS within the bracketing baselines' 47–54 FPS variation; this is not a physical-phone or server-capacity result.
+
+The exact implementation passed [isolated Linux transport acceptance](verification/combat-feedback-linux.json): eight real clients for 60 seconds, both weapons, reconnect and ninth-player rejection, about 15.06 snapshots/sec and no unexpected errors. The worst snapshot gap was 69.53 ms; worst-peer p95 latest-input acknowledgment age was 34.29 ms. Added metadata averaged 4.33 KB/sec per player of decoded JSON payload. All three practice difficulties preserved unranked results and crew history. The temporary container/source were removed; production and all 65 other containers remained unchanged.
+
+Deployment acceptance is pending. [PR #5](https://github.com/Seckcey/kannon-fps/pull/5) tracks this release; the historical sections below describe their own earlier builds. Physical-phone rendering/controls and family playtesting across households remain open.
+
 ## Sunbreak art depth and captured motion — deployed September 8, 2026
 
 This release adds asymmetric coastal terraces, mature connected tree crowns, rooted planters, fitted shutters and restrained metal wear. It refines the scout's armored silhouette, raised weapon-ready stance and lower-body movement. The arena's collision footprint, camera, authoritative movement speeds, loadout, match rules, storage and practice logic are unchanged. The previous Sunbreak release is recorded below; public `/health` identifies the currently running revision.

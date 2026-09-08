@@ -7,6 +7,7 @@ import { ARENA_ASSETS, getArenaAssetBuffer } from './assets';
 import { createGaitTurn, GaitDirection } from './GaitTurn';
 import { createLegContact, type LegContact } from './LegContact';
 import { CharacterBlend } from './CharacterBlend';
+import { createCharacterImpact, type CharacterImpact } from './CharacterImpact';
 
 let assetPromise: Promise<GLTF> | null = null;
 const loadScout = () => assetPromise ??= getArenaAssetBuffer(ARENA_ASSETS.character).then(buffer => {
@@ -24,6 +25,7 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
   let mixer: THREE.AnimationMixer | null = null;
   let blend: CharacterBlend | null = null;
   let legContact: LegContact | null = null;
+  let impactEffect: CharacterImpact | null = null;
   let overlayAction: THREE.AnimationAction | null = null;
   let disposed = false;
   let kick = 0;
@@ -85,6 +87,7 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
       if (/^muzzle$/i.test(object.name)) muzzleSource = object;
       if (object.name === 'muzzle_shotgun') shotgunMuzzle = object;
     });
+    impactEffect = createCharacterImpact(model);
     root.add(model);
     root.remove(fallback.root); fallback.dispose();
     mixer = new THREE.AnimationMixer(model);
@@ -118,6 +121,11 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
 
   return {
     root, muzzle,
+    impact(kind) {
+      if (disposed) return;
+      if (impactEffect) impactEffect.impact(kind);
+      else fallback.impact(kind);
+    },
     recoil() {
       kick = 1;
       fallback.recoil();
@@ -125,8 +133,10 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
       if (fire && !overlayAction) { fire.reset().setEffectiveTimeScale(activeSlot === 2 ? 0.8 : 1.5).setEffectiveWeight(activeSlot === 2 ? 1.5 : 1).play(); }
     },
     update(player: PlayerState, dt: number, time: number, local: boolean, motion) {
+      if (disposed) return;
       root.visible = player.health > 0 && player.connected;
       if (!model || !mixer) { fallback.update(player, dt, time, local); return; }
+      impactEffect?.update(player);
       // Every locomotion clip is authored in place. Network prediction moves the outer root.
       const speed = Math.hypot(player.vx, player.vz);
       const grounded = motion?.grounded ?? Math.abs(player.vy) < 0.01;
@@ -177,7 +187,9 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
       if (activeMuzzle) { activeMuzzle.getWorldPosition(v); root.worldToLocal(v); muzzle.position.copy(v); }
     },
     dispose() {
+      if (disposed) return;
       disposed = true; mixer?.stopAllAction();
+      impactEffect?.dispose(); impactEffect = null;
       if (model) mixer?.uncacheRoot(model);
       else fallback.dispose();
       for (const material of clonedMaterials) material.dispose();

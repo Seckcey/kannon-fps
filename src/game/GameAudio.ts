@@ -80,6 +80,7 @@ export class GameAudio {
     this.tone(slot === 2 ? 135 : 190, 0.095, gain * 0.38, 'triangle', 40);
   }
   hit(shield = false) { this.tone(shield ? 1180 : 840, 0.07, 0.23, 'triangle', shield ? 620 : 430); }
+  shieldBreak() { this.burst(0.14, 5200, 0.2); this.tone(1480, 0.18, 0.18, 'sine', 330); }
   damage() { this.burst(0.12, 720, 0.45); this.tone(160, 0.2, 0.2, 'sine', 65); }
   elimination() {
     this.tone(659, 0.15, 0.3, 'triangle');
