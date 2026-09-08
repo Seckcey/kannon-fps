@@ -1,0 +1,164 @@
+{
+  "status": "passed",
+  "sourceCommit": "40b5c82928673ec83cecb7e70691ca8ec9245b13",
+  "verifiedAtUtc": "2026-09-08T10:41:44.916Z",
+  "ci": {
+    "status": "completed",
+    "conclusion": "success",
+    "headSha": "40b5c82928673ec83cecb7e70691ca8ec9245b13",
+    "url": "https://github.com/Seckcey/kannon-fps/actions/runs/34216141303"
+  },
+  "scope": "Exact pushed implementation, built and exercised in an isolated Linux Node 24 container. Production was not deployed.",
+  "build": {
+    "node": "v24.20.0",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "candidateImageId": "sha256:07577e641c0c07f52570bee7473dbff5bcfc9e0b5db7c5e003b7d6b0b5a337ce"
+  },
+  "environment": {
+    "network": "none",
+    "publishedPorts": 0,
+    "user": "node",
+    "readOnly": true,
+    "init": true,
+    "memoryMiB": 512,
+    "cpus": 1,
+    "pidsLimit": 128,
+    "capDrop": [
+      "ALL"
+    ],
+    "noNewPrivileges": true,
+    "data": "64MiB tmpfs; no production mount or persistent volume",
+    "restartPolicy": "no"
+  },
+  "sourceInvariants": {
+    "rulesUnchanged": true,
+    "mapPhysicsBotsStoreAndDependenciesUnchanged": true,
+    "modelsUnchanged": true,
+    "modelSha256": {
+      "scout": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+      "environment": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+    }
+  },
+  "eightPlayer": {
+    "durationSeconds": 60,
+    "activePlayers": 8,
+    "ninthRejectedWithoutLosingOriginalRoom": true,
+    "reconnectStateAndFreshInputSequence": "passed",
+    "inputFrames": 14418,
+    "arShots": 1296,
+    "shotgunShots": 160,
+    "snapshotHz": {
+      "min": 15.061,
+      "max": 15.071
+    },
+    "worstSnapshotGapMs": {
+      "p95": 67.655,
+      "p99": 68.865,
+      "max": 69.525
+    },
+    "worstLatestAcknowledgedInputAgeMs": {
+      "p95": 34.289,
+      "p99": 35.239,
+      "max": 48.187
+    },
+    "profileHttpRoundTripMs": 2.69,
+    "unexpectedErrors": 0,
+    "payload": {
+      "measurement": "Decoded WebSocket JSON message bytes; excludes framing, TCP and TLS overhead. Reconnect gap excluded from per-segment cadence.",
+      "totalReceivedBytes": 33221539,
+      "totalAddedMetadataBytes": 2080255,
+      "meanPerPlayerBytesPerSecond": 69211.642,
+      "meanPerPlayerAddedMetadataBytesPerSecond": 4333.871,
+      "addedMetadataPercentOfReceivedPayload": 6.262,
+      "maxShotEventBytes": 1875,
+      "receivedTraces": 21825,
+      "traceAndDamageMetadataValidated": true
+    }
+  },
+  "practice": [
+    {
+      "difficulty": "easy",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 66,
+      "botHitEvents": 8,
+      "traceCount": 66,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true,
+      "observationSecondsAfterCountdown": 12
+    },
+    {
+      "difficulty": "normal",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 39,
+      "botHitEvents": 20,
+      "traceCount": 47,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true,
+      "observationSecondsAfterCountdown": 12
+    },
+    {
+      "difficulty": "hard",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 37,
+      "botHitEvents": 30,
+      "traceCount": 37,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true,
+      "observationSecondsAfterCountdown": 12
+    }
+  ],
+  "sampledResources": {
+    "samples": 12,
+    "maxSampledCpuPercent": 16.01,
+    "maxSampledMemoryMiB": 99.61,
+    "maxSampledPids": 27
+  },
+  "preservation": {
+    "productionRevision": "a3b2b5645cf992a4d5fd8dc760d29a86ab8883bf",
+    "productionCleanMain": true,
+    "productionContainerIdentityStateHealthRestartsAndLimitsUnchanged": true,
+    "productionEnvironmentUnchanged": true,
+    "productionDataMountedOrAccessedByHarness": false,
+    "protectedContainers": 65,
+    "protectedIdentityStateRestartHealthUnchanged": true,
+    "protectedCanonicalJsonSha256": "9f4b7bf85f8bb121883724faf31f3e5daa0d0d0c2b8180810f2020968e5b2348",
+    "priorImageTagsPreserved": 10
+  },
+  "cleanup": {
+    "ownedQaContainerRemoved": true,
+    "ownedTemporarySourceRemoved": true,
+    "tmpfsQaProfilesAndCrewDiscarded": true,
+    "candidateImageRetained": true,
+    "independentReadOnlyPostflight": "passed"
+  },
+  "baselineEquivalence": {
+    "scenarios": 80,
+    "simulationSteps": 7200,
+    "shots": 2233,
+    "damageEvents": 1015,
+    "outcomesIdenticalAfterRemovingOnlyMetadata": true
+  },
+  "limitations": [
+    "One Linux container loopback test; app and load generator share 1CPU/512MiB. Not a WAN/physical-phone/GPU benchmark.",
+    "Each practice difficulty observed 12 seconds after real countdown, not a full five-minute match.",
+    "Input age measures the latest acknowledged frame, not every intermediate frame.",
+    "Only temporary QA profiles/crew were created in candidate tmpfs; production profile/rating data was never mounted or accessed by the harnesses.",
+    "CPU and memory are sampled maxima; the generator shares the candidate limits. JSON payload counts are not complete on-wire bandwidth."
+  ]
+}

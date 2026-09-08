@@ -1,6 +1,6 @@
 # Combat feedback candidate
 
-Status: local candidate on `feat/combat-feedback`, not deployed. This slice improves the readability of accepted shots, shield damage and respawns. The current deployed game and its historical acceptance are recorded in [RELEASE.md](RELEASE.md); those deployment results do not verify this candidate.
+Status: local candidate `40b5c829` on `feat/combat-feedback`, not deployed. This slice improves the readability of accepted shots, shield damage and respawns. The current deployed game and its historical acceptance are recorded in [RELEASE.md](RELEASE.md); those deployment results do not verify this candidate.
 
 ## Scope
 
@@ -23,11 +23,15 @@ Respawn effects wait for a fresh authoritative living snapshot, then appear at t
 
 ## Verification and remaining acceptance
 
+The [sanitized local evidence record](verification/combat-feedback-local.json) binds these checks to candidate `40b5c829` and separates CPU, hardware, real-input and synthetic-state evidence. Its preparation timestamp is later than the collected checks; private test identities, session data and local paths are omitted.
+
 The full local `npm run check` passed **108 tests**: 79 prior regressions, 10 server metadata cases, six character-impact cases and 13 effects/respawn cases, plus asset/source validation, TypeScript and the production build. Actual-scout CPU checks cover material isolation, atlas identity, stable material versions, unchanged poses, absolute-time expiry and disposal. Effects checks cover pool bounds, pellet/contact routing, clipping, protected/range endpoints, point-blank behavior, weapon changes and deferred respawn lifecycle.
 
 A baseline server comparison covered **80 scenarios, 7,200 simulation steps, 2,233 shots and 1,015 damage events**. Compared outputs were identical after stripping the added metadata. This is bounded evidence of unchanged outcomes for those scenarios.
 
 Initial CUA actual-UI and controlled-renderer checks compiled and rendered without application or shader-program errors. They exposed excessive body-pulse brightness; atlas modulation and reduced strengths were applied for follow-up captures. CUA reports **Microsoft Basic Render Driver**, a software renderer, so those runs support no hardware FPS claim.
+
+Eleven further CUA checks exercised the actual `GameView` using **synthetic snapshots/events**. Stale shots stayed quiet; a fresh shot produced 11 effect quads and one sound. Visibility cleared effects, and 26/50 rival shield displayed as 52%. Respawn presentation waited for the fresh living position, emitted once and reset the camera once; repeated snapshots did not replay it. Hidden events stayed quiet while preserving the local respawn latch, and return after an unseen life reset the camera without replaying a hidden burst. Disposal left zero players/effect meshes, detached the canvas and ignored late events, with no application or shader-program logs. Agent-created tabs and fixtures were removed while the existing user tab was preserved. This is lifecycle evidence, separate from authoritative-input or physical-phone acceptance.
 
 The separate installed-Edge hardware comparison used **AMD Radeon (0x13C0)** at a fixed **1265×720**, pixel ratio 1, Low quality and eight animated players. Six AR actors fired every 150 ms and two shotgun actors every 900 ms, approximately 42 shots/second. All runs used the same viewport and pixel budget. Final ten FPS samples were:
 
@@ -37,8 +41,10 @@ The separate installed-Edge hardware comparison used **AMD Radeon (0x13C0)** at 
 | Candidate | 50, 49, 51, 50, 51, 50, 51, 49, 49, 49 |
 | Baseline repeat | 54, 51, 50, 54, 53, 54, 53, 53, 54, 50 |
 
-The candidate's **49–51 FPS** falls within the bracketing baselines' **47–54 FPS** variation; this is not evidence of a speedup. Its last sample recorded 81 draws, 73 geometries and 24 textures, with at most two combat-effects batches. Application errors and shader-program logs were empty; one known sky warning was recorded. This controlled cosmetic stress fixture measures neither server capacity nor physical-phone performance. The final full check passed all 108 tests, asset validation, TypeScript and the production build.
+The candidate's **49–51 FPS** falls within the bracketing baselines' **47–54 FPS** variation; this is not evidence of a speedup. Its separate final renderer-counter capture recorded 81 draws, 73 geometries and 24 textures, with at most two combat-effects batches. Application errors and shader-program logs were empty; one known sky warning was recorded. This controlled cosmetic stress fixture measures neither server capacity nor physical-phone performance. The final full check passed all 108 tests, asset validation, TypeScript and the production build.
 
-The built client (`index-CMlsxsdw`) passed ten desktop/touch acceptance groups at 1536×1024, 852×393 and 390×844. Real keyboard, mouse and touch input exercised private room entry, both weapons, reloads, jumps, healing, crew standings, practice difficulties, explicit exit and rotation. Received events carried the exact one/nine trace counts and the accepted 2-shield/22-health break. No application errors occurred. Linux candidate validation and public deployment remain pending.
+The built client (`index-CMlsxsdw`) passed ten desktop/touch acceptance groups at 1536×1024, 852×393 and 390×844. Real keyboard, mouse and touch input exercised private room entry, both weapons, reloads, jumps, healing, crew standings, practice difficulties, explicit exit and rotation. Received events carried the exact one/nine trace counts and the accepted 2-shield/22-health break. No application errors occurred.
 
-Physical-phone rendering, controls and aim balance, two-household play, and feedback from the family remain open. The measured CPU invariants and initial desktop visuals do not close those acceptance items.
+The exact implementation passed [isolated Linux acceptance](verification/combat-feedback-linux.json) with eight real clients for 60 seconds: 14,418 inputs, 1,296 AR shots and 160 shotgun shots, including safe ninth-player rejection and reconnect. Snapshots arrived at about 15.06 Hz; the worst gap was 69.53 ms, and the worst peer's p95 latest-input acknowledgment age was 34.29 ms. No unexpected transport errors occurred. New metadata added about 4.33 KB/sec per player in this run; the complete decoded JSON payload averaged 69.21 KB/sec, excluding transport headers. All three practice difficulties passed twelve-second observations with three moving/firing rivals and unchanged standings/history. The temporary container shared one CPU and 512 MiB with its load generator, had no external network or production data, and was removed afterward. Production and all 65 other containers were unchanged. Public deployment remains pending.
+
+Physical-phone rendering, controls and aim balance, two-household play, and feedback from the family remain open. CPU invariants, bounded desktop rendering and the desktop real-input/lifecycle checks do not close those acceptance items.

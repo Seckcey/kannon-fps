@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "candidateRevision": "40b5c82928673ec83cecb7e70691ca8ec9245b13",
+  "recordedAtUtc": "2026-09-08T10:38:10Z",
+  "timing": "Evidence was collected before this entry. This timestamp records preparation of the sanitized summary, not a new test run.",
+  "status": {
+    "localVerification": "passed",
+    "linuxCandidate": "See combat-feedback-linux.json for separate completed acceptance",
+    "publicDeployment": "See RELEASE.md for current release status"
+  },
+  "provenance": {
+    "summarizedReports": [
+      "combat-hardware-benchmark.json",
+      "combat-baseline-equivalence.json",
+      "ui-results.json"
+    ],
+    "additionalEvidence": "The release coordinator supplied the final full-check result and the 11 controlled actual-GameView lifecycle observations.",
+    "privacy": "Raw local paths, test profile/room/crew identifiers and session data are omitted."
+  },
+  "fullCheck": {
+    "command": "npm run check",
+    "status": "passed",
+    "tests": {
+      "total": 108,
+      "previous": 79,
+      "serverMetadata": 10,
+      "characterImpact": 6,
+      "effectsAndRespawn": 13
+    },
+    "assetAndSourceValidation": "passed",
+    "typeScript": "passed",
+    "productionBuild": "passed",
+    "clientEntryBundle": "index-CMlsxsdw.js"
+  },
+  "assets": {
+    "changed": false,
+    "scoutSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+    "environmentSha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+  },
+  "authoritativeEquivalence": {
+    "status": "passed",
+    "verifiedAtUtc": "2026-09-08T10:36:43.593Z",
+    "baselineRevision": "a3b2b5645cf992a4d5fd8dc760d29a86ab8883bf",
+    "candidateRevision": "40b5c82928673ec83cecb7e70691ca8ec9245b13",
+    "sourceDigestsMatchedCurrentCandidate": true,
+    "sourceSha256": {
+      "server/engine.ts": "6fc61b6650c138272ac968985cfe2c4577aebd1fe9d59e23272e3aa1e4f1c02f",
+      "shared/protocol.ts": "be61fcfa2c36bb3540ae84c34f5d20ae5e006bb7ed96e4e99f5711bcb5431372",
+      "tests/server/combat-feedback.test.ts": "c24f2287886260b15db3be2cfeea81d418bc050ec6c0c138157d37e4cd9455f5"
+    },
+    "seed": 913572,
+    "scenarios": 80,
+    "playerCounts": [
+      2,
+      4,
+      8
+    ],
+    "simulationSteps": 7200,
+    "events": 3532,
+    "shots": 2233,
+    "damageEvents": 1015,
+    "rulesUnchanged": true,
+    "unchangedDependencies": [
+      "shared/physics.ts",
+      "shared/map.ts",
+      "server/bots.ts"
+    ],
+    "assertions": [
+      "Exact player/world snapshots",
+      "Exact input/cadence runtime maps",
+      "Exact ordered events after stripping only new metadata",
+      "Exactly one AR or nine shotgun traces"
+    ],
+    "outcomesIdentical": true,
+    "limitation": "Bounded deterministic CPU comparison, not an exhaustive proof, transport load test or production mutation."
+  },
+  "hardwareRendering": {
+    "browser": "Installed Microsoft Edge via Playwright",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "viewportCss": [
+      1265,
+      720
+    ],
+    "pixelRatio": 1,
+    "quality": "low",
+    "animatedPlayers": 8,
+    "fixture": {
+      "arActors": 6,
+      "arCadenceMs": 150,
+      "shotgunActors": 2,
+      "shotgunCadenceMs": 900,
+      "approximateShotsPerSecond": 42
+    },
+    "runs": [
+      {
+        "name": "baseline",
+        "fpsSamples": [
+          49,
+          49,
+          49,
+          49,
+          50,
+          48,
+          50,
+          50,
+          50,
+          47
+        ],
+        "reportedEventCount": 418,
+        "rendererCounters": {
+          "draws": 80,
+          "geometries": 72,
+          "textures": 24,
+          "triangles": 235840
+        },
+        "programLogs": []
+      },
+      {
+        "name": "candidate",
+        "fpsSamples": [
+          50,
+          49,
+          51,
+          50,
+          51,
+          50,
+          51,
+          49,
+          49,
+          49
+        ],
+        "reportedEventCount": 430,
+        "rendererCounters": {
+          "draws": 81,
+          "geometries": 73,
+          "textures": 24,
+          "triangles": 236192
+        },
+        "programLogs": []
+      },
+      {
+        "name": "baseline-repeat",
+        "fpsSamples": [
+          54,
+          51,
+          50,
+          54,
+          53,
+          54,
+          53,
+          53,
+          54,
+          50
+        ],
+        "reportedEventCount": 418,
+        "rendererCounters": {
+          "draws": 88,
+          "geometries": 80,
+          "textures": 24,
+          "triangles": 235840
+        },
+        "programLogs": []
+      }
+    ],
+    "counterTiming": "Renderer counters are the report's separate final capture, not necessarily the same frame as its final FPS sample.",
+    "maximumCombatEffectBatches": 2,
+    "candidateFpsRange": [
+      49,
+      51
+    ],
+    "bracketingBaselineFpsRange": [
+      47,
+      54
+    ],
+    "errors": [],
+    "warnings": [
+      {
+        "kind": "known sky shader precision warning",
+        "run": "baseline",
+        "count": 1
+      }
+    ],
+    "conclusion": "Candidate FPS falls within bracketing baseline variation; no speedup is established.",
+    "limitation": "Same fixed viewport and pixel budget with cosmetic event stress. This does not measure server load, physical-phone capacity or wide-area play."
+  },
+  "realInputUi": {
+    "status": "passed",
+    "browser": "Playwright Edge",
+    "source": "Final built client",
+    "groupsPassed": 10,
+    "viewports": [
+      {
+        "css": [
+          1536,
+          1024
+        ],
+        "mode": "desktop"
+      },
+      {
+        "css": [
+          852,
+          393
+        ],
+        "mode": "emulated landscape touch"
+      },
+      {
+        "css": [
+          390,
+          844
+        ],
+        "mode": "emulated portrait touch"
+      }
+    ],
+    "checks": [
+      "Desktop menu, leaderboard empty state, controls guide, settings and no horizontal overflow.",
+      "Two authenticated clients create/join a private match, wait for host/countdown and receive the fixed loadout.",
+      "Real pointer lock, WASD, automatic AR, immediate shotgun tap, keyboard slots/reload/jump and full-health heal guard.",
+      "Landscape touch joystick, sprint toggle, slot selection and short fire/reload/jump taps reach authoritative state.",
+      "Real touch camera/aim and AR shots damage another human; keyboard healing completes its timed action.",
+      "Real mouse aiming hits the rival; touch healing consumes one charge and restores exactly 50 health up to the cap.",
+      "Explicit leave ends the incomplete private round without a rating award; crew creation renders real standings.",
+      "Portrait menu and live HUD fit; Relaxed practice reaches the server and all three rivals move and fire.",
+      "Explicit re-entry creates a new Challenging practice room; rotation keeps gameplay mounted.",
+      "Received AR/shotgun events contain one/nine traces with the exact center endpoint; real shots produce shield-only damage and a 2-shield/22-health break."
+    ],
+    "observedShieldBreak": {
+      "shieldDamage": 2,
+      "healthDamage": 22,
+      "shieldBroken": true
+    },
+    "portraitTouchCapabilitiesPreserved": true,
+    "errors": [],
+    "warnings": [
+      {
+        "kind": "known sky shader precision warning",
+        "count": 1
+      }
+    ],
+    "limitation": "Actual keyboard/mouse/touch input and authoritative server state on desktop browser sessions; touch was emulated, not a physical phone."
+  },
+  "controlledGameViewLifecycle": {
+    "status": "passed",
+    "tool": "CUA",
+    "renderer": "Microsoft Basic Render Driver",
+    "checksPassed": 11,
+    "fixture": "Actual GameView with synthetic snapshots/events, separate from the real-input UI suite.",
+    "checks": [
+      {
+        "check": "Stale shot",
+        "effectQuads": 0,
+        "audioCalls": 0
+      },
+      {
+        "check": "Fresh shot",
+        "effectQuads": 11,
+        "audioCalls": 1
+      },
+      {
+        "check": "Visibility change",
+        "existingEffectsCleared": true
+      },
+      {
+        "check": "Rival shield bar",
+        "shield": 26,
+        "maximumShield": 50,
+        "widthPercent": 52
+      },
+      {
+        "check": "Respawn event before snapshot",
+        "emissionDeferred": true
+      },
+      {
+        "check": "Fresh living snapshot",
+        "respawnBursts": 1,
+        "position": [
+          -24,
+          0,
+          17
+        ],
+        "cameraResets": 1
+      },
+      {
+        "check": "Repeated same snapshot",
+        "duplicateBurst": false,
+        "duplicateCameraReset": false
+      },
+      {
+        "check": "Hidden events",
+        "visualAndAudioQuiet": true,
+        "localRespawnLatchRetained": true
+      },
+      {
+        "check": "Return after unseen life",
+        "cameraReset": true,
+        "hiddenRespawnBurstReplayed": false
+      },
+      {
+        "check": "Diagnostics",
+        "applicationErrors": [],
+        "shaderProgramLogs": []
+      },
+      {
+        "check": "Disposal",
+        "players": 0,
+        "effectMeshes": 0,
+        "canvasDetached": true,
+        "lateEventIgnored": true
+      }
+    ],
+    "cleanup": {
+      "agentCreatedTabsAndFixturesRemoved": true,
+      "existingUserTabPreserved": true
+    },
+    "limitation": "Synthetic lifecycle fixture on software rendering; no authoritative-input, physical-phone or hardware-FPS claim."
+  },
+  "remainingAcceptance": [
+    "Exact candidate Linux validation",
+    "Public deployment and live acceptance",
+    "Physical-phone rendering and controls",
+    "Phone aim balance",
+    "Two-household and family feedback"
+  ]
+}
