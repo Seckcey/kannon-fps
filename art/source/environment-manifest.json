@@ -1,6 +1,6 @@
 {
   "asset": "public/models/environment.glb",
-  "artRevision": "sunbreak-art-depth",
+  "artRevision": "sunbreak-coastal-galleries-v1",
   "groups": [
     "ArenaCore",
     "ArenaTrim",
@@ -200,13 +200,14 @@
   "leafAtlasAlphaCoverage": 0.3133,
   "notes": [
     "Original authored geometry, generated basecolor artwork, and authored PBR/foliage maps.",
-    "Asymmetric exterior archive/gallery/pavilion framing; closed shuttered facade bays are distinct from low tactical barrier fittings.",
+    "Five exterior coastal volumes use stepped terraces, structural stone arches and physically modelled 0.8 m upper galleries; closed ground shutters distinguish scenery from playable routes. Southern return facades, recesses and setbacks face north into the arena. Their relocation redistributes framing in selected oblique spawn views; the central sea/gate aperture and open straight-south platform view remain.",
     "Connected mature olive crowns use 340 compound-spray cards per tree; cypress trees use 145. Canopies have no opaque filler shells.",
     "Broad paving variation uses existing vertex colors; no additional texture/decal layer or raised floor geometry.",
     "The observatory settlement, exterior terraces and tree trunks are outside the 64 m playable square; high canopies may overhang.",
     "Sky/water/lighting remain runtime systems; preview-only water is at y=-9.",
-    "Authoritative collision is unchanged; rendered surface relief is at most 4 cm.",
+    "Authoritative collision is unchanged; the 4 cm relief envelope applies to playable ArenaCore/ArenaTrim, not the recessed galleries outside the arena.",
     "Blender previews establish source appearance only; separate gameplay/GPU acceptance is recorded in docs/ART_DEPTH.md and docs/RELEASE.md.",
+    "The coastal-gallery pass changes only exterior limestone, petrol and bronze geometry. It introduces no materials, textures or random-number consumption; arena, foliage, cliffs and horizon source geometry are unchanged. Southern wings have masonry sea-wall foundations below their original-art terraces.",
     "Petrol metal uses low-contrast isotropic wear, nearly flat normals and roughness between 0.43 and 0.60; crossed directional wave patterns are removed.",
     "Six masonry planters contain rooted bougainvillea stems, connected leaf sprays and flower clusters; detached single-leaf perimeter scatter is removed.",
     "Flush shutter surrounds, pilasters and fittings use distinct surface depths inside the 4 cm envelope to avoid coplanar black artifacts at their intersections.",

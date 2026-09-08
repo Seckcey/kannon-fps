@@ -6,8 +6,13 @@ from `shared/map.ts`. It builds shallow ashlar courses, closed shuttered facade 
 horizontal tactical-cover panels with fitted end caps, bronze fittings, solar-relay
 banners, perimeter planting, cliff strata/outcrops, asymmetric exterior archive/gallery
 buildings, and a distant observatory settlement. This geometry was authored for
-Kannon Arena. The `sunbreak-art-depth` revision was developed separately from the
-frozen `aa469252` release; it preserves that map and runtime group/material contract.
+Kannon Arena. The current `sunbreak-coastal-galleries-v1` revision builds on the
+shipped V3 environment and preserves its map and runtime group/material contract.
+Upper exterior floors have real 0.8 m recesses, stone arches, connected piers and
+half-metre setbacks. The two lower wings sit farther south on masonry foundations;
+their detailed returns face north into the arena. These placements improve selected
+spawn compositions and expose more sea from the side approaches, rather than
+framing every camera direction. The south-facing platform view remains open water.
 
 The limestone and paving basecolor artwork comes from the built-in Image Gen tool:
 `materials/sunbreak-limestone-v2.png` and `materials/sunbreak-paving-v2.png`.
@@ -73,17 +78,19 @@ indexed vertex data and a 7 MB asset ceiling bound the cost. No optional detail 
 is needed for this first complete scene. Mobile quality can reduce distant scenery,
 foliage shadows, reflections, and screen resolution in the renderer.
 
-The latest export is 6,698,732 bytes with 69,484 triangles and 125,761 exported vertices.
-Compared with the frozen environment, this is 3,212 more triangles and 237,792 more
-bytes, with no added material batches, textures or decoder. The leaf batch decreases
-from 26,480 to 18,824 triangles; that budget is redistributed into architectural
-framing, branch structure and a shallow paving grid with broad vertex-color wear.
-The source limestone/paving artwork and their production PBR textures are retained
-unchanged. Counts and
-hashes in `environment-export-review.json` are the authoritative build evidence.
-The 110 outward-winding probes include all collider faces, upward-facing paving,
-the observatory, its cliff, a coastal facade, an olive trunk and the two upper
-exterior facades. Opaque materials
+The latest export is 6,620,096 bytes with 68,670 triangles and 123,713 exported vertices.
+Compared with V3, this saves 814 triangles, 2,048 vertices and 78,636 bytes without
+adding material batches, textures or a decoder. Only the exterior limestone, petrol
+and bronze batches change. ArenaCore, ArenaTrim, foliage, exterior cliffs, horizon,
+the Scout and all embedded material images are preserved. Source artwork and PBR
+textures are unchanged. Counts and hashes in `environment-export-review.json` are
+the authoritative build evidence.
+The outward-winding probes include all collider faces, upward-facing paving,
+the observatory, its cliff, a coastal facade, an olive trunk, the two upper exterior
+facades and six gallery/foundation faces. Three depth checks distinguish recessed
+gallery backs and the curved intrados from flat walls or roof planes. Foundation
+rays exclude cliff geometry so a missing building joint cannot pass accidentally.
+Opaque materials
 cannot hide reversed surfaces at those samples behind double-sided rendering.
 Irregular landmark outcrops and smoothly shaded island rings break up uniform
 cliff bands; split rock-face vertices retain their angular fracture edges.

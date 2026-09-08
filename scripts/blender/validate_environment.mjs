@@ -47,7 +47,8 @@ for (const obstacle of obstacles) {
   assert.deepEqual(node.extras.sizeXYZ, [obstacle.w, obstacle.h, obstacle.d]);
 }
 
-const coreTriangles = []; const opaqueTriangles = []; const allTriangles = []; let vertices = 0; let triangles = 0; let primitives = 0; let upwardGroundArea = 0;
+const coreTriangles = []; const opaqueTriangles = []; const exteriorBuildingTriangles = []; const allTriangles = []; let vertices = 0; let triangles = 0; let primitives = 0; let upwardGroundArea = 0;
+const exteriorBuildingBatches = new Set(['Exterior_EnvLimestone', 'Exterior_EnvPetrol', 'Exterior_EnvBronze']);
 const batches = [];
 function inGameplaySolid(point) {
   const tolerance = .041;
@@ -81,6 +82,7 @@ for (const [nodeIndex, node] of gltf.nodes.entries()) {
       allTriangles.push(triangle);
       if (core) coreTriangles.push(triangle);
       if (opaque) opaqueTriangles.push(triangle);
+      if (exteriorBuildingBatches.has(node.name)) exteriorBuildingTriangles.push(triangle);
     }
     batches.push({ name: node.name, triangles: indices.length / 3, vertices: positions.length });
   }
@@ -124,12 +126,35 @@ const exteriorProbes = [
   ['observatory shaft', [82, 29, -105], [-1, 0, 0], 5],
   ['observatory dome', [72, 65, -105], [0, -1, 0], 10],
   ['landmark cliff', [72, 2, -150], [0, 0, 1], 15],
-  ['coastal facade', [-30, 2, -10], [-1, 0, 0], 8],
+  // The south-west wing moved outside the tree line; its ground floor stays closed.
+  ['coastal facade', [-33, 2, 18], [-1, 0, 0], 8],
   ['olive trunk', [-35, 3, 24.5], [0, 0, -1], 3],
   ['west archive silhouette', [-30, 11, -30], [-1, 0, 0], 8],
   ['east pavilion silhouette', [30, 11, -29], [1, 0, 0], 8],
 ];
-for (const [name, origin, direction, limit] of exteriorProbes) assert.ok(nearest(new Vector3(...origin), new Vector3(...direction), limit, true, opaqueTriangles) < limit, `${name} has visible outward-facing geometry`);
+const galleryProbes = [
+  ['west gallery rear', [-33, 5, 16.035], [-1, 0, 0], 9],
+  ['west gallery pier', [-33, 5, 18.25], [-1, 0, 0], 9],
+  ['west gallery curved intrados', [-40.15, 5.2, 16.135], [0, 1, 0], 2],
+  ['west gallery inward return rear', [-42.035, 5, 10], [0, 0, 1], 8],
+  // A ray through the former 2 cm plinth/floor gap must hit the building itself.
+  ['west southern foundation join', [-33, -.01, 18], [-1, 0, 0], 8],
+  ['east southern foundation join', [33, -.01, 20], [1, 0, 0], 8],
+];
+const probeHits = [];
+for (const [name, origin, direction, limit] of [...exteriorProbes, ...galleryProbes]) {
+  // Unchanged cliff faces cannot substitute for a missing building surface.
+  const candidates = name === 'coastal facade' || galleryProbes.some(probe => probe[0] === name) ? exteriorBuildingTriangles : opaqueTriangles;
+  const distance = nearest(new Vector3(...origin), new Vector3(...direction), limit, true, candidates);
+  assert.ok(distance < limit, `${name} has visible outward-facing geometry`);
+  probeHits.push({ name, origin, direction, distance });
+}
+const probeDistance = name => probeHits.find(probe => probe.name === name).distance;
+// These limits derive from the 0.8 m authored recess and curved arch soffit.
+// A flat wall or roof may be outward-facing, but must fail gallery acceptance.
+assert.ok(probeDistance('west gallery rear') - probeDistance('west gallery pier') >= .65, 'Gallery rear remains recessed beyond the pier face');
+assert.ok(probeDistance('west gallery inward return rear') >= 4.10, 'Inward return rear remains recessed behind the outer z=13.5 plane');
+assert.ok(probeDistance('west gallery curved intrados') < 1.60, 'Curved intrados remains below the flat roof soffit');
 for (const material of gltf.materials) assert.equal(Boolean(material.doubleSided), ['EnvLeaves', 'EnvFlower'].includes(material.name), `${material.name} has the intended face-culling mode`);
 for (const name of ['EnvLimestone', 'EnvGround', 'EnvPetrol']) {
   const material = gltf.materials.find(material => material.name === name);
@@ -140,6 +165,6 @@ const images = gltf.images.map(image => {
   const view = gltf.bufferViews[image.bufferView];
   return { name: image.name, mimeType: image.mimeType, bytes: view.byteLength };
 });
-const report = { status: 'passed', asset: 'public/models/environment.glb', bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), triangles, exportedVertices: vertices, colorBatches: primitives, materials: gltf.materials.length, images, batches, colliderReferences: obstacles.length, surfaceChecks: obstacles.length * 6, outwardWindingChecks: obstacles.length * 6 + 1 + exteriorProbes.length, clearRouteChecks: 4, floorBoundaryChecks: 4, upwardGroundAreaSquareMetres: upwardGroundArea, coordinateSystem: 'metres; Y up; floor y=0', mapSha256: createHash('sha256').update(mapSource).digest('hex') };
+const report = { status: 'passed', asset: 'public/models/environment.glb', bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), triangles, exportedVertices: vertices, colorBatches: primitives, materials: gltf.materials.length, images, batches, colliderReferences: obstacles.length, surfaceChecks: obstacles.length * 6, outwardWindingChecks: obstacles.length * 6 + 1 + exteriorProbes.length + galleryProbes.length, galleryDepthChecks: 3, exteriorProbeHits: probeHits, clearRouteChecks: 4, floorBoundaryChecks: 4, upwardGroundAreaSquareMetres: upwardGroundArea, coordinateSystem: 'metres; Y up; floor y=0', mapSha256: createHash('sha256').update(mapSource).digest('hex') };
 writeFileSync(new URL('art/source/environment-export-review.json', root), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));

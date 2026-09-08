@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "validatorSha256": "76b5228b9e3735c39b00606c8371bff23483adc5a5cf982e4df56423975c9df2",
+  "toolSha256": "ecf44d82a3c8de3f4d9b48c2cc28fc30dc2111e5735859013dc5f9706c6a870b",
+  "assetSha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+  "results": [
+    {
+      "mode": "control",
+      "passed": true,
+      "exitCode": 0,
+      "expectedFailure": null
+    },
+    {
+      "mode": "west-gap",
+      "passed": true,
+      "exitCode": 1,
+      "expectedFailure": "west southern foundation join"
+    },
+    {
+      "mode": "east-gap",
+      "passed": true,
+      "exitCode": 1,
+      "expectedFailure": "east southern foundation join"
+    }
+  ],
+  "limits": "TEMP CPU-position perturbations of the actual exported plinths; no repo asset/source/receipt mutation, render, or performance claim."
+}

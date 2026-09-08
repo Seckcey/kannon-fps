@@ -1,0 +1,1392 @@
+{
+  "status": "passed",
+  "toolSha256": "d4818c4622ed6fcc1f14038fe1819bb75ccad8fc9278bfbc7b35c9786240ccbd",
+  "inputs": {
+    "baseline": {
+      "path": "public/models/environment.glb at f13acf4fed71279241de1848230fae21d19af569",
+      "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d",
+      "bytes": 6698732,
+      "triangles": 69484,
+      "vertices": 125761,
+      "batches": 15
+    },
+    "candidate": {
+      "path": "public/models/environment.glb in this source checkout",
+      "sha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+      "bytes": 6620096,
+      "triangles": 68670,
+      "vertices": 123713,
+      "batches": 15
+    }
+  },
+  "dependencies": [
+    {
+      "root": "f13acf4 baseline checkout",
+      "mapSha256": "0e6cbed2d82ec2d8e14593994beeb4ec7a0379f89ca0bd6a8d391fa523e1ed13",
+      "scoutSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+    },
+    {
+      "root": "candidate checkout",
+      "mapSha256": "0e6cbed2d82ec2d8e14593994beeb4ec7a0379f89ca0bd6a8d391fa523e1ed13",
+      "scoutSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+    }
+  ],
+  "allowedMutableBatches": [
+    "Exterior_EnvLimestone",
+    "Exterior_EnvPetrol",
+    "Exterior_EnvBronze"
+  ],
+  "canonicalization": "Exact per-vertex raw attribute records and accessor metadata; full vertex multiset including unused vertices; oriented triangle multiset preserving multiplicity. Only vertex/index reorder and cyclic triangle starts may differ. No reversed winding or floating-point tolerance. Buffer layout/order and exporter generator label are representation only; glTF version/other asset metadata remain exact.",
+  "batchComparisons": [
+    {
+      "name": "ArenaCore_EnvGround",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "ArenaCore_EnvGround",
+        "material": "EnvGround",
+        "triangles": 1174,
+        "vertices": 669,
+        "decodedAttributeBytes": 24084,
+        "decodedIndexBytes": 7044,
+        "decodedBytes": 31128
+      },
+      "after": {
+        "name": "ArenaCore_EnvGround",
+        "material": "EnvGround",
+        "triangles": 1174,
+        "vertices": 669,
+        "decodedAttributeBytes": 24084,
+        "decodedIndexBytes": 7044,
+        "decodedBytes": 31128
+      }
+    },
+    {
+      "name": "ArenaCore_EnvLimestone",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "ArenaCore_EnvLimestone",
+        "material": "EnvLimestone",
+        "triangles": 9324,
+        "vertices": 18816,
+        "decodedAttributeBytes": 677376,
+        "decodedIndexBytes": 55944,
+        "decodedBytes": 733320
+      },
+      "after": {
+        "name": "ArenaCore_EnvLimestone",
+        "material": "EnvLimestone",
+        "triangles": 9324,
+        "vertices": 18816,
+        "decodedAttributeBytes": 677376,
+        "decodedIndexBytes": 55944,
+        "decodedBytes": 733320
+      }
+    },
+    {
+      "name": "ArenaTrim_EnvBronze",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "ArenaTrim_EnvBronze",
+        "material": "EnvBronze",
+        "triangles": 3860,
+        "vertices": 7332,
+        "decodedAttributeBytes": 263952,
+        "decodedIndexBytes": 23160,
+        "decodedBytes": 287112
+      },
+      "after": {
+        "name": "ArenaTrim_EnvBronze",
+        "material": "EnvBronze",
+        "triangles": 3860,
+        "vertices": 7332,
+        "decodedAttributeBytes": 263952,
+        "decodedIndexBytes": 23160,
+        "decodedBytes": 287112
+      }
+    },
+    {
+      "name": "ArenaTrim_EnvPetrol",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "ArenaTrim_EnvPetrol",
+        "material": "EnvPetrol",
+        "triangles": 1844,
+        "vertices": 3716,
+        "decodedAttributeBytes": 133776,
+        "decodedIndexBytes": 11064,
+        "decodedBytes": 144840
+      },
+      "after": {
+        "name": "ArenaTrim_EnvPetrol",
+        "material": "EnvPetrol",
+        "triangles": 1844,
+        "vertices": 3716,
+        "decodedAttributeBytes": 133776,
+        "decodedIndexBytes": 11064,
+        "decodedBytes": 144840
+      }
+    },
+    {
+      "name": "Exterior_EnvBronze",
+      "allowedChange": true,
+      "exactAccessorValuesAndOrder": false,
+      "equivalentCompleteVerticesAndOrientedTriangles": false,
+      "metadataEqual": true,
+      "before": {
+        "name": "Exterior_EnvBronze",
+        "material": "EnvBronze",
+        "triangles": 3140,
+        "vertices": 6480,
+        "decodedAttributeBytes": 233280,
+        "decodedIndexBytes": 18840,
+        "decodedBytes": 252120
+      },
+      "after": {
+        "name": "Exterior_EnvBronze",
+        "material": "EnvBronze",
+        "triangles": 2208,
+        "vertices": 4536,
+        "decodedAttributeBytes": 163296,
+        "decodedIndexBytes": 13248,
+        "decodedBytes": 176544
+      }
+    },
+    {
+      "name": "Exterior_EnvCliff",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Exterior_EnvCliff",
+        "material": "EnvCliff",
+        "triangles": 6202,
+        "vertices": 10432,
+        "decodedAttributeBytes": 375552,
+        "decodedIndexBytes": 37212,
+        "decodedBytes": 412764
+      },
+      "after": {
+        "name": "Exterior_EnvCliff",
+        "material": "EnvCliff",
+        "triangles": 6202,
+        "vertices": 10432,
+        "decodedAttributeBytes": 375552,
+        "decodedIndexBytes": 37212,
+        "decodedBytes": 412764
+      }
+    },
+    {
+      "name": "Exterior_EnvLimestone",
+      "allowedChange": true,
+      "exactAccessorValuesAndOrder": false,
+      "equivalentCompleteVerticesAndOrientedTriangles": false,
+      "metadataEqual": true,
+      "before": {
+        "name": "Exterior_EnvLimestone",
+        "material": "EnvLimestone",
+        "triangles": 10156,
+        "vertices": 21936,
+        "decodedAttributeBytes": 789696,
+        "decodedIndexBytes": 60936,
+        "decodedBytes": 850632
+      },
+      "after": {
+        "name": "Exterior_EnvLimestone",
+        "material": "EnvLimestone",
+        "triangles": 10566,
+        "vertices": 22480,
+        "decodedAttributeBytes": 809280,
+        "decodedIndexBytes": 63396,
+        "decodedBytes": 872676
+      }
+    },
+    {
+      "name": "Exterior_EnvPetrol",
+      "allowedChange": true,
+      "exactAccessorValuesAndOrder": false,
+      "equivalentCompleteVerticesAndOrientedTriangles": false,
+      "metadataEqual": true,
+      "before": {
+        "name": "Exterior_EnvPetrol",
+        "material": "EnvPetrol",
+        "triangles": 2622,
+        "vertices": 5628,
+        "decodedAttributeBytes": 202608,
+        "decodedIndexBytes": 15732,
+        "decodedBytes": 218340
+      },
+      "after": {
+        "name": "Exterior_EnvPetrol",
+        "material": "EnvPetrol",
+        "triangles": 2330,
+        "vertices": 4980,
+        "decodedAttributeBytes": 179280,
+        "decodedIndexBytes": 13980,
+        "decodedBytes": 193260
+      }
+    },
+    {
+      "name": "Foliage_EnvBark",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Foliage_EnvBark",
+        "material": "EnvBark",
+        "triangles": 3256,
+        "vertices": 6512,
+        "decodedAttributeBytes": 234432,
+        "decodedIndexBytes": 19536,
+        "decodedBytes": 253968
+      },
+      "after": {
+        "name": "Foliage_EnvBark",
+        "material": "EnvBark",
+        "triangles": 3256,
+        "vertices": 6512,
+        "decodedAttributeBytes": 234432,
+        "decodedIndexBytes": 19536,
+        "decodedBytes": 253968
+      }
+    },
+    {
+      "name": "Foliage_EnvFlower",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Foliage_EnvFlower",
+        "material": "EnvFlower",
+        "triangles": 480,
+        "vertices": 960,
+        "decodedAttributeBytes": 34560,
+        "decodedIndexBytes": 2880,
+        "decodedBytes": 37440
+      },
+      "after": {
+        "name": "Foliage_EnvFlower",
+        "material": "EnvFlower",
+        "triangles": 480,
+        "vertices": 960,
+        "decodedAttributeBytes": 34560,
+        "decodedIndexBytes": 2880,
+        "decodedBytes": 37440
+      }
+    },
+    {
+      "name": "Foliage_EnvLeaves",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Foliage_EnvLeaves",
+        "material": "EnvLeaves",
+        "triangles": 18824,
+        "vertices": 28236,
+        "decodedAttributeBytes": 1016496,
+        "decodedIndexBytes": 112944,
+        "decodedBytes": 1129440
+      },
+      "after": {
+        "name": "Foliage_EnvLeaves",
+        "material": "EnvLeaves",
+        "triangles": 18824,
+        "vertices": 28236,
+        "decodedAttributeBytes": 1016496,
+        "decodedIndexBytes": 112944,
+        "decodedBytes": 1129440
+      }
+    },
+    {
+      "name": "Horizon_EnvBronze",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Horizon_EnvBronze",
+        "material": "EnvBronze",
+        "triangles": 732,
+        "vertices": 1252,
+        "decodedAttributeBytes": 45072,
+        "decodedIndexBytes": 4392,
+        "decodedBytes": 49464
+      },
+      "after": {
+        "name": "Horizon_EnvBronze",
+        "material": "EnvBronze",
+        "triangles": 732,
+        "vertices": 1252,
+        "decodedAttributeBytes": 45072,
+        "decodedIndexBytes": 4392,
+        "decodedBytes": 49464
+      }
+    },
+    {
+      "name": "Horizon_EnvCliff",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Horizon_EnvCliff",
+        "material": "EnvCliff",
+        "triangles": 4410,
+        "vertices": 7104,
+        "decodedAttributeBytes": 255744,
+        "decodedIndexBytes": 26460,
+        "decodedBytes": 282204
+      },
+      "after": {
+        "name": "Horizon_EnvCliff",
+        "material": "EnvCliff",
+        "triangles": 4410,
+        "vertices": 7104,
+        "decodedAttributeBytes": 255744,
+        "decodedIndexBytes": 26460,
+        "decodedBytes": 282204
+      }
+    },
+    {
+      "name": "Horizon_EnvLimestone",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Horizon_EnvLimestone",
+        "material": "EnvLimestone",
+        "triangles": 2108,
+        "vertices": 3984,
+        "decodedAttributeBytes": 143424,
+        "decodedIndexBytes": 12648,
+        "decodedBytes": 156072
+      },
+      "after": {
+        "name": "Horizon_EnvLimestone",
+        "material": "EnvLimestone",
+        "triangles": 2108,
+        "vertices": 3984,
+        "decodedAttributeBytes": 143424,
+        "decodedIndexBytes": 12648,
+        "decodedBytes": 156072
+      }
+    },
+    {
+      "name": "Horizon_EnvPetrol",
+      "allowedChange": false,
+      "exactAccessorValuesAndOrder": true,
+      "equivalentCompleteVerticesAndOrientedTriangles": true,
+      "metadataEqual": true,
+      "before": {
+        "name": "Horizon_EnvPetrol",
+        "material": "EnvPetrol",
+        "triangles": 1352,
+        "vertices": 2704,
+        "decodedAttributeBytes": 97344,
+        "decodedIndexBytes": 8112,
+        "decodedBytes": 105456
+      },
+      "after": {
+        "name": "Horizon_EnvPetrol",
+        "material": "EnvPetrol",
+        "triangles": 1352,
+        "vertices": 2704,
+        "decodedAttributeBytes": 97344,
+        "decodedIndexBytes": 8112,
+        "decodedBytes": 105456
+      }
+    }
+  ],
+  "preservationChecks": [
+    {
+      "name": "Named scene/nodes/transforms, materials, image bytes, textures, samplers, animation/skin absence and other exported metadata preserved",
+      "passed": true
+    },
+    {
+      "name": "Exactly the same named material batches",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: ArenaCore_EnvGround",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: ArenaCore_EnvLimestone",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: ArenaTrim_EnvBronze",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: ArenaTrim_EnvPetrol",
+      "passed": true
+    },
+    {
+      "name": "Mutable batch retains its material and mesh/primitive metadata: Exterior_EnvBronze",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Exterior_EnvCliff",
+      "passed": true
+    },
+    {
+      "name": "Mutable batch retains its material and mesh/primitive metadata: Exterior_EnvLimestone",
+      "passed": true
+    },
+    {
+      "name": "Mutable batch retains its material and mesh/primitive metadata: Exterior_EnvPetrol",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Foliage_EnvBark",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Foliage_EnvFlower",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Foliage_EnvLeaves",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Horizon_EnvBronze",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Horizon_EnvCliff",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Horizon_EnvLimestone",
+      "passed": true
+    },
+    {
+      "name": "Frozen decoded geometry: Horizon_EnvPetrol",
+      "passed": true
+    }
+  ],
+  "geometryChecks": [
+    {
+      "name": "All17 map volumes found",
+      "passed": true
+    },
+    {
+      "name": "No new visual gameplay solids",
+      "passed": true,
+      "details": {
+        "badCore": 0,
+        "badExterior": 0
+      }
+    },
+    {
+      "name": "Changed exterior batches stay outside the playable footprint at every height",
+      "passed": true,
+      "details": {
+        "crossingExteriorFaces": 0
+      }
+    },
+    {
+      "name": "Single4096m2 upward paving",
+      "passed": true,
+      "details": 4096.000000000018
+    },
+    {
+      "name": "Collision reference north-arch-left",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-left/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-left/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-left/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-left/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-left/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-left/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference north-arch-right",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-right/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-right/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-right/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-right/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-right/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-right/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference north-arch-top",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-top/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-top/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-top/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-top/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-top/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-arch-top/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference south-platform",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-platform/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-platform/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-platform/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-platform/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-platform/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-platform/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference south-step-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-1/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-1/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-1/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-1/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-1/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-1/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference south-step-2",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-2/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-2/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-2/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-2/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-2/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-2/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference south-step-3",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-3/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-3/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-3/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-3/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-3/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-3/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference south-step-4",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-4/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-4/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-4/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-4/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-4/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face south-step-4/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference west-block",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face west-block/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face west-block/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face west-block/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face west-block/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face west-block/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face west-block/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference east-block",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face east-block/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face east-block/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face east-block/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face east-block/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face east-block/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face east-block/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference center-cover-west",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-west/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-west/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-west/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-west/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-west/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-west/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference center-cover-east",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-east/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-east/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-east/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-east/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-east/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face center-cover-east/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference north-cover",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-cover/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-cover/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-cover/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-cover/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-cover/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face north-cover/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference sw-cover",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face sw-cover/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face sw-cover/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face sw-cover/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face sw-cover/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face sw-cover/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face sw-cover/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference ne-cover",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face ne-cover/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face ne-cover/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face ne-cover/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face ne-cover/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face ne-cover/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face ne-cover/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference nw-cover",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face nw-cover/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face nw-cover/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face nw-cover/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face nw-cover/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face nw-cover/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face nw-cover/2/1",
+      "passed": true
+    },
+    {
+      "name": "Collision reference se-cover",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face se-cover/0/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face se-cover/0/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face se-cover/1/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face se-cover/1/1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face se-cover/2/-1",
+      "passed": true
+    },
+    {
+      "name": "Closed outward solid face se-cover/2/1",
+      "passed": true
+    },
+    {
+      "name": "Floor boundary join 0/-1",
+      "passed": true
+    },
+    {
+      "name": "Floor boundary join 0/1",
+      "passed": true
+    },
+    {
+      "name": "Floor boundary join 2/-1",
+      "passed": true
+    },
+    {
+      "name": "Floor boundary join 2/1",
+      "passed": true
+    },
+    {
+      "name": "Open route north gate",
+      "passed": true
+    },
+    {
+      "name": "Open route central lane",
+      "passed": true
+    },
+    {
+      "name": "Open route west flank",
+      "passed": true
+    },
+    {
+      "name": "Open route east flank",
+      "passed": true
+    },
+    {
+      "name": "Paving faces upward",
+      "passed": true
+    },
+    {
+      "name": "Exterior outward probe observatory shaft",
+      "passed": true,
+      "details": {
+        "origin": [
+          82,
+          29,
+          -105
+        ],
+        "direction": [
+          -1,
+          0,
+          0
+        ],
+        "limit": 5,
+        "nearest": 1.944921817817189,
+        "hit": [
+          80.05507818218281,
+          29,
+          -105
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe observatory dome",
+      "passed": true,
+      "details": {
+        "origin": [
+          72,
+          65,
+          -105
+        ],
+        "direction": [
+          0,
+          -1,
+          0
+        ],
+        "limit": 10,
+        "nearest": 4.994998931884766,
+        "hit": [
+          72,
+          60.005001068115234,
+          -105
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe landmark cliff",
+      "passed": true,
+      "details": {
+        "origin": [
+          72,
+          2,
+          -150
+        ],
+        "direction": [
+          0,
+          0,
+          1
+        ],
+        "limit": 15,
+        "nearest": 2.41118465306468,
+        "hit": [
+          72,
+          2,
+          -147.58881534693532
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe coastal facade",
+      "passed": true,
+      "details": {
+        "origin": [
+          -33,
+          2,
+          18
+        ],
+        "direction": [
+          -1,
+          0,
+          0
+        ],
+        "limit": 8,
+        "nearest": 6.279998779296875,
+        "hit": [
+          -39.279998779296875,
+          2,
+          18
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe olive trunk",
+      "passed": true,
+      "details": {
+        "origin": [
+          -35,
+          3,
+          24.5
+        ],
+        "direction": [
+          0,
+          0,
+          -1
+        ],
+        "limit": 3,
+        "nearest": 1.2564365948428033,
+        "hit": [
+          -35,
+          3,
+          23.243563405157197
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe west archive silhouette",
+      "passed": true,
+      "details": {
+        "origin": [
+          -30,
+          11,
+          -30
+        ],
+        "direction": [
+          -1,
+          0,
+          0
+        ],
+        "limit": 8,
+        "nearest": 4.439998626708984,
+        "hit": [
+          -34.439998626708984,
+          11,
+          -30
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe east pavilion silhouette",
+      "passed": true,
+      "details": {
+        "origin": [
+          30,
+          11,
+          -29
+        ],
+        "direction": [
+          1,
+          0,
+          0
+        ],
+        "limit": 8,
+        "nearest": 5.26300048828125,
+        "hit": [
+          35.26300048828125,
+          11,
+          -29
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe west gallery rear",
+      "passed": true,
+      "details": {
+        "origin": [
+          -33,
+          5,
+          16.035
+        ],
+        "direction": [
+          -1,
+          0,
+          0
+        ],
+        "limit": 9,
+        "nearest": 7.747001647949219,
+        "hit": [
+          -40.74700164794922,
+          5,
+          16.035
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe west gallery pier",
+      "passed": true,
+      "details": {
+        "origin": [
+          -33,
+          5,
+          18.25
+        ],
+        "direction": [
+          -1,
+          0,
+          0
+        ],
+        "limit": 9,
+        "nearest": 6.779998779296875,
+        "hit": [
+          -39.779998779296875,
+          5,
+          18.25
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe west gallery curved intrados",
+      "passed": true,
+      "details": {
+        "origin": [
+          -40.15,
+          5.2,
+          16.135
+        ],
+        "direction": [
+          0,
+          1,
+          0
+        ],
+        "limit": 2,
+        "nearest": 1.3387303692424979,
+        "hit": [
+          -40.15,
+          6.538730369242498,
+          16.135
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe west gallery inward return rear",
+      "passed": true,
+      "details": {
+        "origin": [
+          -42.035,
+          5,
+          10
+        ],
+        "direction": [
+          0,
+          0,
+          1
+        ],
+        "limit": 8,
+        "nearest": 4.246999740600586,
+        "hit": [
+          -42.035,
+          5,
+          14.246999740600586
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe west southern foundation join",
+      "passed": true,
+      "details": {
+        "origin": [
+          -33,
+          -0.01,
+          18
+        ],
+        "direction": [
+          -1,
+          0,
+          0
+        ],
+        "limit": 8,
+        "nearest": 6.379999795208427,
+        "hit": [
+          -39.37999979520843,
+          -0.01,
+          18
+        ]
+      }
+    },
+    {
+      "name": "Exterior outward probe east southern foundation join",
+      "passed": true,
+      "details": {
+        "origin": [
+          33,
+          -0.01,
+          20
+        ],
+        "direction": [
+          1,
+          0,
+          0
+        ],
+        "limit": 8,
+        "nearest": 6.379999795208427,
+        "hit": [
+          39.37999979520843,
+          -0.01,
+          20
+        ]
+      }
+    },
+    {
+      "name": "Gallery rear is recessed beyond the pier face",
+      "passed": true
+    },
+    {
+      "name": "Inward return rear is recessed beyond outerz13.5 plane",
+      "passed": true
+    },
+    {
+      "name": "Curved intrados is below the flat roof soffit",
+      "passed": true
+    },
+    {
+      "name": "Frozen geometry/download caps",
+      "passed": true,
+      "details": {
+        "bytes": 6620096,
+        "triangles": 68670,
+        "vertices": 123713,
+        "batches": 15
+      }
+    }
+  ],
+  "baselineGeometryChecksPassed": true,
+  "negativeControls": [
+    {
+      "label": "Alter one protected position component",
+      "expectedAccepted": false,
+      "accepted": false
+    },
+    {
+      "label": "Reverse one protected triangle winding",
+      "expectedAccepted": false,
+      "accepted": false
+    },
+    {
+      "label": "Rotate triangle cyclic start without reversing winding",
+      "expectedAccepted": true,
+      "accepted": true
+    },
+    {
+      "label": "Alter embedded texture image byte",
+      "expectedAccepted": false,
+      "accepted": false
+    },
+    {
+      "label": "Referenced image cannot select a nonexistent buffer",
+      "rejected": true
+    },
+    {
+      "label": "Broken glTF version rejected before comparison",
+      "rejected": true
+    },
+    {
+      "label": "False mutable exterior POSITION bounds rejected",
+      "rejected": true
+    },
+    {
+      "label": "Projected footprint catches crossing face and accepts an outside corner triangle",
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "limits": [
+    "CPU exported geometry/material correctness and preservation only; no rendered visual acceptance, GPU timing, device or WAN claim.",
+    "All old exterior probes remain, with only the reviewed low coastal-facade ray relocated to the actual new west wing. Baseline still uses every original ray. New interior/foundation probes use author-supplied coordinates and explicit geometric depth checks.",
+    "Existing core/collision/route/winding/floor rules and numerical tolerances remain intact. Gallery depth thresholds follow its0.8m source recess and curved soffit rather than imposing a visual-quality score.",
+    "Decoded per-batch bytes exclude shared images and GLB metadata/padding; whole-file bytes govern the7MB budget."
+  ]
+}

@@ -1,10 +1,10 @@
 {
   "status": "passed",
   "asset": "public/models/environment.glb",
-  "bytes": 6698732,
-  "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d",
-  "triangles": 69484,
-  "exportedVertices": 125761,
+  "bytes": 6620096,
+  "sha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+  "triangles": 68670,
+  "exportedVertices": 123713,
   "colorBatches": 15,
   "materials": 8,
   "images": [
@@ -82,8 +82,8 @@
     },
     {
       "name": "Exterior_EnvBronze",
-      "triangles": 3140,
-      "vertices": 6480
+      "triangles": 2208,
+      "vertices": 4536
     },
     {
       "name": "Exterior_EnvCliff",
@@ -92,13 +92,13 @@
     },
     {
       "name": "Exterior_EnvLimestone",
-      "triangles": 10156,
-      "vertices": 21936
+      "triangles": 10566,
+      "vertices": 22480
     },
     {
       "name": "Exterior_EnvPetrol",
-      "triangles": 2622,
-      "vertices": 5628
+      "triangles": 2330,
+      "vertices": 4980
     },
     {
       "name": "Foliage_EnvBark",
@@ -138,7 +138,192 @@
   ],
   "colliderReferences": 17,
   "surfaceChecks": 102,
-  "outwardWindingChecks": 110,
+  "outwardWindingChecks": 116,
+  "galleryDepthChecks": 3,
+  "exteriorProbeHits": [
+    {
+      "name": "observatory shaft",
+      "origin": [
+        82,
+        29,
+        -105
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "distance": 1.944921817817189
+    },
+    {
+      "name": "observatory dome",
+      "origin": [
+        72,
+        65,
+        -105
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "distance": 4.994998931884766
+    },
+    {
+      "name": "landmark cliff",
+      "origin": [
+        72,
+        2,
+        -150
+      ],
+      "direction": [
+        0,
+        0,
+        1
+      ],
+      "distance": 2.41118465306468
+    },
+    {
+      "name": "coastal facade",
+      "origin": [
+        -33,
+        2,
+        18
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "distance": 6.279998779296875
+    },
+    {
+      "name": "olive trunk",
+      "origin": [
+        -35,
+        3,
+        24.5
+      ],
+      "direction": [
+        0,
+        0,
+        -1
+      ],
+      "distance": 1.2564365948428033
+    },
+    {
+      "name": "west archive silhouette",
+      "origin": [
+        -30,
+        11,
+        -30
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "distance": 4.439998626708984
+    },
+    {
+      "name": "east pavilion silhouette",
+      "origin": [
+        30,
+        11,
+        -29
+      ],
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "distance": 5.26300048828125
+    },
+    {
+      "name": "west gallery rear",
+      "origin": [
+        -33,
+        5,
+        16.035
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "distance": 7.747001647949219
+    },
+    {
+      "name": "west gallery pier",
+      "origin": [
+        -33,
+        5,
+        18.25
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "distance": 6.779998779296875
+    },
+    {
+      "name": "west gallery curved intrados",
+      "origin": [
+        -40.15,
+        5.2,
+        16.135
+      ],
+      "direction": [
+        0,
+        1,
+        0
+      ],
+      "distance": 1.3387303692424979
+    },
+    {
+      "name": "west gallery inward return rear",
+      "origin": [
+        -42.035,
+        5,
+        10
+      ],
+      "direction": [
+        0,
+        0,
+        1
+      ],
+      "distance": 4.246999740600586
+    },
+    {
+      "name": "west southern foundation join",
+      "origin": [
+        -33,
+        -0.01,
+        18
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "distance": 6.379999795208427
+    },
+    {
+      "name": "east southern foundation join",
+      "origin": [
+        33,
+        -0.01,
+        20
+      ],
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "distance": 6.379999795208427
+    }
+  ],
   "clearRouteChecks": 4,
   "floorBoundaryChecks": 4,
   "upwardGroundAreaSquareMetres": 4096.000000000018,

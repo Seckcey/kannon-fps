@@ -1,0 +1,73 @@
+{
+  "status": "passed_with_desktop_browser_capture_limitation",
+  "scope": "Production build, isolated local SQLite, native menu and touch-emulated Ready/fire controls. No clock/input/world-state injection. This is desktop touch emulation, not a physical phone.",
+  "environmentSha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+  "sourceOfDigest": "Independent local build/export digest; browser resource timing confirms exact versioned URL and byte length, not a separately hashed network response.",
+  "viewport": {
+    "width": 852,
+    "height": 393,
+    "touch": true
+  },
+  "checks": [
+    "Normal practice menu and Balanced room",
+    "Arena rendered before Ready",
+    "Native touch Ready displayed three-second countdown",
+    "AR ammo29 after fire input",
+    "Player elimination and respawn",
+    "First-to-15 results with no crew rating change",
+    "Back to menu verified"
+  ],
+  "desktopCapture": "Both hidden and visible IAB Ready attempts refused mouse capture. The existing retry/45-second timeout returned to the lobby. No production input code or browser permissions changed.",
+  "observedSnapshotCount": 799,
+  "observationTruncation": [
+    true,
+    true,
+    true
+  ],
+  "observedPhases": [
+    "playing",
+    "finished"
+  ],
+  "observedEvents": {
+    "respawn": 11,
+    "shot": 143,
+    "damage": 76,
+    "elimination": 11,
+    "heal": 2,
+    "match-end": 1
+  },
+  "playerShots": 1,
+  "rivals": [
+    {
+      "id": "bot-scout",
+      "positions": 492,
+      "shots": 45
+    },
+    {
+      "id": "bot-moxie",
+      "positions": 489,
+      "shots": 47
+    },
+    {
+      "id": "bot-rook",
+      "positions": 444,
+      "shots": 50
+    }
+  ],
+  "resourceTiming": [
+    {
+      "decodedBodySize": 2679764,
+      "duration": 25.69999998807907,
+      "transferSize": 2680064,
+      "url": "http://127.0.0.1:3044/models/scout.glb?v=scout-grounded-v1"
+    },
+    {
+      "decodedBodySize": 6620096,
+      "duration": 46.29999998211861,
+      "transferSize": 6620396,
+      "url": "http://127.0.0.1:3044/models/environment.glb?v=sunbreak-coastal-v1"
+    }
+  ],
+  "console": [],
+  "explicitExit": true
+}
