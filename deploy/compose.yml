@@ -1,0 +1,31 @@
+name: kannon-arena
+
+services:
+  arena:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: kannon-arena:local
+    init: true
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3001"
+      DATA_DIR: /app/data
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-}"
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-3001}:3001"
+    volumes:
+      - arena-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 20s
+
+volumes:
+  arena-data:

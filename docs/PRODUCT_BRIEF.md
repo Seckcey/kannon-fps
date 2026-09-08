@@ -1,37 +1,34 @@
 # Product brief
 
-## Purpose
+Give a father and son an enjoyable competitive game while apart, with invited friends and an ongoing leaderboard. Easy joining, responsive phone and desktop play, and short repeatable matches are the priorities.
 
-Give a father and son an easy way to meet in a competitive first-person game while apart. Quick joining, responsive controls, fair matches, and an easy rematch matter more than a large feature set.
+## Approved starting design
 
-## Proposed initial scope
+- Third-person, over-the-shoulder camera; no building.
+- Browser delivery on phones and desktops, touch and keyboard/mouse.
+- Private 2–8 player free-for-all, five minutes or first to 15 eliminations.
+- Three-second respawns with full starting loadout, 100 health, and 50 shield.
+- Two-second spawn protection, ending on weapon fire.
+- Slot 1 AR, slot 2 shotgun, slot 3 two healing charges per life.
+- Each heal restores 50 health after three seconds. Damage or weapon fire interrupts it; activated charges are consumed.
+- Crew ratings, wins, matches, eliminations, deaths, win rate, monthly/all-time standings, five-match placements, and match history.
+- Rematches and clear waiting, connection, and error states.
+- Original Blender-created rigged models with human proportions and believable movement. Current armor is stylized; motion is hand-keyed.
 
-- Two players in an invite-only room, with no public matchmaking or stranger discovery.
-- One compact arena, one weapon, clear spawn points, and readable player silhouettes.
-- Movement, mouse aiming, firing, health, damage, respawning, and score tracking.
-- Short timed matches with clear winner or draw results and a rematch option.
-- Clear waiting, connection failure, opponent disconnected, and room expired screens.
-- Stylized, non-graphic presentation without collecting a child's real name or age.
+## Current content
 
-## Remote multiplayer requirements
+Sunbreak Courtyard is a sunny coastal arena with shared collision, cover, stepped elevation, and multiple routes. The AR has a 30-round magazine and the shotgun six rounds; both have unlimited reserve and server-controlled reloads. Everyone receives the same equipment.
 
-- Both players connect to an internet-hosted match server through encrypted connections.
-- A server owns room membership, validates player actions, and calculates match results.
-- Private rooms use unguessable, expiring invitations and enforce a two-player limit.
-- Clients receive only the state needed to play; secrets and server credentials never reach the browser.
-- Latency handling, reconnect behavior, and idle-room cleanup are part of the first remote-play milestone.
+Casual games never affect ratings. A solo practice range provides stationary training drones; it is not an AI-opponent mode.
+
+## Remote play
+
+Both clients connect outward to one hosted server over HTTPS/WSS without household router port forwarding. The server owns membership, movement validation, weapons, health, scores, and results. Room invitations expire; friend-crew membership controls ranked games and leaderboard access.
 
 ## Deferred scope
 
-Public matchmaking, rankings, accounts, purchases, in-game chat or voice, multiple weapons, additional maps, bots, and console/mobile support are outside the proposed first release. Players can use their existing call service while playing.
-
-## Decisions before implementation
-
-1. Confirm both players' devices and preferred controls.
-2. Confirm browser delivery versus an installed game.
-3. Select the rendering engine and multiplayer stack through a small technical prototype.
-4. Agree on hosting and any ongoing cost before provisioning paid services.
+Public matchmaking, shrinking battle-royale arenas, additional weapons/maps, AI opponents, voice/chat, progression, purchases, controller support, and console clients are outside this first build.
 
 ## Success
 
-Both players can join a private room from different homes, complete a match, see matching results, and start a rematch without developer assistance or router configuration.
+Both intended players join from different homes on their actual devices, complete a match, see consistent results and correct leaderboard changes, and rematch without developer assistance. Local automated testing does not substitute for that family playtest.

@@ -1,0 +1,48 @@
+name: Check game
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Authoritative rules, private multiplayer acceptance, types, production build
+        run: npm run check
+      - name: Verify packed Blender character, skeleton, clips, and mobile geometry budget
+        run: node scripts/blender/validate_glb.mjs
+      - name: Build deployment image
+        run: docker build --tag kannon-arena:ci .
+      - name: Start unprivileged deployment image
+        run: >-
+          docker run --detach --name kannon-ci --init
+          --read-only --tmpfs /tmp:size=64m,mode=1777
+          --cap-drop ALL --security-opt no-new-privileges:true
+          --publish 127.0.0.1:3001:3001 kannon-arena:ci
+      - name: Check production HTTP and WebSocket entry points
+        run: node deploy/smoke.mjs http://127.0.0.1:3001
+      - name: Container logs
+        if: failure()
+        run: docker logs kannon-ci
+      - name: Remove temporary acceptance container
+        if: always()
+        run: docker rm --force --volumes kannon-ci || true

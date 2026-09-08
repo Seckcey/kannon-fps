@@ -1,0 +1,38 @@
+# Assets
+
+## Blender source and runtime
+
+- `art/source/scout.blend`: editable Blender 5.2 source.
+- `scripts/blender/generate_scout.py`: reproducible generator.
+- `scripts/blender/validate_glb.mjs`: GLB structure/budget validation.
+- `public/models/scout.glb`: browser model.
+- `art/source/`: front/back and action previews plus manifest.
+
+The original armored scout uses human proportions, an 18-bone skinned rig, separate AR/shotgun/healing attachments, and Idle, Walk, Run, Jump, Aim, Fire, Reload, and Heal clips. Motion is hand-authored, not motion-captured. The manifest records orientation and mesh budget; the client changes the accent material for player identity.
+
+## Built-in Image Gen assets
+
+| Path | Use |
+| --- | --- |
+| `docs/art/lobby-concept.png` | Complete 1536×1024 menu reference |
+| `docs/art/gameplay-concept.png` | 1536×1024 third-person/HUD direction |
+| `public/assets/sunbreak-lobby.png` | Standalone menu illustration |
+| `public/assets/limestone.png` | Repeating live-arena stone material |
+
+All used the built-in Image Gen tool, with no API-key fallback. They are original generated images, not Fortnite assets. Real UI text and controls are native HTML; a screenshot is never used as the game interface.
+
+### Production prompt set
+
+**Menu illustration:** Standalone 1536×1024 background based on the lobby concept. Preserve the original helmeted cream/orange competitor, rifle down, sunny coastal courtyard, sea, pines, and peach/cream structures. Remove all menu text, navigation, panels, buttons, and HUD. Competitor center-right around 66% of width, helmet around 15%, feet near 98%; quiet navy left 35% for HTML. Bright sky at right, natural left-edge fade into #061521. No copyrighted game characters.
+
+**Limestone:** Square seamless tileable diffuse/albedo ivory limestone slabs, flat orthographic view, no shadows/directional lighting/objects. Large subtle slabs, thin sand grout, restrained porous cream detail, worn edges, slight peach flecks, #e8dcc3 base. No text/logos/UI.
+
+### Concept prompts
+
+Complete KANNON ARENA lobby with Play/Leaderboard/How to play/Settings, “Your crew. Your arena.”, “Good rivals. Great games.”, Player name, Create private match, Join with invite, Practice first, 2–8 players/five minutes/first to 15, and AR/shotgun/heal slots. Navy #111d2b, chartreuse #d7ff5b, seafoam/warm white, condensed athletic typography, open spacing, angled actions; original sunny coastal armored character.
+
+Gameplay direction used the same palette/environment, an over-the-shoulder character, crosshair, score/timer, health/shield, slots/ammo, and roster. Free-look Blender/Three.js models intentionally replace fixed raster game sprites. Model/environment detail is lighter than the illustration to support phones and remains an early art pass.
+
+## Fonts and icons
+
+Barlow/Barlow Condensed are bundled locally through Fontsource with license files in their packages. Small interface/weapon SVG silhouettes are original. No remote font, tracking, or game asset service is required at runtime.
