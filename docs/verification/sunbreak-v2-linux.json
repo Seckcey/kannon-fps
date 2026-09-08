@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "revision": "aa469252575b5c977d38fa74941bfa965b341306",
+  "durationMs": 59999.498736,
+  "snapshotHzMin": 15.034990384520741,
+  "snapshotHzMax": 15.08638597135295,
+  "simulationTickHzMin": 30.069980769041482,
+  "simulationTickHzMax": 30.146983248737776,
+  "worstPeerP95SnapshotGapMs": 67.8012929999968,
+  "maxSnapshotGapMs": 69.0985980000005,
+  "maxTickDelta": 2.0,
+  "worstPeerP95InputAckMs": 34.382966000000124,
+  "maxInputAckMs": 66.46104500000365,
+  "profileHttpMs": 2.75782899999831,
+  "totalInputFrames": 14404.0,
+  "totalARShots": 1291.0,
+  "totalShotgunShots": 162.0,
+  "unexpectedErrors": []
+}

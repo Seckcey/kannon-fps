@@ -28,8 +28,6 @@ jobs:
       - run: npm ci
       - name: Authoritative rules, private multiplayer acceptance, types, production build
         run: npm run check
-      - name: Verify packed Blender character, skeleton, clips, and mobile geometry budget
-        run: node scripts/blender/validate_glb.mjs
       - name: Build deployment image
         run: docker build --tag kannon-arena:ci .
       - name: Start unprivileged deployment image

@@ -117,6 +117,16 @@
   .player-panel .button + .button { margin-top: 13px; }
   .practice-button { display: flex; align-items: center; justify-content: center; gap: 17px; width: 100%; min-height: 51px; margin-top: 6px; color: var(--mint); font-size: 19px; font-weight: 500; }
   .practice-button:hover { color: var(--lime); }
+  .practice-levels { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .practice-levels legend { color: var(--mint); font: 600 13px var(--body); text-transform: uppercase; letter-spacing: .7px; padding: 0 0 12px; }
+  .practice-levels label { display: flex; align-items: center; gap: 15px; padding: 15px 17px; border: 1px solid #38545e; background: #132a37; cursor: pointer; transition: border-color .15s, background .15s; }
+  .practice-levels label:hover, .practice-levels label:focus-within { border-color: var(--mint); }
+  .practice-levels label.selected { border-color: var(--lime); background: #26372d; }
+  .practice-levels input { width: 18px; height: 18px; min-height: 18px; padding: 0; margin: 0; flex: 0 0 18px; accent-color: var(--lime); }
+  .practice-levels span { display: grid; gap: 3px; }
+  .practice-levels strong { color: var(--text); font: 700 22px var(--display); }
+  .practice-levels small, .practice-loading { color: var(--mint); font: 400 14px/1.4 var(--body); }
+  .practice-loading { margin: 14px 0 0; text-align: center; }
   .play-footer { display: flex; align-items: center; justify-content: space-between; gap: 35px; }
   .rule-strip { display: flex; align-items: center; justify-content: center; background: #061925ed; border: 1px solid #68838b; padding: 15px 22px; gap: 22px; min-height: 61px; white-space: nowrap; }
   .rule-strip span { display: flex; align-items: center; gap: 10px; color: var(--mint); font: italic 600 21px var(--display); text-transform: uppercase; }

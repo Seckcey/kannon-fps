@@ -14,11 +14,11 @@ export function muzzlePosition(player: Vec3): Vec3 { return { x: player.x, y: pl
 /** Camera and authoritative aim share a shoulder offset. Client clips camera against walls. */
 export function cameraPosition(player: Vec3, yaw: number, pitch: number, aim = false): Vec3 {
   const forward = directionFromAngles(yaw, pitch);
-  const distance = aim ? 2.2 : 3.5;
-  const shoulder = aim ? 0.65 : 0.82;
+  const distance = aim ? 1.9 : 2.85;
+  const shoulder = aim ? 0.82 : 0.96;
   const pivot = muzzlePosition(player);
   const desired = { x: pivot.x - forward.x * distance + Math.cos(yaw) * shoulder,
-    y: pivot.y - forward.y * distance + (aim ? 0.25 : 0.45),
+    y: Math.max(0.12, pivot.y - forward.y * distance + (aim ? 0.18 : 0.3)),
     z: pivot.z - forward.z * distance + Math.sin(yaw) * shoulder };
   const delta = subtract(desired, pivot);
   const length = magnitude(delta);
@@ -59,6 +59,11 @@ function supportAt(state: Vec3): number {
   for (const box of OBSTACLES) { const top = box.y + box.h / 2; if (overlapsXZ(state, box) && top <= state.y + 0.06) support = Math.max(support, top); }
   return support;
 }
+/** Visual animation shares the real supporting surface, including steps/platforms. */
+export function isPlayerGrounded(state: Vec3 & { vy: number }): boolean {
+  return state.vy <= 0.1 && Math.abs(state.y - supportAt(state)) < 0.06;
+}
+export function supportHeight(state: Vec3): number { return supportAt(state); }
 export function movePlayer(state: KinematicState, input: InputFrame, dt: number, canJump = true): void {
   dt = clamp(dt, 0, 0.1);
   state.yaw = input.yaw; state.pitch = input.pitch;

@@ -1,0 +1,200 @@
+{
+  "asset": "public/models/environment.glb",
+  "groups": [
+    "ArenaCore",
+    "ArenaTrim",
+    "Exterior",
+    "Foliage",
+    "Horizon"
+  ],
+  "materials": [
+    "EnvLimestone",
+    "EnvGround",
+    "EnvPetrol",
+    "EnvBronze",
+    "EnvCliff",
+    "EnvBark",
+    "EnvLeaves",
+    "EnvFlower"
+  ],
+  "mapObstacles": [
+    {
+      "id": "north-arch-left",
+      "kind": "wall",
+      "x": -8.0,
+      "y": 2.5,
+      "z": -17.0,
+      "w": 5.0,
+      "h": 5.0,
+      "d": 5.0
+    },
+    {
+      "id": "north-arch-right",
+      "kind": "wall",
+      "x": 8.0,
+      "y": 2.5,
+      "z": -17.0,
+      "w": 5.0,
+      "h": 5.0,
+      "d": 5.0
+    },
+    {
+      "id": "north-arch-top",
+      "kind": "wall",
+      "x": 0.0,
+      "y": 5.4,
+      "z": -17.0,
+      "w": 21.0,
+      "h": 1.2,
+      "d": 5.0
+    },
+    {
+      "id": "south-platform",
+      "kind": "platform",
+      "x": 0.0,
+      "y": 1.0,
+      "z": 17.0,
+      "w": 14.0,
+      "h": 2.0,
+      "d": 8.0
+    },
+    {
+      "id": "south-step-1",
+      "kind": "step",
+      "x": 0.0,
+      "y": 0.2,
+      "z": 9.5,
+      "w": 7.0,
+      "h": 0.4,
+      "d": 1.4
+    },
+    {
+      "id": "south-step-2",
+      "kind": "step",
+      "x": 0.0,
+      "y": 0.4,
+      "z": 10.7,
+      "w": 7.0,
+      "h": 0.8,
+      "d": 1.2
+    },
+    {
+      "id": "south-step-3",
+      "kind": "step",
+      "x": 0.0,
+      "y": 0.6,
+      "z": 11.8,
+      "w": 7.0,
+      "h": 1.2,
+      "d": 1.2
+    },
+    {
+      "id": "south-step-4",
+      "kind": "step",
+      "x": 0.0,
+      "y": 0.8,
+      "z": 12.8,
+      "w": 7.0,
+      "h": 1.6,
+      "d": 1.0
+    },
+    {
+      "id": "west-block",
+      "kind": "wall",
+      "x": -19.0,
+      "y": 1.75,
+      "z": -1.0,
+      "w": 8.0,
+      "h": 3.5,
+      "d": 13.0
+    },
+    {
+      "id": "east-block",
+      "kind": "wall",
+      "x": 19.0,
+      "y": 1.75,
+      "z": 1.0,
+      "w": 8.0,
+      "h": 3.5,
+      "d": 13.0
+    },
+    {
+      "id": "center-cover-west",
+      "kind": "cover",
+      "x": -5.0,
+      "y": 0.8,
+      "z": 0.0,
+      "w": 3.5,
+      "h": 1.6,
+      "d": 6.0
+    },
+    {
+      "id": "center-cover-east",
+      "kind": "cover",
+      "x": 5.0,
+      "y": 0.8,
+      "z": 0.0,
+      "w": 3.5,
+      "h": 1.6,
+      "d": 6.0
+    },
+    {
+      "id": "north-cover",
+      "kind": "cover",
+      "x": 0.0,
+      "y": 0.65,
+      "z": -8.0,
+      "w": 5.0,
+      "h": 1.3,
+      "d": 2.0
+    },
+    {
+      "id": "sw-cover",
+      "kind": "cover",
+      "x": -17.0,
+      "y": 0.9,
+      "z": 19.0,
+      "w": 4.0,
+      "h": 1.8,
+      "d": 3.0
+    },
+    {
+      "id": "ne-cover",
+      "kind": "cover",
+      "x": 19.0,
+      "y": 0.9,
+      "z": -21.0,
+      "w": 4.0,
+      "h": 1.8,
+      "d": 3.0
+    },
+    {
+      "id": "nw-cover",
+      "kind": "cover",
+      "x": -22.0,
+      "y": 0.9,
+      "z": -19.0,
+      "w": 3.0,
+      "h": 1.8,
+      "d": 4.0
+    },
+    {
+      "id": "se-cover",
+      "kind": "cover",
+      "x": 22.0,
+      "y": 0.9,
+      "z": 19.0,
+      "w": 3.0,
+      "h": 1.8,
+      "d": 4.0
+    }
+  ],
+  "coordinateSystem": "metres; Y up; ground y=0",
+  "originalArtwork": true,
+  "notes": [
+    "Original authored geometry, generated basecolor artwork, and authored PBR/foliage maps.",
+    "The observatory and tree trunks are outside the 64 m playable square; high canopies may overhang.",
+    "Sky/water/lighting remain runtime systems; preview-only water is at y=-9.",
+    "Authoritative collision is unchanged; rendered surface relief is at most 4 cm."
+  ]
+}

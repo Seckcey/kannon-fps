@@ -2,7 +2,7 @@
 
 **Your crew. Your arena.** An original third-person, no-building browser shooter for a father, son, and invited friends to play on phones and desktops. The repository name remains `kannon-fps`; the approved camera is third-person.
 
-## Current build
+## Current development build
 
 - Private 2–8 player free-for-all rooms, host-controlled start, and rematches.
 - Five-minute matches or first to 15 eliminations; three-second respawns.
@@ -10,11 +10,11 @@
 - 100 health and 50 shield per life. Each heal restores up to 50 health after three seconds; damage or firing interrupts it.
 - Two seconds of spawn protection, ending immediately on weapon fire.
 - Keyboard/mouse and touch joystick, aiming, firing, jump, sprint, reload, and loadout controls.
-- Solo practice with three stationary training drones.
+- Solo practice against three moving AI rivals: Scout, Moxie, and Rook, with Relaxed, Balanced, or Challenging difficulty.
 - Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
 - An original Blender model with a skinned armature and eight hand-authored animation clips in the live game.
 
-This first playable build is deployed on Coastline at **https://kpop.8westventures.com**. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. Public HTTPS/WSS entry points are verified; real-device performance/controls acceptance and a two-household playtest remain. The Blender art uses human proportions with stylized armor; it is not photorealistic or motion-captured.
+The deployed baseline is revision **`200eeaf`** on Coastline at **https://kpop.8westventures.com**. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. The visual and active-practice overhaul described here is **not deployed yet**. Public HTTPS/WSS entry points are verified for the baseline; real-device performance/controls acceptance and a two-household playtest remain. The Blender art uses human proportions with stylized armor; it is not photorealistic or motion-captured.
 
 ## Run locally
 
@@ -25,7 +25,9 @@ npm ci
 npm run dev
 ```
 
-Open **http://localhost:5173**. Create a private match, share its room code with another player, and start once at least two people have joined. Or choose **Practice first → Enter practice**.
+Open **http://localhost:5173**. Create a private match, share its room code with another player, and start once at least two people have joined. For solo play, choose **Practice first → choose difficulty → Create practice → Enter practice**. Balanced is the default. Arena and character downloads finish before room entry; later rooms reuse those downloaded models.
+
+Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They currently follow ground routes around cover and platforms, without jumping or climbing; they can fire at visible elevated opponents. Rematches keep the chosen difficulty. Practice creates no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent.
 
 For two players on one computer, use separate browser profiles or an incognito window. The same saved player may have only one active connection; another tab with that player replaces the earlier session.
 
@@ -38,7 +40,7 @@ npm run check
 npm start
 ```
 
-`check` runs simulation, storage, and HTTP/WebSocket acceptance tests, TypeScript checks, and the production build. `npm start` serves the built client and server together at **http://127.0.0.1:3001**. Rebuild after changing source before using production mode.
+`check` runs client, simulation, storage, HTTP/WebSocket, and asset checks, TypeScript checks, and the production build. `npm start` serves the built client and server together at **http://127.0.0.1:3001**. Rebuild after changing source before using production mode.
 
 Defaults: `HOST=127.0.0.1`, `PORT=3001`, `DATA_DIR=data`. `DB_PATH` overrides the SQLite path. `ALLOWED_ORIGINS` optionally lists exact trusted browser origins; same-origin hosting needs no override. Databases and environment files are ignored by Git.
 

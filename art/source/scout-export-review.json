@@ -1,8 +1,8 @@
 {
   "file": "public/models/scout.glb",
-  "bytes": 3599552,
-  "exportedVertices": 24026,
-  "triangles": 21056,
+  "bytes": 2658568,
+  "exportedVertices": 22654,
+  "triangles": 20868,
   "bones": 18,
   "clips": [
     "Idle",
@@ -14,11 +14,23 @@
     "Reload",
     "Heal"
   ],
-  "embeddedTextures": 6,
+  "embeddedTextures": 3,
+  "materialDraws": {
+    "scout_body": 4,
+    "weapon_ar": 3,
+    "weapon_shotgun": 2,
+    "healing_item": 2
+  },
+  "eightPlayerBodyAndARDraws": 56,
   "muzzle": [
-    0.13499990383556765,
-    1.3319999004813747,
-    -0.8470000042956585
+    0.1350005143465291,
+    1.3319993455578272,
+    -0.846999860553418
+  ],
+  "shotgunMuzzle": [
+    0.1350005578440922,
+    1.3319995961193676,
+    -0.9239997672777042
   ],
   "coordinateSystem": "metres; Y up; -Z forward",
   "status": "passed"

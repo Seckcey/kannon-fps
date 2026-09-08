@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 import type { GameEvent, InputFrame, PlayerState, WorldSnapshot } from '../../shared/protocol';
-import { cameraPosition, directionFromAngles, movePlayer, raycastMap, type KinematicState } from '../../shared/physics';
+import { cameraPosition, directionFromAngles, isPlayerGrounded, movePlayer, raycastMap, supportHeight, type KinematicState } from '../../shared/physics';
 import { createBlenderCharacter } from './BlenderCharacter';
 import type { CharacterModel } from './Character';
 import { disposeCharacterResources } from './Character';
 import { InputController } from './InputController';
 import { GameAudio } from './GameAudio';
 import { createWorld, type ArenaWorld } from './World';
+import { SUN_DIRECTION, SKY_LIGHT_INTENSITY } from './Atmosphere';
+import type { ArenaPresentation } from './Presentation';
+import { RenderQuality, scenePixelRatio } from './RenderQuality';
 
 export interface GameSettings {
   sensitivity: number; volume: number; quality: 'auto' | 'high' | 'low'; invertY: boolean;
@@ -38,6 +41,13 @@ export class GameView {
   private readonly camera = new THREE.PerspectiveCamera(68, 1, 0.06, 700);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly world: ArenaWorld;
+  private presentation: ArenaPresentation | null = null;
+  private presentationRequest = 0;
+  private readonly renderQuality = new RenderQuality();
+  private graphicsConfigured = false;
+  private environmentReady = false;
+  private characterReady = false;
+  private assetsAnnounced = false;
   private readonly audio: GameAudio;
   private readonly sun: THREE.DirectionalLight;
   private readonly players = new Map<string, RenderPlayer>();
@@ -89,22 +99,28 @@ export class GameView {
     this.canvas.addEventListener('webglcontextlost', this.contextLost);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 0.95;
+    this.renderer.info.autoReset = false;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.scene.background = new THREE.Color('#95c6d5');
-    this.scene.fog = new THREE.Fog('#b6d4d3', 100, 430);
-    this.scene.add(new THREE.HemisphereLight('#daf2ff', '#bea27b', 1.45));
-    this.sun = new THREE.DirectionalLight('#fff0cc', 3.2);
-    this.sun.position.set(-24, 42, 16);
+    this.scene.background = new THREE.Color('#b2d0d7');
+    this.scene.fog = new THREE.Fog('#b2cbd0', 100, 460);
+    this.scene.add(new THREE.HemisphereLight('#d9edff', '#8e7357', 1.05));
+    this.sun = new THREE.DirectionalLight('#fff0d6', 3.8);
+    this.sun.position.copy(SUN_DIRECTION).multiplyScalar(70);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
-    this.sun.shadow.camera.left = -41; this.sun.shadow.camera.right = 41;
-    this.sun.shadow.camera.top = 41; this.sun.shadow.camera.bottom = -41;
-    this.sun.shadow.camera.near = 1; this.sun.shadow.camera.far = 110;
-    this.sun.shadow.normalBias = 0.035; this.sun.shadow.bias = -0.00015;
+    this.sun.shadow.camera.left = -48; this.sun.shadow.camera.right = 48;
+    this.sun.shadow.camera.top = 48; this.sun.shadow.camera.bottom = -48;
+    this.sun.shadow.camera.near = 1; this.sun.shadow.camera.far = 155;
+    this.sun.shadow.normalBias = 0.065; this.sun.shadow.bias = -0.00025;
     this.sun.shadow.radius = 2;
     this.scene.add(this.sun, this.sun.target);
-    this.world = createWorld(this.renderer); this.scene.add(this.world.root);
+    this.world = createWorld(this.renderer, () => { this.environmentReady = true; this.checkAssetsReady(); }, message => this.options.onError?.(message));
+    this.scene.add(this.world.root);
+    this.scene.environment = this.world.environment;
+    this.scene.background = this.world.background;
+    this.scene.backgroundIntensity = 0.8;
+    this.scene.environmentIntensity = SKY_LIGHT_INTENSITY;
     this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particlePositions, 3).setUsage(THREE.DynamicDrawUsage));
     this.particleGeometry.setAttribute('color', new THREE.BufferAttribute(this.particleColors, 3).setUsage(THREE.DynamicDrawUsage));
     this.particleGeometry.setDrawRange(0, 0);
@@ -121,13 +137,27 @@ export class GameView {
   }
 
   setSettings(settings: Partial<GameSettings>) {
+    const graphicsChanged = !this.graphicsConfigured || (settings.quality !== undefined && settings.quality !== this.settings.quality);
     this.settings = { ...this.settings, ...settings };
     this.options.input.setSettings(this.settings);
     this.audio?.setVolume(this.settings.volume);
+    if (!graphicsChanged) return;
+    this.graphicsConfigured = true;
+    this.renderQuality.reset();
     const mobile = this.options.input.isTouch;
-    const ratio = this.settings.quality === 'high' ? 1.75 : this.settings.quality === 'low' ? 1 : mobile ? 1.25 : 1.5;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, ratio));
     this.renderer.shadowMap.enabled = this.settings.quality !== 'low';
+    const enhanced = (this.settings.quality === 'high' || (this.settings.quality === 'auto' && !mobile)) && this.renderer.extensions.has('EXT_color_buffer_float');
+    const request = ++this.presentationRequest;
+    if (enhanced && this.presentation) this.presentation.enabled = true;
+    else if (enhanced) {
+      // Phones do not download the desktop postprocessing bundle. Direct
+      // rendering remains usable while this optional effect becomes ready.
+      void import('./Presentation').then(({ ArenaPresentation: Presentation }) => {
+        if (this.disposed || request !== this.presentationRequest) return;
+        this.presentation = new Presentation(this.renderer, this.scene, this.camera);
+        this.presentation.resize(this.width, this.height);
+      }).catch(() => { /* A failed optional enhancement leaves direct rendering available. */ });
+    } else { this.presentation?.dispose(); this.presentation = null; }
     const shadowSize = this.settings.quality === 'high' ? 2048 : mobile ? 1024 : 2048;
     if (this.sun.shadow.mapSize.x !== shadowSize) {
       this.sun.shadow.map?.dispose(); this.sun.shadow.map = null;
@@ -180,9 +210,18 @@ export class GameView {
   private resize = () => {
     if (this.disposed) return;
     this.width = Math.max(1, this.container.clientWidth); this.height = Math.max(1, this.container.clientHeight);
+    this.renderer.setPixelRatio(scenePixelRatio(this.width, this.height, window.devicePixelRatio || 1, this.options.input.isTouch, this.settings.quality, this.renderQuality.scale));
     this.renderer.setSize(this.width, this.height, false);
+    this.presentation?.resize(this.width, this.height);
     this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix();
   };
+
+  private checkAssetsReady() {
+    if (!this.disposed && !this.assetsAnnounced && this.environmentReady && this.characterReady) {
+      this.assetsAnnounced = true;
+      this.options.onAssetsReady?.();
+    }
+  }
 
   private contextLost = (event: Event) => {
     if (this.disposed) return;
@@ -194,6 +233,7 @@ export class GameView {
     // Time spent in another app is not a slow GPU frame and must not lower graphics quality.
     this.lastFrame = performance.now();
     this.frames = 0; this.statsTime = 0; this.slowTime = 0;
+    this.renderQuality.resetTiming();
   };
 
   private receiveSnapshot(snapshot: WorldSnapshot, now: number) {
@@ -230,7 +270,7 @@ export class GameView {
   private addPlayer(player: PlayerState): RenderPlayer {
     const local = player.id === this.options.getPlayerId();
     const model = createBlenderCharacter(player.color,
-      local ? () => this.options.onAssetsReady?.() : undefined,
+      local ? () => { this.characterReady = true; this.checkAssetsReady(); } : undefined,
       message => this.options.onError?.(message));
     this.scene.add(model.root);
     const label = document.createElement('div');
@@ -273,7 +313,7 @@ export class GameView {
       this.lastJump = input.jump;
       this.visualPosition.lerp(new THREE.Vector3(this.prediction.x, this.prediction.y, this.prediction.z), 1 - Math.exp(-dt * 24));
       const position = cameraPosition(this.visualPosition, input.yaw, input.pitch, input.aim);
-      this.camera.position.set(position.x, Math.max(0.12, position.y), position.z);
+      this.camera.position.set(position.x, position.y, position.z);
       const direction = directionFromAngles(input.yaw, input.pitch);
       this.camera.lookAt(this.camera.position.x + direction.x, this.camera.position.y + direction.y, this.camera.position.z + direction.z);
       const fov = input.aim ? 57 : input.sprint && Math.hypot(input.moveX, input.moveZ) > 0.1 ? 73 : 68;
@@ -291,11 +331,12 @@ export class GameView {
       let rendered = local && this.prediction ? { ...state, ...this.prediction, x: this.visualPosition.x, y: this.visualPosition.y, z: this.visualPosition.z, yaw: input.yaw, pitch: input.pitch, slot: input.slot } : this.opponentState(state, now);
       entry.position.set(rendered.x, rendered.y, rendered.z);
       entry.model.root.position.copy(entry.position); entry.model.root.rotation.y = -rendered.yaw;
-      entry.model.update(rendered, dt, time, local);
+      entry.model.update(rendered, dt, time, local, { aim: local ? input.aim : rendered.aiming ?? false, grounded: isPlayerGrounded(rendered) });
       if (local && this.camera.position.distanceTo(entry.position.clone().add(new THREE.Vector3(0, 1.35, 0))) < 0.8) entry.model.root.visible = false;
       entry.shadow.visible = state.health > 0 && state.connected;
-      entry.shadow.position.set(rendered.x, rendered.y + 0.018, rendered.z);
-      entry.shadow.scale.setScalar(Math.max(0.5, 1 - rendered.y * 0.065));
+      const shadowFloor = supportHeight(rendered);
+      entry.shadow.position.set(rendered.x, shadowFloor + 0.018, rendered.z);
+      entry.shadow.scale.setScalar(Math.max(0.5, 1 - (rendered.y - shadowFloor) * 0.16));
       if (local || state.health <= 0 || !state.connected) entry.label.style.display = 'none';
       else {
         const head = new THREE.Vector3(rendered.x, rendered.y + 2.2, rendered.z);
@@ -311,15 +352,17 @@ export class GameView {
     const currentIds = new Set(this.snapshot?.players.map(player => player.id) ?? []);
     for (const [id, entry] of this.players) if (!currentIds.has(id)) { this.scene.remove(entry.model.root, entry.shadow); entry.model.dispose(); entry.label.remove(); this.players.delete(id); }
     this.world.update(this.elapsed); this.updateEffects(dt);
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.info.reset();
+    if (this.presentation?.enabled) this.presentation.render(dt);
+    else this.renderer.render(this.scene, this.camera);
     if (this.statsTime >= 0.7) {
       const fps = Math.round(this.frames / this.statsTime);
       this.options.onStats?.({ fps, locked: this.options.input.locked, drawCalls: this.renderer.info.render.calls });
-      if (this.settings.quality === 'auto') {
+      if (this.settings.quality === 'auto' && this.assetsAnnounced) {
         this.slowTime = fps < 38 ? this.slowTime + this.statsTime : Math.max(0, this.slowTime - this.statsTime);
-        if (this.slowTime > 3 && this.renderer.getPixelRatio() > 1) { this.renderer.setPixelRatio(1); this.resize(); this.slowTime = 0; }
-        else if (this.slowTime > 4 && this.renderer.shadowMap.enabled) { this.renderer.shadowMap.enabled = false; this.slowTime = 0; }
+        if (this.slowTime > 2.1 && this.presentation?.enabled) { this.presentation.enabled = false; this.slowTime = 0; this.renderQuality.resetTiming(); }
       }
+      if (this.assetsAnnounced && this.renderQuality.observe(fps, this.statsTime, this.settings.quality)) this.resize();
       this.statsTime = 0; this.frames = 0;
     }
     this.raf = requestAnimationFrame(this.frame);
@@ -358,6 +401,7 @@ export class GameView {
     const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();
     this.scene.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points) { geometries.add(object.geometry); for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material); } });
     for (const geometry of geometries) geometry.dispose(); for (const material of materials) material.dispose();
+    this.presentation?.dispose(); this.scene.environment = null;
     this.sun.shadow.map?.dispose(); this.renderer.dispose(); this.renderer.forceContextLoss();
     this.canvas.removeEventListener('webglcontextlost', this.contextLost);
     this.canvas.remove(); this.labels.remove(); this.pendingInputs = []; this.snapshotBuffer = []; this.particles.length = 0; this.trails.length = 0;
