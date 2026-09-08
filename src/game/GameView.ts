@@ -10,6 +10,8 @@ import { createWorld, type ArenaWorld } from './World';
 import { SUN_DIRECTION, SKY_LIGHT_INTENSITY } from './Atmosphere';
 import type { ArenaPresentation } from './Presentation';
 import { RenderQuality, scenePixelRatio } from './RenderQuality';
+import { CombatEffects } from './CombatEffects';
+import { DeferredRespawns } from './DeferredRespawns';
 
 export interface GameSettings {
   sensitivity: number; volume: number; quality: 'auto' | 'high' | 'low'; invertY: boolean;
@@ -25,11 +27,9 @@ export interface GameViewOptions {
   settings?: Partial<GameSettings>;
 }
 interface RenderPlayer {
-  model: CharacterModel; label: HTMLDivElement; healthBar: HTMLDivElement;
+  model: CharacterModel; label: HTMLDivElement; healthBar: HTMLDivElement; shieldBar: HTMLDivElement;
   shadow: THREE.Mesh; position: THREE.Vector3;
 }
-interface Particle { position: THREE.Vector3; velocity: THREE.Vector3; color: THREE.Color; life: number; maxLife: number }
-interface Trail { mesh: THREE.Line; age: number; material: THREE.LineBasicMaterial }
 
 const defaultSettings: GameSettings = { sensitivity: 1, volume: 0.65, quality: 'auto', invertY: false };
 const lerpAngle = (a: number, b: number, t: number) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
@@ -53,13 +53,9 @@ export class GameView {
   private readonly players = new Map<string, RenderPlayer>();
   private readonly resizeObserver: ResizeObserver;
   private readonly labels = document.createElement('div');
-  private readonly particles: Particle[] = [];
-  private readonly trails: Trail[] = [];
-  private readonly particleGeometry = new THREE.BufferGeometry();
-  private readonly particlePositions = new Float32Array(256 * 3);
-  private readonly particleColors = new Float32Array(256 * 3);
-  private readonly particleMaterial = new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending });
-  private readonly particleMesh: THREE.Points;
+  private readonly effects = new CombatEffects();
+  private readonly respawns = new DeferredRespawns();
+  private localRespawnAt = 0;
   private readonly shadowGeometry = new THREE.PlaneGeometry(1.45, 1.45);
   private readonly shadowMaterial = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false,
@@ -123,10 +119,7 @@ export class GameView {
     // its background separately so clear blue and cloud shapes do not wash out.
     this.scene.backgroundIntensity = this.world.environment ? 0.28 : 0.8;
     this.scene.environmentIntensity = SKY_LIGHT_INTENSITY;
-    this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particlePositions, 3).setUsage(THREE.DynamicDrawUsage));
-    this.particleGeometry.setAttribute('color', new THREE.BufferAttribute(this.particleColors, 3).setUsage(THREE.DynamicDrawUsage));
-    this.particleGeometry.setDrawRange(0, 0);
-    this.particleMesh = new THREE.Points(this.particleGeometry, this.particleMaterial); this.particleMesh.frustumCulled = false; this.scene.add(this.particleMesh);
+    this.scene.add(this.effects.root);
     this.labels.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
     container.append(this.canvas, this.labels);
     options.input.attach(this.canvas);
@@ -178,34 +171,40 @@ export class GameView {
   handleEvent(event: GameEvent) {
     if (this.disposed) return;
     const localId = this.options.getPlayerId();
+    const now = performance.now();
+    const fresh = !this.snapshotBuffer.length || this.serverTime(now) - event.at <= 500;
+    if (event.type === 'respawn') {
+      if (event.playerId === localId) this.localRespawnAt = Math.max(this.localRespawnAt, event.at);
+      if (!document.hidden && fresh) this.respawns.enqueue(event.playerId, event.at, now);
+      return;
+    }
+    // A hidden tab must not collect old flashes, audio or per-shot GPU objects.
+    if (document.hidden || !fresh) return;
     if (event.type === 'shot') {
       const entry = this.players.get(event.playerId);
-      entry?.model.recoil();
       const from = new THREE.Vector3(event.from.x, event.from.y, event.from.z);
-      if (entry?.model.root.visible) entry.model.muzzle.getWorldPosition(from);
-      const to = new THREE.Vector3(event.to.x, event.to.y, event.to.z);
-      const material = new THREE.LineBasicMaterial({ color: event.slot === 2 ? '#ffc87b' : '#ffedab', transparent: true, opacity: 0.92, depthWrite: false });
-      const mesh = new THREE.Line(new THREE.BufferGeometry().setFromPoints([from, to]), material);
-      this.trails.push({ mesh, age: 0, material }); this.scene.add(mesh);
-      this.burst(from, '#ffe7a3', 7, 1.4, 0.09);
-      this.burst(to, event.hit ? '#73e8f3' : '#efd9ae', event.hit ? 12 : 5, 2.4, 0.24);
+      const currentSlot = event.playerId === localId ? this.options.input.peek().slot : this.snapshot?.players.find(player => player.id === event.playerId)?.slot;
+      const matchingWeapon = !!entry?.model.root.visible && currentSlot === event.slot;
+      if (entry && matchingWeapon) { entry.model.recoil(); entry.model.muzzle.getWorldPosition(from); }
+      this.effects.shot(event, from, matchingWeapon);
       const distance = event.playerId === localId ? 0 : from.distanceTo(this.visualPosition);
       const offset = from.clone().sub(this.visualPosition);
       const pan = (offset.x * Math.cos(this.options.input.yaw) + offset.z * Math.sin(this.options.input.yaw)) / Math.max(5, distance);
       this.audio.shot(event.slot, distance, pan);
-      if (event.hit && event.playerId === localId) this.audio.hit();
-    } else if (event.type === 'damage' && event.playerId === localId) this.audio.damage();
-    else if (event.type === 'elimination') {
+      if (event.hit && event.playerId === localId) this.audio.hit(event.traces?.some(trace => trace.kind === 'player' && !trace.protected && trace.shield));
+    } else if (event.type === 'damage') {
+      const kind = event.shieldBroken ? 'break' : (event.shieldDamage ?? 0) > 0 ? 'shield' : 'armor';
+      this.players.get(event.playerId)?.model.impact(kind);
+      if (event.playerId === localId) this.audio.damage();
+      if (event.shieldBroken && (event.playerId === localId || event.attackerId === localId)) this.audio.shieldBreak();
+    } else if (event.type === 'elimination') {
       const entry = this.players.get(event.playerId);
-      if (entry) this.burst(entry.position.clone().add(new THREE.Vector3(0, 0.9, 0)), '#76eced', 38, 3.5, 0.65);
+      if (entry) this.effects.elimination(entry.position);
       if (event.attackerId === localId) this.audio.elimination();
-    } else if (event.type === 'heal' || event.type === 'respawn') {
+    } else if (event.type === 'heal') {
       const entry = this.players.get(event.playerId);
-      if (entry) this.burst(entry.position.clone().add(new THREE.Vector3(0, 0.8, 0)), event.type === 'heal' ? '#8affc1' : '#9fefff', 22, 1.5, 0.8);
-      if (event.playerId === localId) {
-        if (event.type === 'heal') this.audio.heal();
-        else { this.audio.respawn(); this.firstLocalSnapshot = true; }
-      }
+      if (entry) this.effects.heal(entry.position);
+      if (event.playerId === localId) this.audio.heal();
     }
   }
 
@@ -236,10 +235,19 @@ export class GameView {
     this.lastFrame = performance.now();
     this.frames = 0; this.statsTime = 0; this.slowTime = 0;
     this.renderQuality.resetTiming();
+    this.effects.clear(); this.respawns.clear();
   };
 
   private receiveSnapshot(snapshot: WorldSnapshot, now: number) {
     const roundReset = (snapshot.phase === 'countdown' && this.snapshot?.phase !== 'countdown') || (snapshot.phase === 'playing' && this.snapshot?.phase === 'finished');
+    if (roundReset) { this.effects.clear(); this.respawns.clear(); this.localRespawnAt = 0; }
+    // Events precede snapshots. Reset the camera only when this life is present,
+    // including respawns received while rendering was suspended in another app.
+    if (this.localRespawnAt && snapshot.serverTime >= this.localRespawnAt) {
+      const respawned = snapshot.players.find(player => player.id === this.options.getPlayerId());
+      if (respawned && respawned.health > 0 && respawned.connected) this.firstLocalSnapshot = true;
+      this.localRespawnAt = 0;
+    }
     this.snapshot = snapshot;
     this.lastProcessedTick = snapshot.tick;
     this.snapshotBuffer.push({ world: snapshot, received: now });
@@ -281,9 +289,11 @@ export class GameView {
     name.style.cssText = 'padding:3px 7px;background:#103543b3;border-radius:3px;';
     const track = document.createElement('div'); track.style.cssText = 'height:3px;background:#0d263b88;margin:2px 7px 0;border-radius:2px;overflow:hidden;';
     const healthBar = document.createElement('div'); healthBar.style.cssText = 'height:100%;background:#baf453;';
-    track.append(healthBar); label.append(name, track); this.labels.append(label);
+    const shieldTrack = document.createElement('div'); shieldTrack.style.cssText = 'height:2px;background:#0d263b88;margin:2px 7px 0;border-radius:2px;overflow:hidden;';
+    const shieldBar = document.createElement('div'); shieldBar.style.cssText = 'height:100%;background:#73dfff;';
+    shieldTrack.append(shieldBar); track.append(healthBar); label.append(name, shieldTrack, track); this.labels.append(label);
     const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial); shadow.rotation.x = -Math.PI / 2; shadow.renderOrder = 1; this.scene.add(shadow);
-    const entry = { model, label, healthBar, shadow, position: new THREE.Vector3(player.x, player.y, player.z) }; this.players.set(player.id, entry); return entry;
+    const entry = { model, label, healthBar, shieldBar, shadow, position: new THREE.Vector3(player.x, player.y, player.z) }; this.players.set(player.id, entry); return entry;
   }
 
   private opponentState(player: PlayerState, now: number): PlayerState {
@@ -306,7 +316,14 @@ export class GameView {
     const dt = Math.min(0.05, elapsedFrame); this.lastFrame = now;
     this.elapsed += dt; this.frames++; this.statsTime += elapsedFrame;
     const incoming = this.options.getSnapshot();
-    if (incoming && (incoming.tick !== this.lastProcessedTick || incoming !== this.snapshot)) this.receiveSnapshot(incoming, now);
+    if (incoming && (incoming.tick !== this.lastProcessedTick || incoming !== this.snapshot)) {
+      this.receiveSnapshot(incoming, now);
+      this.respawns.flush(incoming, now, player => {
+        if (document.hidden) return;
+        this.effects.respawn(player);
+        if (player.id === this.options.getPlayerId()) this.audio.respawn();
+      });
+    }
     const localId = this.options.getPlayerId(); const input = this.options.input.peek();
     const localState = this.snapshot?.players.find(player => player.id === localId);
     if (this.prediction && localState) {
@@ -348,12 +365,12 @@ export class GameView {
         const projected = head.project(this.camera);
         const visible = wall >= distance - 0.2 && projected.z > 0 && projected.z < 1 && Math.abs(projected.x) < 1.1 && Math.abs(projected.y) < 1.1;
         entry.label.style.display = visible ? 'block' : 'none';
-        if (visible) { entry.label.style.left = `${(projected.x * 0.5 + 0.5) * this.width}px`; entry.label.style.top = `${(-projected.y * 0.5 + 0.5) * this.height}px`; entry.healthBar.style.width = `${rendered.health}%`; }
+        if (visible) { entry.label.style.left = `${(projected.x * 0.5 + 0.5) * this.width}px`; entry.label.style.top = `${(-projected.y * 0.5 + 0.5) * this.height}px`; entry.healthBar.style.width = `${rendered.health}%`; entry.shieldBar.style.width = `${Math.max(0, Math.min(100, rendered.shield * 2))}%`; }
       }
     }
     const currentIds = new Set(this.snapshot?.players.map(player => player.id) ?? []);
     for (const [id, entry] of this.players) if (!currentIds.has(id)) { this.scene.remove(entry.model.root, entry.shadow); entry.model.dispose(); entry.label.remove(); this.players.delete(id); }
-    this.world.update(this.elapsed); this.updateEffects(dt);
+    this.world.update(this.elapsed); this.effects.update(elapsedFrame, this.camera);
     this.renderer.info.reset();
     if (this.presentation?.enabled) this.presentation.render(dt);
     else this.renderer.render(this.scene, this.camera);
@@ -373,32 +390,13 @@ export class GameView {
   private serverTime(now: number) {
     const latest = this.snapshotBuffer[this.snapshotBuffer.length - 1]; return latest ? latest.world.serverTime + now - latest.received : Date.now();
   }
-  private burst(position: THREE.Vector3, color: string, count: number, speed: number, life: number) {
-    for (let i = 0; i < count && this.particles.length < 256; i++) this.particles.push({
-      position: position.clone(), velocity: new THREE.Vector3((Math.random() - 0.5) * speed, Math.random() * speed, (Math.random() - 0.5) * speed),
-      color: new THREE.Color(color), life: life * (0.6 + Math.random() * 0.4), maxLife: life,
-    });
-  }
-  private updateEffects(dt: number) {
-    for (let i = this.trails.length - 1; i >= 0; i--) {
-      const trail = this.trails[i]; trail.age += dt; trail.material.opacity = Math.max(0, 1 - trail.age / 0.10);
-      if (trail.age >= 0.10) { this.scene.remove(trail.mesh); trail.mesh.geometry.dispose(); trail.material.dispose(); this.trails.splice(i, 1); }
-    }
-    for (let i = this.particles.length - 1; i >= 0; i--) { const particle = this.particles[i]; particle.life -= dt; if (particle.life <= 0) this.particles.splice(i, 1); else { particle.position.addScaledVector(particle.velocity, dt); particle.velocity.y -= dt * 3.4; } }
-    for (let i = 0; i < this.particles.length; i++) {
-      const particle = this.particles[i]; const fade = Math.max(0.08, particle.life / particle.maxLife);
-      this.particlePositions.set([particle.position.x, particle.position.y, particle.position.z], i * 3);
-      this.particleColors.set([particle.color.r * fade, particle.color.g * fade, particle.color.b * fade], i * 3);
-    }
-    this.particleGeometry.setDrawRange(0, this.particles.length);
-    this.particleGeometry.getAttribute('position').needsUpdate = true; this.particleGeometry.getAttribute('color').needsUpdate = true;
-  }
 
   dispose() {
     this.disposed = true; cancelAnimationFrame(this.raf); this.resizeObserver.disconnect(); this.audio.dispose();
     document.removeEventListener('visibilitychange', this.visibilityChange);
     for (const entry of this.players.values()) { entry.model.dispose(); entry.label.remove(); }
     this.players.clear(); this.world.dispose();
+    this.effects.dispose(); this.respawns.dispose(); this.localRespawnAt = 0;
     disposeCharacterResources();
     const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();
     this.scene.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points) { geometries.add(object.geometry); for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material); } });
@@ -406,6 +404,6 @@ export class GameView {
     this.presentation?.dispose(); this.scene.environment = null;
     this.sun.shadow.map?.dispose(); this.renderer.dispose(); this.renderer.forceContextLoss();
     this.canvas.removeEventListener('webglcontextlost', this.contextLost);
-    this.canvas.remove(); this.labels.remove(); this.pendingInputs = []; this.snapshotBuffer = []; this.particles.length = 0; this.trails.length = 0;
+    this.canvas.remove(); this.labels.remove(); this.pendingInputs = []; this.snapshotBuffer = [];
   }
 }

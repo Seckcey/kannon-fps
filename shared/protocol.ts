@@ -21,9 +21,15 @@ export interface PlayerState extends Profile {
   reloadingUntil: number; lastInputSeq: number; bot?: boolean; aiming?: boolean;
 }
 export interface Vec3 { x: number; y: number; z: number }
+/** Presentation of an existing authoritative muzzle ray, in pellet order (center first). */
+export interface ShotTrace {
+  to: Vec3; kind: 'world' | 'player' | 'range'; targetId?: string;
+  /** Player collision state before this tick's damage resolves; not hit awards. */
+  shield?: boolean; protected?: boolean;
+}
 export type GameEvent =
-  | { type: 'shot'; playerId: string; slot: 1 | 2; from: Vec3; to: Vec3; hit: boolean; at: number }
-  | { type: 'damage'; playerId: string; attackerId: string; amount: number; at: number }
+  | { type: 'shot'; playerId: string; slot: 1 | 2; from: Vec3; to: Vec3; hit: boolean; at: number; traces?: ShotTrace[] }
+  | { type: 'damage'; playerId: string; attackerId: string; amount: number; at: number; shieldDamage?: number; healthDamage?: number; shieldBroken?: boolean }
   | { type: 'elimination'; playerId: string; attackerId: string; at: number }
   | { type: 'respawn'; playerId: string; at: number }
   | { type: 'heal'; playerId: string; amount: number; at: number }

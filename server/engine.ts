@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { PracticeBots } from './bots.js';
 import { SPAWNS } from '../shared/map.js';
 import { add, cameraPosition, clamp, directionFromAngles, movePlayer, muzzlePosition, normalize, PLAYER_HEIGHT, PLAYER_RADIUS, rayBox, raycastMap, scale, subtract } from '../shared/physics.js';
-import { RULES, type GameEvent, type InputFrame, type Phase, type PlayerState, type PracticeDifficulty, type Profile, type Vec3, type WorldSnapshot } from '../shared/protocol.js';
+import { RULES, type GameEvent, type InputFrame, type Phase, type PlayerState, type PracticeDifficulty, type Profile, type ShotTrace, type Vec3, type WorldSnapshot } from '../shared/protocol.js';
 
 export function idleInput(seq = 0): InputFrame { return { seq, moveX: 0, moveZ: 0, yaw: 0, pitch: 0, fire: false, aim: false, jump: false, sprint: false, reload: false, slot: 1 }; }
 export function sanitizeInput(value: unknown): InputFrame | null {
@@ -175,14 +175,15 @@ export class MatchEngine {
     rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0;
     if (announce) this.onEvent({ type: 'respawn', playerId: player.id, at: now });
   }
-  private trace(origin: Vec3, direction: Vec3, shooterId: string, now: number, limit: number): { to: Vec3; target?: PlayerState; distance: number } {
-    let distance = raycastMap(origin, direction, limit); let target: PlayerState | undefined;
+  private trace(origin: Vec3, direction: Vec3, shooterId: string, now: number, limit: number): { to: Vec3; target?: PlayerState; distance: number; kind: ShotTrace['kind'] } {
+    const worldDistance = raycastMap(origin, direction, limit);
+    let distance = worldDistance; let target: PlayerState | undefined;
     for (const player of this.players.values()) {
       if (player.id === shooterId || player.health <= 0 || !player.connected) continue;
       const hit = rayBox(origin, direction, { x: player.x - PLAYER_RADIUS, y: player.y, z: player.z - PLAYER_RADIUS }, { x: player.x + PLAYER_RADIUS, y: player.y + PLAYER_HEIGHT, z: player.z + PLAYER_RADIUS }, distance);
       if (hit < distance) { distance = hit; target = player; }
     }
-    return { to: add(origin, scale(direction, distance)), target, distance };
+    return { to: add(origin, scale(direction, distance)), target, distance, kind: target ? 'player' : worldDistance < limit ? 'world' : 'range' };
   }
   private traceShot(player: PlayerState, input: InputFrame, now: number): ShotResult {
     const slot = input.slot as 1 | 2;
@@ -192,9 +193,11 @@ export class MatchEngine {
     const muzzle = muzzlePosition(player); const toAim = normalize(subtract(viewHit.to, muzzle));
     const offsets = slot === 1 ? [[0, 0]] : [[0, 0], [-0.03, 0], [0.03, 0], [0, -0.03], [0, 0.03], [-0.021, -0.021], [0.021, -0.021], [-0.021, 0.021], [0.021, 0.021]];
     const damage = new Map<string, { target: PlayerState; amount: number }>(); let displayTo = viewHit.to; let didHit = false;
+    const traces: ShotTrace[] = [];
     for (const [horizontal, vertical] of offsets) {
       const direction = normalize({ x: toAim.x + Math.cos(input.yaw) * horizontal!, y: toAim.y + vertical!, z: toAim.z + Math.sin(input.yaw) * horizontal! });
       const hit = this.trace(muzzle, direction, player.id, now, slot === 1 ? 100 : 40);
+      traces.push({ to: hit.to, kind: hit.kind, ...(hit.target ? { targetId: hit.target.id, shield: hit.target.shield > 0, protected: hit.target.protectedUntil > now } : {}) });
       if (horizontal === 0 && vertical === 0) displayTo = hit.to;
       if (hit.target && hit.target.protectedUntil <= now) {
         didHit = true; const amount = slot === 1 ? RULES.arDamage : 8 * clamp(1 - Math.max(0, hit.distance - 10) / 35, 0.2, 1);
@@ -202,7 +205,7 @@ export class MatchEngine {
       }
     }
     return {
-      attacker: player, event: { type: 'shot', playerId: player.id, slot, from: muzzle, to: displayTo, hit: didHit, at: now },
+      attacker: player, event: { type: 'shot', playerId: player.id, slot, from: muzzle, to: displayTo, hit: didHit, at: now, traces },
       damage: [...damage.values()].map(({ target, amount }) => ({ target, amount: Math.round(amount) })),
     };
   }
@@ -235,8 +238,9 @@ export class MatchEngine {
     if (target.health <= 0 || target.protectedUntil > now) return;
     amount = clamp(Math.round(amount), 0, 150); if (!amount) return;
     target.healingUntil = 0;
+    const previousHealth = target.health;
     const shieldDamage = Math.min(target.shield, amount); target.shield -= shieldDamage; target.health = Math.max(0, target.health - (amount - shieldDamage));
-    this.onEvent({ type: 'damage', playerId: target.id, attackerId: attacker.id, amount, at: now });
+    this.onEvent({ type: 'damage', playerId: target.id, attackerId: attacker.id, amount, at: now, shieldDamage, healthDamage: previousHealth - target.health, shieldBroken: shieldDamage > 0 && target.shield === 0 });
     if (target.health <= 0) {
       target.deaths++; attacker.kills++; target.respawnAt = now + RULES.respawnMs; target.reloadingUntil = 0; target.vx = 0; target.vz = 0; target.aiming = false;
       this.onEvent({ type: 'elimination', playerId: target.id, attackerId: attacker.id, at: now });
