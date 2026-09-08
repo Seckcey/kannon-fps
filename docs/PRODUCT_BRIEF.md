@@ -17,7 +17,7 @@ Give a father and son an enjoyable competitive game while apart, with invited fr
 
 ## Current content
 
-This section describes the visual and practice development upgrade. Production remains on baseline `200eeaf`; the upgrade has not been deployed yet.
+The Sunbreak visual and practice upgrade is live at [kpop.8westventures.com](https://kpop.8westventures.com). Its verified implementation release [`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e) was introduced through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3); [/health](https://kpop.8westventures.com/health) identifies the current deployed build. The [release record](RELEASE.md) documents validation and deployment. The current Blender armor and environment are stylized, with hand-keyed animation; photorealism and motion capture are not claimed.
 
 Sunbreak Courtyard is a sunny coastal arena with shared collision, cover, stepped elevation, and multiple routes. The AR has a 30-round magazine and the shotgun six rounds; both have unlimited reserve and server-controlled reloads. Everyone receives the same equipment.
 
@@ -30,6 +30,8 @@ Practice never creates persistent bot profiles, saved match history, or rating u
 ## Remote play
 
 Both clients connect outward to one hosted server over HTTPS/WSS without household router port forwarding. The server owns membership, movement validation, weapons, health, scores, and results. Room invitations expire; friend-crew membership controls ranked games and leaderboard access.
+
+Public HTTPS/WSS entry points and rendered practice with three active rivals are verified. Actual iPhone/Safari, Android/Chrome, intended-desktop controls and performance, and a two-household match still need the players' acceptance. Browser emulation and the constrained Linux loopback load test do not establish device frame rates, wide-area latency, or capacity for multiple concurrent rooms. Hit testing uses current server positions without rewind/lag compensation.
 
 ## Deferred scope
 

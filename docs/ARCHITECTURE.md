@@ -2,7 +2,7 @@
 
 React/Vite provide menus and HUD. The Three.js gameplay bundle and versioned model bytes warm when the user creates or joins a room, before opening the room connection. Input, animation, and rendering run outside React; HUD updates follow snapshots. Local movement prediction corrects to authoritative state; opponents interpolate buffered snapshots.
 
-This document includes the visual and active-practice development upgrade. Production is still on baseline `200eeaf`; these upgrade changes are not deployed yet.
+This document describes the live Sunbreak visual and active-practice implementation, introduced in verified release [`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e) through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3). The [/health](https://kpop.8westventures.com/health) response is the canonical current build identity; later documentation closeouts can advance its revision. See the [release record](RELEASE.md) for candidate, CI, deployment, and acceptance evidence. Physical-phone performance and two-household play remain separate acceptance gates.
 
 One Node process serves static assets, HTTP API, and WebSocket matches. The simulation targets 30 Hz, snapshots 15 Hz; actual cadence depends on host scheduling and load. Rooms live in memory; profiles, crew membership, ratings, and history persist in SQLite with WAL and foreign keys. Restarting ends live rooms but preserves committed data. This is a single-process design for an invited community, not horizontal scaling.
 

@@ -2,7 +2,7 @@
 
 **Your crew. Your arena.** An original third-person, no-building browser shooter for a father, son, and invited friends to play on phones and desktops. The repository name remains `kannon-fps`; the approved camera is third-person.
 
-## Current development build
+## Current live build
 
 - Private 2–8 player free-for-all rooms, host-controlled start, and rematches.
 - Five-minute matches or first to 15 eliminations; three-second respawns.
@@ -14,7 +14,7 @@
 - Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
 - An original Blender model with a skinned armature and eight hand-authored animation clips in the live game.
 
-The deployed baseline is revision **`200eeaf`** on Coastline at **https://kpop.8westventures.com**. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. The visual and active-practice overhaul described here is **not deployed yet**. Public HTTPS/WSS entry points are verified for the baseline; real-device performance/controls acceptance and a two-household playtest remain. The Blender art uses human proportions with stylized armor; it is not photorealistic or motion-captured.
+The Sunbreak visual and active-practice upgrade is live at **https://kpop.8westventures.com** on Coastline. Its verified implementation release, **[`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e)**, was introduced through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3); [/health](https://kpop.8westventures.com/health) reports the current deployed build, including later documentation closeouts. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. Public HTTPS/WSS and rendered practice are verified; real-device performance/controls acceptance and a two-household playtest remain. The Blender art uses human proportions with stylized armor; it is not photorealistic or motion-captured. See the [release record](docs/RELEASE.md) for validation and remaining limits.
 
 ## Run locally
 
@@ -83,7 +83,7 @@ Ratings start at 1,000 and reflect results and opponent strength. Five eligible 
 | `tests` | Simulation, persistence and multiplayer acceptance |
 | `scripts/blender` | Reproducible Blender generator and validator |
 | `art/source` | Editable `.blend`, previews, export manifest |
-| `public/models` | Rigged game GLB |
+| `public/models` | Rigged character and arena GLBs |
 | `deploy` | Compose and production smoke check |
 
 See [Product brief](docs/PRODUCT_BRIEF.md), [Delivery plan](docs/DELIVERY_PLAN.md), [Visual direction](docs/DESIGN.md), and [Assets](docs/ASSETS.md).

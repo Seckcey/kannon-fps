@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "revision": "bd58bd35723f8f7b9bb10b58914784b26909533e",
+  "url": "https://kpop.8westventures.com",
+  "browser": "Installed Edge via Playwright",
+  "checks": [
+    "Public HTTPS entry and real WSS practice",
+    "Balanced difficulty, three active moving/firing AI rivals",
+    "Both versioned GLBs fetched once and match local SHA-256",
+    "Explicit leave returns to menu"
+  ],
+  "modelHashes": {
+    "scout": "a2158fdf2e5d91fbc89e5b8e584b663b69e423ed4a0fe06b832c312a5d522e6a",
+    "environment": "f4d6ef377cebf088596af88720517e67f913b6dae9c01880c35bd8069fb6530d"
+  },
+  "assets": [
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v2",
+      "status": 200
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=sunbreak-v2",
+      "status": 200
+    }
+  ],
+  "appErrors": [],
+  "externalAnalyticsErrors": [
+    "public: Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+  ],
+  "warnings": [
+    "public: THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ],
+  "limitation": "One desktop browser through Cloudflare; no physical-phone or two-household acceptance."
+}

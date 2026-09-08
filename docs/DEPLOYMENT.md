@@ -1,6 +1,6 @@
 # Deployment
 
-The first playable build is deployed on the user-authorized Coastline Hyper-V Linux VM. The repository is at `/srv/8west/apps/kannon-fps`, with a dedicated `kannon-arena` Compose project. Other applications and their storage are unchanged. No paid service was provisioned.
+The game, including the Sunbreak Blender environment and active practice upgrade, is deployed on the user-authorized Coastline Hyper-V Linux VM. The repository is at `/srv/8west/apps/kannon-fps`, with a dedicated `kannon-arena` Compose project. Other applications and their storage are unchanged. No paid service was provisioned. The [release record](RELEASE.md) identifies the verified implementation and its evidence; `/health` reports the exact running build.
 
 ## Cloudflare route
 

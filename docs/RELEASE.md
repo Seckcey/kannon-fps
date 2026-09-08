@@ -1,12 +1,12 @@
 # Release verification
 
-## Sunbreak visual and practice upgrade candidate
+## Sunbreak visual and practice upgrade — deployed September 8, 2026
 
-This candidate replaces the code-drawn courtyard with an original Blender observatory environment and improves the armored scout, weapon handling and animation. Three active practice rivals offer Relaxed, Balanced and Challenging difficulty; practice results never affect crew standings. Room entry retains validated model bytes before admission, supports cancellation and retries, and guards against stale identity/nickname/crew responses. The authoritative shoulder camera and client view remain shared.
+This release replaces the code-drawn courtyard with an original Blender observatory environment and improves the armored scout, weapon handling and animation. Three active practice rivals offer Relaxed, Balanced and Challenging difficulty; practice results never affect crew standings. Room entry retains validated model bytes before admission, supports cancellation and retries, and guards against stale identity/nickname/crew responses. The authoritative shoulder camera and client view remain shared.
 
 The renderer adds coherent sky/reflections, sunlight and contact shading, sea motion, foliage motion and adaptive canvas resolution with native HUD controls. It avoids drawing hidden water, reuses scene depth for contact shading, limits data-map filtering and uses a compact diffuse sky probe on rough surfaces. The optional desktop effect is a separate download; unsupported floating-point targets use a conventional atmosphere path.
 
-Current candidate evidence, before GitHub/Coastline release closeout:
+Verified implementation and release evidence:
 
 - The full local check passed 71 tests, both Blender export validators, TypeScript and the production build. Production dependency audit reported zero known vulnerabilities.
 - Final scout: 2,658,568 bytes, 22,654 vertices, 20,868 triangles, 18 bones and eight clips. Final environment: 6,460,940 bytes, 116,740 vertices, 66,272 triangles, 15 material batches; SHA-256 `f4d6ef377cebf088596af88720517e67f913b6dae9c01880c35bd8069fb6530d`. Collision/visual probes cover all 17 reference volumes, 102 visible faces, 108 outward winding samples and four travel lanes.
@@ -26,7 +26,11 @@ The exact Linux candidate `aa469252575b5c977d38fa74941bfa965b341306` passed a re
 
 A separate [real transport practice smoke](verification/sunbreak-v2-practice-linux.json) exercised all three difficulties: the regular loadout, real countdown, three moving/firing/hitting bots, forced unranked status and unchanged crew history/standings. Each difficulty was observed for twelve seconds; full round outcomes remain covered by automated engine/server tests. Neither Linux test establishes physical-phone rendering or wide-area latency.
 
-Deployment evidence will be recorded before marking this candidate live. The historical sections below describe their own earlier releases and should not be read as acceptance of a later art build.
+[PR #3](https://github.com/Seckcey/kannon-fps/pull/3) merged as `bd58bd35723f8f7b9bb10b58914784b26909533e`; [main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34198117228) passed. Coastline deployed that exact implementation revision and the container became healthy with zero restarts. The public [HTTPS game](https://kpop.8westventures.com), origin and public HTTP/WebSocket smoke passed. A real public browser entered Balanced practice, received three moving/firing rivals over WSS, loaded each versioned model once, verified both served SHA-256 hashes against the local exports, and explicitly left. The [public acceptance report](verification/sunbreak-v2-live.json) distinguishes the external Cloudflare analytics script blocked by the existing CSP from the zero application errors. The [live gameplay capture](art/sunbreak-v2-live.png) shows the deployed arena.
+
+An online SQLite backup passed integrity checking before replacement. All four prior profiles, one crew and one membership remained byte-for-byte equivalent as rows afterward; the previously empty ranking/history tables remained empty. The backup stays under the private game data volume, outside static hosting and Git. No schema migration or cross-application storage change occurred. The previous `200eeaf` image remains available for rollback. All 65 protected containers retained identical IDs, running/stopped states and restart counts (46 running); sorted identity/state/restart SHA-256 remained `f1c56e9f8d25f402b1cc6a09bfd99dec97635be4c59df2109afe7a4e9743cf42` across this deployment. The isolated candidate container and source checkout were removed.
+
+Later documentation-only closeout commits may advance the running revision without changing the verified implementation. `/health` reports the exact running build. The historical sections below describe their own earlier releases and should not be read as acceptance of a later art build.
 
 ## Build scope
 
