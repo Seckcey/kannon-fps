@@ -1,0 +1,87 @@
+{
+  "source": "CMU 09_01",
+  "source_frames": [
+    15,
+    103
+  ],
+  "source_duration": 0.7333333333333333,
+  "source_root_distance_metres": 2.660193514956766,
+  "target_leg_scale": 0.9353258495037104,
+  "target_reference_speed": 3.3929287625743623,
+  "original_lower_body_boundary_rms_metres": 0.01822,
+  "seam_cleanup": "Smoothstep distributes the measured endpoint difference through one full source cycle; endpoint made identical.",
+  "candidates": [
+    {
+      "clip": "Walk",
+      "targetSpeed": 6.5,
+      "cycleDuration": 0.5333333333333331,
+      "stepsPerSecond": 3.7500000000000018,
+      "uniformCaptureRate": 1.9157490341966885,
+      "uniformStepsPerSecond": 5.224770093263697,
+      "contactTime": 0.26649315297030485,
+      "freeIntervals": 29,
+      "timeWarpRateRange": [
+        0.905660707985904,
+        3.1658861100993803
+      ],
+      "contactAware": {
+        "contactIntervals": 59,
+        "contactVelocityMedian": 0.9191278282471163,
+        "contactVelocityMax": 4.08062483364671,
+        "contactLateralVelocityMedian": 0.5181506872177124,
+        "floorMin": 0.005999998189508915,
+        "floorMax": 0.09652000665664673
+      },
+      "uniform": {
+        "contactIntervals": 59,
+        "contactVelocityMedian": 1.2026070263163502,
+        "contactVelocityMax": 4.376690551562383,
+        "contactLateralVelocityMedian": 0.5447362065315247,
+        "floorMin": 0.005999998189508915,
+        "floorMax": 0.09652000665664673
+      },
+      "runtimeProposal": {
+        "clip": "Walk",
+        "playbackAtTarget": 1,
+        "referenceSpeed": 6.5,
+        "note": "Playback is actual speed divided by this clip reference, including aiming and slow analog movement. Runtime turns use world-up and preserve upper orientation."
+      }
+    },
+    {
+      "clip": "Run",
+      "targetSpeed": 9,
+      "cycleDuration": 0.4666666666666666,
+      "stepsPerSecond": 4.2857142857142865,
+      "uniformCaptureRate": 2.6525755858107996,
+      "uniformStepsPerSecond": 7.2342970522112715,
+      "contactTime": 0.19246727714522016,
+      "freeIntervals": 29,
+      "timeWarpRateRange": [
+        0.8813537735749215,
+        4.383534613983758
+      ],
+      "contactAware": {
+        "contactIntervals": 59,
+        "contactVelocityMedian": 1.2726387959425587,
+        "contactVelocityMax": 5.899605863951895,
+        "contactLateralVelocityMedian": 0.7174393534660339,
+        "floorMin": 0.005999998189508915,
+        "floorMax": 0.09652000665664673
+      },
+      "uniform": {
+        "contactIntervals": 59,
+        "contactVelocityMedian": 1.6651480742535973,
+        "contactVelocityMax": 6.060032607894138,
+        "contactLateralVelocityMedian": 0.754250168800354,
+        "floorMin": 0.005999998189508915,
+        "floorMax": 0.09652000665664673
+      },
+      "runtimeProposal": {
+        "clip": "Run",
+        "playbackAtTarget": 1,
+        "referenceSpeed": 9,
+        "note": "Playback is actual speed divided by this clip reference, including aiming and slow analog movement. Runtime turns use world-up and preserve upper orientation."
+      }
+    }
+  ]
+}

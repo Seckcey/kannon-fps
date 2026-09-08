@@ -97,14 +97,29 @@ def pbr_images(name, base, kind='stone', size=1024):
         joint=np.minimum(np.minimum(u,1-u),np.minimum(v,1-v))
         grout=np.clip(joint/.014,0,1)
         variation*=.55+.45*grout; height-=.07*(1-grout)
-    if kind=='metal': variation=np.clip(.97+height*.15,.77,1.12)
+    if kind=='metal':
+        # Radially filtered random fields have no preferred scratch direction.
+        # The old crossed sine waves produced obvious diagonal bands in grazing
+        # reflections. Use restrained mottling and nearly flat metal normals.
+        # Keep this RNG local so changing a finish cannot alter the leaf atlas.
+        metal_rng=np.random.default_rng(2473)
+        frequencies=np.fft.fftfreq(size)*size
+        radius_squared=frequencies[:,None]**2+frequencies[None,:]**2
+        def isotropic_field(frequency):
+            spectrum=np.fft.fft2(metal_rng.standard_normal((size,size)))
+            filtered=np.fft.ifft2(spectrum*np.exp(-radius_squared/(frequency*frequency))).real
+            return (filtered-filtered.mean())/max(filtered.std(),1e-8)
+        broad=isotropic_field(6);fine=isotropic_field(27)
+        variation=np.clip(.985+(.7*broad+.3*fine)*.007,.95,1.015)
+        height=(.002*broad+.0015*fine).astype(np.float32)
+        metal_rough=np.clip(.51+.022*broad+.015*fine,.43,.60)
     color=np.stack([np.clip(base[c]*variation,0,1) for c in range(3)],axis=-1)
     # Finite differences are periodic, so the original authored normal tile is seamless.
     dx=(np.roll(height,-1,axis=1)-np.roll(height,1,axis=1))*2.5
     dy=(np.roll(height,-1,axis=0)-np.roll(height,1,axis=0))*2.5
     normal=np.stack([-dx,-dy,np.ones_like(dx)],axis=-1)
     normal/=np.linalg.norm(normal,axis=2,keepdims=True);normal=normal*.5+.5
-    rough=np.clip((.46 if kind=='metal' else .84)+height*.14,.28,.98)
+    rough=metal_rough if kind=='metal' else np.clip(.84+height*.14,.28,.98)
     orm=np.stack([np.ones_like(rough),rough,np.full_like(rough,.7 if kind=='metal' else 0)],axis=-1)
     return image(name+'_base',color),image(name+'_normal',normal,False),image(name+'_orm',orm,False)
 
@@ -133,8 +148,8 @@ add_texture(stone,*stone_images);add_texture(ground,*ground_images);add_texture(
 add_texture(cliff,*stone_images)
 cliff.node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=.96
 
-# Leaf atlas is original procedural botanical artwork: one olive-like branching
-# sprig, individual pointed leaves and pale midribs. It is not a solid canopy blob.
+# Original three-branch botanical spray. Filling a card with connected sprays,
+# rather than one sparse twig, makes mature crowns possible with fewer cards.
 size=512; yy,xx=np.mgrid[:size,:size]/(size-1)
 leaf_pixels=np.zeros((size,size,4),np.float32)
 def ellipse_leaf(cx,cy,length,width,angle,tint):
@@ -144,18 +159,32 @@ def ellipse_leaf(cx,cy,length,width,angle,tint):
     light=np.clip(.8+.23*u/length+rib+RNG.normal(0,.012,xx.shape),.55,1.15)
     for c in range(3):leaf_pixels[:,:,c][shape]=np.asarray(tint[c]*light)[shape]
     leaf_pixels[:,:,3][shape]=1
-stem=(abs(xx-(.48+.06*np.sin(yy*3)))<.006)&(yy>.08)&(yy<.94)
-leaf_pixels[stem]=(.29,.31,.14,1)
-for i in range(7):
-    cy=.14+i*.105
-    for side in [-1,1]:
-        warmth=.016 if (i+(side>0))%3==0 else 0
-        ellipse_leaf(.5+side*(.14-.065*i/7),cy,.31-.11*i/7,.09,side*.67,(.38+i*.008+warmth,.52+i*.007,.19+i*.004))
-ellipse_leaf(.505,.88,.24,.085,math.pi/2,(.44,.57,.22))
+def atlas_twig(start,end,width=.005):
+    a=np.array(start);delta=np.array(end)-a
+    t=np.clip(((xx-a[0])*delta[0]+(yy-a[1])*delta[1])/np.dot(delta,delta),0,1)
+    mask=np.square(xx-a[0]-t*delta[0])+np.square(yy-a[1]-t*delta[1])<width*width
+    leaf_pixels[mask]=(.31,.32,.15,1)
+
+for spray,(start,end) in enumerate([((.47,.05),(.21,.83)),((.48,.08),(.54,.96)),((.49,.11),(.86,.78))]):
+    atlas_twig(start,end,.006 if spray==1 else .004)
+    direction=Vector((end[0]-start[0],end[1]-start[1])).normalized()
+    perpendicular=Vector((-direction.y,direction.x))
+    for i in range(6):
+        t=.22+i*.124;anchor=Vector(start).lerp(Vector(end),t)
+        for side in [-1,1]:
+            leaf_direction=(direction*.70+perpendicular*side*.82).normalized()
+            center=anchor+leaf_direction*(.064 if i<4 else .051)
+            atlas_twig(tuple(anchor),tuple(center),.003)
+            warmth=.035 if (i+spray+(side>0))%4==0 else 0
+            ellipse_leaf(center.x,center.y,.205-i*.009,.085-i*.003,math.atan2(leaf_direction.y,leaf_direction.x),(.38+warmth+i*.006,.52+i*.005,.19+i*.004))
+    ellipse_leaf(end[0],end[1]-.02,.125,.057,math.atan2(direction.y,direction.x),(.43,.56,.22))
 leaf_image=image('olive_sprig',leaf_pixels)
 leaf_tree=leaves.node_tree;leaf_shader=leaf_tree.nodes.get('Principled BSDF')
 leaf_tex=leaf_tree.nodes.new('ShaderNodeTexImage');leaf_tex.image=leaf_image
-leaf_tree.links.new(leaf_tex.outputs['Color'],leaf_shader.inputs['Base Color']);leaf_tree.links.new(leaf_tex.outputs['Alpha'],leaf_shader.inputs['Alpha'])
+leaf_tint=leaf_tree.nodes.new('ShaderNodeVertexColor');leaf_tint.layer_name='Color'
+leaf_mix=leaf_tree.nodes.new('ShaderNodeMixRGB');leaf_mix.blend_type='MULTIPLY';leaf_mix.inputs[0].default_value=1
+leaf_tree.links.new(leaf_tex.outputs['Color'],leaf_mix.inputs[1]);leaf_tree.links.new(leaf_tint.outputs['Color'],leaf_mix.inputs[2]);leaf_tree.links.new(leaf_mix.outputs[0],leaf_shader.inputs['Base Color'])
+leaf_tree.links.new(leaf_tex.outputs['Alpha'],leaf_shader.inputs['Alpha'])
 leaves.surface_render_method='DITHERED';leaves.use_backface_culling=False
 leaves['alphaMode']='MASK';leaves['alphaCutoff']=.5
 
@@ -174,7 +203,7 @@ def geometry(group,material,vertices,faces,uvs=None,tint=(1,1,1,1),lighting_norm
     if isinstance(tint[0],(float,int)):target['color'].extend([tint]*len(vertices))
     else:target['color'].extend(tint)
 
-def box(group,material,center,size,bevel=0,tint=(1,1,1,1)):
+def box(group,material,center,size,bevel=0,tint=(1,1,1,1),omit_top=False):
     if bevel:
         bm=bmesh.new();bmesh.ops.create_cube(bm,size=1)
         for v in bm.verts:v.co.x*=size[0];v.co.y*=size[2];v.co.z*=size[1]
@@ -190,6 +219,7 @@ def box(group,material,center,size,bevel=0,tint=(1,1,1,1)):
     for face in faces:
         pts=[vertices[i] for i in face];normal=(Vector(pts[1])-Vector(pts[0])).cross(Vector(pts[2])-Vector(pts[0]))
         axis=max(range(3),key=lambda i:abs(normal[i]));scale=material.get('textureMetres',3)
+        if omit_top and axis==1 and normal.y>0:continue
         uv=[((p[2] if axis==0 else p[0])/scale,(p[2] if axis==1 else p[1])/scale) for p in pts]
         geometry(group,material,pts,[tuple(range(len(pts)))],uv,tint)
 
@@ -236,8 +266,23 @@ for match in re.finditer(r"\{ id: '([^']+)', x: ([-\d.]+), y: ([-\d.]+), z: ([-\
     obstacle={'id':match[1],'kind':match[8]};obstacle.update({key:float(match[i+2]) for i,key in enumerate(['x','y','z','w','h','d'])});obstacles.append(obstacle)
 assert len(obstacles)==17,'Review any authoritative-map change before rebuilding art'
 
-# Flush paved plaza. Its scale and the cover routes remain identical to the map.
-box('ArenaCore',ground,(0,-.325,0),(64,.65,64))
+# Flush paved plaza. A low-density vertex grid supplies broad wear and warm/cool
+# variation without another texture, layer, batch, or raised gameplay surface.
+# The grid below is the only upward floor surface. Retaining the slab's hidden
+# top would shade the entire floor twice in one draw (far layer submitted first).
+box('ArenaCore',ground,(0,-.325,0),(64,.65,64),omit_top=True)
+floor_vertices=[];floor_colors=[];floor_uv=[]
+for iz in range(25):
+    for ix in range(25):
+        px=-32+ix*64/24;pz=-32+iz*64/24
+        edge=max(abs(px),abs(pz))/32
+        sheltered=sum(math.exp(-((px-o['x'])/(o['w']*.65+1.5))**2-((pz-o['z'])/(o['d']*.65+1.5))**2) for o in obstacles if o['kind']!='step')
+        walk=math.exp(-(px/3.7)**2)*.09
+        mottling=.035*math.sin(px*.19+pz*.09)+.024*math.cos(pz*.31-px*.12)
+        shade=max(.74,min(1.03,.91+walk+mottling-.09*edge**5-.065*min(sheltered,1)))
+        floor_vertices.append((px,0,pz));floor_uv.append((px/6,pz/6))
+        floor_colors.append((shade,shade*(.97+.015*math.sin(pz*.12)),shade*.92,1))
+geometry('ArenaCore',ground,floor_vertices,[(z*25+x,z*25+x+25,z*25+x+26,z*25+x+1) for z in range(24) for x in range(24)],floor_uv,floor_colors)
 for obstacle in obstacles:
     x,y,z,w,h,d=[obstacle[key] for key in ['x','y','z','w','h','d']]
     bottom=y-h/2;top=y+h/2
@@ -251,29 +296,53 @@ for obstacle in obstacles:
     for axis,span,other,depth in [('x',d,z,w),('z',w,x,d)]:
         for side in [-1,1]:
             plane=(x if axis=='x' else z)+side*depth/2
-            course=.74 if h>2.5 else .66
+            course=.92 if h>2.5 else .79
             rows=max(1,math.ceil(h/course));row_height=h/rows
             for row in range(rows):
                 widths=[];cursor=-span/2;offset=.63 if row%2 else 0
                 while cursor<span/2-.01:
-                    length=min((.78 if not widths and offset else 1.43+random.uniform(-.17,.17)),span/2-cursor)
+                    length=min((.87 if not widths and offset else 1.82+random.uniform(-.24,.24)),span/2-cursor)
                     widths.append((cursor+length/2,length));cursor+=length
                 for middle,length in widths:
-                    shade=random.uniform(.75,1.10)
+                    # Shelter/grime is concentrated at the base; neighboring
+                    # blocks vary subtly rather than producing a checkerboard.
+                    shade=random.uniform(.89,1.04)-.08*math.exp(-row*.9)
                     face_patch('ArenaCore',stone,axis,side,(other+middle,bottom+(row+.5)*row_height),max(.07,length-.018),row_height-.018,plane-.003*side,.009,(shade,shade*.985,shade*.96,1))
-    # Dark ceramic skirts, copper contact rails and inset service plates.
+    # Different construction for tactical barriers and full-height buildings.
+    # Shutters are explicitly closed: these solids never suggest usable doors.
     band_y=bottom+.15
     for axis,span,other,depth in [('x',d,z,w),('z',w,x,d)]:
         for side in [-1,1]:
             plane=(x if axis=='x' else z)+side*depth/2
             face_patch('ArenaTrim',petrol,axis,side,(other,band_y),span-.07,.17,plane+.011*side,.004)
             face_patch('ArenaTrim',bronze,axis,side,(other,band_y+.105),span-.09,.035,plane+.018*side,.002)
-            if h>1.0:
-                panel_w=min(1.05,span*.28);panel_h=min(h-.48,1.92)
-                face_patch('ArenaTrim',bronze,axis,side,(other,bottom+.30+panel_h/2),panel_w+.07,panel_h+.06,plane+.019*side,.005)
-                face_patch('ArenaTrim',petrol,axis,side,(other,bottom+.30+panel_h/2),panel_w,panel_h,plane+.028*side,.003)
-                for offset in [-panel_w*.36,panel_w*.36]:
-                    face_patch('ArenaTrim',bronze,axis,side,(other+offset,bottom+.40+panel_h*.68),.029,panel_h*.47,plane+.033*side,.002)
+            if obstacle['kind']=='cover':
+                panel_w=span*.58;panel_h=min(.39,h*.28);panel_y=bottom+h*.54
+                face_patch('ArenaTrim',bronze,axis,side,(other,panel_y),panel_w+.07,panel_h+.07,plane+.018*side,.005)
+                face_patch('ArenaTrim',petrol,axis,side,(other,panel_y),panel_w,panel_h,plane+.026*side,.003)
+                # Chunky flush end fittings and a broad coping read at game scale.
+                for offset in [-span*.40,span*.40]:
+                    face_patch('ArenaTrim',petrol,axis,side,(other+offset,bottom+h*.52),.23,h-.22,plane+.022*side,.005)
+                    face_patch('ArenaTrim',bronze,axis,side,(other+offset,top-.17),.27,.16,plane+.029*side,.004)
+                face_patch('ArenaTrim',bronze,axis,side,(other,top-.074),span-.10,.11,plane+.017*side,.004)
+            elif obstacle['id'] in ['west-block','east-block']:
+                bay_count=max(2,round(span/3.8));bay_span=(span-.95)/bay_count
+                for bay in range(bay_count):
+                    center=other-span/2+.475+bay_span*(bay+.5)
+                    panel_w=min(2.28,bay_span*.65);panel_h=h-1.67;panel_y=bottom+.78+panel_h/2
+                    face_patch('ArenaTrim',petrol,axis,side,(center,panel_y),panel_w,panel_h,plane+.014*side,.004,(.76,.84,.86,1))
+                    for row in range(5):
+                        face_patch('ArenaTrim',bronze,axis,side,(center,panel_y-panel_h/2+.15+row*(panel_h-.3)/4),panel_w-.09,.055,plane+.024*side,.004,(.77,.75,.71,1))
+                    for offset in [-panel_w/2-.055,panel_w/2+.055]:
+                        # Distinct 35/32/30 mm depths prevent coplanar surfaces
+                        # where jambs, lintels and the 38 mm pilasters overlap.
+                        face_patch('ArenaCore',stone,axis,side,(center+offset,panel_y),.17,panel_h+.25,plane+.022*side,.013,(.93,.90,.83,1))
+                    face_patch('ArenaCore',stone,axis,side,(center,panel_y+panel_h/2+.1),panel_w+.25,.20,plane+.020*side,.012,(.96,.93,.86,1))
+                    face_patch('ArenaTrim',bronze,axis,side,(center,panel_y-panel_h/2-.07),panel_w+.20,.08,plane+.026*side,.004)
+            elif obstacle['kind']=='platform':
+                # Horizontal frieze, not another miniature building facade.
+                face_patch('ArenaTrim',petrol,axis,side,(other,bottom+h*.58),span-.35,.38,plane+.019*side,.005)
+                for offset in [-span*.4,span*.4]:face_patch('ArenaTrim',bronze,axis,side,(other+offset,bottom+h*.58),.22,.44,plane+.028*side,.004)
     if h>2.8:
         # Coping/entablature stays inside the same collision top.
         box('ArenaTrim',petrol,(x,top-.29,z),(w+.032,.23,d+.032),.008)
@@ -285,7 +354,7 @@ for obstacle in obstacles:
                     plane=(x if axis=='x' else z)+side*depth/2
                     for offset in [-span*.40,span*.40]:
                         face_patch('ArenaCore',stone,axis,side,(other+offset,y-.04),.30,h-.25,plane+side*.019,.019,(.90,.88,.84,1))
-                        face_patch('ArenaTrim',bronze,axis,side,(other+offset,top-.63),.32,.047,plane+side*.037,.001)
+                        face_patch('ArenaTrim',bronze,axis,side,(other+offset,top-.63),.32,.047,plane+side*.039,.001)
     if obstacle['kind']=='platform':
         box('ArenaCore',ground,(x,top+.003,z),(w-.10,.008,d-.10))
 
@@ -334,44 +403,81 @@ def leaf_card(center,width,height,yaw,lean,tint=(1,1,1,1),lighting_normal=None):
     geometry('Foliage',leaves,vertices,[(0,1,4,3),(1,2,5,4)],[(0,0),(.5,0),(1,0),(0,1),(.5,1),(1,1)],tint,lighting_normal)
 
 def olive_tree(x,z,height,seed,cypress=False):
-    rng=random.Random(seed);base=(x,.3,z);fork=(x+.20,height*.48,z-.13)
-    branch('Foliage',base,fork,.25 if not cypress else .16,.13)
-    crowns=[]
-    for i in range(8 if not cypress else 5):
-        angle=i*2.399+rng.uniform(-.2,.2)
-        radius=(2.00 if not cypress else .33)*(height/7)*rng.uniform(.7,1.1)
-        endpoint=(x+math.cos(angle)*radius,height*((.54 if i%3==0 else .66)+rng.random()*.18),z+math.sin(angle)*radius)
-        branch('Foliage',fork,endpoint,.11,.018,6);crowns.append(endpoint)
-    for i in range(450 if not cypress else 260):
-        if cypress:
-            cy=.9+rng.random()*(height-.8);r=(1-cy/height)*.64+.10;angle=rng.random()*math.tau
+    rng=random.Random(seed);base=(x,.3,z)
+    if cypress:
+        branch('Foliage',(x,-.10,z),(x+.10,height*.91,z),.19,.025,7)
+        for i in range(145):
+            cy=.8+rng.random()*(height-.7);r=(1-cy/height)*.57+.08;angle=i*2.399
             center=(x+math.cos(angle)*r,cy,z+math.sin(angle)*r)
-            lighting_normal=tuple(Vector((center[0]-x,.55,center[2]-z)).normalized())
-            leaf_card(center,.82,1.06,rng.random()*math.tau,rng.uniform(-.6,.6),lighting_normal=lighting_normal)
-        else:
-            crown=crowns[i%len(crowns)];angle=rng.random()*math.tau;r=math.sqrt(rng.random())*1.35
-            center=(crown[0]+math.cos(angle)*r,crown[1]+rng.uniform(-.62,.63),crown[2]+math.sin(angle)*r)
-            # A broad upward/outward crown normal gives thin botanical cards a
-            # continuous canopy response without costly transmission shading.
-            lighting_normal=tuple(Vector(((center[0]-x)*.55,1.6+(center[1]-height*.62)*.60,(center[2]-z)*.55)).normalized())
-            leaf_card(center,.94,1.15,rng.random()*math.tau,rng.uniform(-1.1,1.1),lighting_normal=lighting_normal)
+            lighting_normal=tuple(Vector((center[0]-x,.65,center[2]-z)).normalized())
+            leaf_card(center,.9,1.12,angle,rng.uniform(-.6,.6),(.88,.96,.82,1),lighting_normal)
+        return
+    # A connected tapered skeleton gives the crown weight. The broad canopy is
+    # one irregular ellipsoid, not separate discs around every branch endpoint.
+    knee=(x-.08,height*.25,z+.06);fork=(x+.20,height*.51,z-.13)
+    branch('Foliage',base,knee,.34,.26,8);branch('Foliage',knee,fork,.26,.16,8)
+    crown_radius=height*.34;crown_y=height*.76
+    for i in range(6):
+        angle=i*math.tau/6+rng.uniform(-.16,.16)
+        reach=crown_radius*rng.uniform(.50,.69)
+        elbow=(x+math.cos(angle)*reach,height*(.61+rng.random()*.06),z+math.sin(angle)*reach)
+        branch('Foliage',fork,elbow,.14,.075,7)
+        for side in [-1,1]:
+            a=angle+side*.38;r=crown_radius*rng.uniform(.79,.96)
+            tip=(x+math.cos(a)*r,crown_y+rng.uniform(-.20,.36),z+math.sin(a)*r)
+            branch('Foliage',elbow,tip,.075,.015,6)
+    for i in range(340):
+        angle=i*2.399+rng.uniform(-.12,.12)
+        # Even angular coverage prevents visible hollow rings. Interior cards
+        # connect the crown; the outer quarter follows its rounded silhouette.
+        normalized_r=math.sqrt(rng.random())
+        if i%4==0:normalized_r=rng.uniform(.80,1)
+        radius=crown_radius*normalized_r*(1+.08*math.sin(angle*3+seed))
+        dome=math.sqrt(max(0,1-normalized_r**2))
+        center=(x+math.cos(angle)*radius,crown_y+1.35*dome+.22*math.sin(angle*3+seed)+rng.uniform(-.95,.50),z+math.sin(angle)*radius*.90)
+        lighting_normal=tuple(Vector(((center[0]-x)*.45,1.6+(center[1]-crown_y)*.6,(center[2]-z)*.45)).normalized())
+        warmth=rng.uniform(.88,1.08)
+        leaf_card(center,rng.uniform(1.08,1.46),rng.uniform(1.04,1.36),angle+rng.uniform(-1.7,1.7),rng.uniform(-1.3,1.3),(warmth,1, .90+rng.random()*.1,1),lighting_normal)
 
-for i,(x,z,h) in enumerate([(-35,-23,7.5),(-36,0,7.4),(-35,23,7.8),(35,-24,8.2),(36,2,7.2),(35,24,7.3),(-23,-35,7.5),(1,-35,7.0),(25,-35,7.4),(-20,35,7.4),(21,35,7.6)]):
-    box('Exterior',stone,(x,.08,z),(3.4,.9,3.4),.06)
+for i,(x,z,h) in enumerate([(-29,-35,7.5),(-35,8,8.4),(-35,23,7.8),(28,-35,8.2),(35,16,7.8),(36,31,7.3),(-19,-36,7.5),(-9,-37,7.0),(19,-36,7.4),(-20,35,7.4),(21,35,7.6)]):
+    # Masonry extends into the cliff, rather than leaving a planter floating
+    # above its sloping edge. The soil/top and trunk placement stay unchanged.
+    box('Exterior',stone,(x,-.75,z),(3.4,2.56,3.4),.06)
     box('Exterior',bronze,(x,.54,z),(3.46,.045,3.46),.007)
     olive_tree(x,z,h*1.27,500+i)
-for i,(x,z) in enumerate([(-34.5,-12),(-34.8,12),(34.6,-13),(34.8,13),(-12,-35),(13,-35)]):olive_tree(x,z,7+(i%3)*.8,650+i,True)
+for i,(x,z) in enumerate([(-34.5,-12),(-34.8,12),(34.6,-13),(34.8,13),(-12,-35),(13,-35)]):
+    box('Exterior',stone,(x,-.4,z),(1.4,1.2,1.4),.05)
+    olive_tree(x,z,7+(i%3)*.8,650+i,True)
 
-# Bougainvillea appears outside the boundary only; small petal rosettes catch the
-# warm light without becoming brightly colored gameplay camouflage.
+# Six rooted bougainvillea planters replace the detached single leaves along the
+# whole perimeter. Branches, sprays and flowers form one coherent plant silhouette.
+# The box/soil/root meet, and all planting remains outside the playable square.
+plant_rng=random.Random(3489)
+for side in [-1,1]:
+    for z in [-19,-3,27]:
+        x=side*33.8
+        box('Exterior',stone,(x,-.34,z),(1.85,1.72,2.7),.05,(.92,.88,.81,1))
+        geometry('Foliage',bark,[(x-.8,.53,z-1.2),(x+.8,.53,z-1.2),(x+.8,.53,z+1.2),(x-.8,.53,z+1.2)],[(0,3,2,1)],tint=(.72,.68,.58,1))
+        root=Vector((x,.54,z));tips=[]
+        for i in range(5):
+            a=i*2.399;tip=Vector((x+math.cos(a)*.45,1.02+(i%2)*.20,z+math.sin(a)*.82));tips.append(tip)
+            branch('Foliage',tuple(root),tuple(tip),.025,.008,5)
+            for t in [.45,.72,1]:
+                center=root.lerp(tip,t)
+                leaf_card(tuple(center),.65,.66,a+.4,.3,(.90,.97,.86,1),tuple(Vector((-side*.35,1,0)).normalized()))
+        leaf_card((x,.88,z),.7,.75,.7,.2,(.95,1,.88,1),(0,1,0))
+        right=Vector((0,0,1));up=Vector((side*.40,1,0)).normalized()
+        for i in range(8):
+            center=tips[i%5]+Vector((-side*.12,.04,plant_rng.uniform(-.10,.10)))
+            for petal in range(5):
+                angle=petal*math.tau/5;p=center+right*(math.cos(angle)*.065)+up*(math.sin(angle)*.065)
+                points=[tuple(p+right*u+up*v) for u,v in [(-.055,0),(0,.070),(.055,0),(0,-.055)]]
+                geometry('Foliage',flower,points,[(0,1,2),(0,2,3)],tint=(plant_rng.uniform(.85,1.12),.84,1,1))
+# Preserve the downstream seeded cliff geometry exactly: the previous scatter
+# consumed three placement samples per card and five colors per flower rosette.
 for side in [-1,1]:
     for i in range(55):
-        x=side*(33.4+random.random()*.6);z=-29+i*1.08;y=.7+random.random()*.6
-        leaf_card((x,y,z),.55,.65,random.random()*math.tau,.3)
-        if i%2==0:
-            for petal in range(5):
-                angle=petal*math.tau/5;cx=x+math.cos(angle)*.085;cz=z+math.sin(angle)*.085
-                geometry('Foliage',flower,[(cx-.07,y+.08,cz),(cx,y+.10,cz+.075),(cx+.07,y+.08,cz),(cx,y+.03,cz-.055)],[(0,1,2),(0,2,3)],tint=(random.uniform(.78,1.15),.8,1,1))
+        for _ in range(3+(5 if i%2==0 else 0)):random.random()
 
 def island(group,cx,cz,radius,height,seed,square=False):
     rng=random.Random(seed);segments=128 if square else 64;levels=[(1,0),(1.013,-1.6),(.985,-3.6),(1.02,-6),(.99,-9),(.96,-16),(.94,-25)]
@@ -429,28 +535,60 @@ for i in range(24):
     size=(2.5+landmark_rng.random()*1.3,7.6+landmark_rng.random()*2.1,2.2+landmark_rng.random()*1.4)
     rock_outcrop(center,size,2100+i,'Horizon')
 
-# Coastal auxiliary buildings supply believable architectural context beyond
-# the boundary, leaving every gameplay route and the solid map buildings intact.
-for side in [-1,1]:
-    x=side*40;z=-10
-    island('Exterior',x,z,10,-.58,80+side)
-    box('Exterior',stone,(x,3.4,z),(10,6.8,18),.07)
-    box('Exterior',stone,(x+side*.8,7.5,z-1),(8.4,1.5,14),.06)
-    for y,width,depth in [(3.45,10.1,18.1),(6.5,10.12,18.12),(8.26,8.55,14.15)]:
-        box('Exterior',petrol,(x+(side*.8 if y>8 else 0),y,z-(1 if y>8 else 0)),(width,.17,depth),.014)
-        box('Exterior',bronze,(x+(side*.8 if y>8 else 0),y+.10,z-(1 if y>8 else 0)),(width+.015,.024,depth+.015))
-    facade=x-side*5
-    for bay in [-6,0,6]:
-        for level in [0,3.45]:
-            center_z=z+bay;base_y=level+.38
-            face_patch('Exterior',petrol,'x',-side,(center_z,base_y+1.17),2.32,2.30,facade-side*.03,.02)
-            # Carved stone pilasters, lintels and bronze mullions around closed windows.
-            for offset in [-1.31,1.31]:box('Exterior',stone,(facade-side*.11,base_y+1.35,center_z+offset),(.20,2.70,.23),.03)
-            box('Exterior',stone,(facade-side*.10,base_y+2.70,center_z),(.22,.23,2.95),.035)
-            for offset in [-.71,0,.71]:face_patch('Exterior',bronze,'x',-side,(center_z+offset,base_y+1.22),.045,2.1,facade-side*.056,.008)
-    for offset in [-7.5,-2.5,2.5,7.5]:
-        box('Exterior',stone,(facade-side*.22,3.35,z+offset),(.44,6.55,.48),.055)
-        box('Exterior',bronze,(facade-side*.23,3.53,z+offset),(.47,.12,.53),.012)
+# Asymmetric coastal wings frame the gameplay camera. All deep relief, stepped
+# terraces and parapets are outside the 64 m square; playable roofs remain flat.
+def exterior_building(x,z,w,d,h,side,base=0,levels=2,group='Exterior'):
+    tint=(.92,.89,.82,1)
+    # Keep body/coping top surfaces distinct: coplanar opaque roof layers can
+    # produce dark ray/shadow artifacts even when they share a material.
+    box(group,stone,(x,base+(h-.12)/2,z),(w,h-.12,d),.09,tint)
+    for y in [base+.30,base+h-.55]:
+        box(group,petrol,(x,y,z),(w+.18,.23,d+.18),.02,(.90,.95,.94,1))
+        box(group,bronze,(x,y+.16,z),(w+.24,.07,d+.24),.014)
+    box(group,stone,(x,base+h-.15,z),(w+.35,.30,d+.35),.06,(.99,.97,.91,1))
+    # Main inward facade, plus its visible south-facing return. Recessed dark
+    # shutters, broad mullions and layered stone surrounds read across the arena.
+    for axis,span,other,plane,face_side in [('x',d,z,x-side*w/2,-side),('z',w,x,z+d/2,1)]:
+        bays=max(1,round(span/4.5));spacing=(span-.8)/bays
+        for bay in range(bays):
+            center=other-span/2+.4+spacing*(bay+.5)
+            for level in range(levels):
+                level_h=h/levels;bottom=base+level*level_h+.78;panel_h=level_h*.56;panel_w=min(2.5,spacing*.55)
+                face_patch(group,petrol,axis,face_side,(center,bottom+panel_h/2),panel_w,panel_h,plane+face_side*.055,.015,(.66,.78,.79,1))
+                for offset in [-panel_w/2-.16,panel_w/2+.16]:
+                    center3=(plane+face_side*.20,bottom+panel_h/2,center+offset) if axis=='x' else (center+offset,bottom+panel_h/2,plane+face_side*.20)
+                    size3=(.40,panel_h+.45,.28) if axis=='x' else (.28,panel_h+.45,.40)
+                    box(group,stone,center3,size3,.045,(.94,.91,.85,1))
+                for cy,ch in [(bottom-.08,.22),(bottom+panel_h+.13,.30)]:
+                    center3=(plane+face_side*.22,cy,center) if axis=='x' else (center,cy,plane+face_side*.22)
+                    size3=(.48,ch,panel_w+.84) if axis=='x' else (panel_w+.84,ch,.48)
+                    # Crisp horizontal sill/lintel blocks keep real projection
+                    # but avoid spending 32 extra bevel triangles on each one.
+                    box(group,stone,center3,size3)
+                for offset in [-panel_w*.23,panel_w*.23]:
+                    face_patch(group,bronze,axis,face_side,(center+offset,bottom+panel_h/2),.075,panel_h-.12,plane+face_side*.079,.018)
+                for row in [.30,.65]:
+                    face_patch(group,bronze,axis,face_side,(center,bottom+panel_h*row),panel_w-.08,.06,plane+face_side*.080,.02,(.78,.77,.71,1))
+        # Large corners/capital blocks make the facade's construction legible.
+        for offset in [-span/2+.30,span/2-.30]:
+            center3=(plane+face_side*.20,base+h/2,other+offset) if axis=='x' else (other+offset,base+h/2,plane+face_side*.20)
+            size3=(.45,h-.25,.56) if axis=='x' else (.56,h-.25,.45)
+            box(group,stone,center3,size3,.055,(.94,.91,.84,1))
+
+for side in [-1,1]:island('Exterior',side*41,-19 if side<0 else -17,22 if side<0 else 24,-.58,80+side)
+# Tall volumes sit at the outer north corners, inside the forward camera's view
+# while remaining entirely outside collision. Lower wings recede along the sides.
+exterior_building(-38.5,-30,10,12,11.4,-1,levels=3)
+exterior_building(-39,-31,8,7,3.4,-1,base=11.4,levels=1)
+exterior_building(-41,-10,8,12,4.4,-1,levels=1)
+exterior_building(40,-6,10,16,7.6,1,levels=2)
+exterior_building(38.5,-29,10,14,13.2,1,levels=3)
+# Compact roof screens/solar service fins break long horizontal roof strips.
+for x,z,base,w,d,side in [(-39,-31,14.8,8,7,-1),(38.5,-29,13.2,10,14,1)]:
+    for offset in [-w*.37,w*.37]:
+        box('Exterior',stone,(x+offset,base+.60,z-d*.30),(.50,1.2,.62),.06)
+        box('Exterior',bronze,(x+offset,base+1.22,z-d*.30),(.55,.10,.69),.014)
+    box('Exterior',petrol,(x,base+.28,z-d*.30),(w*.72,.50,.20),.025)
 
 # Landmark: a real three-dimensional observatory with an open colonnade and a
 # ribbed copper dome. It is far outside playable bounds and never casts arena shadows.
@@ -478,10 +616,16 @@ for ring in range(8):
     for i in range(48):faces.append((ring*48+i,ring*48+(i+1)%48,(ring+1)*48+(i+1)%48,(ring+1)*48+i))
 geometry('Horizon',petrol,verts,faces,tint=(1.12,1.13,1.11,1))
 cylinder('Horizon',bronze,(ox,39.3,oz),.26,2.0,10,top_radius=.04)
-for i in range(7):
-    x=ox-27+i*7.5;z=oz+20+math.sin(i)*8
-    box('Horizon',stone,(x,6,z),(5+random.random()*3,5+random.random()*4,6),.12)
-    box('Horizon',petrol,(x,9,z),(5.8,.2,6.3),.035)
+for i,(x,z,w,d,h) in enumerate([(45,-96,8,9,7),(49,-85,9,8,5),(60,-78,10,7,4),(73,-76,8,8,6),(86,-82,9,8,8),(99,-94,7,8,6),(86,-101,8,7,7)]):
+    # The observatory belongs to a descending coastal settlement, not a bare
+    # isolated pedestal. Every house is grounded on its own retaining terrace.
+    box('Horizon',stone,(x,4.35,z),(w+2,.7,d+2),.08,(.76,.74,.68,1))
+    box('Horizon',stone,(x,4.7+h/2,z),(w,h,d),.10,(.91,.89,.82,1))
+    box('Horizon',petrol,(x,4.7+h-.15,z),(w+.15,.28,d+.15),.025)
+    box('Horizon',stone,(x,4.7+h+.12,z),(w+.28,.23,d+.28),.055)
+    for offset in [-w*.26,w*.26]:
+        face_patch('Horizon',petrol,'z',1,(x+offset,4.7+h*.57),w*.22,h*.46,z+d/2+.04,.02,(.66,.72,.71,1))
+        face_patch('Horizon',bronze,'z',1,(x+offset,4.7+h*.57),.09,h*.48,z+d/2+.07,.02)
 for key,data in meshes.items():
     if key[0]!='Horizon':continue
     for index in range(landmark_start.get(key,0),len(data['v'])):
@@ -562,6 +706,11 @@ repacked.extend(b'\0'*((-len(repacked))%4));gltf['buffers'][0]['byteLength']=len
 bin_chunk=struct.pack('<II',len(repacked),0x004E4942)+repacked
 encoded=json.dumps(gltf,separators=(',',':')).encode();encoded+=b' '*((-len(encoded))%4)
 binary=struct.pack('<III',0x46546C67,2,20+len(encoded)+len(bin_chunk))+struct.pack('<II',len(encoded),0x4E4F534A)+encoded+bin_chunk
+export_triangles=sum(gltf['accessors'][primitive['indices']]['count']//3 for mesh in gltf['meshes'] for primitive in mesh['primitives'])
+export_batches=sum(len(mesh['primitives']) for mesh in gltf['meshes'])
+assert export_triangles<=70000,f'Export exceeds the fixed 70k triangle ceiling: {export_triangles}'
+assert len(binary)<=7000000,f'Export exceeds the fixed 7 MB ceiling: {len(binary)}'
+assert export_batches==15,f'Preserve the 15-batch runtime contract: {export_batches}'
 staged_glb.write_bytes(binary)
 for attempt in range(12):
     try:
@@ -589,7 +738,8 @@ def render(name,position,target,lens=28):
     camera.location=bv(position);direction=Vector(bv(target))-camera.location;camera.rotation_euler=direction.to_track_quat('-Z','Y').to_euler();camera_data.lens=lens
     scene.render.filepath=str(SOURCE/name);bpy.ops.render.render(write_still=True)
 
-manifest={'asset':'public/models/environment.glb','groups':list(groups),'materials':[m.name for m in [stone,ground,petrol,bronze,cliff,bark,leaves,flower]],'mapObstacles':obstacles,'coordinateSystem':'metres; Y up; ground y=0','originalArtwork':True,'notes':['Original authored geometry, generated basecolor artwork, and authored PBR/foliage maps.','The observatory and tree trunks are outside the 64 m playable square; high canopies may overhang.','Sky/water/lighting remain runtime systems; preview-only water is at y=-9.','Authoritative collision is unchanged; rendered surface relief is at most 4 cm.']}
+manifest={'asset':'public/models/environment.glb','artRevision':'sunbreak-art-depth','groups':list(groups),'materials':[m.name for m in [stone,ground,petrol,bronze,cliff,bark,leaves,flower]],'mapObstacles':obstacles,'coordinateSystem':'metres; Y up; ground y=0','originalArtwork':True,'budget':{'maxTriangles':70000,'maxBytes':7000000,'maxColorBatches':15},'leafAtlasAlphaCoverage':round(float(np.mean(leaf_pixels[:,:,3]>.5)),4),'notes':['Original authored geometry, generated basecolor artwork, and authored PBR/foliage maps.','Asymmetric exterior archive/gallery/pavilion framing; closed shuttered facade bays are distinct from low tactical barrier fittings.','Connected mature olive crowns use 340 compound-spray cards per tree; cypress trees use 145. Canopies have no opaque filler shells.','Broad paving variation uses existing vertex colors; no additional texture/decal layer or raised floor geometry.','The observatory settlement, exterior terraces and tree trunks are outside the 64 m playable square; high canopies may overhang.','Sky/water/lighting remain runtime systems; preview-only water is at y=-9.','Authoritative collision is unchanged; rendered surface relief is at most 4 cm.','Blender previews establish source appearance only; separate gameplay/GPU acceptance is recorded in docs/ART_DEPTH.md and docs/RELEASE.md.']}
+manifest['notes'].extend(['Petrol metal uses low-contrast isotropic wear, nearly flat normals and roughness between 0.43 and 0.60; crossed directional wave patterns are removed.','Six masonry planters contain rooted bougainvillea stems, connected leaf sprays and flower clusters; detached single-leaf perimeter scatter is removed.','Flush shutter surrounds, pilasters and fittings use distinct surface depths inside the 4 cm envelope to avoid coplanar black artifacts at their intersections.','The Y=0 paving grid is the only upward floor layer. The underlying slab retains sides and bottom but omits its hidden top, preventing a redundant floor-sized PBR shading pass inside the same draw.'])
 (SOURCE/'environment-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 for unused_image in list(bpy.data.images):
     if not unused_image.users:bpy.data.images.remove(unused_image)
@@ -597,4 +747,9 @@ render('environment-gameplay.png',(-12,3.45,24),(0,2.15,-13),28)
 # Keep the source camera at a useful gameplay review angle when the file opens.
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'environment.blend'),compress=True)
 render('environment-overview.png',(61,49,66),(0,0,-4),35)
+scene.render.resolution_y=844
+render('environment-platform.png',(0,4.4,22),(0,3.2,-13),24)
+scene.render.resolution_x=1200;scene.render.resolution_y=800
+render('environment-material-detail.png',(-28,2.4,5),(-19,1.8,0),35)
+render('environment-planting.png',(-29,2.4,-15),(-33.8,.9,-19),48)
 print('ENVIRONMENT_EXPORT_COMPLETE',json.dumps({'file':str(OUT/'environment.glb'),'bytes':(OUT/'environment.glb').stat().st_size,'groups':list(groups),'batches':len(meshes)}))

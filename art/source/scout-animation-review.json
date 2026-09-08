@@ -1,61 +1,108 @@
 {
-  "weighted_vertices": 9407,
+  "weighted_vertices": 9428,
   "checks": [
     {
       "clip": "Run",
       "frame": 7,
       "right_hand_world": [
-        0.1324743628501892,
-        0.3247535824775696,
-        1.1459890604019165
+        0.18782956898212433,
+        0.3923954367637634,
+        1.316393494606018
       ],
       "left_foot_world": [
-        -0.13827773928642273,
-        0.26255002617836,
-        0.12912234663963318
+        -0.058647383004426956,
+        -0.36147886514663696,
+        0.5494995713233948
       ]
     },
     {
       "clip": "Reload",
       "frame": 23,
       "right_hand_world": [
-        0.09915083646774292,
-        0.31385618448257446,
-        1.267621636390686
+        0.1449999064207077,
+        0.30200010538101196,
+        1.345000147819519
       ],
       "left_foot_world": [
-        -0.11999999731779099,
-        1.862645149230957e-09,
-        0.12500005960464478
+        -0.17500002682209015,
+        0.0799998790025711,
+        0.12499982118606567
       ]
     },
     {
       "clip": "Heal",
       "frame": 45,
       "right_hand_world": [
-        0.1664501577615738,
-        0.3198741376399994,
-        1.2064052820205688
+        0.14499980211257935,
+        0.3020002245903015,
+        1.2200000286102295
       ],
       "left_foot_world": [
-        -0.11999999731779099,
-        1.862645149230957e-09,
-        0.12500005960464478
+        -0.17500002682209015,
+        0.07999984920024872,
+        0.12499982118606567
       ]
     }
   ],
   "gaitContacts": [
     {
       "clip": "Walk",
-      "framesChecked": 23,
-      "lowestBoot": 0.004623871762305498,
-      "highestContact": 0.0077986870892345905
+      "samplesAt120Hz": 65,
+      "lowestBoot": 0.0068796370178461075,
+      "highestContact": 0.09600016474723816
     },
     {
       "clip": "Run",
-      "framesChecked": 19,
-      "lowestBoot": 0.00416547991335392,
-      "highestContact": 0.021850641816854477
+      "samplesAt120Hz": 57,
+      "lowestBoot": 0.006480791140347719,
+      "highestContact": 0.0963962972164154
+    }
+  ],
+  "supportingGrips": [
+    {
+      "clip": "Idle",
+      "framesChecked": 91,
+      "maxSupportingGripError": 4.238449000239608e-05
+    },
+    {
+      "clip": "Aim",
+      "framesChecked": 61,
+      "maxSupportingGripError": 1.0909695658217965e-06
+    },
+    {
+      "clip": "Walk",
+      "framesChecked": 17,
+      "maxSupportingGripError": 0.001569960691000598
+    },
+    {
+      "clip": "Run",
+      "framesChecked": 15,
+      "maxSupportingGripError": 0.001964000696644604
+    },
+    {
+      "clip": "Fire",
+      "framesChecked": 7,
+      "maxSupportingGripError": 2.3473714851980128e-05
+    }
+  ],
+  "readyStance": [
+    {
+      "clip": "Idle",
+      "kneeBendsDegrees": [
+        35.55645876237439,
+        37.04007488784413
+      ],
+      "footStagger": 0.15999997407197952,
+      "footSeparation": 0.3499999940395355
+    },
+    {
+      "clip": "Aim",
+      "kneeBendsDegrees": [
+        38.23378363399267,
+        40.17586596221576
+      ],
+      "footStagger": 0.17000015079975128,
+      "footSeparation": 0.36000004410743713
     }
   ]
 }

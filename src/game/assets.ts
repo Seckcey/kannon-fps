@@ -1,7 +1,7 @@
 /** Versioned URLs keep a new art release from reusing the previous cached model. */
 export const ARENA_ASSETS = {
-  character: '/models/scout.glb?v=sunbreak-v2',
-  environment: '/models/environment.glb?v=sunbreak-v2',
+  character: '/models/scout.glb?v=sunbreak-v3',
+  environment: '/models/environment.glb?v=sunbreak-v3',
 } as const;
 
 const knownUrls = new Set<string>(Object.values(ARENA_ASSETS));

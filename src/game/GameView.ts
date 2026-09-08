@@ -119,7 +119,9 @@ export class GameView {
     this.scene.add(this.world.root);
     this.scene.environment = this.world.environment;
     this.scene.background = this.world.background;
-    this.scene.backgroundIntensity = 0.8;
+    // The HDR sky carries much more energy than an ordinary color cube. Expose
+    // its background separately so clear blue and cloud shapes do not wash out.
+    this.scene.backgroundIntensity = this.world.environment ? 0.28 : 0.8;
     this.scene.environmentIntensity = SKY_LIGHT_INTENSITY;
     this.particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particlePositions, 3).setUsage(THREE.DynamicDrawUsage));
     this.particleGeometry.setAttribute('color', new THREE.BufferAttribute(this.particleColors, 3).setUsage(THREE.DynamicDrawUsage));

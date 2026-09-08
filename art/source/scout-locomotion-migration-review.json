@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "baselineSha256": "85940d9385fa230406e89cf0e513499e75ae5b663d01691f431c07426920a782",
+  "candidateSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+  "preserved": [
+    {
+      "clip": "Idle",
+      "exactFloat32Tracks": true
+    },
+    {
+      "clip": "Jump",
+      "exactFloat32Tracks": true
+    },
+    {
+      "clip": "Aim",
+      "exactFloat32Tracks": true
+    },
+    {
+      "clip": "Fire",
+      "exactFloat32Tracks": true
+    },
+    {
+      "clip": "Reload",
+      "exactFloat32Tracks": true
+    },
+    {
+      "clip": "Heal",
+      "exactFloat32Tracks": true
+    }
+  ]
+}
