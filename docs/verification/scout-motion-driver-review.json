@@ -1,0 +1,342 @@
+{
+  "status": "passed_with_retained_preexisting_driver_warning",
+  "checkedAtUtc": "2026-09-08T11:59:26.296Z",
+  "scope": "One sequential installed Edge touch-emulation comparison on one Windows host. Actual built UI, unranked practice transport, landscape/portrait rotation, explicit exit and reentry. No physical-phone, WAN, long-session or capacity claim.",
+  "sourceEvidence": {
+    "file": "gl-lifecycle-comparison.json",
+    "sha256": "ab3ff31feba56e603a4de3e0ea077df7ce0bc74a7b3576b6346ae5ea127b8de5",
+    "script": "gl-lifecycle-comparison.mjs",
+    "scriptSha256": "89cee0ea1d9babe9d9f46142cdcc7b8016088b3cfd9925214ce27714e7539920",
+    "originalUiWarningReportRetained": "motion-polish-ui/ui-results.json"
+  },
+  "runs": [
+    {
+      "name": "candidate",
+      "revision": "25f31bada5062bf69ad8008c690e0a2a9f18ca71",
+      "builtClient": [
+        {
+          "path": "/assets/index-jzcelI6T.js",
+          "status": 200,
+          "sha256": "267b10268ea777ce1ca043d5b0f6641966d0cab9d05ecf3dd7a8951cba2683db"
+        }
+      ],
+      "models": [
+        {
+          "path": "/models/environment.glb?v=sunbreak-v3",
+          "status": 200,
+          "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+        },
+        {
+          "path": "/models/scout.glb?v=scout-shoulders-v1",
+          "status": 200,
+          "sha256": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0"
+        }
+      ],
+      "warningCountsByStage": {
+        "entry-1/ANGLE X4122 sky constant-rounding": 1
+      },
+      "applicationErrors": 0,
+      "failedRequests": 0,
+      "programChecks": {
+        "failedLinkStatusResults": 0,
+        "contextsCreated": 2,
+        "activeContextLostEvents": 0,
+        "instrumentedInvalidNonNullGetProgramParameter": 0,
+        "instrumentedInvalidNonNullUseProgram": 0
+      },
+      "stages": [
+        {
+          "stage": "menu",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [],
+          "gameScreens": 0,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false
+        },
+        {
+          "stage": "active-1",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [
+            {
+              "width": 852,
+              "height": 393,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 94,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "rotated-active-1",
+          "viewport": [
+            390,
+            844
+          ],
+          "canvas": [
+            {
+              "width": 390,
+              "height": 844,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 146,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "exited-1",
+          "viewport": [
+            390,
+            844
+          ],
+          "canvas": [],
+          "gameScreens": 0,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 154,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "active-2",
+          "viewport": [
+            390,
+            844
+          ],
+          "canvas": [
+            {
+              "width": 390,
+              "height": 844,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 98,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "rotated-active-2",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [
+            {
+              "width": 852,
+              "height": 393,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 150,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "exited-2",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [],
+          "gameScreens": 0,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 156,
+          "serverPhase": "playing"
+        }
+      ],
+      "visualReview": {
+        "screenshotsInspected": [
+          "gl-lifecycle-candidate-active-1.png",
+          "gl-lifecycle-candidate-rotated-active-1.png",
+          "gl-lifecycle-candidate-rotated-active-2.png"
+        ],
+        "result": "Loaded textured environment and Scout remain visible; portrait/landscape touch HUD renders, no blank scene or missing model in inspected captures."
+      }
+    },
+    {
+      "name": "baseline",
+      "revision": "1560d40a9db1f7e7e9e4c186f7a83a64fe5f9a7f",
+      "builtClient": [
+        {
+          "path": "/assets/index-CMlsxsdw.js",
+          "status": 200,
+          "sha256": "937506a0cc7183ee52614e41999518058b81b8bf590d8178ba7c454d6c327777"
+        }
+      ],
+      "models": [
+        {
+          "path": "/models/environment.glb?v=sunbreak-v3",
+          "status": 200,
+          "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+        },
+        {
+          "path": "/models/scout.glb?v=sunbreak-v3",
+          "status": 200,
+          "sha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e"
+        }
+      ],
+      "warningCountsByStage": {
+        "entry-1/GL_INVALID_VALUE glGetProgramiv": 12
+      },
+      "applicationErrors": 0,
+      "failedRequests": 0,
+      "programChecks": {
+        "failedLinkStatusResults": 0,
+        "contextsCreated": 2,
+        "activeContextLostEvents": 0,
+        "instrumentedInvalidNonNullGetProgramParameter": 0,
+        "instrumentedInvalidNonNullUseProgram": 0
+      },
+      "stages": [
+        {
+          "stage": "menu",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [],
+          "gameScreens": 0,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false
+        },
+        {
+          "stage": "active-1",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [
+            {
+              "width": 852,
+              "height": 393,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 98,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "rotated-active-1",
+          "viewport": [
+            390,
+            844
+          ],
+          "canvas": [
+            {
+              "width": 390,
+              "height": 844,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 148,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "exited-1",
+          "viewport": [
+            390,
+            844
+          ],
+          "canvas": [],
+          "gameScreens": 0,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 154,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "active-2",
+          "viewport": [
+            390,
+            844
+          ],
+          "canvas": [
+            {
+              "width": 390,
+              "height": 844,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 99,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "rotated-active-2",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [
+            {
+              "width": 852,
+              "height": 393,
+              "connected": true
+            }
+          ],
+          "gameScreens": 1,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 151,
+          "serverPhase": "playing"
+        },
+        {
+          "stage": "exited-2",
+          "viewport": [
+            852,
+            393
+          ],
+          "canvas": [],
+          "gameScreens": 0,
+          "loadingCoverVisible": false,
+          "graphicsInterruptedMessage": false,
+          "serverTick": 157,
+          "serverPhase": "playing"
+        }
+      ],
+      "visualReview": {
+        "screenshotsInspected": [
+          "gl-lifecycle-baseline-active-1.png",
+          "gl-lifecycle-baseline-rotated-active-1.png",
+          "gl-lifecycle-baseline-rotated-active-2.png"
+        ],
+        "result": "Loaded textured environment and Scout remain visible; portrait/landscape touch HUD renders, no blank scene or missing model in inspected captures."
+      }
+    }
+  ],
+  "conclusion": "The glGetProgramiv diagnostic is reproducible on the prior 1560d40 build and is not specific to the 25f31ba candidate. It occurred during baseline first-entry compilation, not only during cleanup. No instrumented invalid non-null WebGL program query/use or failed link-status result was observed; active rendered scenes, rotation and reentry succeeded in both builds.",
+  "limitation": "The underlying ANGLE/driver diagnostic cause is not proven. The warning remains recorded, with no general suppression or product-source change. Passive wrappers observe JavaScript WebGL calls, not every native driver-internal operation; absence of invalid wrapper events is not proof that every internal driver call succeeds. The invalid-query probe checked non-null program handles; null program queries were not separately counted.",
+  "cleanup": {
+    "ownedBaselinePort": 3008,
+    "ownedBaselineStopped": true,
+    "portConfirmedNotListening": true,
+    "ownedBrowserClosed": true,
+    "mainFilesChanged": false,
+    "existingPreviewPortsTouched": false,
+    "retainedDetachedBaseline": "C:/it/kannon-fps-motion-baseline",
+    "retainedBaselineRevision": "1560d40a9db1f7e7e9e4c186f7a83a64fe5f9a7f"
+  }
+}

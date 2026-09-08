@@ -192,7 +192,19 @@ def limb(name, bone, widths, mat=suit):
         for idx in poly.loop_indices:
             vi=mesh.loops[idx].vertex_index; uv.data[idx].uv=(vi%n/n,vi//n/(len(fractions)-1))
     obj=bpy.data.objects.new(name,mesh); bpy.context.collection.objects.link(obj)
-    return register(obj,mat,bone)
+    obj=register(obj,mat,bone)
+    if name.startswith('upper_sleeve_'):
+        # The flexible sleeve stays seated against the torso when the arm lifts.
+        # Only its first three rings share chest weight; ceramic remains rigid.
+        chest_group=obj.vertex_groups.new(name='chest')
+        arm_group=obj.vertex_groups[bone]
+        for vertex in obj.data.vertices:
+            fraction=fractions[vertex.index//n]
+            chest_weight=.4*max(0,1-fraction/.3)**2
+            if chest_weight:
+                chest_group.add([vertex.index],chest_weight,'REPLACE')
+                arm_group.add([vertex.index],1-chest_weight,'REPLACE')
+    return obj
 
 def panel(name, center, width, height, depth, mat, bone, reverse=False, group=None, outline=None):
     """Closed, fitted ceramic plate: tapered silhouette, rolled rim and compound crown."""
@@ -217,38 +229,45 @@ def panel(name, center, width, height, depth, mat, bone, reverse=False, group=No
     return obj
 
 def deltoid_shell(name, center, bone):
-    """A compact closed armor dome shaped over the deltoid, with an integrated dark rim."""
-    cx,cy,cz=center;sign=1 if cx>0 else -1
-    verts=[];faces=[];segments=24;rings=7
-    for inside in [False,True]:
-        for row in range(rings):
-            polar=.10+row/(rings-1)*1.94
-            for j in range(segments):
-                a=j/segments*math.tau
-                width=.082-(.005 if inside else 0)
-                # A shallow deltoid wrap, with a swept lower edge and flatter crown.
-                verts.append((cx+sign*(math.cos(polar)*.022+math.sin(polar)*math.cos(a)*width),cy+math.sin(polar)*math.sin(a)*.096,cz+math.cos(polar)*(.085-(.005 if inside else 0))-.016*max(0,math.sin(a))))
-    count=rings*segments
-    for inner in range(2):
-        offset=inner*count
-        for row in range(rings-1):
-            for j in range(segments):
-                k=(j+1)%segments;face=(offset+row*segments+j,offset+row*segments+k,offset+(row+1)*segments+k,offset+(row+1)*segments+j)
-                faces.append(face if inner==0 else tuple(reversed(face)))
-    for row in [0,rings-1]:
+    """Closed ceramic wrap following the upper arm, with a fitted clavicle edge."""
+    sign=1 if center[0]>0 else -1
+    shoulder=Vector(bones[bone][0]);axis=(Vector(bones[bone][1])-shoulder).normalized()
+    outside=Vector((sign,0,0));outside=(outside-axis*outside.dot(axis)).normalized()
+    front=axis.cross(outside)
+    if front.y<0:front=-front
+    # The broad plate follows the proximal arm instead of capping the shoulder
+    # with a ball. Close the entire volume so neither rear view exposes a cup.
+    sections=[(-.052,.017,.032),(-.035,.059,.060),(0,.090,.086),(.052,.096,.087),(.110,.092,.081),(.146,.088,.078),(.153,.086,.076)]
+    verts=[];faces=[];segments=16;rings=len(sections)
+    for row,(distance,width,depth) in enumerate(sections):
         for j in range(segments):
-            k=(j+1)%segments;faces.append((row*segments+j,row*segments+k,count+row*segments+k,count+row*segments+j))
+            a=j/segments*math.tau;t=row/(rings-1)
+            sine,cosine=math.sin(a),math.cos(a)
+            sweep=-.013*max(0,sine)*t+.007*max(0,-sine)*t
+            crown=math.copysign(abs(cosine)**.76,cosine)
+            # A small medial flattening seats the plate beside the clavicle.
+            medial=.89 if cosine<0 else 1
+            position=shoulder+axis*(distance+sweep)+outside*(width*crown*medial)+front*(depth*sine)
+            verts.append(tuple(position))
+    for row in range(rings-1):
+        for j in range(segments):
+            k=(j+1)%segments
+            faces.append((row*segments+j,row*segments+k,(row+1)*segments+k,(row+1)*segments+j))
+    faces.extend([tuple(range(segments-1,-1,-1)),tuple((rings-1)*segments+j for j in range(segments))])
     mesh=bpy.data.meshes.new(name);mesh.from_pydata(verts,[],faces);mesh.update()
     import bmesh
     bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=bm.faces);bm.to_mesh(mesh);bm.free()
     obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj);register(obj,armor,bone)
-    panel(name+'_rear_inset',(cx,cy-.095,cz+.008),.067,.033,.005,rubber,bone,True)
-    panel(name+'_rear_identifier',(cx,cy-.102,cz+.009),.052,.012,.003,accent,bone,True)
-    box(name+'_edge_clasp',(cx+sign*.078,cy-.014,cz-.012),(.014,.053,.031),bronze,bone,.005)
+    # Fit the identifier to the rear of the same wrap; no detached circular insert.
+    rear=shoulder+axis*.042+outside*.015-front*.089
+    panel(name+'_rear_inset',rear,.055,.017,.003,rubber,bone,True)
+    panel(name+'_rear_identifier',rear+Vector((0,-.004,0)),.045,.008,.002,accent,bone,True)
+    clasp=shoulder+axis*.116+outside*.071
+    box(name+'_edge_clasp',clasp,(.012,.033,.020),bronze,bone,.004)
     return obj
 
 # Flexible anatomically shaped base; no sphere mannequin joints.
-torso=section_mesh('tailored_torso',[(0,-.008,1.01,.158,.107),(0,-.009,1.10,.162,.117),(0,-.005,1.20,.191,.137),(0,0,1.33,.222,.146),(0,-.004,1.43,.226,.132),(0,-.008,1.49,.156,.103)],suit,'spine',24)
+torso=section_mesh('tailored_torso',[(0,-.008,1.01,.158,.107),(0,-.009,1.10,.162,.117),(0,-.005,1.20,.191,.137),(0,0,1.33,.222,.146),(0,-.004,1.415,.225,.132),(0,-.004,1.455,.239,.125),(0,-.008,1.494,.153,.105),(0,-.011,1.522,.088,.077)],suit,'spine',24)
 torso.vertex_groups.clear()
 spine_weights=torso.vertex_groups.new(name='spine');chest_weights=torso.vertex_groups.new(name='chest');pelvis_weights=torso.vertex_groups.new(name='pelvis')
 for vertex in torso.data.vertices:

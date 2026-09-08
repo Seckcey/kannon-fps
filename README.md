@@ -37,7 +37,7 @@ npm run dev
 
 Open **http://localhost:5173**. Create a private match, share its room code with another player, and start once at least two people have joined. For solo play, choose **Practice first → choose difficulty → Create practice → Enter practice**. Balanced is the default. Arena and character downloads finish before room entry; later rooms reuse those downloaded models.
 
-Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They currently follow ground routes around cover and platforms, without jumping or climbing; they can fire at visible elevated opponents. Rematches keep the chosen difficulty. Practice creates no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent.
+Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They use ground routes and the existing south stairs/platform, following visible opponents upward and returning through the stairs. They do not jump or perform general climbing. Rematches keep the chosen difficulty. Practice creates no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent.
 
 For two players on one computer, use separate browser profiles or an incognito window. The same saved player may have only one active connection; another tab with that player replaces the earlier session.
 

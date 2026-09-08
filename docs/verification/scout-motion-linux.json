@@ -1,0 +1,184 @@
+{
+  "status": "passed",
+  "sourceRevision": "25f31bada5062bf69ad8008c690e0a2a9f18ca71",
+  "verifiedAtUtc": "2026-09-08T11:51:12.614Z",
+  "productionPrior": "1560d40a9db1f7e7e9e4c186f7a83a64fe5f9a7f",
+  "environment": {
+    "node": "v24.20.0",
+    "os": "Linux",
+    "cpus": 1,
+    "memoryMiB": 512,
+    "pidLimit": 128,
+    "network": "none",
+    "publishedPorts": [],
+    "productionVolumeMounted": false
+  },
+  "build": {
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "reviewedModelSha256": {
+      "scout": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0",
+      "environment": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+    },
+    "environmentModelUnchanged": true
+  },
+  "platform": {
+    "tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "source": "Frozen bot-platform.test.ts against built Linux server/shared code, in-memory only",
+    "rounds": [
+      {
+        "difficulty": "easy",
+        "ticks": 7744,
+        "elapsedMs": 610.8,
+        "p95EngineStepMs": 0.197,
+        "upperRivalTicks": 485,
+        "travelMeters": [
+          1031,
+          1041,
+          1047
+        ],
+        "longestStationarySeconds": [
+          0.5,
+          0.7,
+          2.5
+        ]
+      },
+      {
+        "difficulty": "normal",
+        "ticks": 4108,
+        "elapsedMs": 258.2,
+        "p95EngineStepMs": 0.222,
+        "upperRivalTicks": 128,
+        "travelMeters": [
+          548,
+          558,
+          600
+        ],
+        "longestStationarySeconds": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      {
+        "difficulty": "hard",
+        "ticks": 3523,
+        "elapsedMs": 200.6,
+        "p95EngineStepMs": 0.219,
+        "upperRivalTicks": 96,
+        "travelMeters": [
+          522,
+          506,
+          495
+        ],
+        "longestStationarySeconds": [
+          0.5,
+          0.3,
+          0.5
+        ]
+      }
+    ]
+  },
+  "transport": {
+    "clients": 8,
+    "durationSeconds": 60.000661985,
+    "ninthRejected": true,
+    "reconnectStateAndFreshSequence": "passed",
+    "inputFrames": 14394,
+    "arShots": 1289,
+    "shotgunShots": 161,
+    "snapshotHz": {
+      "min": 15.026382540489632,
+      "max": 15.088468530134856
+    },
+    "worstSnapshotGapMs": {
+      "p95": 67.91743999999926,
+      "p99": 68.69576300000062,
+      "max": 70.71725100000185
+    },
+    "worstLatestAcknowledgedInputAgeMs": {
+      "p95": 34.60250799999994,
+      "p99": 35.338150999999925,
+      "max": 61.183045999998285
+    },
+    "profileHttpRoundTripMs": 2.640473999999813,
+    "meanReceivedApplicationJsonBytesPerSecondPerPlayer": 69283.27725849507,
+    "maxShotEventJsonBytes": 1867,
+    "unexpectedErrors": []
+  },
+  "practice": [
+    {
+      "difficulty": "easy",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 38,
+      "botHitEvents": 10,
+      "traceCount": 38,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    },
+    {
+      "difficulty": "normal",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 41,
+      "botHitEvents": 32,
+      "traceCount": 41,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    },
+    {
+      "difficulty": "hard",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 43,
+      "botHitEvents": 35,
+      "traceCount": 43,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    }
+  ],
+  "sampledResources": {
+    "samples": 12,
+    "maxCpuPercent": 16.44,
+    "maxMemoryMiB": 96.2,
+    "maxPids": 27
+  },
+  "preservation": {
+    "productionRepositoryCleanMain": "1560d40a9db1f7e7e9e4c186f7a83a64fe5f9a7f",
+    "productionRuntimeAndEnvironmentExactlyUnchanged": true,
+    "protectedContainerCount": 65,
+    "protectedIdentityStateRestartHealthExactlyUnchanged": true,
+    "protectedCanonicalJsonSha256": "63b91272a31600c6e6f82c269f44340f6ce793332f0be5ac951ac5745589436f",
+    "protectedSerialization": "Rows sorted by container name, columns id/name/state/restartCount/health; Python json.dumps separators=(comma,colon), then SHA256",
+    "priorImageTagsPreserved": 13,
+    "ownedQaContainerRemoved": true,
+    "ownedSourceRemoved": true,
+    "candidateImageRetained": "sha256:a1494c586838a80bea1141bfcb0b12b5f9f3812b3d644cb4dbd76b11f45e77d1",
+    "productionDataNeverMountedOrMutated": true
+  },
+  "scriptSha256": "a0405aaa24d5f1fa732dc44c8adb742592eb37c6a9062f2dcdb0c9f061f42b53",
+  "limitations": [
+    "One Linux container loopback test; app and load generator share 1CPU/512MiB. Not a WAN/physical-phone/GPU benchmark.",
+    "Each practice difficulty observed 12 seconds after real countdown, not a full five-minute match.",
+    "Input age measures the latest acknowledged frame, not every intermediate frame.",
+    "Only temporary QA profiles/crew were created in candidate tmpfs; production profile/rating data was never mounted or accessed by the harnesses.",
+    "Traffic counts are received JSON payload bytes, excluding WebSocket/TCP/TLS framing.",
+    "Sampled resource peaks cover the live transport run; they are not continuous profiler maxima.",
+    "Platform rounds start with a valid upper-surface combat fixture and thereafter use ordinary authoritative eliminations and respawns."
+  ]
+}

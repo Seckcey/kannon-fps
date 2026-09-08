@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "scope": "Blender source upper-body comparison. Neutral uses one clay override; other poses use unchanged PBR materials. No browser or runtime transition claim.",
+  "cases": [
+    {
+      "clip": "Neutral",
+      "frame": 1,
+      "maximumBoneMatrixDifference": 0.0,
+      "beforeImage": "scout-shoulder-before-neutral.png",
+      "afterImage": "scout-shoulder-after-neutral.png"
+    },
+    {
+      "clip": "Aim",
+      "frame": 31,
+      "maximumBoneMatrixDifference": 0.0,
+      "beforeImage": "scout-shoulder-before-aim.png",
+      "afterImage": "scout-shoulder-after-aim.png"
+    },
+    {
+      "clip": "Run",
+      "frame": 7,
+      "maximumBoneMatrixDifference": 0.0,
+      "beforeImage": "scout-shoulder-before-run.png",
+      "afterImage": "scout-shoulder-after-run.png"
+    },
+    {
+      "clip": "Fire",
+      "frame": 2,
+      "maximumBoneMatrixDifference": 0.0,
+      "beforeImage": "scout-shoulder-before-fire.png",
+      "afterImage": "scout-shoulder-after-fire.png"
+    },
+    {
+      "clip": "Reload",
+      "frame": 23,
+      "maximumBoneMatrixDifference": 0.0,
+      "beforeImage": "scout-shoulder-before-reload.png",
+      "afterImage": "scout-shoulder-after-reload.png"
+    },
+    {
+      "clip": "Heal",
+      "frame": 45,
+      "maximumBoneMatrixDifference": 0.0,
+      "beforeImage": "scout-shoulder-before-heal.png",
+      "afterImage": "scout-shoulder-after-heal.png"
+    }
+  ],
+  "rigBones": 18,
+  "allSourcePoseTransformsExact": true
+}

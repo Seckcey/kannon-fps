@@ -1,0 +1,81 @@
+{
+  "status": "passed",
+  "scope": "Exact animation/rig/equipment geometry comparison; UV rebuild precision measured separately. No browser or physics changes.",
+  "baselineSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+  "candidateSha256": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0",
+  "baselineBytes": 2720096,
+  "candidateBytes": 2672192,
+  "baseline": {
+    "vertices": 22486,
+    "triangles": 20922,
+    "bodyDraws": 4,
+    "arDraws": 3
+  },
+  "candidate": {
+    "vertices": 21658,
+    "triangles": 20114,
+    "bodyDraws": 4,
+    "arDraws": 3
+  },
+  "exactBoneCount": 18,
+  "animations": [
+    {
+      "name": "Idle",
+      "exactChannels": 54
+    },
+    {
+      "name": "Walk",
+      "exactChannels": 54
+    },
+    {
+      "name": "Run",
+      "exactChannels": 54
+    },
+    {
+      "name": "Jump",
+      "exactChannels": 54
+    },
+    {
+      "name": "Aim",
+      "exactChannels": 54
+    },
+    {
+      "name": "Fire",
+      "exactChannels": 54
+    },
+    {
+      "name": "Reload",
+      "exactChannels": 54
+    },
+    {
+      "name": "Heal",
+      "exactChannels": 54
+    }
+  ],
+  "exactAttachments": [
+    "muzzle",
+    "muzzle_shotgun"
+  ],
+  "exactLowerBodyVertexBindings": 5203,
+  "equipment": [
+    {
+      "name": "weapon_ar",
+      "exactPositionsIndicesAndSkin": true,
+      "maxNormalDifference": 0,
+      "maxUvDifference": 5.960464477539063e-8
+    },
+    {
+      "name": "weapon_shotgun",
+      "exactPositionsIndicesAndSkin": true,
+      "maxNormalDifference": 0,
+      "maxUvDifference": 5.960464477539063e-8
+    },
+    {
+      "name": "healing_item",
+      "exactPositionsIndicesAndSkin": true,
+      "maxNormalDifference": 0,
+      "maxUvDifference": 5.960464477539063e-8
+    }
+  ],
+  "originalMaterialsAndTextureBytesPreserved": true
+}

@@ -1,8 +1,8 @@
 {
   "file": "public/models/scout.glb",
-  "bytes": 2720096,
-  "exportedVertices": 22486,
-  "triangles": 20922,
+  "bytes": 2672192,
+  "exportedVertices": 21658,
+  "triangles": 20114,
   "bones": 18,
   "clips": [
     "Idle",

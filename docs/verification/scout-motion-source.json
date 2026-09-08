@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "revision": "25f31bada5062bf69ad8008c690e0a2a9f18ca71",
+  "files": {
+    "src/game/GameView.ts": "df8583c737a690b0aceee49c6c4fe85d8029f792489ed027ade889bf223fe57a",
+    "src/game/LocomotionVelocity.ts": "a2c3ba6510862e073cfff7b6593efc79e59496a4a9bc621603dea2ff939389ac",
+    "src/game/MovementPrediction.ts": "1a36050cd0a1f3a9da3f8b703a6f51e95861a68b4009beb0fe781071b8a04145",
+    "src/game/assets.ts": "a85a527dbf204c00074e6c2e0e21ecfe128dfd2b0e866ef71e197fa515295e2b",
+    "server/bots.ts": "c003ad56e01588c1f2e77514f03be4f398311ef4c303d35189cc0cf1a55c197f",
+    "scripts/blender/generate_scout.py": "3b7dd15d734897cbdc0675b27087d87a4190f6be70c7576a32a6752dfb7a9e07",
+    "public/models/scout.glb": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0",
+    "public/models/environment.glb": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+  },
+  "bundles": {
+    "index-jzcelI6T.js": "267b10268ea777ce1ca043d5b0f6641966d0cab9d05ecf3dd7a8951cba2683db",
+    "GameScreen-DRNLK2sg.js": "b79a2327ecbea7f621420d9f60b2aaef9c795c8011cd81a342b6b6f4c700df80",
+    "Presentation-gHnn5I-A.js": "ac6f898931a455e4656abbe1672d217132ee4f4d9bb10af280c977d11225c16f"
+  },
+  "automated": {
+    "tests": 133,
+    "failures": 0,
+    "assetChecks": true,
+    "typecheck": true,
+    "build": true
+  },
+  "controlledRendererCases": 16,
+  "builtInputGroups": 10,
+  "identityNote": "Local automated, controlled-renderer and performance checks exercised the frozen working tree before its implementation commit. Their saved git HEAD can therefore name the previous baseline. The implementation was then committed as this revision without code or asset changes. These digests reconcile the source and built bundle used for subsequent real-input and isolated Linux acceptance.",
+  "limits": "Hardware benchmark is one desktop configuration; physical phones and two-household play remain unverified."
+}

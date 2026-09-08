@@ -1,0 +1,89 @@
+{
+  "status": "passed",
+  "checks": [
+    "Desktop menu, leaderboard empty state, controls guide, settings and no horizontal overflow.",
+    "Two authenticated clients create/join a private match, wait for host/countdown and receive the fixed loadout.",
+    "Real pointer lock, WASD, automatic AR, immediate shotgun tap, keyboard slots/reload/jump and full-health heal guard.",
+    "Landscape touch joystick, sprint toggle, slot selection, short fire/reload/jump taps reach authoritative state.",
+    "Real touch camera/aim and AR shots damage another human; keyboard heal restores health after its timed action.",
+    "Real mouse aiming hits the rival; touch slot 3 and a short Heal tap consume one charge and restore exactly 50 health up to the cap.",
+    "Explicit leave ends the incomplete private round with no rating award; crew creation renders real standings.",
+    "Portrait menu and live HUD fit; selected Relaxed difficulty reaches the real server and all three AI rivals actively move/fire.",
+    "Explicit re-entry creates a new Challenging practice room; portrait-to-landscape rotation keeps gameplay mounted.",
+    "Frozen motion-polish bundle receives one AR/nine shotgun traces with exact center endpoint; real shots produce shield-only damage and the 2-shield/22-health break."
+  ],
+  "errors": [],
+  "warnings": [
+    "desktop: THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected.",
+    "phone: [.WebGL-0x3c0c03372200] GL_INVALID_VALUE: glGetProgramiv: Program object expected."
+  ],
+  "capabilities": [
+    {
+      "label": "before portrait viewport",
+      "touchPoints": 1,
+      "coarse": true,
+      "anyCoarse": true,
+      "width": 852,
+      "height": 393,
+      "hud": null
+    },
+    {
+      "label": "after portrait viewport",
+      "touchPoints": 1,
+      "coarse": true,
+      "anyCoarse": true,
+      "width": 390,
+      "height": 844,
+      "hud": null
+    },
+    {
+      "label": "after viewport screenshot",
+      "touchPoints": 1,
+      "coarse": true,
+      "anyCoarse": true,
+      "width": 390,
+      "height": 844,
+      "hud": null
+    },
+    {
+      "label": "practice mounted",
+      "touchPoints": 1,
+      "coarse": true,
+      "anyCoarse": true,
+      "width": 390,
+      "height": 844,
+      "hud": "game-screen touch-game "
+    }
+  ],
+  "desktop": "1536x1024",
+  "phone": [
+    "852x393 landscape touch",
+    "390x844 portrait touch"
+  ],
+  "browser": "Playwright Edge",
+  "url": "http://127.0.0.1:3007",
+  "evidence": "Only real keyboard/mouse/touch input and received authoritative snapshots; no bot/state/network input mocking."
+}

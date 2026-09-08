@@ -102,10 +102,22 @@ weapon grips, Fire moves the weapon and supporting hand together, Reload reaches
 the magazine and belt, and Heal lowers the case for a two-handed use pose. Weapon
 actions are authored animation, not a full weapon simulation.
 
-The V3 export has 22,486 vertices, 20,922 triangles and a 2,720,096-byte GLB,
+The preceding V3 export used 22,486 vertices, 20,922 triangles and a 2,720,096-byte GLB,
 retaining all 18 bones and eight clips. The export still uses four body draws and three
 AR draws, or 56 character draws for eight visible AR scouts, excluding shadow passes.
 Its SHA-256 is `7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e`.
+
+The current shoulder-polish export fits tapered ceramic plates to the upper arms
+and joins the cloth shoulders into the upper back. It has 21,658 vertices,
+20,114 triangles and a 2,672,192-byte GLB, with SHA-256
+`077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0`.
+All 18 rest bones, inverse binds, both muzzles and 432 animation channels remain
+exact; the four body and three AR draws remain unchanged. The paired neutral,
+Aim, Run, Fire, Reload and Heal source previews and structural comparisons are
+recorded in `scout-shoulder-pose-review.json` and `scout-shoulder-export-review.json`.
+See [motion-polish acceptance](../../docs/SCOUT_MOTION_POLISH.md) for the separate
+current rendered checks. This geometry pass does not repair the gait's remaining
+contact slip or loop velocity seams.
 
 `scout-gameplay-pose.png` is a Blender studio render using the game's shoulder
 camera framing; it is not a browser capture. The existing `scout-runtime-front.png`,
@@ -157,8 +169,8 @@ used by GameView, with 16 cases and 2,268 deterministic samples at 120 Hz. It
 included every initial fade sample: idle to normal, normal to sprint, sprint to
 aim, lateral direction changes, backward and slow movement, moving AR/shotgun
 reload, healing, returning to ready, fire and repeated stop/start/aim/sprint
-changes every 50 ms. The loaded GLB hash matched the
-artifact above. All sampled poses were finite, limb motion exceeded the numeric
+changes every 50 ms. The loaded GLB hash matched the preceding V3
+`7e0b589e...` artifact. All sampled poses were finite, limb motion exceeded the numeric
 regression's movement threshold, and no application errors occurred.
 
 The lowest sampled sole was +5.9999 mm, including the transitions that previously

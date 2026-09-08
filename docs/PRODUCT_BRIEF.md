@@ -25,7 +25,7 @@ Sunbreak Courtyard is a sunny coastal arena with shared collision, cover, steppe
 
 Casual games never affect ratings. Solo practice is a complete round against three named AI rivals: Scout, Moxie, and Rook. Choose **Practice first → difficulty → Create practice → Enter practice**. Relaxed gives slower reactions and more aim error, Balanced is the default, and Challenging responds faster and aims more accurately. Weapons, health, healing, protection, respawns, and the five-minute/15-elimination rules stay the same. Rivals compete with each other as well as the human player and can win or share a draw. Rematches retain difficulty.
 
-Rivals patrol and use cover, react to visible opponents, reload, heal, and choose between AR and shotgun by distance. Their current navigation stays on ground routes around solid cover and platforms; they do not jump or climb, but can shoot visible elevated targets. Bot actions stop when no human is connected; the server match clock continues.
+Rivals patrol and use cover, react to visible opponents, reload, heal, and choose between AR and shotgun by distance. The current source adds supported routes through the existing south stairs/platform, so visible upper opponents can prompt ascent. Rivals return through the stairs and do not jump or perform general climbing. Bot actions stop when no human is connected; the server match clock continues.
 
 Practice never creates persistent bot profiles, saved match history, or rating updates. The human player's normal saved profile is still used. Practice rooms remain solo; private friends matches contain human players only. There is no progression grind or purchase requirement.
 
