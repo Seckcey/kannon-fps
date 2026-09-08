@@ -1,8 +1,8 @@
 {
   "status": "passed",
   "scope": "Actual exported GLB skin at 480 Hz; CPU AnimationMixer. Contact bands exclude penetration. No actor height correction. This does not prove runtime crossfade contact.",
-  "assetBytes": 2720096,
-  "assetSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+  "assetBytes": 2672192,
+  "assetSha256": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0",
   "soleVertices": {
     "left": 1315,
     "right": 1318

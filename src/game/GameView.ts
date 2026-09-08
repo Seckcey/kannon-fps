@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { GameEvent, InputFrame, PlayerState, WorldSnapshot } from '../../shared/protocol';
-import { cameraPosition, directionFromAngles, isPlayerGrounded, movePlayer, raycastMap, supportHeight, type KinematicState } from '../../shared/physics';
+import { cameraPosition, directionFromAngles, isPlayerGrounded, raycastMap, supportHeight, type KinematicState } from '../../shared/physics';
 import { createBlenderCharacter } from './BlenderCharacter';
 import type { CharacterModel } from './Character';
 import { disposeCharacterResources } from './Character';
@@ -12,6 +12,8 @@ import type { ArenaPresentation } from './Presentation';
 import { RenderQuality, scenePixelRatio } from './RenderQuality';
 import { CombatEffects } from './CombatEffects';
 import { DeferredRespawns } from './DeferredRespawns';
+import { MovementPrediction } from './MovementPrediction';
+import { LocomotionVelocity } from './LocomotionVelocity';
 
 export interface GameSettings {
   sensitivity: number; volume: number; quality: 'auto' | 'high' | 'low'; invertY: boolean;
@@ -28,7 +30,7 @@ export interface GameViewOptions {
 }
 interface RenderPlayer {
   model: CharacterModel; label: HTMLDivElement; healthBar: HTMLDivElement; shieldBar: HTMLDivElement;
-  shadow: THREE.Mesh; position: THREE.Vector3;
+  shadow: THREE.Mesh; position: THREE.Vector3; locomotion: LocomotionVelocity;
 }
 
 const defaultSettings: GameSettings = { sensitivity: 1, volume: 0.65, quality: 'auto', invertY: false };
@@ -67,6 +69,7 @@ export class GameView {
   private snapshotBuffer: Array<{ world: WorldSnapshot; received: number }> = [];
   private pendingInputs: InputFrame[] = [];
   private prediction: KinematicState | null = null;
+  private readonly movementPrediction = new MovementPrediction();
   private visualPosition = new THREE.Vector3();
   private lastJump = false;
   private acknowledgedJump = false;
@@ -236,11 +239,15 @@ export class GameView {
     this.frames = 0; this.statsTime = 0; this.slowTime = 0;
     this.renderQuality.resetTiming();
     this.effects.clear(); this.respawns.clear();
+    for (const entry of this.players.values()) entry.locomotion.reset();
   };
 
   private receiveSnapshot(snapshot: WorldSnapshot, now: number) {
     const roundReset = (snapshot.phase === 'countdown' && this.snapshot?.phase !== 'countdown') || (snapshot.phase === 'playing' && this.snapshot?.phase === 'finished');
-    if (roundReset) { this.effects.clear(); this.respawns.clear(); this.localRespawnAt = 0; }
+    if (roundReset) {
+      this.effects.clear(); this.respawns.clear(); this.localRespawnAt = 0;
+      for (const entry of this.players.values()) entry.locomotion.reset();
+    }
     // Events precede snapshots. Reset the camera only when this life is present,
     // including respawns received while rendering was suspended in another app.
     if (this.localRespawnAt && snapshot.serverTime >= this.localRespawnAt) {
@@ -269,9 +276,10 @@ export class GameView {
     }
     this.lastAlive = alive;
     this.prediction = { x: local.x, y: local.y, z: local.z, vx: local.vx, vy: local.vy, vz: local.vz, yaw: local.yaw, pitch: local.pitch };
+    this.movementPrediction.reset(local, snapshot.serverTime);
     if (snapshot.phase === 'playing' && alive) {
       let previousJump = this.acknowledgedJump;
-      for (const frame of this.pendingInputs) { movePlayer(this.prediction, frame, 1 / 30, !previousJump); previousJump = frame.jump; }
+      for (const frame of this.pendingInputs) { this.movementPrediction.step(this.prediction, frame, 1 / 30, !previousJump); previousJump = frame.jump; }
     }
     // Teleports and respawns should never drag a camera through the arena.
     if (this.visualPosition.distanceTo(new THREE.Vector3(this.prediction.x, this.prediction.y, this.prediction.z)) > 3.5) this.visualPosition.set(this.prediction.x, this.prediction.y, this.prediction.z);
@@ -293,7 +301,7 @@ export class GameView {
     const shieldBar = document.createElement('div'); shieldBar.style.cssText = 'height:100%;background:#73dfff;';
     shieldTrack.append(shieldBar); track.append(healthBar); label.append(name, shieldTrack, track); this.labels.append(label);
     const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial); shadow.rotation.x = -Math.PI / 2; shadow.renderOrder = 1; this.scene.add(shadow);
-    const entry = { model, label, healthBar, shieldBar, shadow, position: new THREE.Vector3(player.x, player.y, player.z) }; this.players.set(player.id, entry); return entry;
+    const entry = { model, label, healthBar, shieldBar, shadow, position: new THREE.Vector3(player.x, player.y, player.z), locomotion: new LocomotionVelocity() }; this.players.set(player.id, entry); return entry;
   }
 
   private opponentState(player: PlayerState, now: number): PlayerState {
@@ -306,7 +314,9 @@ export class GameView {
     }
     const a = previous.players.find(item => item.id === player.id); const b = next.players.find(item => item.id === player.id);
     if (!a || !b || a.health <= 0 || b.health <= 0 || Math.hypot(a.x - b.x, a.z - b.z) > 5) return player;
-    const blend = THREE.MathUtils.clamp((target - previous.serverTime) / Math.max(1, next.serverTime - previous.serverTime), 0, 1);
+    const interval = next.serverTime - previous.serverTime;
+    if (interval <= 0 || ![target, interval, a.x, a.y, a.z, b.x, b.y, b.z].every(Number.isFinite)) return player;
+    const blend = THREE.MathUtils.clamp((target - previous.serverTime) / interval, 0, 1);
     return { ...player, x: THREE.MathUtils.lerp(a.x, b.x, blend), y: THREE.MathUtils.lerp(a.y, b.y, blend), z: THREE.MathUtils.lerp(a.z, b.z, blend), yaw: lerpAngle(a.yaw, b.yaw, blend), pitch: THREE.MathUtils.lerp(a.pitch, b.pitch, blend) };
   }
 
@@ -328,14 +338,15 @@ export class GameView {
     const localState = this.snapshot?.players.find(player => player.id === localId);
     if (this.prediction && localState) {
       const fresh = this.snapshotBuffer.length > 0 && now - this.snapshotBuffer[this.snapshotBuffer.length - 1].received < 500;
-      if (this.snapshot?.phase === 'playing' && localState.health > 0 && fresh) movePlayer(this.prediction, input, dt, !this.lastJump);
+      const sprinting = this.snapshot?.phase === 'playing' && localState.health > 0 && fresh
+        ? this.movementPrediction.step(this.prediction, input, dt, !this.lastJump) : false;
       this.lastJump = input.jump;
       this.visualPosition.lerp(new THREE.Vector3(this.prediction.x, this.prediction.y, this.prediction.z), 1 - Math.exp(-dt * 24));
       const position = cameraPosition(this.visualPosition, input.yaw, input.pitch, input.aim);
       this.camera.position.set(position.x, position.y, position.z);
       const direction = directionFromAngles(input.yaw, input.pitch);
       this.camera.lookAt(this.camera.position.x + direction.x, this.camera.position.y + direction.y, this.camera.position.z + direction.z);
-      const fov = input.aim ? 57 : input.sprint && Math.hypot(input.moveX, input.moveZ) > 0.1 ? 73 : 68;
+      const fov = input.aim ? 57 : sprinting && Math.hypot(input.moveX, input.moveZ) > 0.1 ? 73 : 68;
       this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, fov, 1 - Math.exp(-dt * 9)); this.camera.updateProjectionMatrix();
       if (input.slot !== this.lastSlot) { this.audio.switchWeapon(); this.lastSlot = input.slot; }
       const reloading = localState.reloadingUntil > this.serverTime(now);
@@ -350,7 +361,8 @@ export class GameView {
       let rendered = local && this.prediction ? { ...state, ...this.prediction, x: this.visualPosition.x, y: this.visualPosition.y, z: this.visualPosition.z, yaw: input.yaw, pitch: input.pitch, slot: input.slot } : this.opponentState(state, now);
       entry.position.set(rendered.x, rendered.y, rendered.z);
       entry.model.root.position.copy(entry.position); entry.model.root.rotation.y = -rendered.yaw;
-      entry.model.update(rendered, dt, time, local, { aim: local ? input.aim : rendered.aiming ?? false, grounded: isPlayerGrounded(rendered) });
+      const velocity = entry.locomotion.update(rendered, elapsedFrame, local ? 'local' : 'remote');
+      entry.model.update({ ...rendered, vx: velocity.vx, vz: velocity.vz }, dt, time, local, { aim: local ? input.aim : rendered.aiming ?? false, grounded: isPlayerGrounded(rendered) });
       if (local && this.camera.position.distanceTo(entry.position.clone().add(new THREE.Vector3(0, 1.35, 0))) < 0.8) entry.model.root.visible = false;
       entry.shadow.visible = state.health > 0 && state.connected;
       const shadowFloor = supportHeight(rendered);
