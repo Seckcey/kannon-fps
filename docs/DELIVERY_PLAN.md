@@ -1,10 +1,10 @@
 # Delivery and acceptance
 
-## Live Sunbreak V3 release
+## Live combat feedback release
 
-Sunbreak V3 implementation release [`884e24d`](https://github.com/Seckcey/kannon-fps/commit/884e24d422e1666a5caccc90a642da7b58de594d), merged through [PR #4](https://github.com/Seckcey/kannon-fps/pull/4), is deployed on Coastline at [kpop.8westventures.com](https://kpop.8westventures.com). The [/health](https://kpop.8westventures.com/health) endpoint is the canonical current deployed build identity, including later documentation closeouts. The origin remains HTTP `127.0.0.1:14350`. V3 retains the approved third-person view, fixed loadout/healing, respawns/protection, server-owned multiplayer, private invitations/crews, persistent rankings/history, keyboard/mouse and touch interfaces, and active solo practice rivals, while adding the art and motion work below.
+Combat implementation [`5fc2c94`](https://github.com/Seckcey/kannon-fps/commit/5fc2c9472df97ffb81658a6d949b27bb60484f2a), merged through [PR #5](https://github.com/Seckcey/kannon-fps/pull/5), is deployed on Coastline at [kpop.8westventures.com](https://kpop.8westventures.com). [/health](https://kpop.8westventures.com/health) identifies the running build including documentation closeouts. The origin remains HTTP `127.0.0.1:14350`. The release improves per-pellet contacts, shield/armor feedback and respawn presentation while preserving the approved game, rules and V3 Blender models.
 
-V3 passed 79 automated tests, TypeScript, asset validation and the production build, with [successful main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34209569042). Source/exported-skin, actual-controller and real-input checks provide separate animation/gameplay evidence. Deployment verified the exact merged revision, healthy status with zero restarts, HTTP/WebSocket/public HTTPS/WSS responses and matching model hashes; existing profile and crew data were preserved. See the [release record](RELEASE.md) for exact results and limitations.
+The combat release passed 108 tests, asset/type/build checks and [main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34217145510). Ten desktop/touch input groups, eleven controlled renderer lifecycle checks, an eight-character hardware stress comparison and isolated eight-player Linux traffic provide separate evidence. Deployment verified the exact revision, healthy status, zero restarts, HTTP/WebSocket/public HTTPS/WSS responses, matching models and preserved data. Public rendered practice passed. See the [release record](RELEASE.md) for results and limits; earlier art/controller acceptance remains tied to the historical V3 release.
 
 ## Previous V2 visual and practice foundation
 
@@ -24,13 +24,13 @@ The animation controller uses measured playback rates, world-up leg turns, match
 
 ## Internet release gates
 
-The completed gates below apply to deployed V3. Physical-device and family playtests remain open.
+The completed gates below apply to the deployed combat release. Physical-device and family playtests remain open.
 
 1. **Complete:** user approved Coastline; dedicated container, persistent SQLite volume, restart policy, resource limits, and loopback origin `127.0.0.1:14350` are running. The pre-release online SQLite backup passed integrity checks, and existing profiles, crews, memberships, and results were preserved. Backup/recovery procedures are documented; recurring off-host backups are not configured.
-2. **Complete implementation and origin checks:** V3 passed 79 automated tests and separate asset/controller/real-input checks. Implementation release `884e24d` was verified at the origin with the exact merged revision, healthy status, zero restarts and passing HTTP/WebSocket smoke checks. `/health` remains authoritative for the current build. See the release record for the scope of each test.
-3. **Complete public entry points and rendered practice:** `kpop.8westventures.com` routes through the existing Cloudflare Tunnel to HTTP `127.0.0.1:14350`. Public HTTPS, the built client, secure WebSocket transport and both model hashes passed verification. [Live rendered Balanced practice](verification/sunbreak-v3-live.json) verified exact release `884e24d`, all three rivals moving/firing, one download per matching V3 model and explicit exit without application errors. Verify actual device play and invitations across separate connections below.
+2. **Complete implementation and origin checks:** all 108 tests, asset/type/build checks, local input and isolated Linux acceptance passed. Implementation `5fc2c947` was verified at the origin with the exact merged revision, healthy status, zero restarts and passing HTTP/WebSocket smoke checks. `/health` remains authoritative for the running build. See the release record for each test's scope.
+3. **Complete public entry points and rendered practice:** `kpop.8westventures.com` routes through the existing Cloudflare Tunnel to HTTP `127.0.0.1:14350`. Public HTTPS, the exact client bundle, secure WebSocket transport and both model hashes passed. [Live Balanced practice](verification/combat-feedback-live.json) verified release `5fc2c947`, three moving/firing rivals, valid received combat metadata, one download per matching V3 model and explicit exit without application errors. Verify actual devices and separate household connections below.
 4. **Pending real devices:** test actual iPhone/Safari, Android/Chrome, and intended desktops. Record frame rates and controls; tune touch ergonomics with the players.
-5. **Pending family playtest:** play from two separate internet connections, including brief disconnection/recovery. Two tabs and emulated mobile sizes cannot prove this gate.
+5. **Pending family playtest:** use the [family playtest guide](FAMILY_PLAYTEST.md) from two separate internet connections, including brief disconnection/recovery. Two tabs and emulated mobile sizes cannot prove this gate.
 
 ## After the first playtest
 

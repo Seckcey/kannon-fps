@@ -1,0 +1,98 @@
+{
+  "status": "passed",
+  "checkedAtUtc": "2026-09-08T10:50:34.186Z",
+  "targetRevision": "5fc2c9472df97ffb81658a6d949b27bb60484f2a",
+  "healthBefore": {
+    "revision": "5fc2c9472df97ffb81658a6d949b27bb60484f2a",
+    "status": "ok"
+  },
+  "healthAfter": {
+    "revision": "5fc2c9472df97ffb81658a6d949b27bb60484f2a",
+    "status": "ok"
+  },
+  "url": "https://kpop.8westventures.com",
+  "browser": "Installed Edge via Playwright",
+  "viewport": "1536x864 desktop",
+  "quality": "auto",
+  "checks": [
+    "Exact supplied runtime revision before and after acceptance",
+    "Exact built index-CMlsxsdw.js entry bundle before practice/profile writes",
+    "Every observed AR/shotgun has valid one/nine trace metadata; any observed damage metadata is internally consistent",
+    "Public HTTPS entry and real WSS Balanced practice",
+    "Three authoritative AI rivals each moved and fired",
+    "One browser fetch per sunbreak-v3 GLB with exact pinned SHA-256",
+    "Explicit exit returns to the menu without reconnecting"
+  ],
+  "practice": {
+    "difficulty": "normal",
+    "botCount": 3,
+    "moved": 3,
+    "fired": 3,
+    "ranked": false
+  },
+  "builtClient": {
+    "path": "/assets/index-CMlsxsdw.js",
+    "responses": [
+      {
+        "url": "https://kpop.8westventures.com/assets/index-CMlsxsdw.js",
+        "status": 200
+      }
+    ]
+  },
+  "combatMetadata": {
+    "shots": {
+      "total": 13,
+      "ar": 13,
+      "shotgun": 0
+    },
+    "traces": {
+      "total": 13,
+      "world": 3,
+      "player": 9,
+      "range": 1,
+      "protectedPlayer": 0,
+      "shieldedPlayer": 5
+    },
+    "damage": {
+      "events": 6,
+      "shieldDamage": 98,
+      "healthDamage": 100,
+      "shieldBreaks": 1
+    }
+  },
+  "modelResponses": [
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=sunbreak-v3",
+      "status": 200,
+      "sha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "status": 200,
+      "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+    }
+  ],
+  "modelRequests": [
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=sunbreak-v3",
+      "method": "GET"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "method": "GET"
+    }
+  ],
+  "sockets": [
+    "wss://kpop.8westventures.com/ws"
+  ],
+  "appErrors": [],
+  "externalAnalyticsCspWarnings": [
+    "public: Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+  ],
+  "warnings": [
+    "public: THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ],
+  "screenshot": "../art/combat-feedback-live.png",
+  "limits": "One desktop browser through Cloudflare. No physical-phone, two-household, network-adversity, full-round, or performance claim. Shotgun and damage observations depend on natural practice behavior; this short run does not require either and reports their actual counts. Metadata checks use received server events only, without injecting inputs or state. This creates one QA browser profile and an unranked temporary practice; no crew or rating writes. Known Cloudflare beacon CSP diagnostics are reported separately and are not suppressed as general domain errors.",
+  "harnessCorrection": "An initial pre-profile assertion counted the externally injected Cloudflare beacon as an application module. The rerun limits the exact entry assertion to same-origin modules while retaining the exact bundle HTTP response and separate strict CSP diagnostics. No product or CSP change was made."
+}

@@ -1,0 +1,123 @@
+{
+  "status": "implementation_deployed_and_verified",
+  "implementationReleaseCommit": "5fc2c9472df97ffb81658a6d949b27bb60484f2a",
+  "testedImplementationSourceCommit": "40b5c82928673ec83cecb7e70691ca8ec9245b13",
+  "introducedByPr": "https://github.com/Seckcey/kannon-fps/pull/5",
+  "deployedAtUtc": "2026-09-08T10:49:22.831354+00:00",
+  "independentlyVerifiedAtUtc": "2026-09-08T10:51:11.850768+00:00",
+  "ci": {
+    "url": "https://github.com/Seckcey/kannon-fps/actions/runs/34217145510",
+    "headSha": "5fc2c9472df97ffb81658a6d949b27bb60484f2a",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "scope": "Verified implementation deployment receipt. Later documentation-only builds may advance the live revision; /health is canonical for the current build.",
+  "deployment": {
+    "previousRevision": "a3b2b5645cf992a4d5fd8dc760d29a86ab8883bf",
+    "scriptSha256": "707540f332c74fd98bd5e424fc3267e4c8b552a8965a873c64ec0379daf1e250",
+    "rawByteAdapterExitCode": 0,
+    "onlyArenaReplaced": true,
+    "repositoryCleanMainAndOriginMain": true,
+    "environmentOnlyKannonVersionChanged": true
+  },
+  "runtime": {
+    "healthy": true,
+    "restarts": 0,
+    "user": "node",
+    "readOnly": true,
+    "privileged": false,
+    "init": true,
+    "memoryMiB": 512,
+    "cpus": 1,
+    "pidsLimit": 128,
+    "capDrop": [
+      "ALL"
+    ],
+    "noNewPrivileges": true,
+    "persistentVolumePreserved": true,
+    "loopbackPort": 14350,
+    "containerPort": 3001,
+    "logRotation": "10MiB x3",
+    "tmpfsMiB": 64
+  },
+  "verification": {
+    "originHttpHealthClientAndWs": "passed",
+    "publicHttpsHealthClientAndWss": "passed",
+    "anonymousRoomCreationRejected": true,
+    "exactOriginAndPublicRevision": true,
+    "exactServedModelHashes": true,
+    "models": {
+      "scout": {
+        "bytes": 2720096,
+        "sha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e"
+      },
+      "environment": {
+        "bytes": 6698732,
+        "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+      }
+    }
+  },
+  "dataAtCutover": {
+    "integrity": "ok",
+    "schemaUnchanged": true,
+    "allPreexistingRowsPreserved": true,
+    "tables": {
+      "profiles": {
+        "before": 6,
+        "after": 6,
+        "preserved": true
+      },
+      "crews": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "memberships": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "stats": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "matches": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "match_pairs": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      }
+    },
+    "onlineBackup": {
+      "bytes": 77824,
+      "sha256": "b390844dbb407de1013923de28250c022598eaae7f30d2fee0d7177fdb3659e8",
+      "integrity": "ok"
+    },
+    "priorBackupsPreserved": 3,
+    "priorBackupsUnchanged": true,
+    "note": "Counts are the deployment cutover snapshot, before the separate rendered public acceptance. Additional later profiles do not invalidate preservation of these rows."
+  },
+  "protected": {
+    "containers": 65,
+    "identityStateRestartHealthExactlyUnchangedDuringDeployment": true,
+    "canonicalJsonSha256": "9f4b7bf85f8bb121883724faf31f3e5daa0d0d0c2b8180810f2020968e5b2348",
+    "priorImageTagsPreserved": 11,
+    "candidateImageAndEarlierReleaseImagesRetained": true,
+    "historicalDigestClarification": {
+      "priorReleaseCanonicalJsonSha256": "86562feef47a2443194deb3aa377f160b23d17040cdddecc37a03118425435a0",
+      "sameSerialization": true,
+      "reason": "One unrelated protected queue restart counter changed from 57 to 58 before the isolated candidate preflight. Its identity/state and all other fields were unchanged. Candidate QA and deployment each preserved their current before/after inventory exactly.",
+      "unrelatedServiceMutatedByThisRelease": false
+    }
+  },
+  "limitations": [
+    "Transport and deployment validation only; rendered public acceptance is recorded separately by the release owner.",
+    "No physical phone, two-household internet session, or WAN impairment acceptance is implied.",
+    "The release does not change map geometry, collision, gameplay rules, ranking persistence, or GLB assets."
+  ]
+}

@@ -1,6 +1,6 @@
 # Release verification
 
-## Combat feedback — release candidate
+## Combat feedback — deployed September 8, 2026
 
 This change makes accepted shots easier to read: every shotgun pellet has its own contact effect, shield and armor responses reflect accepted damage, and respawn feedback waits for the player's new living position. Fixed-capacity render batches bound combat effects during sustained firing. The Blender scout retains its mapped surface detail during impact pulses. Weapon balance, movement, collision, scoring and both shipped models are unchanged.
 
@@ -8,7 +8,13 @@ The [combat feedback record](COMBAT_FEEDBACK.md) separates automated correctness
 
 The exact implementation passed [isolated Linux transport acceptance](verification/combat-feedback-linux.json): eight real clients for 60 seconds, both weapons, reconnect and ninth-player rejection, about 15.06 snapshots/sec and no unexpected errors. The worst snapshot gap was 69.53 ms; worst-peer p95 latest-input acknowledgment age was 34.29 ms. Added metadata averaged 4.33 KB/sec per player of decoded JSON payload. All three practice difficulties preserved unranked results and crew history. The temporary container/source were removed; production and all 65 other containers remained unchanged.
 
-Deployment acceptance is pending. [PR #5](https://github.com/Seckcey/kannon-fps/pull/5) tracks this release; the historical sections below describe their own earlier builds. Physical-phone rendering/controls and family playtesting across households remain open.
+[PR #5](https://github.com/Seckcey/kannon-fps/pull/5) merged final candidate `d8c32ad3fbf144934ed1e2e10b71eb2ded69d4a7` as implementation `5fc2c9472df97ffb81658a6d949b27bb60484f2a` with an identical tree. [Final PR CI](https://github.com/Seckcey/kannon-fps/actions/runs/34217037024) and [main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34217145510) passed. Coastline deployed the exact implementation with healthy status, zero restarts and the existing loopback origin, resource limits and security settings. Origin/public HTTP, WebSocket and both served model hashes passed.
+
+[Public rendered acceptance](verification/combat-feedback-live.json) entered real Balanced practice over HTTPS/WSS, verified the exact final bundle, observed all three rivals move and fire, fetched each matching model once and explicitly exited. Thirteen AR shots and six damage events carried valid metadata; this short public run observed no shotgun shot. The [live capture](art/combat-feedback-live.png) shows deployed gameplay. No application errors occurred. The known sky precision warning and the external Cloudflare beacon blocked by the existing CSP are separately recorded. The first pre-profile harness assertion was corrected to distinguish same-origin game modules from that injected external script; no product or CSP change was needed.
+
+The [deployment receipt](verification/combat-feedback-deployment.json) records an integrity-checked online SQLite backup and preservation of all six prior profiles, one crew, one membership and empty result tables. Three older backups and eleven prior image tags remained intact. All 65 other containers retained their current identity, state, restart count and health. An unrelated container's restart count had advanced once before combat QA; the historical inventory hash therefore differs, while each combat QA/deployment before-and-after inventory matched. Public browser acceptance subsequently added one clearly named QA profile and an unranked temporary practice, with no crew or rating writes.
+
+Later documentation-only closeouts may advance the running revision without changing this verified implementation; `/health` is authoritative. The historical sections below describe their own earlier builds. Physical-phone rendering/controls and family playtesting across households remain open; use the [family playtest guide](FAMILY_PLAYTEST.md).
 
 ## Sunbreak art depth and captured motion — deployed September 8, 2026
 
