@@ -6,11 +6,9 @@ The animation is authored keyframe motion, not motion capture.
 """
 import bpy
 import math
-import os
 import json
-import random
 from pathlib import Path
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'public' / 'models'
@@ -21,9 +19,8 @@ bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 bpy.context.preferences.filepaths.save_version=0
 for data in bpy.data.materials: bpy.data.materials.remove(data)
-random.seed(17)
 
-def material(name, color, metallic=0.0, roughness=.5, texture=False):
+def material(name, color, metallic=0.0, roughness=.5):
     m = bpy.data.materials.new(name)
     m.diffuse_color = (*color, 1)
     m.use_nodes = True
@@ -31,46 +28,17 @@ def material(name, color, metallic=0.0, roughness=.5, texture=False):
     shader.inputs['Base Color'].default_value = (*color, 1)
     shader.inputs['Metallic'].default_value = metallic
     shader.inputs['Roughness'].default_value = roughness
-    if texture:
-        import numpy as np
-        size = 512
-        rng = np.random.default_rng(17)
-        yy, xx = np.mgrid[0:size, 0:size]
-        grain = rng.normal(0, .012, (size, size))
-        if name == 'WovenUndersuit': grain += .11*np.sin(xx*1.8)*np.sin(yy*1.8)
-        variation = .945 + grain + .038*np.sin(xx*.03)*np.sin(yy*.034)
-        # Sparse fine abrasion remains subtle at game distance.
-        scratches = (rng.random((size, size)) > .9990)
-        variation[scratches] -= .11
-        pixels = np.ones((size, size, 4), dtype=np.float32)
-        # Blender image data is stored in scene-linear values; exporter writes sRGB.
-        for c in range(3): pixels[:, :, c] = np.clip(color[c] * variation, 0, 1)
-        image = bpy.data.images.new(name + '_surface', width=size, height=size, alpha=False)
-        image.pixels.foreach_set(pixels.ravel())
-        image.pack()
-        node = m.node_tree.nodes.new('ShaderNodeTexImage')
-        node.image = image
-        m.node_tree.links.new(node.outputs['Color'], shader.inputs['Base Color'])
-        normal_pixels = np.ones((size,size,4),dtype=np.float32)
-        normal_pixels[:,:,0] = .5 + grain*.8
-        normal_pixels[:,:,1] = .5 + np.roll(grain,1,axis=0)*.8
-        normal_pixels[:,:,2] = .998
-        normal_image = bpy.data.images.new(name+'_micro_normal',width=size,height=size,alpha=False)
-        normal_image.colorspace_settings.name='Non-Color'
-        normal_image.pixels.foreach_set(normal_pixels.ravel());normal_image.pack()
-        normal_tex=m.node_tree.nodes.new('ShaderNodeTexImage');normal_tex.image=normal_image
-        normal_node=m.node_tree.nodes.new('ShaderNodeNormalMap');normal_node.inputs['Strength'].default_value=.65 if name=='WovenUndersuit' else .35
-        m.node_tree.links.new(normal_tex.outputs['Color'],normal_node.inputs['Color'])
-        m.node_tree.links.new(normal_node.outputs['Normal'],shader.inputs['Normal'])
     return m
 
-armor = material('CeramicArmor', (.63, .595, .50), .12, .74, True)
-accent = material('PlayerAccent', (.58, .096, .024), .11, .65)
-suit = material('WovenUndersuit', (.028, .043, .052), .02, .86, True)
+armor = material('CeramicArmor', (.69, .665, .60), .18, .39)
+accent = material('PlayerAccent', (.018, .12, .14), .28, .34)
+pack_teal = material('PetrolTeal', (.009, .061, .073), .32, .36)
+suit = material('WovenUndersuit', (.023, .029, .031), .02, .89)
 rubber = material('FlexibleRubber', (.021, .027, .031), .05, .69)
-gunmetal = material('Gunmetal', (.065, .075, .081), .7, .49, True)
+gunmetal = material('Gunmetal', (.047, .055, .058), .7, .32)
 steel = material('BrushedTitanium', (.29, .32, .33), .82, .3)
-visor = material('Visor', (.016, .14, .155), .67, .17)
+bronze = material('WarmBronze', (.39, .19, .053), .78, .31)
+visor = material('Visor', (.012, .042, .047), .82, .105)
 light = material('StatusLight', (.25, .83, .71), .2, .3)
 light.node_tree.nodes.get('Principled BSDF').inputs['Emission Color'].default_value = (.1, .8, .55, 1)
 light.node_tree.nodes.get('Principled BSDF').inputs['Emission Strength'].default_value = .5
@@ -86,12 +54,12 @@ bones = {
  'chest': ((0,0,1.30), (0,0,1.49), 'spine'),
  'neck': ((0,0,1.49), (0,0,1.58), 'chest'),
  'head': ((0,0,1.58), (0,0,1.79), 'neck'),
- 'upper_arm_r': ((.235,.015,1.46), (.28,.065,1.18), 'chest'),
- 'forearm_r': ((.28,.065,1.18), (.155,.32,1.24), 'upper_arm_r'),
- 'hand_r': ((.155,.32,1.24), (.14,.41,1.26), 'forearm_r'),
- 'upper_arm_l': ((-.235,.015,1.46), (-.28,.12,1.19), 'chest'),
- 'forearm_l': ((-.28,.12,1.19), (-.05,.30,1.20), 'upper_arm_l'),
- 'hand_l': ((-.05,.30,1.20), (.015,.365,1.23), 'forearm_l'),
+ 'upper_arm_r': ((.235,.015,1.46), (.285,.075,1.205), 'chest'),
+ 'forearm_r': ((.285,.075,1.205), (.145,.302,1.255), 'upper_arm_r'),
+ 'hand_r': ((.145,.302,1.255), (.135,.37,1.275), 'forearm_r'),
+ 'upper_arm_l': ((-.235,.015,1.46), (-.16,.25,1.25), 'chest'),
+ 'forearm_l': ((-.16,.25,1.25), (.095,.45,1.28), 'upper_arm_l'),
+ 'hand_l': ((.095,.45,1.28), (.135,.525,1.30), 'forearm_l'),
  'thigh_r': ((.105,0,.93), (.115,.015,.535), 'pelvis'),
  'shin_r': ((.115,.015,.535), (.12,0,.125), 'thigh_r'),
  'foot_r': ((.12,0,.125), (.12,.18,.065), 'shin_r'),
@@ -198,69 +166,58 @@ def limb(name, bone, widths, mat=suit):
     obj=bpy.data.objects.new(name,mesh); bpy.context.collection.objects.link(obj)
     return register(obj,mat,bone)
 
-def shoulder_cap(name, center, mat, bone):
-    # Three independent machined shell plates follow the deltoid. Visible gaps are flex seams.
-    cx,cy,cz=center;sign=1 if cx>0 else -1
-    profile=[(-.087,.028),(-.059,.075),(.044,.072),(.088,.038),(.096,-.041),(.067,-.085)]
-    result=None
-    for index,(ya,yb,plate_mat) in enumerate([(-.113,-.061,armor),(-.055,.054,mat),(.060,.109,armor)]):
-        verts=[];faces=[]
-        for depth in [0,-.008]:
-            for yy in [ya,yb]:
-                for x,z in profile:verts.append((cx+sign*x,cy+yy,cz+z+depth))
-        n=len(profile)
-        for i in range(n-1):
-            faces.append((i,i+1,n+i+1,n+i))
-            faces.append((2*n+i,3*n+i,3*n+i+1,2*n+i+1))
-            faces.append((i,2*n+i,2*n+i+1,i+1))
-            faces.append((n+i,n+i+1,3*n+i+1,3*n+i))
-        faces.extend([(0,n,3*n,2*n),(n-1,2*n-1,4*n-1,3*n-1)])
-        if sign<0:faces=[tuple(reversed(f)) for f in faces]
-        mesh=bpy.data.meshes.new(name+str(index));mesh.from_pydata(verts,[],faces);mesh.update()
-        obj=bpy.data.objects.new(name+str(index),mesh);bpy.context.collection.objects.link(obj)
-        bpy.context.view_layer.objects.active=obj;obj.select_set(True)
-        bevel=obj.modifiers.new('Pauldron edge bevel','BEVEL');bevel.width=.002;bevel.segments=1
-        bpy.ops.object.modifier_apply(modifier=bevel.name);obj.select_set(False)
-        register(obj,plate_mat,bone)
-        for face in obj.data.polygons:face.use_smooth=False
-        result=obj
-    # The player's camera sees this rear face. Close the shell with a contoured
-    # pauldron plate instead of exposing the open cross-section of its roof strips.
-    outline=profile+[(-.014,-.085),(-.058,-.036)]
-    vertices=[]
-    for yy in [-.108,-.120]:
-        vertices.extend((cx+sign*x,cy+yy,cz+z) for x,z in outline)
-    n=len(outline);vertices.append((cx+sign*.008,cy-.131,cz-.003))
-    faces=[tuple(range(n-1,-1,-1))]
-    for i in range(n):
-        j=(i+1)%n;faces.extend([(i,j,j+n,i+n),(i+n,j+n,2*n)])
-    mesh=bpy.data.meshes.new(name+'_rear_closed');mesh.from_pydata(vertices,[],faces);mesh.update()
+def panel(name, center, width, height, depth, mat, bone, reverse=False, group=None):
+    """Closed, fitted ceramic plate: tapered silhouette, rolled rim and compound crown."""
+    outline=[(-.32,-.50),(.31,-.50),(.48,-.32),(.50,.22),(.31,.47),(-.22,.50),(-.49,.29),(-.46,-.30)]
+    cx,cy,cz=center; facing=-1 if reverse else 1
+    vertices=[];faces=[]
+    for scale,d in [(1,0),(1,depth*.72),(.79,depth)]:
+        vertices.extend((cx+x*width*scale,cy+facing*d,cz+z*height*scale) for x,z in outline)
+    for ring in range(2):
+        for j in range(8):
+            k=(j+1)%8;faces.append((ring*8+j,ring*8+k,(ring+1)*8+k,(ring+1)*8+j))
+    vertices.append((cx,cy+facing*depth*1.14,cz)); faces.append(tuple(range(7,-1,-1)))
+    for j in range(8):faces.append((16+j,16+(j+1)%8,24))
+    mesh=bpy.data.meshes.new(name);mesh.from_pydata(vertices,[],faces);mesh.update()
     import bmesh
     bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=bm.faces);bm.to_mesh(mesh);bm.free()
-    obj=bpy.data.objects.new(name+'_rear_closed',mesh);bpy.context.collection.objects.link(obj)
-    register(obj,armor,bone)
-    for face in mesh.polygons:face.use_smooth=False
-    box(name+'_rear_accent',(cx+sign*.019,cy-.134,cz+.016),(.072,.008,.041),mat,bone,.006)
-    tube(name+'_rear_fastener',(cx+sign*.066,cy-.125,cz-.048),(cx+sign*.066,cy-.130,cz-.048),.006,steel,bone,10)
-    return result
+    obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj)
+    obj=register(obj,mat,bone,group)
+    bpy.context.view_layer.objects.active=obj;obj.select_set(True)
+    normal=obj.modifiers.new('Area weighted ceramic normals','WEIGHTED_NORMAL');normal.keep_sharp=False;normal.weight=50
+    bpy.ops.object.modifier_apply(modifier=normal.name);obj.select_set(False)
+    return obj
 
-def chest_plate():
-    # Separate fitted pectoral shells; the sternum remains an articulated dark seam.
-    points=[(.014,1.445),(.062,1.470),(.153,1.461),(.192,1.413),(.175,1.324),(.090,1.299),(.014,1.326)]
-    for sign in [-1,1]:
-        front=[(sign*x,.172-max(0,x-.07)*.25,z) for x,z in points]
-        verts=[(x,y-.013,z) for x,y,z in front]+front+[(sign*.093,.178,1.392)]
-        n=len(points);faces=[]
-        for i in range(n):
-            j=(i+1)%n;faces.extend([(i,j,j+n,i+n),(i+n,j+n,2*n)])
-        faces.append(tuple(range(n-1,-1,-1)))
-        if sign<0:faces=[tuple(reversed(f)) for f in faces]
-        mesh=bpy.data.meshes.new('pectoral_shell');mesh.from_pydata(verts,[],faces);mesh.update()
-        obj=bpy.data.objects.new('pectoral_shell',mesh);bpy.context.collection.objects.link(obj)
-        register(obj,armor,'chest')
-        for face in mesh.polygons:face.use_smooth=False
-        box('pectoral_seam',(sign*.114,.172,1.331),(.091,.008,.010),rubber,'chest',.002,rotation=(0,sign*.14,0))
-        tube('chest_fastener',(sign*.162,.153,1.427),(sign*.162,.16,1.427),.006,steel,'chest',10)
+def deltoid_shell(name, center, bone):
+    """A compact closed armor dome shaped over the deltoid, with an integrated dark rim."""
+    cx,cy,cz=center;sign=1 if cx>0 else -1
+    verts=[];faces=[];segments=24;rings=7
+    for inside in [False,True]:
+        for row in range(rings):
+            polar=.10+row/(rings-1)*1.94
+            for j in range(segments):
+                a=j/segments*math.tau
+                width=.094-(.006 if inside else 0)
+                verts.append((cx+sign*(math.cos(polar)*.041+math.sin(polar)*math.cos(a)*width),cy+math.sin(polar)*math.sin(a)*.104,cz+math.cos(polar)*(.111-(.006 if inside else 0))))
+    count=rings*segments
+    for inner in range(2):
+        offset=inner*count
+        for row in range(rings-1):
+            for j in range(segments):
+                k=(j+1)%segments;face=(offset+row*segments+j,offset+row*segments+k,offset+(row+1)*segments+k,offset+(row+1)*segments+j)
+                faces.append(face if inner==0 else tuple(reversed(face)))
+    for row in [0,rings-1]:
+        for j in range(segments):
+            k=(j+1)%segments;faces.append((row*segments+j,row*segments+k,count+row*segments+k,count+row*segments+j))
+    mesh=bpy.data.meshes.new(name);mesh.from_pydata(verts,[],faces);mesh.update()
+    import bmesh
+    bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=bm.faces);bm.to_mesh(mesh);bm.free()
+    obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj);register(obj,armor,bone)
+    panel(name+'_rear_inset',(cx,cy-.102,cz+.010),.077,.086,.007,rubber,bone,True)
+    panel(name+'_rear_identifier',(cx,cy-.112,cz+.015),.052,.050,.004,accent,bone,True)
+    tube(name+'_rotary_seal',(cx+sign*.087,cy,cz+.008),(cx+sign*.095,cy,cz+.008),.024,gunmetal,bone,16)
+    tube(name+'_rotary_cap',(cx+sign*.096,cy,cz+.008),(cx+sign*.10,cy,cz+.008),.018,bronze,bone,16)
+    return obj
 
 # Flexible anatomically shaped base; no sphere mannequin joints.
 torso=section_mesh('tailored_torso',[(0,0,1.01,.164,.107),(0,0,1.10,.174,.116),(0,0,1.20,.202,.128),(0,0,1.33,.227,.133),(0,0,1.43,.239,.122),(0,0,1.49,.17,.099)],suit,'spine')
@@ -279,31 +236,31 @@ for side,sign in [('r',1),('l',-1)]:
     # Woven flex zones, kneecaps, and layered ankle construction.
     knee=Vector(bones['shin_'+side][0])
     sphere('knee_flex_'+side,knee,(.065,.058,.061),rubber,'shin_'+side,16,10)
-    box('knee_plate_'+side,(sign*.115,.067,.536),(.102,.044,.137),armor,'shin_'+side,.019)
-    box('knee_accent_'+side,(sign*.115,.092,.554),(.070,.007,.028),accent,'shin_'+side,.004)
-    shin=section_mesh('shin_guard_'+side,[(sign*.12,.035,.16,.05,.058),(sign*.12,.035,.25,.073,.073),(sign*.118,.037,.38,.086,.077),(sign*.117,.035,.46,.071,.065)],armor,'shin_'+side,20)
-    box('shin_ridge_'+side,(sign*.12,.089,.325),(.017,.008,.224),steel,'shin_'+side,.004)
+    panel('knee_plate_'+side,(sign*.115,.048,.538),.112,.147,.042,armor,'shin_'+side)
+    panel('knee_accent_'+side,(sign*.115,.098,.548),.048,.036,.004,bronze,'shin_'+side)
+    shin=panel('shin_guard_'+side,(sign*.12,.046,.309),.133,.293,.054,armor,'shin_'+side)
+    panel('shin_inset_'+side,(sign*.12,.109,.319),.036,.171,.004,rubber,'shin_'+side)
     for z in [.195,.45]: section_mesh('shin_strap_'+side,[(sign*.12,0,z-.012,.074,.079),(sign*.12,0,z+.012,.074,.079)],rubber,'shin_'+side,20)
     # Shaped realistic combat boot with extended toe and layered sole.
     box('boot_sole_'+side,(sign*.12,.057,.032),(.127,.273,.054),rubber,'foot_'+side,.014)
     box('boot_heel_'+side,(sign*.12,-.025,.074),(.126,.128,.087),rubber,'foot_'+side,.018)
-    box('boot_toe_'+side,(sign*.12,.122,.078),(.124,.158,.073),armor,'foot_'+side,.014)
+    section_mesh('boot_upper_'+side,[(sign*.12,.058,.044,.064,.126),(sign*.12,.061,.08,.063,.121),(sign*.12,.035,.115,.059,.094),(sign*.12,-.005,.158,.048,.056)],rubber,'foot_'+side,20)
+    box('toe_cap_'+side,(sign*.12,.137,.093),(.110,.090,.027),armor,'foot_'+side,.013)
     section_mesh('boot_ankle_'+side,[(sign*.12,0,.07,.062,.070),(sign*.12,-.008,.13,.057,.06),(sign*.12,-.003,.20,.046,.05)],suit,'foot_'+side,16)
     for z,y in [(.116,.080),(.139,.051),(.161,.025)]: box('boot_lace_'+side,(sign*.12,y,z),(.071,.014,.009),rubber,'foot_'+side,.003)
     for yy in [-.05,.0,.055,.11,.175]: box('sole_tread_'+side,(sign*.12,yy,.014),(.137,.018,.014),gunmetal,'foot_'+side,.003)
     # Thigh armor occupies the outer/front face; cloth remains visible around it.
-    box('thigh_shell_'+side,(sign*.147,.081,.749),(.14,.079,.253),armor,'thigh_'+side,.026,rotation=(0,sign*.06,0))
-    box('thigh_insert_'+side,(sign*.147,.126,.777),(.092,.009,.116),rubber,'thigh_'+side,.009)
+    panel('thigh_shell_'+side,(sign*.142,.082,.749),.154,.282,.043,armor,'thigh_'+side)
+    panel('thigh_insert_'+side,(sign*.158,.132,.789),.062,.104,.006,rubber,'thigh_'+side)
+    panel('thigh_identifier_'+side,(sign*.127,.137,.705),.033,.045,.003,accent,'thigh_'+side)
     for z in [.662,.842]: section_mesh('thigh_band_'+side,[(sign*.111,0,z-.013,.106,.10),(sign*.111,0,z+.013,.106,.10)],rubber,'thigh_'+side,20)
     box('outer_thigh_marker_'+side,(sign*.218,.039,.79),(.011,.071,.083),accent,'thigh_'+side,.004)
     # Anatomical upper arm armor and forearm hard shell align to skeleton.
     shoulder=Vector(bones['upper_arm_'+side][0])
-    shoulder_cap('pauldron_'+side,shoulder+Vector((sign*.009,.001,-.004)),accent,'upper_arm_'+side)
-    box('shoulder_edge_'+side,(sign*.31,.001,1.465),(.035,.181,.014),armor,'upper_arm_'+side,.005)
-    box('bicep_plate_'+side,(sign*.319,.033,1.344),(.035,.093,.105),armor,'upper_arm_'+side,.008)
+    deltoid_shell('pauldron_'+side,shoulder+Vector((sign*.004,0,-.018)),'upper_arm_'+side)
     # Wrist guard follows forearm vector.
     a,b=Vector(bones['forearm_'+side][0]),Vector(bones['forearm_'+side][1]); center=a.lerp(b,.52)
-    obj=box('forearm_guard_'+side,center,(.125,.113,(b-a).length*.73),armor,'forearm_'+side,.017)
+    obj=panel('forearm_guard_'+side,center+Vector((0,.038,0)),.105,(b-a).length*.81,.032,armor,'forearm_'+side)
     # The box was bound in world coordinates; rotate its vertices around center.
     q=(b-a).to_track_quat('Z','Y')
     for vertex in obj.data.vertices: vertex.co = center + q @ (vertex.co-center)
@@ -318,21 +275,22 @@ for side,sign in [('r',1),('l',-1)]:
     # Four individually modeled curved glove fingers and a thumb.
     for f in range(4):
         start=tip+Vector(((f-1.5)*.017,-.012,.002))
-        middle=start+Vector((0,.030,-.015)); end=middle+Vector((0,-.002,-.027))
+        middle=start+Vector((0,.025,.012 if side=='l' else -.015)); end=middle+Vector((0,-.002,.020 if side=='l' else -.027))
         tube('finger_'+side+str(f),start,middle,.010,suit,'hand_'+side,8,radius2=.009)
         tube('finger_tip_'+side+str(f),middle,end,.009,rubber,'hand_'+side,8,radius2=.007)
     tube('thumb_'+side,palm+Vector((-sign*.035,.003,0)),palm+Vector((-sign*.025,.036,-.027)),.013,suit,'hand_'+side,10,radius2=.010)
 
 # Front cuirass is cut into sternum and lateral plates, with a clear dark collar.
-chest_plate()
+for s in [-1,1]:
+    panel('pectoral_shell',(s*.100,.121,1.391),.207,.195,.046,armor,'chest')
+    tube('pectoral_fastener',(s*.16,.162,1.436),(s*.16,.17,1.436),.005,gunmetal,'chest',8)
 box('sternum_inset',(0,.154,1.365),(.015,.009,.139),rubber,'chest',.003)
 box('sternum_badge',(.083,.184,1.406),(.048,.005,.011),accent,'chest',.003)
 for z,width in [(1.262,.284),(1.216,.265),(1.170,.241)]:
     box('abdominal_armor',(0,.135,z),(width,.032,.039),armor,'spine',.008)
     box('abdominal_recess',(0,.154,z-.015),(width*.76,.004,.005),rubber,'spine',.002)
 for s in [-1,1]:
-    box('pectoral_plate', (s*.181,.081,1.385),(.059,.070,.173),armor,'chest',.014,rotation=(0,s*.14,s*.18))
-    box('lower_rib_plate',(s*.112,.108,1.19),(.103,.043,.105),armor,'spine',.019,rotation=(0,s*.08,s*.12))
+    panel('lower_rib_plate',(s*.122,.094,1.205),.121,.122,.040,armor,'spine')
     # Back shoulder harness and pack mounting straps.
     box('shoulder_harness',(s*.152,-.059,1.414),(.055,.203,.056),rubber,'chest',.014,rotation=(0,s*.16,0))
     box('pack_clip',(s*.143,-.148,1.42),(.052,.031,.059),steel,'chest',.008)
@@ -349,50 +307,62 @@ for side in [-1,1]:
     box('rear_pouch_flap',(side*.118,-.151,1.014),(.097,.012,.03),rubber,'pelvis',.005)
     box('rear_pouch_clasp',(side*.118,-.16,.991),(.027,.005,.04),steel,'pelvis',.003)
 for i in range(3):
-    box('lumbar_segment',(0,-.119,1.095+i*.055),(.225,.048,.043),armor,'spine',.009)
+    panel('lumbar_segment',(0,-.107,1.095+i*.051),.251-i*.013,.044,.021,armor,'spine',True)
 # Pack is the key silhouette seen by the over-shoulder camera.
-box('pack_mount',(0,-.122,1.345),(.285,.061,.307),rubber,'chest',.026)
-box('backpack_frame',(0,-.164,1.348),(.249,.089,.302),armor,'chest',.025)
-box('backpack_center',(0,-.219,1.363),(.144,.037,.205),gunmetal,'chest',.016)
-box('backpack_top',(0,-.219,1.488),(.148,.037,.023),accent,'chest',.006)
-box('backpack_lower',(0,-.221,1.225),(.132,.025,.039),accent,'chest',.006)
+panel('pack_mount',(0,-.12,1.334),.29,.351,.045,rubber,'chest',True)
+panel('backpack_frame',(0,-.162,1.335),.258,.346,.059,armor,'chest',True)
+panel('backpack_center',(-.012,-.229,1.35),.168,.280,.020,pack_teal,'chest',True)
+panel('backpack_upper_latch',(-.012,-.252,1.46),.057,.030,.009,bronze,'chest',True)
+panel('backpack_lower',(-.012,-.252,1.232),.102,.023,.006,gunmetal,'chest',True)
 for s in [-1,1]:
-    box('pack_rail',(s*.106,-.208,1.345),(.025,.036,.225),steel,'chest',.008)
+    panel('pack_rail',(s*.107,-.220,1.334),.034,.252,.021,armor,'chest',True)
+    panel('pack_player_identifier',(s*.107,-.246,1.371),.013,.079,.004,accent,'chest',True)
     tube('pack_service_line',(s*.097,-.205,1.21),(s*.097,-.21,1.477),.006,rubber,'chest',8)
-for i in range(5):
-    box('pack_cooling_fin',(0,-.242,1.292+i*.021),(.108,.010,.006),rubber,'chest',.001)
-box('pack_indicator',(0,-.243,1.454),(.053,.004,.009),light,'chest',.002)
+for i in range(4):
+    box('pack_cooling_fin',(.088,-.247,1.267+i*.023),(.022,.006,.008),gunmetal,'chest',.001)
+box('pack_indicator',(-.026,-.257,1.411),(.073,.004,.006),light,'chest',.001)
+for z in [1.244,1.434]:
+    tube('pack_service_recess',(.09,-.242,z),(.09,-.252,z),.014,gunmetal,'chest',14)
+    tube('pack_service_socket',(.09,-.252,z),(.09,-.255,z),.009,bronze,'chest',12)
+for text,z,size in [('KANNON',1.378,.016),('S / 07',1.335,.021)]:
+    bpy.ops.object.text_add(location=(-.016,-.255,z),rotation=(math.pi/2,0,0))
+    obj=bpy.context.object;obj.name='pack_stencil';obj.data.body=text;obj.data.align_x='CENTER';obj.data.size=size;obj.data.extrude=.0001;obj.data.resolution_u=2
+    bpy.ops.object.convert(target='MESH');register(bpy.context.object,white,'chest')
 # Neck and original full helmet with several shell layers.
 tube('neck_gaiter',(0,0,1.475),(0,0,1.6),.074,suit,'neck',20,radius2=.064)
-section_mesh('raised_armored_collar',[(0,0,1.468,.118,.104),(0,0,1.519,.110,.098),(0,0,1.543,.094,.085)],armor,'chest',24)
+section_mesh('raised_armored_collar',[(0,0,1.468,.130,.104),(0,-.012,1.496,.117,.101),(0,-.021,1.516,.096,.083)],armor,'chest',24)
 for z in [1.509,1.529,1.549]:
     bpy.ops.mesh.primitive_torus_add(major_radius=.071,minor_radius=.005,major_segments=24,minor_segments=6,location=(0,0,z))
     register(bpy.context.object,rubber,'neck')
 sphere('helmet_inner',(0,0,1.69),(.106,.113,.137),rubber,'head',24,16)
-section_mesh('helmet_shell',[(0,-.015,1.601,.076,.078),(0,-.016,1.635,.102,.103),(0,-.014,1.713,.112,.118),(0,-.019,1.778,.102,.111),(0,-.021,1.82,.072,.079),(0,-.022,1.839,.022,.031)],armor,'head',28)
+section_mesh('helmet_shell',[(0,-.015,1.601,.076,.078),(0,-.016,1.635,.103,.104),(0,-.014,1.713,.113,.118),(0,-.018,1.764,.107,.117),(0,-.021,1.805,.087,.096),(0,-.022,1.831,.049,.061),(0,-.022,1.839,.012,.018)],armor,'head',28)
 # Curved visor patch follows the helmet instead of a flat block.
 verts=[]; faces=[]; cols=20; rows=5
 for i in range(rows):
-    v=i/(rows-1); z=1.653+v*.077
+    v=i/(rows-1); z=1.656+v*.073
     for j in range(cols+1):
         angle=-1.16+2.32*j/cols
-        verts.append((math.sin(angle)*.108, .015+math.cos(angle)*.111, z+.010*math.cos(angle)))
+        verts.append((math.sin(angle)*.108, .014+math.cos(angle)*(.116+.008*math.sin(v*math.pi)), z+.009*math.cos(angle)))
 for i in range(rows-1):
     for j in range(cols):
         n=i*(cols+1)+j; faces.append((n,n+1,n+cols+2,n+cols+1))
 mesh=bpy.data.meshes.new('visor_curved');mesh.from_pydata(verts,[],faces);mesh.update()
 obj=bpy.data.objects.new('visor_curved',mesh);bpy.context.collection.objects.link(obj);register(obj,visor,'head')
-box('visor_brow',(0,.098,1.741),(.17,.049,.019),rubber,'head',.010)
-box('helmet_chin',(0,.087,1.614),(.139,.064,.049),armor,'head',.017)
+for s in [-1,1]:
+    tube('visor_integrated_brow',(0,.134,1.745),(s*.088,.082,1.736),.009,gunmetal,'head',8,radius2=.005)
+panel('helmet_chin',(0,.089,1.614),.147,.053,.037,armor,'head')
 box('chin_vent',(0,.124,1.623),(.075,.011,.020),gunmetal,'head',.006)
 for s in [-1,1]:
     box('helmet_cheek',(s*.087,.046,1.635),(.045,.104,.091),armor,'head',.017,rotation=(0,s*.20,s*.28))
     tube('helmet_comms',(s*.098,-.005,1.674),(s*.121,-.005,1.674),.044,gunmetal,'head',18)
     tube('helmet_comms_shell',(s*.12,-.005,1.674),(s*.126,-.005,1.674),.032,armor,'head',18)
     box('helmet_side_marker',(s*.110,-.028,1.751),(.013,.062,.032),accent,'head',.006)
-box('helmet_rear_panel',(0,-.125,1.691),(.10,.018,.067),rubber,'head',.009)
-box('helmet_rear_light',(0,-.136,1.706),(.050,.005,.010),light,'head',.002)
-for x in [-.033,.033]: box('helmet_top_inset',(x,-.032,1.831),(.008,.050,.006),rubber,'head',.002)
+panel('helmet_rear_panel',(0,-.126,1.681),.103,.066,.010,rubber,'head',True)
+box('helmet_rear_light',(0,-.139,1.691),(.050,.003,.006),light,'head',.001)
+for s in [-1,1]:
+    points=[(s*.081,-.078,1.76),(s*.069,-.059,1.807),(s*.048,-.023,1.833),(s*.044,.026,1.826),(s*.068,.071,1.799)]
+    for a,b in zip(points,points[1:]):tube('helmet_panel_seam',a,b,.0022,rubber,'head',6)
+    panel('helmet_rear_cheek',(s*.065,-.113,1.726),.055,.059,.012,armor,'head',True)
 # Recessed fasteners, suit seam piping, and equipment clasps give close views scale.
 for s in [-1,1]:
     for z in [1.25,1.455]:
@@ -445,6 +415,74 @@ box('healing_cross_h',(.135,.424,1.29),(.063,.005,.017),white,'hand_r',.003,grou
 box('healing_cross_v',(.135,.424,1.29),(.017,.005,.061),white,'hand_r',.003,group='healing_item')
 box('healing_lid',(.135,.38,1.374),(.094,.054,.025),gunmetal,'hand_r',.007,group='healing_item')
 
+def consolidate_surfaces(objects):
+    """Share one 1024x512 PBR atlas across cloth, ceramic, rubber and machined metals.
+
+    Eight material tiles preserve their physical responses while removing per-material draws.
+    Player identification, reflective visor and status emission remain independent materials.
+    """
+    import numpy as np
+    materials=[armor,suit,rubber,gunmetal,steel,bronze,white,pack_teal]
+    width,height,tile=1024,512,256
+    base=np.ones((height,width,4),dtype=np.float32)
+    normal=np.ones((height,width,4),dtype=np.float32);normal[:,:,:3]=(.5,.5,1)
+    orm=np.ones((height,width,4),dtype=np.float32)
+    yy,xx=np.mgrid[0:tile,0:tile];rng=np.random.default_rng(77)
+    for index,mat in enumerate(materials):
+        shader=mat.node_tree.nodes.get('Principled BSDF');color=shader.inputs['Base Color'].default_value[:3]
+        rough=shader.inputs['Roughness'].default_value;metal=shader.inputs['Metallic'].default_value
+        # Broad coating variation and fine directional grain. No baked lighting or shadows.
+        wave=np.sin(xx*.072)*np.sin(yy*.089)*.012
+        grain=rng.normal(0,.003,(tile,tile))
+        woven=(np.sin(xx*math.pi/2)*np.sin(yy*math.pi/2)) if mat==suit else np.zeros_like(wave)
+        wear=(np.minimum.reduce([xx,yy,tile-1-xx,tile-1-yy])<5)*(.02+.02*np.sin(xx*.7+yy*.9)) if mat==armor else 0
+        y,x=(index//4)*tile,(index%4)*tile
+        for channel in range(3):base[y:y+tile,x:x+tile,channel]=np.clip(color[channel]*(1+wave+grain+woven*.10)+wear,0,1)
+        orm[y:y+tile,x:x+tile,1]=np.clip(rough+wave*3+grain*2-wear,0,1)
+        orm[y:y+tile,x:x+tile,2]=metal
+        heightfield=grain+wave*.15+woven*.013
+        normal[y:y+tile,x:x+tile,0]=.5+heightfield
+        normal[y:y+tile,x:x+tile,1]=.5+np.roll(heightfield,1,axis=0)
+    atlas=material('ScoutSurface',(1,1,1),1,1)
+    shader=atlas.node_tree.nodes.get('Principled BSDF')
+    nodes={}
+    for name,pixels,space in [('Coating',base,'sRGB'),('MicroNormal',normal,'Non-Color'),('MetalRoughness',orm,'Non-Color')]:
+        img=bpy.data.images.new('Scout_'+name,width=width,height=height,alpha=False)
+        img.colorspace_settings.name=space;img.pixels.foreach_set(pixels.ravel());img.pack()
+        node=atlas.node_tree.nodes.new('ShaderNodeTexImage');node.image=img;nodes[name]=node
+    atlas.node_tree.links.new(nodes['Coating'].outputs['Color'],shader.inputs['Base Color'])
+    separate=atlas.node_tree.nodes.new('ShaderNodeSeparateColor')
+    atlas.node_tree.links.new(nodes['MetalRoughness'].outputs['Color'],separate.inputs['Color'])
+    atlas.node_tree.links.new(separate.outputs['Green'],shader.inputs['Roughness'])
+    atlas.node_tree.links.new(separate.outputs['Blue'],shader.inputs['Metallic'])
+    normalmap=atlas.node_tree.nodes.new('ShaderNodeNormalMap');normalmap.inputs['Strength'].default_value=.55
+    atlas.node_tree.links.new(nodes['MicroNormal'].outputs['Color'],normalmap.inputs['Color'])
+    atlas.node_tree.links.new(normalmap.outputs['Normal'],shader.inputs['Normal'])
+    for obj in objects:
+        original=obj.data.materials[0]
+        uv=obj.data.uv_layers.active
+        if original not in materials:
+            if uv is None:uv=obj.data.uv_layers.new(name='Surface UV')
+            uv.name='Surface UV'
+            continue
+        index=materials.index(original)
+        if uv is None:
+            uv=obj.data.uv_layers.new(name='Surface UV')
+            for poly in obj.data.polygons:
+                axes=sorted(range(3),key=lambda axis:abs(poly.normal[axis]))[:2]
+                for loop_index in poly.loop_indices:
+                    co=obj.data.vertices[obj.data.loops[loop_index].vertex_index].co
+                    uv.data[loop_index].uv=(co[axes[0]]*3%1,co[axes[1]]*3%1)
+        # Joined primitives must share one UV-layer name; otherwise Blender silently
+        # creates separate layers and untextured components sample the ivory tile.
+        uv.name='Surface UV'
+        for loop in uv.data:
+            u,v=loop.uv;loop.uv=((index%4+(6+min(1,max(0,u))*244)/tile)/4,(index//4+(6+min(1,max(0,v))*244)/tile)/2)
+        obj.data.materials[0]=atlas
+    return atlas
+
+consolidate_surfaces(parts+[part for items in weapon_parts.values() for part in items])
+
 def join_meshes(objects,name):
     bpy.ops.object.select_all(action='DESELECT')
     for obj in objects: obj.select_set(True)
@@ -462,6 +500,10 @@ muzzle=bpy.data.objects.new('muzzle',None);bpy.context.collection.objects.link(m
 muzzle.parent=rig;muzzle.parent_type='BONE';muzzle.parent_bone='hand_r'
 muzzle.matrix_world.translation=(.135,.847,1.332)
 muzzle.empty_display_size=.025
+muzzle_shotgun=bpy.data.objects.new('muzzle_shotgun',None);bpy.context.collection.objects.link(muzzle_shotgun)
+muzzle_shotgun.parent=rig;muzzle_shotgun.parent_type='BONE';muzzle_shotgun.parent_bone='hand_r'
+muzzle_shotgun.matrix_world.translation=(.135,.924,1.332)
+muzzle_shotgun.empty_display_size=.025
 
 # Keyed combat poses preserve the feet at the origin. Locomotion is driven by game physics.
 rig.animation_data_create()
@@ -481,6 +523,25 @@ def key(frame,rotations={},locations={}):
         p.keyframe_insert('rotation_euler',frame=frame,group=name)
         p.keyframe_insert('location',frame=frame,group=name)
 
+def place_support_hand(frame, target, blend=1):
+    """Bake a two-bone reach into the existing rig; no runtime IK or extra bones."""
+    bpy.context.view_layer.update()
+    upper=rig.pose.bones['upper_arm_l'];fore=rig.pose.bones['forearm_l'];hand=rig.pose.bones['hand_l']
+    origin=upper.head.copy();target=hand.head.lerp(Vector(target),blend)
+    direction=target-origin;distance=min(direction.length,upper.length+fore.length-.003);direction.normalize()
+    bend=Vector((-.2,.10,-.35));bend=(bend-direction*bend.dot(direction)).normalized()
+    along=(upper.length**2-fore.length**2+distance**2)/(2*distance)
+    elbow=origin+direction*along+bend*math.sqrt(max(0,upper.length**2-along**2))
+    target=origin+direction*distance;hand_rotation=hand.matrix.to_quaternion()
+    for pose,start,end in [(upper,origin,elbow),(fore,elbow,target)]:
+        rest=rig.data.bones[pose.name]
+        rotation=(rest.tail_local-rest.head_local).rotation_difference(end-start)@rest.matrix_local.to_quaternion()
+        pose.matrix=Matrix.Translation(start)@rotation.to_matrix().to_4x4();bpy.context.view_layer.update()
+    hand.matrix=Matrix.Translation(target)@hand_rotation.to_matrix().to_4x4()
+    for pose in [upper,fore,hand]:
+        pose.keyframe_insert('rotation_euler',frame=frame,group=pose.name)
+        pose.keyframe_insert('location',frame=frame,group=pose.name)
+
 foot_vertices={}
 for name in ['foot_l','foot_r']:
     group=body.vertex_groups.get(name)
@@ -497,35 +558,45 @@ def ground_feet(frame,clearance=.008):
 
 begin('Idle',90)
 for frame,phase in [(1,0),(23,1),(46,0),(68,-1),(91,0)]:
-    key(frame,{'spine':(phase*.55,0,phase*.35),'chest':(-phase*.3,0,0),'head':(0,phase*.8,phase*.35),'upper_arm_r':(phase*.2,0,0),'upper_arm_l':(-phase*.2,0,0)}, {'chest':(0,phase*.002,0)})
-for name,frames,angle,knee,bob in [('Walk',32,20,30,.014),('Run',22,31,58,.024)]:
+    key(frame,{'thigh_r':(3,0,-1),'thigh_l':(1,0,1),'shin_r':(-5,0,0),'shin_l':(-4,0,0),'foot_r':(2,0,0),'foot_l':(3,0,0),'spine':(phase*.55,0,phase*.35),'chest':(-phase*.3,0,0),'head':(0,phase*.8,phase*.35),'upper_arm_r':(phase*.2,0,0),'upper_arm_l':(-phase*.2,0,0)}, {'chest':(0,phase*.002,0)})
+    ground_feet(frame,.006)
+for name,frames,magnitude,bob in [('Walk',22,.78,.010),('Run',18,1,.019)]:
     begin(name,frames)
-    for index in range(9):
-        phase=index/8*math.tau;s=math.sin(phase);c=math.cos(phase)
-        rots={'thigh_r':(angle*s,0,-2),'thigh_l':(-angle*s,0,2),
-              'shin_r':(-max(0,-s)*knee,0,0),'shin_l':(-max(0,s)*knee,0,0),
-              'foot_r':(max(0,-s)*knee*.42-angle*s*.22,0,0),'foot_l':(max(0,s)*knee*.42+angle*s*.22,0,0),
-              'pelvis':(0,0,2.3*s),'spine':(-3 if name=='Run' else -1,0,-1.7*s),
-              'chest':(0,1.2*s,-.7*s),'head':(0,-1.1*s,0),
-              'upper_arm_r':(1.0*s,0,.6*s),'upper_arm_l':(-.7*s,0,.5*s)}
-        frame=1+frames*index/8
-        key(frame,rots,{'pelvis':(0,abs(math.cos(phase))*bob,0)})
-        ground_feet(frame,.008 if name=='Walk' else .008+.018*abs(s)**4)
+    # Contact, compression, support, toe-off, recovery, passing, swing and heel strike.
+    # The asymmetric knee/ankle arcs avoid the old synchronized sine-wave mannequin gait.
+    leg=[(28,-8,-16),(15,-26,9),(-8,-25,20),(-27,-38,27),(-24,-78,34),(10,-88,35),(35,-52,7),(36,-20,-13)]
+    for index in range(17):
+        phase=index/16*math.tau;s=math.sin(phase)
+        rots={}
+        for side,offset in [('r',0),('l',4)]:
+            position=(index/2+offset)%8;i=int(position);blend=position-i
+            angles=[leg[i][a]*(1-blend)+leg[(i+1)%8][a]*blend for a in range(3)]
+            for bone,angle in zip(['thigh','shin','foot'],angles):rots[bone+'_'+side]=(angle*magnitude,0,(-2 if side=='r' else 2) if bone=='thigh' else 0)
+        rots.update({'pelvis':(0,2*s,2.2*s),'spine':(-7 if name=='Run' else -4,-1.4*s,-1.6*s),
+                     'chest':(1,.5*s,-.6*s),'head':(2,-.5*s,0)})
+        frame=1+frames*index/16
+        key(frame,rots,{'pelvis':(0,abs(math.sin(phase*2))*bob,0)})
+        ground_feet(frame,.006 if name=='Walk' else .006+.016*max(0,math.sin(phase*2))**4)
 begin('Jump',30)
 for frame,amount in [(1,0),(6,1),(14,.5),(23,.8),(31,0)]:
     key(frame,{'thigh_r':(22*amount,0,-4*amount),'thigh_l':(16*amount,0,4*amount),'shin_r':(-42*amount,0,0),'shin_l':(-33*amount,0,0),'foot_r':(12*amount,0,0),'foot_l':(10*amount,0,0),'spine':(-5*amount,0,0),'head':(4*amount,0,0)})
 begin('Aim',60)
 for frame,breath in [(1,0),(31,1),(61,0)]:
-    key(frame,{'chest':(-3+breath*.2,0,0),'neck':(2,0,0),'head':(2,0,0),'upper_arm_r':(-3,0,0),'upper_arm_l':(-2,0,0)})
-begin('Fire',8)
-for frame,kick in [(1,0),(2,1),(4,.25),(9,0)]:
-    key(frame,{'chest':(kick*1.6,0,0),'upper_arm_r':(-kick*3.5,0,0),'forearm_r':(kick*2,0,0),'upper_arm_l':(-kick*2,0,0),'head':(-kick*.6,0,0)})
+    key(frame,{'thigh_r':(5,0,-1),'thigh_l':(5,0,1),'shin_r':(-10,0,0),'shin_l':(-10,0,0),'foot_r':(5,0,0),'foot_l':(5,0,0),'chest':(-3+breath*.2,0,0),'neck':(2,0,0),'head':(2,0,0),'upper_arm_r':(-3,0,0),'upper_arm_l':(-2,0,0)})
+    ground_feet(frame,.006)
+begin('Fire',6)
+for frame,kick in [(1,0),(2,1),(3,.42),(5,.08),(7,0)]:
+    key(frame,{'chest':(kick*2,0,0),'upper_arm_r':(-kick*2.8,0,0),'forearm_r':(kick*1.2,0,0),'upper_arm_l':(-kick*1.8,0,0),'head':(-kick*.6,0,0)}, {'chest':(0,0,kick*.007)})
 begin('Reload',54)
-for frame,amount,reach in [(1,0,0),(10,1,0),(23,1,1),(36,.8,.2),(47,.3,0),(55,0,0)]:
-    key(frame,{'upper_arm_r':(amount*8,amount*-10,amount*9),'forearm_r':(amount*-8,0,0),'hand_r':(0,amount*9,amount*-6),'upper_arm_l':(amount*10,amount*6,-amount*9),'forearm_l':(-amount*17,reach*14,amount*15),'hand_l':(reach*22,0,reach*-12),'head':(amount*5,0,amount*-3)})
+for frame,amount,target in [(1,0,None),(9,.65,(.095,.43,1.20)),(17,1,(.085,.40,1.125)),(25,1,(-.10,.18,1.045)),(33,1,(.065,.35,1.12)),(40,.9,(.10,.41,1.225)),(48,.3,(.095,.45,1.28)),(55,0,None)]:
+    key(frame,{'upper_arm_r':(amount*6,amount*-5,amount*5),'forearm_r':(amount*-5,0,0),'hand_r':(0,amount*5,amount*-4),'head':(amount*7,0,amount*-2)})
+    if target is not None:place_support_hand(frame,target)
 begin('Heal',90)
 for frame,amount,pulse in [(1,0,0),(16,1,0),(31,1,1),(46,1,0),(61,1,1),(76,.8,0),(91,0,0)]:
-    key(frame,{'upper_arm_r':(amount*6,amount*-4,amount*-7),'forearm_r':(amount*-12,0,0),'hand_r':(amount*10,0,0),'upper_arm_l':(amount*8,amount*6,amount*5),'forearm_l':(amount*-10,pulse*5,amount*8),'hand_l':(pulse*8,0,0),'head':(amount*8,0,0)})
+    key(frame,{'upper_arm_r':(amount*6,amount*-4,amount*-7),'forearm_r':(amount*-12,0,0),'hand_r':(amount*10,0,0),'head':(amount*8,0,0)})
+    if amount:
+        bpy.context.view_layer.update();deform=rig.pose.bones['hand_r'].matrix@rig.data.bones['hand_r'].matrix_local.inverted()
+        place_support_hand(frame,deform@Vector((.082,.316,1.352-pulse*.012)),amount)
 
 # Each action gets a separate named NLA track; exporter emits all eight clips.
 rig.animation_data.action=None
@@ -559,7 +630,7 @@ bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'scout.blend'))
 
 # Export only gameplay objects; studio lights/floor/camera never ship.
 bpy.ops.object.select_all(action='DESELECT')
-for obj in [rig,body,muzzle,*weapons.values()]: obj.select_set(True)
+for obj in [rig,body,muzzle,muzzle_shotgun,*weapons.values()]: obj.select_set(True)
 bpy.context.view_layer.objects.active=rig
 for obj in weapons.values(): obj.hide_render=False
 bpy.ops.export_scene.gltf(filepath=str(OUT/'scout.glb'),export_format='GLB',use_selection=True,export_yup=True,export_animations=True,export_animation_mode='NLA_TRACKS',export_nla_strips=True,export_skins=True,export_all_influences=False,export_apply=False,export_lights=False,export_cameras=False,export_morph=False)

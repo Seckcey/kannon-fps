@@ -1,0 +1,145 @@
+{
+  "status": "passed",
+  "asset": "public/models/environment.glb",
+  "bytes": 6460940,
+  "sha256": "f4d6ef377cebf088596af88720517e67f913b6dae9c01880c35bd8069fb6530d",
+  "triangles": 66272,
+  "exportedVertices": 116740,
+  "colorBatches": 15,
+  "materials": 8,
+  "images": [
+    {
+      "name": "courtyard_concept_normal",
+      "mimeType": "image/png",
+      "bytes": 407424
+    },
+    {
+      "name": "courtyard_concept_base",
+      "mimeType": "image/jpeg",
+      "bytes": 327358
+    },
+    {
+      "name": "courtyard_concept_orm",
+      "mimeType": "image/png",
+      "bytes": 41322
+    },
+    {
+      "name": "limestone_concept_normal",
+      "mimeType": "image/png",
+      "bytes": 391837
+    },
+    {
+      "name": "limestone_concept_base",
+      "mimeType": "image/jpeg",
+      "bytes": 310523
+    },
+    {
+      "name": "limestone_concept_orm",
+      "mimeType": "image/png",
+      "bytes": 39418
+    },
+    {
+      "name": "petrol_normal",
+      "mimeType": "image/png",
+      "bytes": 125885
+    },
+    {
+      "name": "petrol_base",
+      "mimeType": "image/png",
+      "bytes": 39931
+    },
+    {
+      "name": "petrol_orm",
+      "mimeType": "image/png",
+      "bytes": 38182
+    },
+    {
+      "name": "olive_sprig",
+      "mimeType": "image/png",
+      "bytes": 116549
+    }
+  ],
+  "batches": [
+    {
+      "name": "ArenaCore_EnvGround",
+      "triangles": 24,
+      "vertices": 48
+    },
+    {
+      "name": "ArenaCore_EnvLimestone",
+      "triangles": 11574,
+      "vertices": 23316
+    },
+    {
+      "name": "ArenaTrim_EnvBronze",
+      "triangles": 3020,
+      "vertices": 5652
+    },
+    {
+      "name": "ArenaTrim_EnvPetrol",
+      "triangles": 1284,
+      "vertices": 2596
+    },
+    {
+      "name": "Exterior_EnvBronze",
+      "triangles": 1268,
+      "vertices": 2688
+    },
+    {
+      "name": "Exterior_EnvCliff",
+      "triangles": 6202,
+      "vertices": 10432
+    },
+    {
+      "name": "Exterior_EnvLimestone",
+      "triangles": 4532,
+      "vertices": 9888
+    },
+    {
+      "name": "Exterior_EnvPetrol",
+      "triangles": 1968,
+      "vertices": 4272
+    },
+    {
+      "name": "Foliage_EnvBark",
+      "triangles": 1654,
+      "vertices": 3308
+    },
+    {
+      "name": "Foliage_EnvFlower",
+      "triangles": 560,
+      "vertices": 1680
+    },
+    {
+      "name": "Foliage_EnvLeaves",
+      "triangles": 26480,
+      "vertices": 39720
+    },
+    {
+      "name": "Horizon_EnvBronze",
+      "triangles": 592,
+      "vertices": 972
+    },
+    {
+      "name": "Horizon_EnvCliff",
+      "triangles": 4410,
+      "vertices": 7104
+    },
+    {
+      "name": "Horizon_EnvLimestone",
+      "triangles": 1492,
+      "vertices": 2640
+    },
+    {
+      "name": "Horizon_EnvPetrol",
+      "triangles": 1212,
+      "vertices": 2424
+    }
+  ],
+  "colliderReferences": 17,
+  "surfaceChecks": 102,
+  "outwardWindingChecks": 108,
+  "clearRouteChecks": 4,
+  "coordinateSystem": "metres; Y up; floor y=0",
+  "mapSha256": "0e6cbed2d82ec2d8e14593994beeb4ec7a0379f89ca0bd6a8d391fa523e1ed13"
+}

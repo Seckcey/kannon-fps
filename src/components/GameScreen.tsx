@@ -8,6 +8,7 @@ import { Loadout } from './Loadout';
 import { Icon } from './Icon';
 import { TouchControls } from './TouchControls';
 import { SettingsDialog } from './SettingsDialog';
+import { practiceLevelName } from '../lib/practice';
 
 function clock(seconds: number) { const n = Math.max(0, Math.ceil(seconds)); return `${Math.floor(n / 60).toString().padStart(2, '0')}:${(n % 60).toString().padStart(2, '0')}`; }
 
@@ -50,7 +51,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     return () => { clearInterval(send); clearInterval(time); window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); view?.dispose(); controller.dispose(); game.current = null; };
   }, [connection]);
   useEffect(() => { game.current?.setSettings(settings); input?.setSettings(settings); }, [settings, input]);
-  useEffect(() => { input?.setPaused(paused || showSettings || finished || countdown || state.status !== 'connected'); }, [paused, showSettings, finished, countdown, state.status, input]);
+  useEffect(() => { input?.setPaused(loading || !!loadError || paused || showSettings || finished || countdown || state.status !== 'connected'); }, [loading, loadError, paused, showSettings, finished, countdown, state.status, input]);
   useEffect(() => {
     const index = lastEvent.current ? state.events.indexOf(lastEvent.current) : -1;
     for (const event of state.events.slice(index + 1)) {
@@ -72,10 +73,10 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     <div ref={container} className="game-canvas" aria-label="Sunbreak 3D arena"/>
     {(loading || loadError) && <div className="game-cover"><h2>{loadError ? 'Graphics unavailable' : 'Entering Sunbreak…'}</h2><p>{loadError || 'Preparing the arena and your loadout.'}</p>{loadError && <button className="button primary" onClick={onLeave}>Back to lobby</button>}</div>}
     <div className="game-hud">
-      <div className="arena-label"><span>Sunbreak</span><strong>{state.room?.practice ? 'Practice range' : state.room?.ranked ? 'Ranked crew match' : 'Private match'}</strong></div>
+      <div className="arena-label"><span>Sunbreak</span><strong>{state.room?.practice ? `${practiceLevelName(state.room.practiceDifficulty)} practice` : state.room?.ranked ? 'Ranked crew match' : 'Private match'}</strong></div>
       <div className="score-clock"><div><strong>{me?.kills || 0}</strong><span>/ {RULES.scoreLimit}</span></div><time>{clock(countdown ? RULES.matchSeconds : snapshot?.timeRemaining ?? RULES.matchSeconds)}</time></div>
       <div className="game-top-actions"><span className={`connection-metric ${state.latency > 160 ? 'high-ping' : ''}`}>{state.status === 'connected' ? `${state.latency} ms` : 'Reconnecting…'}</span><button className="icon-button" aria-label="Pause menu" onClick={() => setPaused(true)}><Icon name="pause"/></button></div>
-      <div className="match-roster">{rows.filter(p => !p.bot).slice(0, 8).map(p => <div key={p.id}><span className="player-dot" style={{ background: p.color }}/><span>{p.name}</span><strong>{p.kills}</strong></div>)}</div>
+      <div className="match-roster">{rows.slice(0, 8).map(p => <div key={p.id}><span className="player-dot" style={{ background: p.color }}/><span>{p.name}</span><strong>{p.kills}</strong></div>)}</div>
       <div className="kill-feed" aria-live="polite">{events.filter(e => e.type === 'elimination').slice(-3).map((event, index) => event.type === 'elimination' ? <div key={`${event.at}-${index}`}><strong>{snapshot?.players.find(p => p.id === event.attackerId)?.name || 'Player'}</strong><Icon name="ar" size={19}/><span>{snapshot?.players.find(p => p.id === event.playerId)?.name || 'Player'}</span></div> : null)}</div>
       {!dead && !finished && !countdown && <div className={`crosshair ${hit ? 'hit' : ''} ${me?.slot === 2 ? 'shotgun-crosshair' : ''}`}><i/><i/><i/><i/>{hit && <span>×</span>}</div>}
       <div className="vitals"><div className="health-row"><Icon name="heal" size={19}/><strong>{Math.max(0, me?.health ?? 100)}</strong><div className="vital-track"><div style={{ width: `${me?.health ?? 100}%` }}/></div></div><div className="shield-row"><Icon name="shield" size={19}/><strong>{me?.shield ?? 50}</strong><div className="vital-track"><div style={{ width: `${(me?.shield ?? 50) * 2}%` }}/></div></div></div>

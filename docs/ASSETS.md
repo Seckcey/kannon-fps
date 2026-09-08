@@ -8,6 +8,12 @@
 - `public/models/scout.glb`: browser model.
 - `art/source/`: front/back and action previews plus manifest.
 
+The current sculpted scout export contains 22,654 vertices and 20,868 triangles in 2,658,568 bytes. Four body material batches and three active AR batches are shared across separate player skeletons. The eight-player isolated character scene measured 56 character draws (57 with its test floor), not the complete arena/shadow/postprocessing cost. Reload/heal reaches and grounded jump animation are baked into the original clips and blended in the client; hand-authored motion is not motion capture or world-space foot locking.
+
+The environment has its own editable [Blender source](../art/source/environment.blend), [generator](../scripts/blender/generate_environment.py), [export validator](../scripts/blender/validate_environment.mjs) and [source notes](../art/source/environment-README.md). Geometry is exported in meters, Y up and floor y=0. The validator checks 17 collision reference volumes, 102 visible faces, four open travel lanes, embedded PBR textures, outward-facing opaque surfaces and a 70,000-triangle/7 MB/18-material-batch ceiling. Runtime water and sky are generated separately. Rebuilds replace the GLB atomically.
+
+The final environment in this upgrade contains 66,272 triangles and 116,740 exported vertices in 6,460,940 bytes, with 15 color material batches. Smooth olive leaf cards remain double-sided with alpha masking; closed stone, metal, cliffs and tree trunks use validated outward-facing surfaces. These are original optimized game assets, with an illustrated concept as the target; foliage and architecture still have a simpler silhouette and surface density than that reference.
+
 The original armored scout uses human proportions, an 18-bone skinned rig, separate AR/shotgun/healing attachments, and Idle, Walk, Run, Jump, Aim, Fire, Reload, and Heal clips. Motion is hand-authored, not motion-captured. The manifest records orientation and mesh budget; the client changes the accent material for player identity.
 
 ## Built-in Image Gen assets
@@ -17,7 +23,12 @@ The original armored scout uses human proportions, an 18-bone skinned rig, separ
 | `docs/art/lobby-concept.png` | Complete 1536×1024 menu reference |
 | `docs/art/gameplay-concept.png` | 1536×1024 third-person/HUD direction |
 | `public/assets/sunbreak-lobby.png` | Standalone menu illustration |
-| `public/assets/limestone.png` | Repeating live-arena stone material |
+| `public/assets/limestone.png` | Retained stone material from the first playable pass |
+| `docs/art/sunbreak-v2-concept.png` | Detailed coastal observatory/scout visual target |
+| `art/source/materials/sunbreak-limestone-v2.png` | Original generated base-color source for Blender architecture |
+| `art/source/materials/sunbreak-paving-v2.png` | Original generated paving base-color source |
+
+The earlier `public/assets/limestone.png` is retained source from the first playable pass; the new environment embeds its own packed materials. Exact original prompts and material-reference paths for the new generation are preserved in [sunbreak-v2-prompts.json](art/sunbreak-v2-prompts.json). Blender derives surface normal/roughness maps and packs optimized images into the GLB. Requested image dimensions in the prompt record are not represented as guaranteed output dimensions.
 
 All used the built-in Image Gen tool, with no API-key fallback. They are original generated images, not Fortnite assets. Real UI text and controls are native HTML; a screenshot is never used as the game interface.
 

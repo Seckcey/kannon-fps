@@ -35,7 +35,7 @@ function tube(parent: THREE.Object3D, material: THREE.Material, radius: number, 
 
 export interface CharacterModel {
   root: THREE.Group;
-  update(player: PlayerState, dt: number, time: number, local: boolean): void;
+  update(player: PlayerState, dt: number, time: number, local: boolean, motion?: { aim: boolean; grounded: boolean }): void;
   muzzle: THREE.Object3D;
   recoil(): void;
   dispose(): void;

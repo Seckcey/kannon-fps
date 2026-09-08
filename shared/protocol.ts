@@ -1,12 +1,13 @@
 /** Public wire contract. All game outcomes are computed by the server. */
 export type Slot = 1 | 2 | 3;
 export type Phase = 'waiting' | 'countdown' | 'playing' | 'finished';
+export type PracticeDifficulty = 'easy' | 'normal' | 'hard';
 export interface Profile { id: string; name: string; color: string }
 export interface Crew { id: string; name: string; invite: string; ownerId: string; memberCount: number }
 export interface RoomPlayer extends Profile { connected: boolean; ready?: boolean; bot?: boolean }
 export interface RoomSnapshot {
   id: string; code: string; hostId: string; ranked: boolean; practice: boolean;
-  crewId?: string; phase: Phase; players: RoomPlayer[]; expiresAt: number;
+  crewId?: string; practiceDifficulty?: PracticeDifficulty; phase: Phase; players: RoomPlayer[]; expiresAt: number;
 }
 export interface InputFrame {
   seq: number; moveX: number; moveZ: number; yaw: number; pitch: number;
@@ -17,7 +18,7 @@ export interface PlayerState extends Profile {
   vx: number; vy: number; vz: number; health: number; shield: number; slot: Slot;
   ammoAR: number; ammoShotgun: number; heals: number; kills: number; deaths: number;
   connected: boolean; respawnAt: number; protectedUntil: number; healingUntil: number;
-  reloadingUntil: number; lastInputSeq: number; bot?: boolean;
+  reloadingUntil: number; lastInputSeq: number; bot?: boolean; aiming?: boolean;
 }
 export interface Vec3 { x: number; y: number; z: number }
 export type GameEvent =
@@ -42,7 +43,7 @@ export interface MatchHistory {
 }
 export type ClientMessage =
   | { type: 'hello'; token: string }
-  | { type: 'create'; ranked: boolean; crewId?: string; practice?: boolean }
+  | { type: 'create'; ranked: boolean; crewId?: string; practice?: boolean; practiceDifficulty?: PracticeDifficulty }
   | { type: 'join'; code: string }
   | { type: 'start' }
   | { type: 'rematch' }

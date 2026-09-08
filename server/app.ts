@@ -4,12 +4,13 @@ import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs';
 import { resolve, sep, extname } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
 import { MatchEngine, sanitizeInput } from './engine.js';
+import { PRACTICE_RIVALS } from './bots.js';
 import { GameStore } from './store.js';
-import { RULES, type ClientMessage, type GameEvent, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
+import { RULES, type ClientMessage, type GameEvent, type PracticeDifficulty, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
 
 export interface ServerOptions { port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[] }
 interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; alive: boolean }
-interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null }
+interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; practiceDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null }
 class HttpError extends Error { constructor(public readonly status: number, message: string) { super(message); } }
 class ProtocolError extends Error { constructor(public readonly code: string, message: string) { super(message); } }
 const ROOM_LIFETIME = 2 * 60 * 60 * 1000;
@@ -126,7 +127,7 @@ export function createGameServer(options: ServerOptions = {}) {
     connection.socket.send(JSON.stringify(message));
   }
   function roomSnapshot(room: Room): RoomSnapshot {
-    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}) })), expiresAt: room.expiresAt };
+    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, ...(room.practice ? { practiceDifficulty: room.practiceDifficulty } : {}), ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}) })), expiresAt: room.expiresAt };
   }
   function broadcast(room: Room, message: ServerMessage) { for (const connection of room.sockets.values()) send(connection, message); }
   function broadcastRoom(room: Room) { broadcast(room, { type: 'room', room: roomSnapshot(room) }); }
@@ -215,17 +216,19 @@ export function createGameServer(options: ServerOptions = {}) {
         if (++connection.controls > 24) throw new Error('Slow down a little before changing rooms again.');
         if (message.type === 'create') {
           if (typeof message.ranked !== 'boolean' || (message.practice !== undefined && typeof message.practice !== 'boolean') || (message.crewId !== undefined && (typeof message.crewId !== 'string' || message.crewId.length > 100))) throw new Error('Invalid match settings.');
+          if (message.practiceDifficulty !== undefined && !['easy', 'normal', 'hard'].includes(message.practiceDifficulty)) throw new Error('Choose a valid practice difficulty.');
           if (rooms.size >= 64) throw new Error('The server is busy. Please try again shortly.');
           const practice = message.practice ?? false; const ranked = message.ranked && !practice;
+          const practiceDifficulty = practice ? message.practiceDifficulty ?? 'normal' : undefined;
           if (ranked && (!message.crewId || !store.isMember(connection.profile.id, message.crewId))) throw new Error('Choose one of your friend groups for a ranked match.');
           leaveRoom(connection);
           const id = randomUUID(); let code = '';
           do { code = randomBytes(10).toString('hex').toUpperCase(); } while (codes.has(code));
-          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, ...(message.crewId ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0, resultEvent: null };
-          room.engine = new MatchEngine({ practice, onEvent: (event) => broadcast(room, { type: 'event', event }), onFinish: (reason) => finishRoom(room, reason) });
+          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, ...(practice ? { practiceDifficulty } : {}), ...(message.crewId && !practice ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0, resultEvent: null };
+          room.engine = new MatchEngine({ practice, practiceDifficulty, onEvent: (event) => broadcast(room, { type: 'event', event }), onFinish: (reason) => finishRoom(room, reason) });
           rooms.set(id, room); codes.set(code, id); attach(connection, room);
           if (practice) {
-            for (let i = 0; i < 3; i++) room.engine.addPlayer({ id: `drone-${i}`, name: `Training drone ${i + 1}`, color: '#b8c7c3' }, now, true);
+            for (const profile of PRACTICE_RIVALS) room.engine.addPlayer(profile, now, true);
             broadcastRoom(room);
           }
           return;

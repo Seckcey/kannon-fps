@@ -11,7 +11,7 @@ assert.equal(bytes.readUInt32LE(8), bytes.length);
 const jsonLength = bytes.readUInt32LE(12);
 const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString('utf8'));
 const names = gltf.nodes.map(node => node.name);
-for (const name of ['ScoutRig', 'scout_body', 'weapon_ar', 'weapon_shotgun', 'healing_item', 'muzzle', 'chest']) assert.ok(names.includes(name), `${name} attachment exists`);
+for (const name of ['ScoutRig', 'scout_body', 'weapon_ar', 'weapon_shotgun', 'healing_item', 'muzzle', 'muzzle_shotgun', 'chest']) assert.ok(names.includes(name), `${name} attachment exists`);
 const expected = ['Idle', 'Walk', 'Run', 'Jump', 'Aim', 'Fire', 'Reload', 'Heal'];
 assert.deepEqual(new Set(gltf.animations.map(animation => animation.name)), new Set(expected));
 assert.equal(gltf.skins.length, 1);
@@ -26,6 +26,18 @@ for (const mesh of gltf.meshes) {
 }
 assert.ok(vertices <= 30_000, `Phone geometry budget: ${vertices} vertices`);
 assert.ok(bytes.length <= 5_000_000, 'Packed character asset remains under 5 MB.');
+const primitives = Object.fromEntries(['scout_body', 'weapon_ar', 'weapon_shotgun', 'healing_item'].map(name => {
+  const node = gltf.nodes.find(item => item.name === name);
+  return [name, gltf.meshes[node.mesh].primitives.length];
+}));
+assert.ok(primitives.scout_body <= 4, 'Body uses at most four material draws.');
+assert.ok(primitives.weapon_ar <= 3 && primitives.weapon_shotgun <= 3, 'Weapons use at most three material draws.');
+for (const mesh of gltf.meshes) for (const primitive of mesh.primitives) {
+  assert.ok(primitive.attributes.TEXCOORD_0 !== undefined, 'Every mesh has the shared atlas UV channel.');
+  assert.equal(primitive.attributes.TEXCOORD_1, undefined, 'Joined meshes must not split their atlas into an unused UV channel.');
+}
+const surface = gltf.materials.find(material => material.name === 'ScoutSurface');
+assert.ok(surface?.pbrMetallicRoughness.metallicRoughnessTexture && surface.normalTexture, 'The shared surface has real roughness/metalness and normal maps.');
 for (const image of gltf.images) assert.ok(image.bufferView !== undefined && !image.uri, 'Textures are embedded and require no third-party host.');
 const world = new Map();
 function visit(index, parent = new Matrix4()) {
@@ -37,6 +49,12 @@ function visit(index, parent = new Matrix4()) {
 for (const index of gltf.scenes[gltf.scene ?? 0].nodes) visit(index);
 const muzzle = new Vector3().setFromMatrixPosition(world.get('muzzle'));
 assert.ok(Math.abs(muzzle.x - .135) < .01 && Math.abs(muzzle.y - 1.332) < .01 && Math.abs(muzzle.z + .847) < .01, 'Muzzle sits at the forward gun barrel after Blender-to-glTF axis conversion.');
-const report = { file: 'public/models/scout.glb', bytes: bytes.length, exportedVertices: vertices, triangles, bones: 18, clips: expected, embeddedTextures: gltf.images.length, muzzle: muzzle.toArray(), coordinateSystem: 'metres; Y up; -Z forward', status: 'passed' };
+const shotgunMuzzle = new Vector3().setFromMatrixPosition(world.get('muzzle_shotgun'));
+assert.ok(shotgunMuzzle.distanceTo(new Vector3(.135, 1.332, -.924)) < .01, 'Shotgun effects use the longer shotgun barrel.');
+const supportHand = new Vector3().setFromMatrixPosition(world.get('hand_l'));
+assert.ok(supportHand.distanceTo(new Vector3(.135, 1.30, -.51)) < .09, 'Support wrist reaches the fore-end grip.');
+const triggerHand = new Vector3().setFromMatrixPosition(world.get('hand_r'));
+assert.ok(triggerHand.distanceTo(new Vector3(.135, 1.255, -.327)) < .04, 'Trigger wrist reaches the pistol grip.');
+const report = { file: 'public/models/scout.glb', bytes: bytes.length, exportedVertices: vertices, triangles, bones: 18, clips: expected, embeddedTextures: gltf.images.length, materialDraws: primitives, eightPlayerBodyAndARDraws: (primitives.scout_body + primitives.weapon_ar) * 8, muzzle: muzzle.toArray(), shotgunMuzzle: shotgunMuzzle.toArray(), coordinateSystem: 'metres; Y up; -Z forward', status: 'passed' };
 writeFileSync(fileURLToPath(new URL('../../art/source/scout-export-review.json', import.meta.url)), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));

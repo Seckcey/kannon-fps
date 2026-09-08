@@ -1,0 +1,843 @@
+{
+  "high": {
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "stats": [
+      {
+        "fps": 7,
+        "locked": false,
+        "drawCalls": 1151,
+        "at": 1414.0999999940395,
+        "ratio": 1,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 11,
+        "locked": false,
+        "drawCalls": 123,
+        "at": 2098.4000000059605,
+        "ratio": 1,
+        "scale": 1,
+        "post": true
+      },
+      {
+        "fps": 19,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 2834,
+        "ratio": 1,
+        "scale": 1,
+        "post": true
+      },
+      {
+        "fps": 19,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 3542.5,
+        "ratio": 1,
+        "scale": 1,
+        "post": true
+      },
+      {
+        "fps": 17,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 4286.0999999940395,
+        "ratio": 1,
+        "scale": 1,
+        "post": true
+      },
+      {
+        "fps": 17,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 4997.9000000059605,
+        "ratio": 0.9,
+        "scale": 0.9,
+        "post": true
+      },
+      {
+        "fps": 21,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 5685.199999988079,
+        "ratio": 0.9,
+        "scale": 0.9,
+        "post": true
+      },
+      {
+        "fps": 22,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 6402.5999999940395,
+        "ratio": 0.9,
+        "scale": 0.9,
+        "post": true
+      },
+      {
+        "fps": 26,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 7112.5,
+        "ratio": 0.8,
+        "scale": 0.8,
+        "post": true
+      },
+      {
+        "fps": 29,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 7815.299999982119,
+        "ratio": 0.8,
+        "scale": 0.8,
+        "post": true
+      },
+      {
+        "fps": 24,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 8521.299999982119,
+        "ratio": 0.8,
+        "scale": 0.8,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 9232.799999982119,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 9931.299999982119,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 33,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 10640.09999999404,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 34,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 11342.799999982119,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 33,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 12041.40000000596,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 12754,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 34,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 13457.09999999404,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 34,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 14159,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 34,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 14854.299999982119,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 15554.90000000596,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 32,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 16270.799999982119,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 16979.69999998808,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 17680.79999998212,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 18409.19999998808,
+        "ratio": 0.7000000000000001,
+        "scale": 0.7000000000000001,
+        "post": true
+      },
+      {
+        "fps": 35,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 19118,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 38,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 19844.19999998808,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 20567.59999999404,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 38,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 21284.29999998212,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 38,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 22004.5,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 38,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 22726.79999998212,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 38,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 23438.69999998808,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 36,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 24149.19999998808,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      },
+      {
+        "fps": 34,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 24851.59999999404,
+        "ratio": 0.65,
+        "scale": 0.65,
+        "post": true
+      }
+    ],
+    "render": {
+      "frame": 5095,
+      "calls": 144,
+      "triangles": 428598,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 73,
+      "textures": 34
+    },
+    "ratio": 0.65,
+    "post": true,
+    "programLogs": [],
+    "hdrEnvironment": true
+  },
+  "auto": {
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "stats": [
+      {
+        "fps": 32,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 26296,
+        "ratio": 0.9566835309904687,
+        "scale": 1,
+        "post": true
+      },
+      {
+        "fps": 19,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 27024,
+        "ratio": 0.9566835309904687,
+        "scale": 1,
+        "post": true
+      },
+      {
+        "fps": 20,
+        "locked": false,
+        "drawCalls": 144,
+        "at": 27737.59999999404,
+        "ratio": 0.9566835309904687,
+        "scale": 1,
+        "post": true
+      },
+      {
+        "fps": 13,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 28424.29999998212,
+        "ratio": 0.9566835309904687,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 29,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 29126.59999999404,
+        "ratio": 0.9566835309904687,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 33,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 29835.69999998808,
+        "ratio": 0.8610151778914218,
+        "scale": 0.9,
+        "post": false
+      },
+      {
+        "fps": 35,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 30554.29999998212,
+        "ratio": 0.8610151778914218,
+        "scale": 0.9,
+        "post": false
+      },
+      {
+        "fps": 36,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 31270.79999998212,
+        "ratio": 0.8610151778914218,
+        "scale": 0.9,
+        "post": false
+      },
+      {
+        "fps": 33,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 31962.40000000596,
+        "ratio": 0.7653468247923749,
+        "scale": 0.8,
+        "post": false
+      },
+      {
+        "fps": 34,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 32661.90000000596,
+        "ratio": 0.7653468247923749,
+        "scale": 0.8,
+        "post": false
+      },
+      {
+        "fps": 40,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 33376,
+        "ratio": 0.7653468247923749,
+        "scale": 0.8,
+        "post": false
+      },
+      {
+        "fps": 31,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 34083.19999998808,
+        "ratio": 0.6696784716933282,
+        "scale": 0.7000000000000001,
+        "post": false
+      },
+      {
+        "fps": 10,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 34828.29999998212,
+        "ratio": 0.6696784716933282,
+        "scale": 0.7000000000000001,
+        "post": false
+      },
+      {
+        "fps": 37,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 35562.69999998808,
+        "ratio": 0.6696784716933282,
+        "scale": 0.7000000000000001,
+        "post": false
+      },
+      {
+        "fps": 51,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 36249.59999999404,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 53,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 36963,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 57,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 37662.69999998808,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 38350.5,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 39051.29999998212,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 39754,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 49,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 40454.09999999404,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 41153.29999998212,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 41854.90000000596,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 57,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 42567.69999998808,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 43272.69999998808,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 56,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 43988,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 49,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 44675.40000000596,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 57,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 45389.19999998808,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 46094.90000000596,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 46793.09999999404,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 57,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 47502.69999998808,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 51,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 48196.40000000596,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      },
+      {
+        "fps": 49,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 48923.90000000596,
+        "ratio": 0.5740101185942813,
+        "scale": 0.6000000000000001,
+        "post": false
+      }
+    ],
+    "render": {
+      "frame": 6421,
+      "calls": 138,
+      "triangles": 428592,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 73,
+      "textures": 28
+    },
+    "ratio": 0.5740101185942813,
+    "post": false,
+    "programLogs": [],
+    "hdrEnvironment": true
+  },
+  "low": {
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "stats": [
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 49612,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 56,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 50324.19999998808,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 51,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 51013.69999998808,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 56,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 51715.79999998212,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 51,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 52430.59999999404,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 54,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 53116.5,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 56,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 53816.79999998212,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 56,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 54518.79999998212,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 56,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 55217.90000000596,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 57,
+        "locked": false,
+        "drawCalls": 79,
+        "at": 55918.19999998808,
+        "ratio": 0.7069971125076848,
+        "scale": 1,
+        "post": false
+      }
+    ],
+    "render": {
+      "frame": 6825,
+      "calls": 79,
+      "triangles": 231560,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 72,
+      "textures": 26
+    },
+    "ratio": 0.7069971125076848,
+    "post": false,
+    "programLogs": [],
+    "hdrEnvironment": true
+  },
+  "noHdr": {
+    "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "stats": [
+      {
+        "fps": 24,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 1347.2999999821186,
+        "ratio": 1.25,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 60,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 2048,
+        "ratio": 1.25,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 60,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 2748.2999999821186,
+        "ratio": 1.25,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 60,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 3449.2999999821186,
+        "ratio": 1.25,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 60,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 4149.699999988079,
+        "ratio": 1.25,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 60,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 4850.299999982119,
+        "ratio": 1.25,
+        "scale": 1,
+        "post": false
+      },
+      {
+        "fps": 60,
+        "locked": false,
+        "drawCalls": 138,
+        "at": 5551.199999988079,
+        "ratio": 1.25,
+        "scale": 1,
+        "post": false
+      }
+    ],
+    "render": {
+      "frame": 313,
+      "calls": 138,
+      "triangles": 428592,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 72,
+      "textures": 25
+    },
+    "ratio": 1.25,
+    "post": false,
+    "programLogs": [],
+    "hdrEnvironment": false
+  },
+  "errors": [],
+  "warnings": [
+    "THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000",
+    "THREE.WebGLRenderer: EXT_color_buffer_float extension not supported."
+  ]
+}
