@@ -17,6 +17,8 @@ export class InputController {
   private touchX = 0;
   private touchZ = 0;
   private paused = false;
+  private gameplayBlocked = false;
+  private pendingLock: { finish: (locked: boolean) => void } | null = null;
   private focused = document.hasFocus();
   private disposed = false;
   private resetListeners = new Set<() => void>();
@@ -35,13 +37,15 @@ export class InputController {
     window.addEventListener('focus', this.focus, options);
     document.addEventListener('visibilitychange', this.visibilityChange, options);
     document.addEventListener('pointerlockchange', this.lockChange, options);
+    document.addEventListener('pointerlockerror', this.lockError, options);
     if (canvas) this.attach(canvas);
   }
 
   get locked() { return !!this.canvas && document.pointerLockElement === this.canvas; }
   get isTouch() { return this.touchActive || window.matchMedia('(pointer: coarse)').matches; }
   get isPaused() { return this.paused; }
-  get acceptsInput() { return !this.disposed && !this.paused && this.focused && !document.hidden; }
+  get canEngage() { return !this.disposed && !this.paused && this.focused && !document.hidden; }
+  get acceptsInput() { return this.canEngage && !this.gameplayBlocked; }
 
   /** Touch UI must clear its captured pointers and toggles whenever controls are cancelled. */
   subscribeReset(listener: () => void) {
@@ -97,12 +101,32 @@ export class InputController {
     if (paused) { this.clear(); if (this.locked) document.exitPointerLock(); }
   }
 
-  requestPointerLock() {
-    if (!this.canvas || !this.acceptsInput || this.isTouch || this.locked) return;
-    try {
-      const request = this.canvas.requestPointerLock();
-      if (request && typeof request.catch === 'function') void request.catch(() => { this.onLockChange?.(false); });
-    } catch { this.onLockChange?.(false); }
+  /** Preparation/countdown can retain the mouse, but neither held nor queued actions cross the boundary. */
+  setGameplayBlocked(blocked: boolean) {
+    if (this.gameplayBlocked === blocked) return;
+    this.gameplayBlocked = blocked;
+    this.clear();
+  }
+
+  /** Must be called in a user gesture. A fulfilled browser request alone is not capture confirmation. */
+  requestPointerLock(): Promise<boolean> {
+    if (!this.canvas || !this.canEngage) return Promise.resolve(false);
+    if (this.locked) return Promise.resolve(true);
+    this.pendingLock?.finish(false);
+    return new Promise(resolve => {
+      const timer = setTimeout(() => pending.finish(false), 2500);
+      const pending = { finish: (locked: boolean) => {
+        if (this.pendingLock !== pending) return;
+        this.pendingLock = null;
+        clearTimeout(timer);
+        resolve(locked);
+      } };
+      this.pendingLock = pending;
+      try {
+        const request = this.canvas!.requestPointerLock();
+        if (request && typeof request.catch === 'function') void request.catch(() => pending.finish(false));
+      } catch { pending.finish(false); }
+    });
   }
 
   /** Networking consumes one sequence number. Rendering should call peek instead. */
@@ -138,6 +162,8 @@ export class InputController {
       return;
     }
     if (!this.acceptsInput || !this.locked || (event.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))) return;
+    // An OS repeat after countdown/focus reset is still the old physical gesture.
+    if (event.repeat && !this.keys.has(event.code)) return;
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(event.code)) event.preventDefault();
     if (event.code === 'Digit1') this.slot = 1;
     if (event.code === 'Digit2') this.slot = 2;
@@ -159,8 +185,15 @@ export class InputController {
   private blur = () => { this.focused = false; this.clear(); };
   private focus = () => { this.focused = true; this.clear(); };
   private visibilityChange = () => { this.focused = document.hasFocus(); this.clear(); };
-  private lockChange = () => { if (!this.locked) this.clear(); this.onLockChange?.(this.locked); };
+  private lockChange = () => {
+    if (this.locked && !this.canEngage) document.exitPointerLock();
+    if (!this.locked) this.clear();
+    else this.pendingLock?.finish(true);
+    this.onLockChange?.(this.locked);
+  };
+  private lockError = () => { this.pendingLock?.finish(false); this.onLockChange?.(false); };
   private clear = () => {
+    this.pendingLock?.finish(false);
     this.keys.clear(); this.touchX = 0; this.touchZ = 0;
     this.pulses.fire = false; this.pulses.jump = false; this.pulses.reload = false;
     for (const action of Object.keys(this.actions) as Action[]) this.actions[action] = false;

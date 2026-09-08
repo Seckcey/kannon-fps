@@ -24,6 +24,8 @@ The browser detects eight seconds of silence while visible and retires stalled s
 
 Disconnected players have a 30-second recovery window. Movement, actions, and published velocities clear on disconnect. The first connected player becomes host when the former host is absent, including when an entire room returns from a connection loss. Rejoining a finished room replays its cached result explanation without writing ratings again; a rematch clears that cached result.
 
+Host start/rematch first enters `preparing`. The fresh preparation ID equals `WorldSnapshot.roundId`; an authenticated `ready` acknowledgment must match it. Every human must be connected and ready before the full three-second countdown begins. The renderer proves a frame of that exact prepared world, then the player deliberately engages controls. Input blocking preserves mouse capture through countdown while clearing held/queued actions; the server discards all inputs outside play. A 45-second timeout or insufficient roster returns to the lobby without a result. Readiness is revoked on recovery and tab replacement. `hello.readyProtocol: 1` gates older pages before start/rematch and cancels a preparation if an incompatible replacement joins. See [Round readiness](ROUND_READINESS.md) for lifecycle and verification details.
+
 ## Practice opponents
 
 `server/bots.ts` generates ordinary input frames for three clearly labeled rivals. The engine applies the same movement, collision, ammo, weapon cadence, healing, protection, respawn, and simultaneous-damage rules to humans and bots. Practice winners include bots, including time-limit or score-limit ties. Friends matches never add AI players.

@@ -1,5 +1,13 @@
 # Release verification
 
+## Round readiness — local verification
+
+[Round readiness](ROUND_READINESS.md) fixes countdowns consuming graphical startup time and requiring desktop mouse engagement after combat begins. Every human now loads and renders the matching prepared round, then selects **Ready to play** before the full three-second countdown. Rematches require new engagement; timeout, disconnect, tab replacement and older-page handling preserve fair entry. Live-round pause, gameplay balance, scoring and the Blender models are unchanged.
+
+The complete local check passes 155 tests, asset validation, TypeScript and the production build. [Local evidence](verification/round-readiness-local.json) binds the 19 changed code/test files and two unchanged model hashes to four development and three production-build browser groups. Installed Edge checks cover actual mouse capture, touch input, refused capture/retry, delayed parsing and rematch state, real offline/online recovery, timeout/retry and failed graphics with an exit. The development parse and world-message delays are explicit test instrumentation; server clock advancement only finishes rounds and expires preparation. Physical phones and a two-household match remain unverified.
+
+No application errors occurred in those runs. Known sky-bake X4122 precision diagnostics remain separate; the build also reports the 719.14 kB GameScreen chunk above its existing 700 kB warning threshold. The initial in-app pointer capture did not succeed, so capture acceptance relies on the separate installed-Edge checks. [Desktop](art/round-ready-desktop.png) and [touch](art/round-ready-touch.png) captures were inspected. The public deployment still follows the existing scoped release verification process; the entries below describe already deployed historical builds.
+
 ## Grounded Scout movement — deployed September 8, 2026
 
 Source `30d1f9d88e4f663f46d474fcefd55e44de990941` merged through [PR #7](https://github.com/Seckcey/kannon-fps/pull/7) as `c0d7f12957123b105c7e961c8cb8b1ba160cfab6` with an identical whole tree. [PR CI](https://github.com/Seckcey/kannon-fps/actions/runs/34232485470) and [main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34232619677) passed. The [change record](SCOUT_GROUNDED_GAIT.md) explains the Blender support, loop and knee refinement. All 133 tests, exported-asset checks, types and build passed; 16 actual-controller cases and four moving renderer scenes used the frozen model. The independent comparison passes all 64 correctness checks and 116/120 proposed improvements. Four reverse-stance witness-drift limits remain exceeded and are explicitly retained, not converted to passes.

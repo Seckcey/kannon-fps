@@ -267,6 +267,24 @@
   .protection-label { position: absolute; top: calc(50% + 95px); left: 50%; transform: translateX(-50%); padding: 5px 10px; background: #102f4480; color: #dffaff; border-radius: 2px; font-size: 12px; display: flex; gap: 6px; align-items: center; }
   .mouse-prompt { position: absolute; bottom: 21%; left: 50%; transform: translateX(-50%); border: 1px solid #b5cdc47d; background: #071b2beb; border-radius: 3px; padding: 13px 20px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 9px; font-size: 18px; font-weight: 600; width: min(455px,70vw); }
   .mouse-prompt > span { width: 100%; color: #b7cdc8; font-size: 12px; font-weight: 400; }
+  .preparation-panel { position: absolute; z-index: 7; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100% - 40px)); max-height: calc(100dvh - 120px); display: flex; flex-direction: column; padding: 24px; border: 1px solid #92b6ac66; border-radius: 5px; background: #071b2bf2; box-shadow: 0 16px 70px #03131c55; text-align: center; }
+  .preparation-panel h2 { flex-shrink: 0; font-size: clamp(23px, 3vw, 30px); }
+  .preparation-panel > p { flex-shrink: 0; margin: 10px 0 16px; color: #c4d7d2; font-size: 14px; }
+  .preparation-panel ul { flex: 0 1 auto; min-height: 0; overflow-y: auto; list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 10px; }
+  .preparation-panel li { display: flex; align-items: center; gap: 8px; text-align: left; font-size: 13px; }
+  .preparation-panel li > span:nth-child(2) { flex: 1; overflow-wrap: anywhere; }
+  .preparation-panel li strong { font-size: 11px; color: #9cb7b6; white-space: nowrap; }
+  .preparation-panel li .is-ready { color: var(--lime); }
+  .preparation-panel > .button { flex-shrink: 0; }
+  .preparation-panel > small { flex-shrink: 0; display: block; margin-top: 13px; color: #a9c4be; font-size: 11px; }
+  @media (max-height: 500px) {
+    .preparation-panel { max-height: calc(100dvh - 80px); padding: 14px 18px; }
+    .preparation-panel h2 { font-size: 24px; line-height: 1.1; }
+    .preparation-panel > p { font-size: 12px; margin: 6px 0 10px; }
+    .preparation-panel ul { gap: 5px; margin-bottom: 10px; }
+    .preparation-panel > .button { min-height: 44px; padding: 10px 18px; font-size: 23px; }
+    .preparation-panel > small { margin-top: 8px; }
+  }
   .game-bottom-hint { position: absolute; bottom: 11px; left: 28px; color: #d7e5e6; text-shadow: 0 1px 4px #001321; font-size: 12px; }
   .center-message, .respawn-message { position: absolute; left: 50%; top: 41%; transform: translate(-50%, -50%); z-index: 6; text-align: center; pointer-events: none; text-shadow: 0 2px 12px #052138; }
   .center-message > span { display: block; font: italic 700 31px var(--display); text-transform: uppercase; }

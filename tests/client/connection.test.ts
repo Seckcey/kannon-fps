@@ -72,7 +72,7 @@ test('a silent open connection is retired and rejoins without waiting for a TCP 
   t.mock.timers.tick(500);
   assert.equal(f.sockets.length, 2);
   const next = f.sockets[1]!; next.open(); next.receive({ type: 'welcome', playerId: 'player' });
-  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key' }, { type: 'join', code: room.code }]);
+  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key', readyProtocol: 1 }, { type: 'join', code: room.code }]);
   old.receive({ type: 'welcome', playerId: 'obsolete-player' });
   old.disconnect(4001);
   assert.equal(f.connection.getSnapshot().status, 'connected');
@@ -160,7 +160,7 @@ test('leaving a connected room ignores queued room updates and allows a fresh ex
   assert.deepEqual(f.connection.getSnapshot().events, []);
   const opening = f.connection.connect(); const next = f.sockets[1]!;
   next.open(); next.receive({ type: 'welcome', playerId: 'player' }); await opening;
-  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key' }]);
+  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key', readyProtocol: 1 }]);
 });
 
 test('replacement closes do not reconnect and take over the other device', async t => {

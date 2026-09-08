@@ -1,0 +1,357 @@
+{
+  "status": "local_verification_passed",
+  "baseline": "21d32275dd7469fcf0c6967edd5eb63934ab727e",
+  "sourceHashes": {
+    "server/app.ts": "63e52a787ee85498497c0ec2f7034da50aa1b434f25bbabdd654a6583a03efc4",
+    "server/engine.ts": "efee7ef1477b3e51861275062eac423db2e9041fce67b520018f3dfbb8972840",
+    "shared/protocol.ts": "3c54ee7201ef6c69bad768e87bec6984e03cf35c6f4356088681016e28eec79b",
+    "src/components/GameScreen.tsx": "0e78ae8a29ebd278251ce2c3be74e373d5a272e53204de1b5ff2c52b47543136",
+    "src/game/GameView.ts": "f75d61ee98635d0bb99e6990f1fbce8307f5bfb48f07e577800d3b4d1dc9bc31",
+    "src/game/InputController.ts": "e1d6eaa26170a6ec73bdcbd616b66e94f438c63c5b85e6643feb737e06522e9d",
+    "src/game/PreparationReadiness.ts": "2543be75451a6e46a20cba33718fe45cfb88e74078048c725f03a1f311c0c8c2",
+    "src/lib/connection.ts": "4fc7ea5ca30b1c5d77f76c78b58f725a927661005e26698a1ba9c190079d2391",
+    "src/styles.css": "8e00a62dc3c53422deb4b1c5f5ca304c5ca17bcbc4cb83d974c7e4d2f297aef9",
+    "tests/acceptance/helpers.ts": "a68b4076ccae620545f9d1693ef7b6697ef5a38ef7c4fcdabae9fd628404c5b1",
+    "tests/acceptance/multiplayer.test.ts": "5f4698df859c7da116193e8427bb62d69dbb05c2bef7a7d8ee41d5c8295d1999",
+    "tests/acceptance/readiness.test.ts": "cb51519b81bf48aab188014a576ca008072128191745b88df012bbc4eae3875f",
+    "tests/client/connection.test.ts": "ed0b13086f350eb74f9b3b0960b0374aca33e39d09d7840f3282bf25e7e09458",
+    "tests/client/game-readiness.test.ts": "7f6f1b6baa36d5bb8fd4e0de7fb7680ba853408c9a62d908c568f0a1f6e97858",
+    "tests/client/input.test.ts": "e75317ce8d592b0a0062a1557576482e110b2777fb4d5b44718f6602c78a4550",
+    "tests/client/preparation-readiness.test.ts": "46e2451465cdc747a815189106daee2085d323dd849258a08919a7d8cf682aa2",
+    "tests/server/practice-transport.test.ts": "76a37cb660486263e2c56ff7f34140c57d911be1530878f090158261553fecb8",
+    "tests/server/preparation.test.ts": "059617c80d2a84f29a11e38caefc1f6f39d09e3a3ce8a950713a4d6285e66ba8",
+    "tests/server/transport.test.ts": "dcf0449b138d4225a252abcf3d5a2c3c922103dd756ce607a6df61c4774643b4"
+  },
+  "checks": {
+    "command": "npm run check",
+    "tests": 155,
+    "pass": 155,
+    "fail": 0,
+    "logSha256": "e7b15cbe175e6d8cc981e866368a9c1bfc4cfc0e340719ee21fc206cf588b1e3",
+    "assetTypeAndBuild": "passed",
+    "buildWarning": "719.14 kB GameScreen chunk exceeds the existing 700 kB warning threshold; the model downloads remain separate and reused."
+  },
+  "models": {
+    "scout": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+    "environment": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+  },
+  "browsers": {
+    "cua": {
+      "url": "http://127.0.0.1:5182/",
+      "checks": [
+        "Loaded arena and readiness roster at 5:00",
+        "Capture refusal leaves player unready with retry explanation",
+        "45-second expiry returned to lobby with visible explanation"
+      ],
+      "limitation": "The in-app attempt did not acquire pointer lock. No cause was established. Actual capture and repeatable failure/retry were separately verified using installed Edge."
+    },
+    "development": {
+      "status": "passed",
+      "base": "http://127.0.0.1:5182",
+      "started": "2026-09-08T14:19:07.111Z",
+      "finished": "2026-09-08T14:19:53.345Z",
+      "groups": [
+        {
+          "name": "desktop preparation wait, refused capture/retry, countdown, fresh input, live pause and delayed-world rematch",
+          "status": "passed",
+          "actualParseDelay": true,
+          "preparationWaitMs": 6000,
+          "rematchWorldDelayMs": 3500,
+          "phases": [
+            {
+              "phase": "waiting",
+              "at": 1788877148594,
+              "serverTime": 1788877494582,
+              "time": 300
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877148688,
+              "serverTime": 1788877494673,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877156084,
+              "serverTime": 1788877502078,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877159121,
+              "serverTime": 1788877505115,
+              "time": 300
+            },
+            {
+              "phase": "finished",
+              "at": 1788877161314,
+              "serverTime": 1788877808300,
+              "time": 0
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877161552,
+              "serverTime": 1788877808537,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877165360,
+              "serverTime": 1788877812354,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877168362,
+              "serverTime": 1788877815356,
+              "time": 300
+            }
+          ],
+          "modelGets": [
+            {
+              "url": "/models/scout.glb",
+              "status": 200
+            },
+            {
+              "url": "/models/environment.glb",
+              "status": 200
+            }
+          ]
+        },
+        {
+          "name": "two-client readiness, offline/online recovery, withdrawal, desktop capture, touch engagement and fresh inputs",
+          "status": "passed",
+          "hostPhases": [
+            {
+              "phase": "waiting",
+              "at": 1788877171134,
+              "serverTime": 1788877818119,
+              "time": 300
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877171444,
+              "serverTime": 1788877818434,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877178204,
+              "serverTime": 1788877825203,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877181254,
+              "serverTime": 1788877828252,
+              "time": 299.967
+            }
+          ],
+          "touchPhases": [
+            {
+              "phase": "waiting",
+              "at": 1788877171406,
+              "serverTime": 1788877818392,
+              "time": 300
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877171435,
+              "serverTime": 1788877818434,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877178208,
+              "serverTime": 1788877825203,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877181256,
+              "serverTime": 1788877828252,
+              "time": 299.967
+            },
+            {
+              "phase": "finished",
+              "at": 1788877182283,
+              "serverTime": 1788877829278,
+              "time": 0
+            }
+          ]
+        },
+        {
+          "name": "portrait readiness, bounded timeout, lobby error and clean retry",
+          "status": "passed"
+        },
+        {
+          "name": "failed real environment parse remains unready and can exit",
+          "status": "passed"
+        }
+      ],
+      "errors": [],
+      "warningCount": 5,
+      "warningClassification": "Known Three.js sky-bake X4122 constant precision diagnostics; no application errors."
+    },
+    "production": {
+      "status": "passed",
+      "base": "http://127.0.0.1:3042",
+      "started": "2026-09-08T14:21:20.518Z",
+      "finished": "2026-09-08T14:22:04.231Z",
+      "groups": [
+        {
+          "name": "desktop preparation wait, refused capture/retry, countdown, fresh input, live pause and delayed-world rematch",
+          "status": "passed",
+          "actualParseDelay": false,
+          "preparationWaitMs": 6000,
+          "rematchWorldDelayMs": 3500,
+          "phases": [
+            {
+              "phase": "waiting",
+              "at": 1788877281816,
+              "serverTime": 1788877973817,
+              "time": 300
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877281874,
+              "serverTime": 1788877973862,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877290131,
+              "serverTime": 1788877982132,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877293133,
+              "serverTime": 1788877985133,
+              "time": 300
+            },
+            {
+              "phase": "finished",
+              "at": 1788877295293,
+              "serverTime": 1788878288293,
+              "time": 0
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877295503,
+              "serverTime": 1788878288491,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877299340,
+              "serverTime": 1788878292341,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877302374,
+              "serverTime": 1788878295374,
+              "time": 300
+            }
+          ],
+          "modelGets": [
+            {
+              "url": "/models/scout.glb",
+              "status": 200
+            },
+            {
+              "url": "/models/environment.glb",
+              "status": 200
+            }
+          ]
+        },
+        {
+          "name": "two-client readiness, offline/online recovery, withdrawal, desktop capture, touch engagement and fresh inputs",
+          "status": "passed",
+          "hostPhases": [
+            {
+              "phase": "waiting",
+              "at": 1788877304839,
+              "serverTime": 1788878297839,
+              "time": 300
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877305014,
+              "serverTime": 1788878297998,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877312070,
+              "serverTime": 1788878305070,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877315073,
+              "serverTime": 1788878308074,
+              "time": 300
+            }
+          ],
+          "touchPhases": [
+            {
+              "phase": "waiting",
+              "at": 1788877304973,
+              "serverTime": 1788878297973,
+              "time": 300
+            },
+            {
+              "phase": "preparing",
+              "at": 1788877304998,
+              "serverTime": 1788878297998,
+              "time": 300
+            },
+            {
+              "phase": "countdown",
+              "at": 1788877312070,
+              "serverTime": 1788878305070,
+              "time": 3
+            },
+            {
+              "phase": "playing",
+              "at": 1788877315073,
+              "serverTime": 1788878308074,
+              "time": 300
+            },
+            {
+              "phase": "finished",
+              "at": 1788877316047,
+              "serverTime": 1788878309043,
+              "time": 0
+            }
+          ]
+        },
+        {
+          "name": "portrait readiness, bounded timeout, lobby error and clean retry",
+          "status": "passed"
+        }
+      ],
+      "errors": [],
+      "warningCount": 4,
+      "warningClassification": "Known Three.js sky-bake X4122 constant precision diagnostics; no application errors."
+    },
+    "runtime": "Installed Edge with Playwright; local dedicated server and temporary SQLite. 1536x864 desktop, 852x393 emulated touch landscape, 390x844 emulated touch portrait.",
+    "harnessSha256": "2f0c701fad6bb52afcd497ebd66c78643e73ef081a1eba4241b2564c6ecb0a31",
+    "controls": "Real mouse/keyboard, pointer lock, touch events and browser offline/online. No fabricated player inputs. Server clock advancement was used only to finish rounds and expire preparation.",
+    "injection": "Development-only response instrumentation delayed the real environment parse for 6 seconds and separately rejected it. Both modes buffered real rematch world messages for 3.5 seconds and rejected one pointer-lock request before verifying a native retry."
+  },
+  "screenshots": {
+    "desktop": "docs/art/round-ready-desktop.png",
+    "touch": "docs/art/round-ready-touch.png"
+  },
+  "artifactHashes": {
+    "docs/art/round-ready-desktop.png": "c685ab02f9a05a2a6a7a4cae5c9a81c8b2c4e2584de099a1abffddd801ecb18e",
+    "docs/art/round-ready-touch.png": "2f00a06158cf837ce9f8a7c6e8300517c23a591cb61b0771bd254d8e3c5b7262"
+  },
+  "limits": [
+    "No physical-phone, two-household, wide-area latency or Fortnite-parity acceptance.",
+    "This entry-flow change does not change the two Blender assets, map, weapons, movement, match duration, score limit or rating formula."
+  ]
+}

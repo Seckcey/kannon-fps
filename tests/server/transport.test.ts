@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createGameServer } from '../../server/app.js';
-import { fixture } from '../acceptance/helpers.js';
+import { fixture, startReady } from '../acceptance/helpers.js';
 import { RULES, type Crew } from '../../shared/protocol.js';
 import { idleInput } from '../../server/engine.js';
 
@@ -33,7 +33,7 @@ test('abrupt host drop transfers control and authenticated recovery cannot dupli
   const recovered = await f.connect(owner.token); const room = await recovered.wait('room', m => m.room.id === created.room.id);
   assert.equal(room.room.hostId, friend.profile.id); assert.equal(room.room.players.filter(p => p.id === owner.profile.id).length, 1);
   await recovered.command({ type: 'start' }, 'error');
-  await guest.command({ type: 'start' }, 'room', m => m.room.phase === 'countdown');
+  await startReady(guest, [guest, recovered]);
   // A failed start cannot prune a disconnected player or reset match eligibility.
   const dropMark = guest.mark(); recovered.close();
   await guest.wait('room', m => m.room.players.some(p => p.id === owner.profile.id && !p.connected), dropMark);
@@ -60,7 +60,7 @@ test('first returning player becomes host after an entire lobby disconnects', as
   const returned = await f.connect(a.token);
   await returned.wait('room', m => m.room.id === created.room.id && m.room.hostId === a.profile.id);
   const newcomer = await f.connect(c.token); await newcomer.command({ type: 'join', code: created.room.code }, 'room', m => m.room.players.filter(p => p.connected).length === 2);
-  const started = await returned.command({ type: 'start' }, 'room', m => m.room.phase === 'countdown');
+  const started = await startReady(returned, [returned, newcomer]);
   assert.equal(started.room.hostId, a.profile.id); assert.deepEqual(new Set(started.room.players.map(p => p.id)), new Set([a.profile.id, c.profile.id]));
 });
 test('automatic reconnect followed by same-room join is idempotent and accepts a fresh input sequence', async t => {
@@ -68,7 +68,7 @@ test('automatic reconnect followed by same-room join is idempotent and accepts a
   const host = await f.connect(a.token), guest = await f.connect(b.token);
   const created = await host.command({ type: 'create', ranked: false }, 'room');
   await guest.command({ type: 'join', code: created.room.code }, 'room', m => m.room.players.length === 2);
-  await host.command({ type: 'start' }, 'room', m => m.room.phase === 'countdown');
+  await startReady(host, [host, guest]);
   await host.wait('snapshot', m => m.snapshot.phase === 'playing');
   const inputMark = host.mark(); host.send({ type: 'input', input: { ...idleInput(100), slot: 2 } });
   await host.wait('snapshot', m => m.snapshot.players.some(p => p.id === a.profile.id && p.lastInputSeq === 100), inputMark);
@@ -89,7 +89,7 @@ test('finished recovery replays the saved ranked result exactly once without ano
   const host = await f.connect(a.token), guest = await f.connect(b.token);
   const created = await host.command({ type: 'create', ranked: true, crewId: crew.id }, 'room');
   await guest.command({ type: 'join', code: created.room.code }, 'room', m => m.room.players.length === 2);
-  await host.command({ type: 'start' }, 'room', m => m.room.phase === 'countdown');
+  await startReady(host, [host, guest]);
   offset += RULES.countdownMs + 50; await host.wait('snapshot', m => m.snapshot.phase === 'playing');
   const endMark = host.mark(); offset += RULES.matchSeconds * 1000 + 50;
   const ended = await host.wait('event', m => m.event.type === 'match-end', endMark);
@@ -103,7 +103,7 @@ test('finished recovery replays the saved ranked result exactly once without ano
   await recovered.command({ type: 'join', code: created.room.code }, 'room');
   assert.equal(recovered.messages.filter(m => m.type === 'event' && m.event.type === 'match-end').length, 1);
   const stored = await board(); assert.equal(stored.history.length, 1); assert.ok(stored.entries.every((entry: { matches: number }) => entry.matches === 1));
-  await guest.command({ type: 'rematch' }, 'room', m => m.room.phase === 'countdown');
+  await startReady(guest, [guest, recovered], 'rematch');
   const secondDrop = guest.mark(); recovered.close(); await guest.wait('room', m => m.room.players.some(p => p.id === a.profile.id && !p.connected), secondDrop);
   const midRematch = await f.connect(a.token); await midRematch.wait('snapshot', m => m.snapshot.phase === 'countdown');
   assert.equal(midRematch.messages.some(m => m.type === 'event' && m.event.type === 'match-end'), false);

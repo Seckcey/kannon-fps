@@ -46,6 +46,15 @@ export class Peer {
   close() { this.socket.terminate(); }
 }
 
+/** Existing transport suites explicitly finish the real readiness handshake. */
+export async function startReady(host: Peer, players: Peer[], type: 'start' | 'rematch' = 'start') {
+  const preparing = await host.command({ type }, 'room', message => message.room.phase === 'preparing');
+  assert.ok(preparing.room.preparation);
+  const mark = host.mark();
+  for (const player of players) player.send({ type: 'ready', preparationId: preparing.room.preparation.id, ready: true });
+  return host.wait('room', message => message.room.phase === 'countdown', mark);
+}
+
 export async function fixture(t: TestContext) {
   const directory = await mkdtemp(join(tmpdir(), 'kannon-acceptance-'));
   const dbPath = join(directory, 'players.sqlite');
@@ -89,7 +98,7 @@ export async function fixture(t: TestContext) {
       const socket = new WebSocket(base.replace(/^http/, 'ws') + '/ws', { origin: base });
       const peer = new Peer(socket); peers.push(peer);
       await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
-      if (token) await peer.command({ type: 'hello', token }, 'welcome');
+      if (token) await peer.command({ type: 'hello', token, readyProtocol: 1 }, 'welcome');
       return peer;
     },
   };

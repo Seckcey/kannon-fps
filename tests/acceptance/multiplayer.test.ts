@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import WebSocket from 'ws';
 import { RULES, type Crew, type InputFrame, type LeaderboardEntry, type MatchHistory } from '../../shared/protocol.js';
-import { fixture } from './helpers.js';
+import { fixture, startReady } from './helpers.js';
 
 const input = (seq: number, changes: Partial<InputFrame> = {}): InputFrame => ({ seq, moveX: 0, moveZ: 0, yaw: 0, pitch: 0, fire: false, aim: false, jump: false, sprint: false, reload: false, slot: 1, ...changes });
 
@@ -96,8 +96,7 @@ test('private multiplayer enforces crew access, host control, countdown, fixed l
   assert.deepEqual(new Set(joined.room.players.map(player => player.id)), new Set([owner.profile.id, friend.profile.id]));
   await guest.command({ type: 'start' }, 'error');
   const hostMark = host.mark(); const guestMark = guest.mark();
-  host.send({ type: 'start' });
-  await host.wait('room', message => message.room.phase === 'countdown', hostMark);
+  await startReady(host, [host, guest]);
   const [hostPlaying, guestPlaying] = await Promise.all([
     host.wait('snapshot', message => message.snapshot.phase === 'playing', hostMark),
     guest.wait('snapshot', message => message.snapshot.phase === 'playing', guestMark),
@@ -159,4 +158,13 @@ test('private room capacity is eight and rejected ninth player keeps their own r
   assert.notEqual(own.room.id, target.room.id);
   const hostLatest = peers[0]!.messages.filter(message => message.type === 'room').at(-1)!;
   assert.equal(hostLatest.room.players.length, RULES.maxPlayers);
+  const fullPreparation = await peers[0]!.command({ type: 'start' }, 'room', message => message.room.phase === 'preparing');
+  const preparationId = fullPreparation.room.preparation!.id, readyMark = peers[0]!.mark();
+  for (const peer of peers.slice(0, 7)) peer.send({ type: 'ready', preparationId, ready: true });
+  const seven = await peers[0]!.wait('room', message => message.room.players.filter(player => player.ready).length === 7, readyMark);
+  assert.equal(seven.room.phase, 'preparing', 'A full room must wait for its eighth player too.');
+  const finalMark = peers[0]!.mark(); peers[7]!.send({ type: 'ready', preparationId, ready: true });
+  await peers[0]!.wait('room', message => message.room.phase === 'countdown', finalMark);
+  const fullCountdown = await peers[0]!.wait('snapshot', message => message.snapshot.phase === 'countdown', finalMark);
+  assert.equal(fullCountdown.snapshot.players.length, 8); assert.ok(fullCountdown.snapshot.timeRemaining > 2.8);
 });

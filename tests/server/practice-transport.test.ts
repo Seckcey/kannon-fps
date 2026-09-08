@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 import { createGameServer } from '../../server/app.js';
-import { Peer } from '../acceptance/helpers.js';
+import { Peer, startReady } from '../acceptance/helpers.js';
 import { RULES, type PracticeDifficulty } from '../../shared/protocol.js';
 
 test('practice settings survive recovery and rematch without creating bot profiles or any ranked result', async t => {
@@ -15,7 +15,7 @@ test('practice settings survive recovery and rematch without creating bot profil
   const connect = async (token: string) => {
     const socket = new WebSocket(base.replace('http:', 'ws:') + '/ws', { origin: base }), peer = new Peer(socket); peers.push(peer);
     await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
-    await peer.command({ type: 'hello', token }, 'welcome'); return peer;
+    await peer.command({ type: 'hello', token, readyProtocol: 1 }, 'welcome'); return peer;
   };
   const host = await connect(hostIdentity.token), friend = await connect(otherIdentity.token);
   const defaults = await host.command({ type: 'create', ranked: true, practice: true, crewId: crew.id }, 'room', m => m.room.players.length === 4);
@@ -32,7 +32,7 @@ test('practice settings survive recovery and rematch without creating bot profil
     await host.wait('error', m => /difficulty/.test(m.message), mark);
     const preserved = await host.command({ type: 'join', code: lastRoom.room.code }, 'room'); assert.equal(preserved.room.id, lastRoom.room.id);
   }
-  await host.command({ type: 'start' }, 'room', m => m.room.phase === 'countdown');
+  await startReady(host, [host]);
   offset += RULES.countdownMs + 20;
   const playing = await host.wait('snapshot', m => m.snapshot.phase === 'playing');
   const moving = await host.wait('snapshot', m => m.snapshot.players.some(p => p.bot && Math.hypot(p.vx, p.vz) > 1));
@@ -44,7 +44,7 @@ test('practice settings survive recovery and rematch without creating bot profil
   const end = await recovered.wait('event', m => m.event.type === 'match-end', mark);
   assert.equal(end.event.type, 'match-end'); if (end.event.type !== 'match-end') return;
   assert.equal(end.event.ranked, false); assert.ok(end.event.winnerIds.some(id => id.startsWith('bot-')), 'A time-limit tie includes AI competitors.');
-  const rematch = await recovered.command({ type: 'rematch' }, 'room', m => m.room.phase === 'countdown'); assert.equal(rematch.room.practiceDifficulty, 'hard');
+  const rematch = await startReady(recovered, [recovered], 'rematch'); assert.equal(rematch.room.practiceDifficulty, 'hard');
   const reset = await recovered.wait('snapshot', m => m.snapshot.phase === 'countdown');
   assert.ok(reset.snapshot.players.every(p => p.kills === 0 && p.deaths === 0 && p.health === RULES.health && p.shield === RULES.shield));
   const count = (table: string) => app.store.db.prepare(`SELECT COUNT(*) AS total FROM ${table}`).get()!.total;
