@@ -18,6 +18,8 @@ The [ready-before-countdown update](docs/ROUND_READINESS.md) is live at **https:
 
 ## Sunbreak V3 art and motion
 
+The current source includes [coastal galleries](docs/COASTAL_GALLERIES.md): recessed stone arches, connected piers and stepped exterior terraces. It reduces the environment's download and geometry counts while preserving the playable map, Scout and materials. [Source checks](docs/verification/coastal-gallery-local.json), [controlled image/performance comparisons](docs/verification/coastal-gallery-render.json), and [production-build touch-emulated practice](docs/verification/coastal-gallery-gameplay.json) describe their separate scopes; the release record identifies deployment.
+
 The deployed [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) reduces near-floor sliding, smooths the repeating stride and stabilizes knee direction in the Blender Walk/Run clips. It preserves the model's polygon/rig budget and six other actions; residual foot roll and velocity differences remain documented. The preceding [scout form and movement upgrade](docs/SCOUT_MOTION_POLISH.md) fitted the shoulder armor and upper back, aligned gait with visible travel, corrected reload/heal prediction and gave practice rivals the existing stair/platform route. The fixed loadout, authoritative movement, collision and scoring are preserved.
 
 The preceding [combat feedback release](docs/COMBAT_FEEDBACK.md) added per-pellet impacts, restrained shield/armor reactions and correctly placed respawn effects. Fixed-capacity render batches keep sustained firing bounded. That release preserved the V3 models; the subsequent scout geometry changes are recorded above.

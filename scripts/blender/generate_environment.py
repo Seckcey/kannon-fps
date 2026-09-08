@@ -538,53 +538,123 @@ for i in range(24):
 # Asymmetric coastal wings frame the gameplay camera. All deep relief, stepped
 # terraces and parapets are outside the 64 m square; playable roofs remain flat.
 def exterior_building(x,z,w,d,h,side,base=0,levels=2,group='Exterior'):
-    tint=(.92,.89,.82,1)
-    # Keep body/coping top surfaces distinct: coplanar opaque roof layers can
-    # produce dark ray/shadow artifacts even when they share a material.
-    box(group,stone,(x,base+(h-.12)/2,z),(w,h-.12,d),.09,tint)
-    for y in [base+.30,base+h-.55]:
-        box(group,petrol,(x,y,z),(w+.18,.23,d+.18),.02,(.90,.95,.94,1))
-        box(group,bronze,(x,y+.16,z),(w+.24,.07,d+.24),.014)
-    box(group,stone,(x,base+h-.15,z),(w+.35,.30,d+.35),.06,(.99,.97,.91,1))
-    # Main inward facade, plus its visible south-facing return. Recessed dark
-    # shutters, broad mullions and layered stone surrounds read across the arena.
-    for axis,span,other,plane,face_side in [('x',d,z,x-side*w/2,-side),('z',w,x,z+d/2,1)]:
-        bays=max(1,round(span/4.5));spacing=(span-.8)/bays
-        for bay in range(bays):
-            center=other-span/2+.4+spacing*(bay+.5)
-            for level in range(levels):
-                level_h=h/levels;bottom=base+level*level_h+.78;panel_h=level_h*.56;panel_w=min(2.5,spacing*.55)
-                face_patch(group,petrol,axis,face_side,(center,bottom+panel_h/2),panel_w,panel_h,plane+face_side*.055,.015,(.66,.78,.79,1))
-                for offset in [-panel_w/2-.16,panel_w/2+.16]:
-                    center3=(plane+face_side*.20,bottom+panel_h/2,center+offset) if axis=='x' else (center+offset,bottom+panel_h/2,plane+face_side*.20)
-                    size3=(.40,panel_h+.45,.28) if axis=='x' else (.28,panel_h+.45,.40)
-                    box(group,stone,center3,size3,.045,(.94,.91,.85,1))
-                for cy,ch in [(bottom-.08,.22),(bottom+panel_h+.13,.30)]:
-                    center3=(plane+face_side*.22,cy,center) if axis=='x' else (center,cy,plane+face_side*.22)
-                    size3=(.48,ch,panel_w+.84) if axis=='x' else (panel_w+.84,ch,.48)
-                    # Crisp horizontal sill/lintel blocks keep real projection
-                    # but avoid spending 32 extra bevel triangles on each one.
-                    box(group,stone,center3,size3)
-                for offset in [-panel_w*.23,panel_w*.23]:
-                    face_patch(group,bronze,axis,face_side,(center+offset,bottom+panel_h/2),.075,panel_h-.12,plane+face_side*.079,.018)
-                for row in [.30,.65]:
-                    face_patch(group,bronze,axis,face_side,(center,bottom+panel_h*row),panel_w-.08,.06,plane+face_side*.080,.02,(.78,.77,.71,1))
-        # Large corners/capital blocks make the facade's construction legible.
-        for offset in [-span/2+.30,span/2-.30]:
-            center3=(plane+face_side*.20,base+h/2,other+offset) if axis=='x' else (other+offset,base+h/2,plane+face_side*.20)
-            size3=(.45,h-.25,.56) if axis=='x' else (.56,h-.25,.45)
-            box(group,stone,center3,size3,.055,(.94,.91,.84,1))
+    # Replace many small projecting window surrounds with a few structural
+    # bays. The upper shell and inset core are separate solids: a gallery is
+    # actually 0.8 m deep, not a dark panel laid on an unbroken wall. All work
+    # here is deterministic and confined to the three existing exterior batches.
+    recess=.80;level_h=h/levels;return_sign=-1 if z>0 else 1
+    face_tint=(.96,.93,.85,1);core_tint=(.81,.83,.77,1)
+
+    def facade_box(material,axis,face_side,plane,u,y,width,height,depth,offset=0,bevel=0,tint=face_tint):
+        center=(plane+face_side*offset,y,u) if axis=='x' else (u,y,plane+face_side*offset)
+        size=(depth,height,width) if axis=='x' else (width,height,depth)
+        box(group,material,center,size,bevel,tint)
+
+    def arch_spandrel(axis,face_side,plane,points,depth,segment):
+        # Each four-sided spandrel segment has a real front, back and intrados.
+        # Splitting its face UVs retains the existing metre-scale limestone
+        # texture, including the curved reveal. No alpha cards or extra draws.
+        vertices=[]
+        for offset in [.06,.06-depth]:
+            vertices.extend((plane+face_side*offset,v,u) if axis=='x' else (u,v,plane+face_side*offset) for u,v in points)
+        faces=[(0,1,2,3),(7,6,5,4),(0,4,5,1),(1,5,6,2),(2,6,7,3),(3,7,4,0)]
+        if (axis=='x' and face_side>0) or (axis=='z' and face_side<0):
+            faces=[tuple(reversed(face)) for face in faces]
+        for index,face in enumerate(faces):
+            # Adjacent segments meet exactly. Internal end caps and the roof-
+            # covered top would spend triangles without contributing a surface.
+            if index==4 or (index==3 and segment<7) or (index==5 and segment>0):continue
+            pts=[vertices[i] for i in face]
+            normal=(Vector(pts[1])-Vector(pts[0])).cross(Vector(pts[2])-Vector(pts[0]))
+            uv_axis=max(range(3),key=lambda i:abs(normal[i]));scale=stone.get('textureMetres',3)
+            uv=[((p[2] if uv_axis==0 else p[0])/scale,(p[2] if uv_axis==1 else p[1])/scale) for p in pts]
+            tint=face_tint if index==0 else (.80,.80,.72,1)
+            geometry(group,stone,pts,[(0,1,2,3)],uv,tint)
+
+    if base==0 and z>0:
+        # Southern wings stand on their own masonry sea walls. A shallow
+        # retaining terrace ties them to the unchanged island rim; the lowest
+        # course ends below water instead of leaving scenery floating offshore.
+        box(group,stone,(x,-4.95,z),(w+.60,9.50,d+.60),.08,(.77,.77,.70,1))
+        inner=33.55;outer=abs(x)+w/2+.45
+        box(group,stone,(side*(inner+outer)/2,-.40,z),(outer-inner,.70,d+.90),.05,(.90,.89,.81,1))
+        box(group,petrol,(x,-.10,z),(w+.25,.20,d+.25),.015,(.80,.88,.85,1))
+
+    for level in range(levels):
+        # Half-metre setbacks leave terraces above the broad lower masses.
+        # The outer and far return edges stay fixed. Southern return facades
+        # face north into the arena; their setback and core recess mirror too.
+        setback=.50*level;tw=w-setback;td=d-setback
+        tx=x+side*setback/2;tz=z-return_sign*setback/2
+        bottom=base+level*level_h;top=bottom+level_h
+        gallery=level>0 or base>0
+        if gallery:
+            box(group,stone,(tx+side*recess/2,(bottom+top)/2-.07,tz-return_sign*recess/2),(tw-recess,level_h-.46,td-recess),tint=core_tint,omit_top=True)
+        else:
+            # A visibly sealed lower storey avoids suggesting playable routes
+            # or silhouettes behind a decorative opening at combat height.
+            box(group,stone,(tx,(bottom+top)/2-.07,tz),(tw,level_h-.46,td),.06,(.92,.89,.82,1),omit_top=True)
+        box(group,stone,(tx,bottom+.08,tz),(tw+.22,.16,td+.22),.03,(.91,.88,.80,1))
+        box(group,petrol,(tx,top-.22,tz),(tw+.08,.16,td+.08),tint=(.87,.94,.92,1),omit_top=True)
+        box(group,bronze,(tx,top-.105,tz),(tw+.18,.07,td+.18),tint=(.88,.85,.75,1),omit_top=True)
+        box(group,stone,(tx,top+.03,tz),(tw+.30,.20,td+.30),.04,(.99,.96,.88,1))
+
+        for axis,span,other,plane,face_side in [('x',td,tz,tx-side*tw/2,-side),('z',tw,tx,tz+return_sign*td/2,return_sign)]:
+            bays=max(1,round(span/5));spacing=(span-.64)/bays
+            edge=other-span/2+.32
+            for bay in range(bays):
+                center=edge+spacing*(bay+.5)
+                panel_w=min(2.65,spacing*.66)
+                if not gallery:
+                    panel_h=level_h*.61;panel_y=bottom+.48+panel_h/2
+                    face_patch(group,petrol,axis,face_side,(center,panel_y),panel_w,panel_h,plane+face_side*.018,.012,(.64,.77,.78,1))
+                    # A single central stile and two broad shutter rails keep
+                    # the original petrol/copper identity without a fine grid.
+                    face_patch(group,bronze,axis,face_side,(center,panel_y),.085,panel_h-.10,plane+face_side*.045,.012)
+                    for cy in [panel_y-panel_h*.30,panel_y+panel_h*.30]:
+                        face_patch(group,bronze,axis,face_side,(center,cy),panel_w-.10,.065,plane+face_side*.045,.012)
+                    facade_box(stone,axis,face_side,plane,center,bottom+.40,panel_w+.28,.20,.34,.06,tint=face_tint)
+                    continue
+
+                radius=(spacing-.56)/2;rise=min(1.18,level_h*.27)
+                spring=bottom+level_h*.50;ceiling=top-.14
+                # Eight actual arch segments are sufficient at the gameplay
+                # distance; their depth and broad piers carry the silhouette.
+                for segment in range(8):
+                    a=math.pi*(1-segment/8);b=math.pi*(1-(segment+1)/8)
+                    left=(center+math.cos(a)*radius,spring+math.sin(a)*rise)
+                    right=(center+math.cos(b)*radius,spring+math.sin(b)*rise)
+                    arch_spandrel(axis,face_side,plane,[left,right,(right[0],ceiling),(left[0],ceiling)],.40,segment)
+                # Upper gallery backs sit behind the opening, so floor,
+                # sidewalls and intrados remain visible at oblique camera angles.
+                rear_plane=plane-face_side*(recess-.025)
+                panel_h=level_h*.52;panel_y=bottom+.65+panel_h/2
+                face_patch(group,petrol,axis,face_side,(center,panel_y),panel_w,panel_h,rear_plane,.012,(.64,.78,.79,1))
+                face_patch(group,bronze,axis,face_side,(center,panel_y),.085,panel_h-.08,rear_plane+face_side*.018,.010,(.81,.82,.73,1))
+                facade_box(stone,axis,face_side,plane,center,bottom+.44,spacing-.44,.58,.30,-.06,tint=(.89,.88,.79,1))
+                facade_box(bronze,axis,face_side,plane,center,bottom+.765,spacing-.39,.07,.36,-.06,tint=(.86,.83,.74,1))
+                face_patch(group,bronze,axis,face_side,(center,spring+rise+.18),.12,.28,plane+face_side*.070,.012,(.88,.86,.78,1))
+
+            # Continuous corner/intermediate piers connect the arches to each
+            # terrace. Their construction replaces stacked window-frame bars.
+            for pier in range(bays+1):
+                u=edge+spacing*pier
+                facade_box(stone,axis,face_side,plane,u,(bottom+top)/2,.56,level_h-.26,.48,-.02,.035)
+                if gallery:
+                    facade_box(stone,axis,face_side,plane,u,bottom+.25,.72,.20,.60,-.02,tint=(.92,.89,.80,1))
+                    facade_box(stone,axis,face_side,plane,u,spring-.06,.74,.16,.60,-.02,tint=(.99,.95,.85,1))
 
 for side in [-1,1]:island('Exterior',side*41,-19 if side<0 else -17,22 if side<0 else 24,-.58,80+side)
-# Tall volumes sit at the outer north corners, inside the forward camera's view
-# while remaining entirely outside collision. Lower wings recede along the sides.
+# Tall north volumes preserve the sea/gate aperture. Lower southern wings add
+# depth to selected oblique spawn views, outside the existing tree crowns; the
+# straight south-facing platform view intentionally retains its open sea horizon.
 exterior_building(-38.5,-30,10,12,11.4,-1,levels=3)
 exterior_building(-39,-31,8,7,3.4,-1,base=11.4,levels=1)
-exterior_building(-41,-10,8,12,4.4,-1,levels=1)
-exterior_building(40,-6,10,16,7.6,1,levels=2)
+exterior_building(-43.5,18,8,10,7.4,-1,levels=2)
+exterior_building(44.5,20,10,12,9.2,1,levels=2)
 exterior_building(38.5,-29,10,14,13.2,1,levels=3)
 # Compact roof screens/solar service fins break long horizontal roof strips.
-for x,z,base,w,d,side in [(-39,-31,14.8,8,7,-1),(38.5,-29,13.2,10,14,1)]:
+for x,z,base,w,d,side in [(-39,-31,14.8,8,7,-1),(39,-29.5,13.2,9,13,1)]:
     for offset in [-w*.37,w*.37]:
         box('Exterior',stone,(x+offset,base+.60,z-d*.30),(.50,1.2,.62),.06)
         box('Exterior',bronze,(x+offset,base+1.22,z-d*.30),(.55,.10,.69),.014)
@@ -738,7 +808,8 @@ def render(name,position,target,lens=28):
     camera.location=bv(position);direction=Vector(bv(target))-camera.location;camera.rotation_euler=direction.to_track_quat('-Z','Y').to_euler();camera_data.lens=lens
     scene.render.filepath=str(SOURCE/name);bpy.ops.render.render(write_still=True)
 
-manifest={'asset':'public/models/environment.glb','artRevision':'sunbreak-art-depth','groups':list(groups),'materials':[m.name for m in [stone,ground,petrol,bronze,cliff,bark,leaves,flower]],'mapObstacles':obstacles,'coordinateSystem':'metres; Y up; ground y=0','originalArtwork':True,'budget':{'maxTriangles':70000,'maxBytes':7000000,'maxColorBatches':15},'leafAtlasAlphaCoverage':round(float(np.mean(leaf_pixels[:,:,3]>.5)),4),'notes':['Original authored geometry, generated basecolor artwork, and authored PBR/foliage maps.','Asymmetric exterior archive/gallery/pavilion framing; closed shuttered facade bays are distinct from low tactical barrier fittings.','Connected mature olive crowns use 340 compound-spray cards per tree; cypress trees use 145. Canopies have no opaque filler shells.','Broad paving variation uses existing vertex colors; no additional texture/decal layer or raised floor geometry.','The observatory settlement, exterior terraces and tree trunks are outside the 64 m playable square; high canopies may overhang.','Sky/water/lighting remain runtime systems; preview-only water is at y=-9.','Authoritative collision is unchanged; rendered surface relief is at most 4 cm.','Blender previews establish source appearance only; separate gameplay/GPU acceptance is recorded in docs/ART_DEPTH.md and docs/RELEASE.md.']}
+manifest={'asset':'public/models/environment.glb','artRevision':'sunbreak-coastal-galleries-v1','groups':list(groups),'materials':[m.name for m in [stone,ground,petrol,bronze,cliff,bark,leaves,flower]],'mapObstacles':obstacles,'coordinateSystem':'metres; Y up; ground y=0','originalArtwork':True,'budget':{'maxTriangles':70000,'maxBytes':7000000,'maxColorBatches':15},'leafAtlasAlphaCoverage':round(float(np.mean(leaf_pixels[:,:,3]>.5)),4),'notes':['Original authored geometry, generated basecolor artwork, and authored PBR/foliage maps.','Five exterior coastal volumes use stepped terraces, structural stone arches and physically modelled 0.8 m upper galleries; closed ground shutters distinguish scenery from playable routes. Southern return facades, recesses and setbacks face north into the arena. Their relocation redistributes framing in selected oblique spawn views; the central sea/gate aperture and open straight-south platform view remain.','Connected mature olive crowns use 340 compound-spray cards per tree; cypress trees use 145. Canopies have no opaque filler shells.','Broad paving variation uses existing vertex colors; no additional texture/decal layer or raised floor geometry.','The observatory settlement, exterior terraces and tree trunks are outside the 64 m playable square; high canopies may overhang.','Sky/water/lighting remain runtime systems; preview-only water is at y=-9.','Authoritative collision is unchanged; the 4 cm relief envelope applies to playable ArenaCore/ArenaTrim, not the recessed galleries outside the arena.','Blender previews establish source appearance only; separate gameplay/GPU acceptance is recorded in docs/ART_DEPTH.md and docs/RELEASE.md.']}
+manifest['notes'].append('The coastal-gallery pass changes only exterior limestone, petrol and bronze geometry. It introduces no materials, textures or random-number consumption; arena, foliage, cliffs and horizon source geometry are unchanged. Southern wings have masonry sea-wall foundations below their original-art terraces.')
 manifest['notes'].extend(['Petrol metal uses low-contrast isotropic wear, nearly flat normals and roughness between 0.43 and 0.60; crossed directional wave patterns are removed.','Six masonry planters contain rooted bougainvillea stems, connected leaf sprays and flower clusters; detached single-leaf perimeter scatter is removed.','Flush shutter surrounds, pilasters and fittings use distinct surface depths inside the 4 cm envelope to avoid coplanar black artifacts at their intersections.','The Y=0 paving grid is the only upward floor layer. The underlying slab retains sides and bottom but omits its hidden top, preventing a redundant floor-sized PBR shading pass inside the same draw.'])
 (SOURCE/'environment-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 for unused_image in list(bpy.data.images):

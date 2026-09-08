@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "baselineRevision": "f13acf4fed71279241de1848230fae21d19af569",
+  "checks": {
+    "tests": 155,
+    "passed": 155,
+    "failed": 0,
+    "assetValidation": true,
+    "typecheck": true,
+    "productionBuild": true,
+    "logSha256": "a20500cbe8c1e4be485b1198a430a2e34f30db744c3c8dd8b9ff05cebf4459d2"
+  },
+  "files": {
+    "scripts/blender/generate_environment.py": "18d21e05145c406dec92a20654de37e94f30ba827c40c635894ac2c399b14569",
+    "scripts/blender/validate_environment.mjs": "76b5228b9e3735c39b00606c8371bff23483adc5a5cf982e4df56423975c9df2",
+    "src/game/assets.ts": "0e0fce5b31ad5e8d88b461c8b1d1ff20eca54087263c43a0740883394ee72aee",
+    "public/models/environment.glb": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+    "art/source/environment.blend": "0bdc44e714fa2a018c6861ecb5a00d411bbd8981483c63c26191e14cbc095914",
+    "shared/map.ts": "0e6cbed2d82ec2d8e14593994beeb4ec7a0379f89ca0bd6a8d391fa523e1ed13",
+    "public/models/scout.glb": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+  },
+  "builtEntry": {
+    "path": "/assets/index-BG98Ud0A.js",
+    "sha256": "d884c4f425eb7433f2aae457adadbbddc6e5b6b36847486494808b6a5a0f2b04",
+    "bytes": 234999
+  },
+  "limits": [
+    "The unchanged game chunk remains above the existing 700kB advisory threshold.",
+    "Desktop mouse capture was refused by this IAB session; native touch-emulated Ready/combat/results/exit passed.",
+    "Network observations are bounded and truncated; event counts are observed samples, not full-round totals.",
+    "Physical-phone and two-household acceptance remain unverified."
+  ]
+}

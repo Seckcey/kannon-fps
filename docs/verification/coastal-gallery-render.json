@@ -1,0 +1,1348 @@
+{
+  "status": "passed",
+  "scope": "Controlled art fixture only; actual GameView, twelve camera placements, eight actors. Equal-budget A/B/A uses seven moving rivals and one stationary local actor. Microsoft Basic Render Driver software measurements do not establish hardware-GPU or physical-phone performance.",
+  "captures": {
+    "scope": "Actual GameView in a controlled synthetic art scene, eight actors, same twelve camera placements and Low pixel budget as baseline. Not multiplayer or physical-phone evidence.",
+    "environmentSha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+    "scoutSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "deviceScaleFactor": 1
+    },
+    "records": [
+      {
+        "view": "platform-north",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              0.96,
+              3.949337114911968,
+              19.843020350721847
+            ],
+            "viewpoint": "platform-north"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 81,
+            "frame": 736,
+            "lines": 0,
+            "points": 0,
+            "triangles": 229834
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "platform-south",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              -0.9600000000000004,
+              3.949337114911968,
+              14.156979649278153
+            ],
+            "viewpoint": "platform-south"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 22,
+            "frame": 744,
+            "lines": 0,
+            "points": 0,
+            "triangles": 95834
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-0",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              -27.335525020008497,
+              1.8354871755771127,
+              28.693170039886667
+            ],
+            "viewpoint": "spawn-0"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 81,
+            "frame": 752,
+            "lines": 0,
+            "points": 0,
+            "triangles": 229834
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-1",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              27.335525020008497,
+              1.8354871755771127,
+              -28.693170039886667
+            ],
+            "viewpoint": "spawn-1"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 78,
+            "frame": 763,
+            "lines": 0,
+            "points": 0,
+            "triangles": 225642
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-2",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              28.693170039886667,
+              1.8354871755771127,
+              27.335525020008497
+            ],
+            "viewpoint": "spawn-2"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 81,
+            "frame": 770,
+            "lines": 0,
+            "points": 0,
+            "triangles": 229834
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-3",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              -28.693170039886667,
+              1.8354871755771127,
+              -27.335525020008497
+            ],
+            "viewpoint": "spawn-3"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 78,
+            "frame": 779,
+            "lines": 0,
+            "points": 0,
+            "triangles": 225642
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-4",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              0.96,
+              1.8354871755771127,
+              30.848717596184613
+            ],
+            "viewpoint": "spawn-4"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 81,
+            "frame": 789,
+            "lines": 0,
+            "points": 0,
+            "triangles": 229834
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-5",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              -0.9600000000000004,
+              1.8354871755771127,
+              -30.848717596184613
+            ],
+            "viewpoint": "spawn-5"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 78,
+            "frame": 799,
+            "lines": 0,
+            "points": 0,
+            "triangles": 225642
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-6",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              -30.848717596184613,
+              1.8354871755771127,
+              0.9600000000000002
+            ],
+            "viewpoint": "spawn-6"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 81,
+            "frame": 809,
+            "lines": 0,
+            "points": 0,
+            "triangles": 229834
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "spawn-7",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              30.848717596184613,
+              1.8354871755771127,
+              -0.9599999999999996
+            ],
+            "viewpoint": "spawn-7"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 78,
+            "frame": 819,
+            "lines": 0,
+            "points": 0,
+            "triangles": 225642
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "west-gallery",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              -25.155128461184667,
+              1.5791025815335828,
+              -18.96
+            ],
+            "viewpoint": "west-gallery"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 22,
+            "frame": 828,
+            "lines": 0,
+            "points": 0,
+            "triangles": 95834
+          },
+          "scale": 1
+        }
+      },
+      {
+        "view": "east-gallery",
+        "saved": true,
+        "metrics": {
+          "actorCount": 8,
+          "buffer": {
+            "height": 665,
+            "width": 1182
+          },
+          "camera": {
+            "fov": 68,
+            "position": [
+              25.155128461184667,
+              1.5791025815335828,
+              -17.04
+            ],
+            "viewpoint": "east-gallery"
+          },
+          "errors": [],
+          "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "memory": {
+            "geometries": 68,
+            "textures": 24
+          },
+          "moving": false,
+          "programLogs": [],
+          "ratio": 0.9237604307034012,
+          "render": {
+            "calls": 25,
+            "frame": 838,
+            "lines": 0,
+            "points": 0,
+            "triangles": 100026
+          },
+          "scale": 1
+        }
+      }
+    ],
+    "loadedBufferSha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+    "cacheNote": "Capture verification rejects cached intermediate exports. All twelve final captures replaced after tab-scoped cache disabling and verification of the actual retained environment buffer43ff13d3."
+  },
+  "images": [
+    {
+      "variant": "baseline",
+      "view": "platform-north",
+      "path": "../art/coastal-baseline-platform-north.jpg",
+      "sha256": "5983a11e25a12fa48083cedc0116fd9b5a2a69a0778a0f20cdfc65e2ca393d0c",
+      "bytes": 110802
+    },
+    {
+      "variant": "baseline",
+      "view": "platform-south",
+      "path": "../art/coastal-baseline-platform-south.jpg",
+      "sha256": "64a68d39ae41bbcdd1ca1992b0fef4212136152cf31f12e055dc0c85376c14e8",
+      "bytes": 91335
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-0",
+      "path": "../art/coastal-baseline-spawn-0.jpg",
+      "sha256": "fd8868219ffc8aa534133957822e5e6c7918db90c1927574ea5e0259e1098002",
+      "bytes": 96270
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-1",
+      "path": "../art/coastal-baseline-spawn-1.jpg",
+      "sha256": "bca2c820352ff2de04e05faba8268e74af2095e7b43d35ae6be2c14f35d98ee4",
+      "bytes": 84261
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-2",
+      "path": "../art/coastal-baseline-spawn-2.jpg",
+      "sha256": "d953db8825ee05b3c15c3d2c7277f2fc29a67f61ddd07402cbf2c1b40b68657c",
+      "bytes": 90849
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-3",
+      "path": "../art/coastal-baseline-spawn-3.jpg",
+      "sha256": "c1b3a059e2fc9424bc755f7f52d5115f4f8085668baca4b260ad1d199457b217",
+      "bytes": 91245
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-4",
+      "path": "../art/coastal-baseline-spawn-4.jpg",
+      "sha256": "ccb87954d686eed13dc11ffc62746c06fb4da7c31154a6e7b8767fdd71544fb7",
+      "bytes": 96965
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-5",
+      "path": "../art/coastal-baseline-spawn-5.jpg",
+      "sha256": "2c2b85e6f1210e1040a2cf6bf8afd25042e71dc3b59f0497d65b551411470050",
+      "bytes": 93932
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-6",
+      "path": "../art/coastal-baseline-spawn-6.jpg",
+      "sha256": "3241184e5781fd2f5953b34b3c8cb2a131cd9877578ab8b2fea25f66eaa3c887",
+      "bytes": 91283
+    },
+    {
+      "variant": "baseline",
+      "view": "spawn-7",
+      "path": "../art/coastal-baseline-spawn-7.jpg",
+      "sha256": "963f85559b49cf0301a8ae8f5f4225cc740f0c7cbf2f59945ce16d527cd6b744",
+      "bytes": 82876
+    },
+    {
+      "variant": "baseline",
+      "view": "west-gallery",
+      "path": "../art/coastal-baseline-west-gallery.jpg",
+      "sha256": "f4f82af4e647cbc5c2b3c24fc041867803d628c39293401a7b170e4c5c27d1a9",
+      "bytes": 100893
+    },
+    {
+      "variant": "baseline",
+      "view": "east-gallery",
+      "path": "../art/coastal-baseline-east-gallery.jpg",
+      "sha256": "86b0bf67b91446ef437ff3c0eaebac610d9a5cc0e5ae053da59f145f9ab0e602",
+      "bytes": 108602
+    },
+    {
+      "variant": "candidate",
+      "view": "platform-north",
+      "path": "../art/coastal-candidate-platform-north.jpg",
+      "sha256": "0236e355492ac701a28b11f291794d777a0a84e3e8e27dba6c88be6d4d6c4a93",
+      "bytes": 110617
+    },
+    {
+      "variant": "candidate",
+      "view": "platform-south",
+      "path": "../art/coastal-candidate-platform-south.jpg",
+      "sha256": "9d66cac4caed91f3ed85ff8f06466fa799d55384d79e2c1d65973fd5d81fc74e",
+      "bytes": 91427
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-0",
+      "path": "../art/coastal-candidate-spawn-0.jpg",
+      "sha256": "5f5d8b9a7dfaf9ae68c7fde6e44e74b9592520f8ab591e3b683f5721de54553b",
+      "bytes": 97132
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-1",
+      "path": "../art/coastal-candidate-spawn-1.jpg",
+      "sha256": "331810b0a7752776323e05e7da82e493634d06ebaec54245f7c1e398cf0581b3",
+      "bytes": 83477
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-2",
+      "path": "../art/coastal-candidate-spawn-2.jpg",
+      "sha256": "687324d6d82553aac32bc665df0cbec1a7ee5115cd324998665e75c58b19609e",
+      "bytes": 91721
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-3",
+      "path": "../art/coastal-candidate-spawn-3.jpg",
+      "sha256": "222fb9d58181a2fa3faec5ec1515ebd89f6c69dcab0b60a783a5bfd6559e15b9",
+      "bytes": 91487
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-4",
+      "path": "../art/coastal-candidate-spawn-4.jpg",
+      "sha256": "8309788281861f2f9772dcb54289725142fde08b3d2c2d2d7eda780f092ec81e",
+      "bytes": 93246
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-5",
+      "path": "../art/coastal-candidate-spawn-5.jpg",
+      "sha256": "4b7693824f961d6933446ab5cbefb3f8333374b70879e397396662cd236cf2f9",
+      "bytes": 94483
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-6",
+      "path": "../art/coastal-candidate-spawn-6.jpg",
+      "sha256": "0813c93826c8e733509ea91ea862dfa417b6b94d98fc03c477e0dfbe4b878a52",
+      "bytes": 91271
+    },
+    {
+      "variant": "candidate",
+      "view": "spawn-7",
+      "path": "../art/coastal-candidate-spawn-7.jpg",
+      "sha256": "bb25f64dc23332075bc5245108299f297e2f7c43b1801f1810a1dd723f91da0f",
+      "bytes": 82951
+    },
+    {
+      "variant": "candidate",
+      "view": "west-gallery",
+      "path": "../art/coastal-candidate-west-gallery.jpg",
+      "sha256": "f64f631cee43a2617f41359adce168ce888a28c96274fb907c4e2d8974b2abaa",
+      "bytes": 94835
+    },
+    {
+      "variant": "candidate",
+      "view": "east-gallery",
+      "path": "../art/coastal-candidate-east-gallery.jpg",
+      "sha256": "6af5176a9242179f6f432f2642f0c6bebc89a98103384e3d5100957b5ec82f25",
+      "bytes": 93361
+    }
+  ],
+  "runs": [
+    {
+      "label": "a1",
+      "variant": "baseline",
+      "identity": {
+        "environment": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d",
+        "scout": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+      },
+      "metrics": {
+        "actorCount": 8,
+        "buffer": {
+          "height": 665,
+          "width": 1182
+        },
+        "camera": {
+          "fov": 68,
+          "position": [
+            0.96,
+            3.949337114911968,
+            19.843020350721847
+          ],
+          "viewpoint": "platform-north"
+        },
+        "errors": [],
+        "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "memory": {
+          "geometries": 68,
+          "textures": 24
+        },
+        "moving": true,
+        "programLogs": [],
+        "ratio": 0.9237604307034012,
+        "render": {
+          "calls": 81,
+          "frame": 954,
+          "lines": 0,
+          "points": 0,
+          "triangles": 230648
+        },
+        "samples": [
+          {
+            "at": 44033.59999999404,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 44764.30000001192,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 45483.30000001192,
+            "drawCalls": 81,
+            "fps": 14,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 46236.20000001788,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 46973,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 47703.70000001788,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 48427.59999999404,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 49167.80000001192,
+            "drawCalls": 79,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 49902.70000001788,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 50632.20000001788,
+            "drawCalls": 81,
+            "fps": 15,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 51325.5,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 52049.90000000596,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 52738,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 53472.09999999404,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 54218.20000001788,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 54978.5,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 55736.80000001192,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 56484.59999999404,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 57227.70000001788,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 57977.80000001192,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          }
+        ],
+        "scale": 1
+      },
+      "scope": "Fixed1280x720 CSS; Low1182x665 buffer; seven moving rivals and one stationary local actor; Microsoft Basic Render Driver software comparison only.",
+      "medianFps": 16
+    },
+    {
+      "label": "b",
+      "variant": "candidate",
+      "identity": {
+        "environment": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b",
+        "scout": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+      },
+      "metrics": {
+        "actorCount": 8,
+        "buffer": {
+          "height": 665,
+          "width": 1182
+        },
+        "camera": {
+          "fov": 68,
+          "position": [
+            0.96,
+            3.949337114911968,
+            19.843020350721847
+          ],
+          "viewpoint": "platform-north"
+        },
+        "errors": [],
+        "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "memory": {
+          "geometries": 68,
+          "textures": 24
+        },
+        "moving": true,
+        "programLogs": [],
+        "ratio": 0.9237604307034012,
+        "render": {
+          "calls": 81,
+          "frame": 352,
+          "lines": 0,
+          "points": 0,
+          "triangles": 229834
+        },
+        "samples": [
+          {
+            "at": 4554.4000000059605,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 5248.5999999940395,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 5992.5,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 6698,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 7409.700000017881,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 8135.200000017881,
+            "drawCalls": 79,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 8883.200000017881,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 9594.70000001788,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 10335.5,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 11048.09999999404,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 11770.70000001788,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 12477.30000001192,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 13186.70000001788,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 13943.40000000596,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 14649.30000001192,
+            "drawCalls": 81,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 15368.20000001788,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 16087.30000001192,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 16806.59999999404,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 17540.20000001788,
+            "drawCalls": 79,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          }
+        ],
+        "scale": 1
+      },
+      "scope": "Fixed1280x720 CSS; Low1182x665 buffer; seven moving rivals and one stationary local actor; Microsoft Basic Render Driver software comparison only.",
+      "medianFps": 18
+    },
+    {
+      "label": "a2",
+      "variant": "baseline",
+      "identity": {
+        "environment": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d",
+        "scout": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+      },
+      "metrics": {
+        "actorCount": 8,
+        "buffer": {
+          "height": 665,
+          "width": 1182
+        },
+        "camera": {
+          "fov": 68,
+          "position": [
+            0.96,
+            3.949337114911968,
+            19.843020350721847
+          ],
+          "viewpoint": "platform-north"
+        },
+        "errors": [],
+        "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "memory": {
+          "geometries": 68,
+          "textures": 24
+        },
+        "moving": true,
+        "programLogs": [],
+        "ratio": 0.9237604307034012,
+        "render": {
+          "calls": 81,
+          "frame": 340,
+          "lines": 0,
+          "points": 0,
+          "triangles": 230648
+        },
+        "samples": [
+          {
+            "at": 4473.199999988079,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 5189.5,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 5908.299999982119,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 6638.199999988079,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 7391.199999988079,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 8126.399999976158,
+            "drawCalls": 79,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 8862.299999982119,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 9593.399999976158,
+            "drawCalls": 81,
+            "fps": 16,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 10296.29999998212,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 11001.29999998212,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 11738.19999998808,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 12463.19999998808,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 13184.19999998808,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 13947.899999976158,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 14645.59999999404,
+            "drawCalls": 79,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 15357.899999976158,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 16113.29999998212,
+            "drawCalls": 81,
+            "fps": 17,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 16828.5,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 17527.79999998212,
+            "drawCalls": 80,
+            "fps": 19,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          },
+          {
+            "at": 18259.59999999404,
+            "drawCalls": 81,
+            "fps": 18,
+            "locked": false,
+            "post": false,
+            "ratio": 0.9237604307034012,
+            "scale": 1
+          }
+        ],
+        "scale": 1
+      },
+      "scope": "Fixed1280x720 CSS; Low1182x665 buffer; seven moving rivals and one stationary local actor; Microsoft Basic Render Driver software comparison only.",
+      "medianFps": 17.5
+    }
+  ],
+  "phone": {
+    "scope": "Low quality actual canvas capture at852x393 in desktop touch emulation, eight actors. No physical-phone performance claim.",
+    "metrics": {
+      "actorCount": 8,
+      "buffer": {
+        "height": 393,
+        "width": 852
+      },
+      "camera": {
+        "fov": 68,
+        "position": [
+          0.96,
+          3.949337114911968,
+          19.843020350721847
+        ],
+        "viewpoint": "platform-north"
+      },
+      "errors": [],
+      "gpu": "ANGLE (Microsoft, Microsoft Basic Render Driver (0x0000008C) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "memory": {
+        "geometries": 68,
+        "textures": 24
+      },
+      "moving": false,
+      "programLogs": [],
+      "ratio": 1,
+      "render": {
+        "calls": 81,
+        "frame": 46,
+        "lines": 0,
+        "points": 0,
+        "triangles": 229834
+      },
+      "scale": 1
+    }
+  },
+  "phoneImage": "../art/coastal-candidate-phone.png",
+  "findings": [
+    "Upper arches and setbacks improve the north approach and selected spawns.",
+    "Southern detailed returns face into the arena.",
+    "Side approaches expose more sea; platform-south remains open water.",
+    "No measured slowdown in this bounded equal-resolution software comparison."
+  ],
+  "harness": {
+    "javascriptSha256": "ae090a71c4ab23831a004405a9bff2a127456120ab1d96f1cf02ffdb291b31b9",
+    "htmlSha256": "bbf8b58f45bd74bf41cfd410697c4801757b13f842145a2521974258b0b26d54",
+    "notes": "HTML viewport metadata was added for the separate phone crop after desktop A/B/A; the desktop runtime and camera fixture did not change."
+  }
+}
