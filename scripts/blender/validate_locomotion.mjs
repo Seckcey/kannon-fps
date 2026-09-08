@@ -57,22 +57,32 @@ function percentile(values, fraction) {
   return values.slice().sort((a, b) => a - b)[Math.floor((values.length - 1) * fraction)];
 }
 const results = [];
+// Regression limits for the grounded gait. The previous shipped asset measured
+// 20 mm-band p95 slip of 1.75/2.72 m/s and loop velocity changes of 2.54/3.29 m/s
+// (Walk/Run). These near-floor bands are contact proxies, not literal foot locks.
+// Require near-floor coverage too. This discourages lifting as a shortcut, while
+// the release comparison separately checks each foot's baseline stance phases.
+const gaitLimits = {
+  Walk: { seamVelocity: 1.3, slipP95: [.6, 1.2], minimumDuty: [.28, .48] },
+  Run: { seamVelocity: 1.8, slipP95: [1, 2.5], minimumDuty: [.24, .40] },
+};
 for (const [name, reference, duration] of [['Walk', 6.5, 16 / 30], ['Run', 9, 14 / 30]]) {
   const clip = gltf.animations.find(clip => clip.name === name);
   assert.ok(Math.abs(clip.duration - duration) < 1e-6, `${name} keeps its measured reference duration`);
+  const sampledDuration = clip.duration;
   mixer.stopAllAction();
   const action = mixer.clipAction(clip).reset().setLoop(LoopOnce, 1);
   action.clampWhenFinished = true; action.play();
   const samples = [], steps = Math.ceil(duration * 480);
   for (let index = 0; index <= steps; index++) {
-    mixer.setTime(duration * index / steps); samples.push(sample());
+    mixer.setTime(sampledDuration * index / steps); samples.push(sample());
   }
   const floor = samples.map(row => Math.min(...row.l.map(p => p.y), ...row.r.map(p => p.y)));
   const bands = [];
   for (const height of [.02, .04]) {
     const velocities = []; let contactFrames = 0;
     for (let index = 1; index < samples.length; index++) {
-      const a = samples[index - 1], b = samples[index], dt = duration / steps;
+      const a = samples[index - 1], b = samples[index], dt = sampledDuration / steps;
       let lowest = null;
       for (const side of ['l', 'r']) for (let vertex = 0; vertex < a[side].length; vertex++) {
         const pa = a[side][vertex], pb = b[side][vertex];
@@ -95,13 +105,19 @@ for (const [name, reference, duration] of [['Walk', 6.5, 16 / 30], ['Run', 9, 14
     const first = samples[0][side][vertex], second = samples[1][side][vertex];
     const last = samples.at(-1)[side][vertex], prior = samples.at(-2)[side][vertex];
     seamPosition = Math.max(seamPosition, first.distanceTo(last));
-    seamVelocity = Math.max(seamVelocity, second.clone().sub(first).sub(last.clone().sub(prior)).length() / (duration / steps));
+    seamVelocity = Math.max(seamVelocity, second.clone().sub(first).sub(last.clone().sub(prior)).length() / (sampledDuration / steps));
   }
   const minFloor = Math.min(...floor), maxFloor = Math.max(...floor);
   assert.ok(minFloor >= -.001, `${name} exported sole penetrates: ${minFloor} m`);
   assert.ok(maxFloor < .12, `${name} flight height remains bounded`);
   assert.ok(seamPosition < .0001, `${name} loop position seam: ${seamPosition} m`);
-  results.push({ clip: name, referenceSpeed: reference, duration, samples: samples.length,
+  const limits = gaitLimits[name];
+  assert.ok(seamVelocity < limits.seamVelocity, `${name} loop velocity seam regressed: ${seamVelocity} m/s`);
+  bands.forEach((band, index) => {
+    assert.ok(band.contactDuty >= limits.minimumDuty[index], `${name} lost near-floor coverage in the ${band.heightMetres} m band`);
+    assert.ok(band.horizontalSlipP95 !== null && band.horizontalSlipP95 < limits.slipP95[index], `${name} near-floor sliding regressed in the ${band.heightMetres} m band: ${band.horizontalSlipP95} m/s`);
+  });
+  results.push({ clip: name, referenceSpeed: reference, duration, sampledDuration, samples: samples.length,
     minFloor, maxFloor, seamPosition, seamVelocity, contactBands: bands });
 }
 
@@ -135,7 +151,7 @@ if (baselinePath) {
   }
 }
 const report = { status: 'passed', scope: 'Actual exported GLB skin at 480 Hz; CPU AnimationMixer. Contact bands exclude penetration. No actor height correction. This does not prove runtime crossfade contact.',
-  assetBytes: bytes.length, assetSha256: createHash('sha256').update(bytes).digest('hex'), soleVertices: { left: feet.l.length, right: feet.r.length }, results };
+  assetBytes: bytes.length, assetSha256: createHash('sha256').update(bytes).digest('hex'), soleVertices: { left: feet.l.length, right: feet.r.length }, gaitLimits, results };
 writeFileSync(new URL('scout-locomotion-export-review.json', source), `${JSON.stringify(report, null, 2)}\n`);
 if (baselinePath) writeFileSync(new URL('scout-locomotion-migration-review.json', source), `${JSON.stringify({ status: 'passed', baselineSha256: baselineHash, candidateSha256: report.assetSha256, preserved }, null, 2)}\n`);
 console.log(JSON.stringify(report, null, 2));

@@ -1,38 +1,63 @@
 {
   "status": "passed",
   "scope": "Actual exported GLB skin at 480 Hz; CPU AnimationMixer. Contact bands exclude penetration. No actor height correction. This does not prove runtime crossfade contact.",
-  "assetBytes": 2672192,
-  "assetSha256": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0",
+  "assetBytes": 2679764,
+  "assetSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
   "soleVertices": {
     "left": 1315,
     "right": 1318
+  },
+  "gaitLimits": {
+    "Walk": {
+      "seamVelocity": 1.3,
+      "slipP95": [
+        0.6,
+        1.2
+      ],
+      "minimumDuty": [
+        0.28,
+        0.48
+      ]
+    },
+    "Run": {
+      "seamVelocity": 1.8,
+      "slipP95": [
+        1,
+        2.5
+      ],
+      "minimumDuty": [
+        0.24,
+        0.4
+      ]
+    }
   },
   "results": [
     {
       "clip": "Walk",
       "referenceSpeed": 6.5,
       "duration": 0.5333333333333333,
+      "sampledDuration": 0.5333333611488342,
       "samples": 257,
-      "minFloor": 0.006525703539103126,
-      "maxFloor": 0.09599994774550187,
-      "seamPosition": 2.3451838096703913e-7,
-      "seamVelocity": 2.5416173046527595,
+      "minFloor": 0.006537856713942367,
+      "maxFloor": 0.09600026567734449,
+      "seamPosition": 0,
+      "seamVelocity": 0.9517028536555677,
       "contactBands": [
         {
           "heightMetres": 0.02,
-          "contactFrames": 80,
+          "contactFrames": 83,
           "sampledIntervals": 256,
-          "contactDuty": 0.3125,
-          "horizontalSlipMedian": 0.5077928508210088,
-          "horizontalSlipP95": 1.7502546801030887
+          "contactDuty": 0.32421875,
+          "horizontalSlipMedian": 0.030341182898104103,
+          "horizontalSlipP95": 0.10499423065283607
         },
         {
           "heightMetres": 0.04,
           "contactFrames": 137,
           "sampledIntervals": 256,
           "contactDuty": 0.53515625,
-          "horizontalSlipMedian": 0.6560287397540968,
-          "horizontalSlipP95": 2.7428545553725843
+          "horizontalSlipMedian": 0.03284883875046436,
+          "horizontalSlipP95": 0.44135736892164107
         }
       ]
     },
@@ -40,27 +65,28 @@
       "clip": "Run",
       "referenceSpeed": 9,
       "duration": 0.4666666666666667,
+      "sampledDuration": 0.46666666865348816,
       "samples": 225,
-      "minFloor": 0.0063104661173827015,
-      "maxFloor": 0.09639599701757143,
-      "seamPosition": 3.368111125697996e-8,
-      "seamVelocity": 3.2870013539558283,
+      "minFloor": 0.006461623008510692,
+      "maxFloor": 0.09639642059000333,
+      "seamPosition": 0,
+      "seamVelocity": 1.5341291105213375,
       "contactBands": [
         {
           "heightMetres": 0.02,
-          "contactFrames": 58,
+          "contactFrames": 64,
           "sampledIntervals": 224,
-          "contactDuty": 0.25892857142857145,
-          "horizontalSlipMedian": 0.9234488157051423,
-          "horizontalSlipP95": 2.7152973632286415
+          "contactDuty": 0.2857142857142857,
+          "horizontalSlipMedian": 0.1745364116753703,
+          "horizontalSlipP95": 0.6224478214533276
         },
         {
           "heightMetres": 0.04,
           "contactFrames": 102,
           "sampledIntervals": 224,
           "contactDuty": 0.45535714285714285,
-          "horizontalSlipMedian": 0.9597662542761926,
-          "horizontalSlipP95": 5.978104173729032
+          "horizontalSlipMedian": 0.17618411473442766,
+          "horizontalSlipP95": 1.5798874407752714
         }
       ]
     }

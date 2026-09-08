@@ -6,6 +6,7 @@ under art/source/motion/cmu-09; upper-body poses and all six other clips are our
 import bpy, json, math, statistics, hashlib
 from mathutils import Matrix, Vector
 from cmu_asf import parse_asf, parse_amc, forward_kinematics, mv, rotation as axis_rotation, sub
+from scout_grounded import ground_locomotion
 
 
 def retarget_locomotion(rig, body, clips, source):
@@ -166,5 +167,6 @@ def retarget_locomotion(rig, body, clips, source):
         uniform_times=[index/120/native_rate for index in range(len(raw))]
         # Original hand-authored gait contact comparison under the current runtime reference rate.
         entry={'clip':name,'targetSpeed':speed,'cycleDuration':times[-1],'stepsPerSecond':2/times[-1],'uniformCaptureRate':native_rate,'uniformStepsPerSecond':2/(source_duration/native_rate),'contactTime':contact_sum,'freeIntervals':free_count,'timeWarpRateRange':[1/(120*max(durations)),1/(120*min(durations))],'contactAware':metrics(raw,times,speed),'uniform':metrics(raw,uniform_times,speed),'runtimeProposal':{'clip':name,'playbackAtTarget':1,'referenceSpeed':speed,'note':'Playback is actual speed divided by this clip reference, including aiming and slow analog movement. Runtime turns use world-up and preserve upper orientation.'}}
+        entry['postRetarget'] = ground_locomotion(rig, body, action, total, speed)
         report['candidates'].append(entry)
     return report

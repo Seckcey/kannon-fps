@@ -1,0 +1,130 @@
+{
+  "scope": "Deterministic 120Hz samples through the actual createBlenderCharacter controller loaded by GameView, including every initial crossfade frame. Separate from real-input/network acceptance and FPS.",
+  "scoutSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+  "loadedScoutHash": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+  "hashUnchanged": true,
+  "cases": [
+    {
+      "name": "idle",
+      "frames": 48,
+      "minFirst160ms": 0.00699978092910066,
+      "minAfter160ms": 0.00699978092910066,
+      "maxGrip": 0.00004201161198791764
+    },
+    {
+      "name": "idle-to-normal",
+      "frames": 96,
+      "minFirst160ms": 0.005999898296505227,
+      "minAfter160ms": 0.0068796668442530585,
+      "maxGrip": 0.004219050294536763
+    },
+    {
+      "name": "normal-to-sprint",
+      "frames": 96,
+      "minFirst160ms": 0.015555844812686431,
+      "minAfter160ms": 0.006481106419768401,
+      "maxGrip": 0.002189982370605861
+    },
+    {
+      "name": "sprint-to-aim",
+      "frames": 96,
+      "minFirst160ms": 0.010095522354954695,
+      "minAfter160ms": 0.006622005438171344,
+      "maxGrip": 0.002197828991801332
+    },
+    {
+      "name": "aim-to-right",
+      "frames": 96,
+      "minFirst160ms": 0.006806991651693045,
+      "minAfter160ms": 0.006806986599963229,
+      "maxGrip": 0.002240737042639224
+    },
+    {
+      "name": "right-to-left",
+      "frames": 96,
+      "minFirst160ms": 0.009604469483052734,
+      "minAfter160ms": 0.006806981548277918,
+      "maxGrip": 0.002240733555722151
+    },
+    {
+      "name": "left-to-right-sprint",
+      "frames": 96,
+      "minFirst160ms": 0.007237919567615473,
+      "minAfter160ms": 0.006508106923336032,
+      "maxGrip": 0.002098318694001766
+    },
+    {
+      "name": "right-sprint-to-left-sprint",
+      "frames": 96,
+      "minFirst160ms": 0.006508107196862428,
+      "minAfter160ms": 0.006508107470389518,
+      "maxGrip": 0.002098318762531883
+    },
+    {
+      "name": "sprint-to-backward",
+      "frames": 96,
+      "minFirst160ms": 0.006574116142693053,
+      "minAfter160ms": 0.0066039455184028345,
+      "maxGrip": 0.002201981053381135
+    },
+    {
+      "name": "backward-to-slow-touch",
+      "frames": 96,
+      "minFirst160ms": 0.007660105553357804,
+      "minAfter160ms": 0.006528104633078763,
+      "maxGrip": 0.0020667227922360944
+    },
+    {
+      "name": "moving-ar-reload",
+      "frames": 252,
+      "minFirst160ms": 0.015667384772831944,
+      "minAfter160ms": 0.006759265622763777,
+      "maxGrip": 0.0011147700708824264
+    },
+    {
+      "name": "moving-shotgun-reload",
+      "frames": 324,
+      "minFirst160ms": 0.01566737034779575,
+      "minAfter160ms": 0.006759242589097403,
+      "maxGrip": 0.0020667068745568286
+    },
+    {
+      "name": "moving-heal",
+      "frames": 396,
+      "minFirst160ms": 0.015766535375488916,
+      "minAfter160ms": 0.006528110636536138,
+      "maxGrip": 0
+    },
+    {
+      "name": "heal-to-ready",
+      "frames": 96,
+      "minFirst160ms": 0.005999960923296077,
+      "minAfter160ms": 0.00699978092910066,
+      "maxGrip": 0.0026769192220585827
+    },
+    {
+      "name": "ready-to-fire",
+      "frames": 96,
+      "minFirst160ms": 0.00699978092910066,
+      "minAfter160ms": 0.00699978092910066,
+      "maxGrip": 0.0010943865954492803
+    },
+    {
+      "name": "rapid-stop-start-aim-sprint",
+      "frames": 192,
+      "minFirst160ms": 0.005999906195655734,
+      "minAfter160ms": 0.005999902333383822,
+      "maxGrip": 0.008882204992443837
+    }
+  ],
+  "frames": 2268,
+  "errors": [],
+  "warnings": [
+    "THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ],
+  "scriptSha256": "52e055ed23131e1ef38ae66d7570fd09056d6c28327ec922570066e17bc0944f",
+  "retry": {
+    "firstAttempt": "Initial module import lost its page execution context while build/validation ran concurrently. No cases completed; retained as a failed fixture attempt.",
+    "finalAttempt": "Repeated alone without concurrent build or asset writes; all 16 cases passed. Root cause of the navigation was not separately established."
+  }
+}

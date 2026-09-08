@@ -1,0 +1,65 @@
+{
+  "scoutSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+  "scope": "Actual GameView and character controller, moving across the fixed arena floor in an isolated fixture. Four consecutive controlled scenes; no network, profile, phone or FPS claim.",
+  "errors": [],
+  "warnings": [
+    "THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ],
+  "received": [
+    "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+  ],
+  "scenes": [
+    {
+      "name": "walk",
+      "speed": 6.5,
+      "aim": false,
+      "seconds": 2.012599999999999,
+      "frames": 108,
+      "finalZ": -1.0819000000000012
+    },
+    {
+      "name": "run",
+      "speed": 9,
+      "aim": false,
+      "seconds": 2.00530000001192,
+      "frames": 107,
+      "finalZ": -6.047700000107288
+    },
+    {
+      "name": "reverse",
+      "speed": -6.5,
+      "aim": false,
+      "seconds": 2.0113000000178825,
+      "frames": 100,
+      "finalZ": 5.073450000116237
+    },
+    {
+      "name": "aim",
+      "speed": 4,
+      "aim": true,
+      "seconds": 2.0031000000119206,
+      "frames": 114,
+      "finalZ": 3.987599999952321
+    }
+  ],
+  "passed": true,
+  "scriptSha256": "2d985ffa2c3d70c8a872f2bcb137988ef8b972a07097e2e5338b6b4cc0b50298",
+  "screenshots": [
+    {
+      "path": "docs/art/scout-grounded-walk.png",
+      "sha256": "413d0a5929ed1b128d0786a603996d10194a51bed1fb5cca6610cffa1576946c"
+    },
+    {
+      "path": "docs/art/scout-grounded-run.png",
+      "sha256": "0dbec5458e2fa9dae175ed9c474a6fffdaccad1e207c82e7f63d64a03a25fa57"
+    },
+    {
+      "path": "docs/art/scout-grounded-reverse.png",
+      "sha256": "3386b3571a6222ebf46b150e1f8647d13a58ba1e360b700105be1fdeb8d14185"
+    },
+    {
+      "path": "docs/art/scout-grounded-aim.png",
+      "sha256": "0f5730e4ecde4015511d82d7133065ea214182b887a1de6d3996a12ebb2c4e2b"
+    }
+  ]
+}

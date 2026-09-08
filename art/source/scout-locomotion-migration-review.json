@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "baselineSha256": "85940d9385fa230406e89cf0e513499e75ae5b663d01691f431c07426920a782",
-  "candidateSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+  "baselineSha256": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0",
+  "candidateSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
   "preserved": [
     {
       "clip": "Idle",
