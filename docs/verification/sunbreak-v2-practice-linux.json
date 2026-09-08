@@ -1,0 +1,48 @@
+{
+  "status": "passed",
+  "transport": "HTTP + WebSocket",
+  "results": [
+    {
+      "difficulty": "easy",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 36,
+      "botHitEvents": 15,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    },
+    {
+      "difficulty": "normal",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 30,
+      "botHitEvents": 25,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    },
+    {
+      "difficulty": "hard",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "botsMoved": 3,
+      "botShotEvents": 48,
+      "botHitEvents": 25,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    }
+  ],
+  "limitations": [
+    "Twelve seconds of live AI observation per difficulty, not a full five-minute match.",
+    "Rating/history isolation is checked before and after short practice exits; full-match completion remains covered by automated engine/server tests.",
+    "No browser rendering, mobile performance, or external-network latency is tested."
+  ],
+  "revision": "aa469252575b5c977d38fa74941bfa965b341306"
+}
