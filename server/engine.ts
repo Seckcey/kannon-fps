@@ -62,7 +62,9 @@ export class MatchEngine {
     }
   }
   acceptInput(id: string, input: InputFrame, now = Date.now()): boolean {
-    const runtime = this.runtime.get(id); if (!runtime || input.seq <= runtime.input.seq) return false;
+    const runtime = this.runtime.get(id);
+    // Pre-round input must not arm an action for the first live simulation tick.
+    if (this.phase !== 'playing' || !this.players.get(id)?.connected || !runtime || input.seq <= runtime.input.seq) return false;
     // Network frames may arrive in a batch between simulation ticks. Preserve one
     // rising edge per action, with the view/weapon at that press, while coalescing
     // continuous movement. This bounded latch cannot create extra shots per tick.
@@ -72,11 +74,33 @@ export class MatchEngine {
     runtime.input = input; runtime.receivedAt = now; return true;
   }
   start(now = Date.now()): void {
+    this.resetRound('countdown', now);
+  }
+  /** Reset the visible round before clients load their scenes, without starting a clock. */
+  prepare(now = Date.now()): void {
+    this.resetRound('preparing', now);
+  }
+  private resetRound(phase: 'preparing' | 'countdown', now: number): void {
     if (this.phase !== 'waiting' && this.phase !== 'finished') throw new Error('This match has already started.');
     if (!this.practice && [...this.players.values()].filter((p) => !p.bot && p.connected).length < 2) throw new Error('Invite at least one friend before starting.');
-    this.id = randomUUID(); this.phase = 'countdown'; this.countdownUntil = now + RULES.countdownMs; this.startedAt = 0; this.endedAt = 0; this.winnerIds = []; this.tick = 0;
+    this.id = randomUUID(); this.phase = phase; this.countdownUntil = phase === 'countdown' ? now + RULES.countdownMs : 0; this.startedAt = 0; this.endedAt = 0; this.winnerIds = []; this.tick = 0;
     this.bots?.reset(this.practiceSeed ?? this.id);
-    for (const player of this.players.values()) { player.kills = 0; player.deaths = 0; this.respawn(player, this.countdownUntil, false); }
+    for (const player of this.players.values()) {
+      player.kills = 0; player.deaths = 0; this.respawn(player, this.countdownUntil || now, false);
+      player.lastInputSeq = this.runtime.get(player.id)!.input.seq;
+      if (phase === 'preparing') player.protectedUntil = 0;
+    }
+  }
+  beginPreparedCountdown(now = Date.now()): void {
+    if (this.phase !== 'preparing') throw new Error('This round is not preparing.');
+    if (!this.practice && [...this.players.values()].filter(p => !p.bot && p.connected).length < 2) throw new Error('Invite at least one friend before starting.');
+    this.phase = 'countdown'; this.countdownUntil = now + RULES.countdownMs;
+    for (const player of this.players.values()) player.protectedUntil = this.countdownUntil + RULES.protectionMs;
+  }
+  cancelPreparation(): void {
+    if (this.phase !== 'preparing') return;
+    this.phase = 'waiting'; this.countdownUntil = 0;
+    for (const player of this.players.values()) player.protectedUntil = 0;
   }
   finish(reason: string, now = Date.now(), abandoned = false): void {
     if (this.phase === 'finished') return;
@@ -248,6 +272,6 @@ export class MatchEngine {
     }
   }
   snapshot(now = Date.now()): WorldSnapshot {
-    return { tick: this.tick, serverTime: now, phase: this.phase, timeRemaining: this.phase === 'countdown' ? Math.max(0, (this.countdownUntil - now) / 1000) : this.phase === 'playing' ? Math.max(0, RULES.matchSeconds - (now - this.startedAt) / 1000) : this.phase === 'waiting' ? RULES.matchSeconds : 0, players: [...this.players.values()].map((p) => ({ ...p })), winnerIds: [...this.winnerIds] };
+    return { roundId: this.id, tick: this.tick, serverTime: now, phase: this.phase, timeRemaining: this.phase === 'countdown' ? Math.max(0, (this.countdownUntil - now) / 1000) : this.phase === 'playing' ? Math.max(0, RULES.matchSeconds - (now - this.startedAt) / 1000) : this.phase === 'waiting' || this.phase === 'preparing' ? RULES.matchSeconds : 0, players: [...this.players.values()].map((p) => ({ ...p })), winnerIds: [...this.winnerIds] };
   }
 }

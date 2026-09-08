@@ -18,6 +18,8 @@ Play menu: wordmark and Play / Leaderboard / How to play navigation; Your crew. 
 
 Match lobby: private invitation, connected player roster, host-controlled start, waiting feedback, ranked or practice context, and leave action.
 
+Round preparation: after host start or rematch, load and render the current round before showing **Ready to play**. Each human deliberately engages controls; the roster shows readiness. The full three-second countdown follows all acknowledgments. Preparation expires to the lobby after 45 seconds, with a retry explanation. Old game pages receive a refresh instruction. See [Round readiness](ROUND_READINESS.md).
+
 Practice setup: Relaxed, Balanced or Challenging opponents, with a short plain-language explanation for each. Three clearly labelled AI rivals share the regular loadout, respawns, round clock and win condition; practice never changes crew rankings. Model downloads finish before room admission, cancellation stays available, and successful model buffers are reused when loading the 3D scene.
 
 Gameplay: world canvas, score and timer, health and shield, slots and ammo, crosshair, elimination feedback, touch controls, pause settings, and respawn countdown.

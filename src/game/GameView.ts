@@ -25,6 +25,8 @@ export interface GameViewOptions {
   getPlayerId: () => string;
   onStats?: (stats: GameStats) => void;
   onAssetsReady?: () => void;
+  getPreparationId?: () => string | undefined;
+  onPreparationRendered?: (roundId: string) => void;
   onError?: (message: string) => void;
   settings?: Partial<GameSettings>;
 }
@@ -50,6 +52,7 @@ export class GameView {
   private environmentReady = false;
   private characterReady = false;
   private assetsAnnounced = false;
+  private renderedPreparationId = '';
   private readonly audio: GameAudio;
   private readonly sun: THREE.DirectionalLight;
   private readonly players = new Map<string, RenderPlayer>();
@@ -114,7 +117,7 @@ export class GameView {
     this.sun.shadow.normalBias = 0.065; this.sun.shadow.bias = -0.00025;
     this.sun.shadow.radius = 2;
     this.scene.add(this.sun, this.sun.target);
-    this.world = createWorld(this.renderer, () => { this.environmentReady = true; this.checkAssetsReady(); }, message => this.options.onError?.(message));
+    this.world = createWorld(this.renderer, () => { this.environmentReady = true; }, message => this.options.onError?.(message));
     this.scene.add(this.world.root);
     this.scene.environment = this.world.environment;
     this.scene.background = this.world.background;
@@ -221,10 +224,23 @@ export class GameView {
   };
 
   private checkAssetsReady() {
-    if (!this.disposed && !this.assetsAnnounced && this.environmentReady && this.characterReady) {
+    const local = this.players.get(this.options.getPlayerId());
+    if (!this.disposed && !this.assetsAnnounced && !document.hidden && this.environmentReady && this.characterReady
+      && local && (this.snapshot?.phase !== 'preparing' || local.model.root.visible) && !this.renderer.getContext().isContextLost()) {
       this.assetsAnnounced = true;
       this.options.onAssetsReady?.();
     }
+  }
+
+  private checkPreparationRendered() {
+    const preparationId = this.options.getPreparationId?.();
+    if (!preparationId || this.disposed || !this.assetsAnnounced || document.hidden || this.renderer.getContext().isContextLost()
+      || this.renderedPreparationId === preparationId || this.snapshot?.phase !== 'preparing' || this.snapshot.roundId !== preparationId) return;
+    const localId = this.options.getPlayerId();
+    const local = this.snapshot.players.find(player => player.id === localId);
+    if (!local || local.health <= 0 || !local.connected || !this.players.get(localId)?.model.root.visible) return;
+    this.renderedPreparationId = preparationId;
+    this.options.onPreparationRendered?.(preparationId);
   }
 
   private contextLost = (event: Event) => {
@@ -243,7 +259,9 @@ export class GameView {
   };
 
   private receiveSnapshot(snapshot: WorldSnapshot, now: number) {
-    const roundReset = (snapshot.phase === 'countdown' && this.snapshot?.phase !== 'countdown') || (snapshot.phase === 'playing' && this.snapshot?.phase === 'finished');
+    const roundReset = (snapshot.phase === 'preparing' && this.snapshot?.phase !== 'preparing')
+      || (snapshot.phase === 'countdown' && this.snapshot?.phase !== 'countdown' && this.snapshot?.phase !== 'preparing')
+      || (snapshot.phase === 'playing' && this.snapshot?.phase === 'finished');
     if (roundReset) {
       this.effects.clear(); this.respawns.clear(); this.localRespawnAt = 0;
       for (const entry of this.players.values()) entry.locomotion.reset();
@@ -288,7 +306,7 @@ export class GameView {
   private addPlayer(player: PlayerState): RenderPlayer {
     const local = player.id === this.options.getPlayerId();
     const model = createBlenderCharacter(player.color,
-      local ? () => { this.characterReady = true; this.checkAssetsReady(); } : undefined,
+      local ? () => { this.characterReady = true; } : undefined,
       message => this.options.onError?.(message));
     this.scene.add(model.root);
     const label = document.createElement('div');
@@ -386,6 +404,9 @@ export class GameView {
     this.renderer.info.reset();
     if (this.presentation?.enabled) this.presentation.render(dt);
     else this.renderer.render(this.scene, this.camera);
+    // Parsing and scene attachment alone do not prove that the player has a usable view.
+    this.checkAssetsReady();
+    this.checkPreparationRendered();
     if (this.statsTime >= 0.7) {
       const fps = Math.round(this.frames / this.statsTime);
       this.options.onStats?.({ fps, locked: this.options.input.locked, drawCalls: this.renderer.info.render.calls });

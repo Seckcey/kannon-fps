@@ -1,6 +1,6 @@
 /** Public wire contract. All game outcomes are computed by the server. */
 export type Slot = 1 | 2 | 3;
-export type Phase = 'waiting' | 'countdown' | 'playing' | 'finished';
+export type Phase = 'waiting' | 'preparing' | 'countdown' | 'playing' | 'finished';
 export type PracticeDifficulty = 'easy' | 'normal' | 'hard';
 export interface Profile { id: string; name: string; color: string }
 export interface Crew { id: string; name: string; invite: string; ownerId: string; memberCount: number }
@@ -8,6 +8,8 @@ export interface RoomPlayer extends Profile { connected: boolean; ready?: boolea
 export interface RoomSnapshot {
   id: string; code: string; hostId: string; ranked: boolean; practice: boolean;
   crewId?: string; practiceDifficulty?: PracticeDifficulty; phase: Phase; players: RoomPlayer[]; expiresAt: number;
+  /** Present only while preparing; readiness belongs to this attempt and connection. */
+  preparation?: { id: string; expiresAt: number };
 }
 export interface InputFrame {
   seq: number; moveX: number; moveZ: number; yaw: number; pitch: number;
@@ -36,6 +38,8 @@ export type GameEvent =
   | { type: 'notice'; message: string; at: number }
   | { type: 'match-end'; winnerIds: string[]; ranked: boolean; reason: string; at: number };
 export interface WorldSnapshot {
+  /** Identifies the prepared round whose poses and loadout this snapshot contains. */
+  roundId?: string;
   tick: number; serverTime: number; phase: Phase; timeRemaining: number;
   players: PlayerState[]; winnerIds: string[];
 }
@@ -48,11 +52,12 @@ export interface MatchHistory {
   players: Array<Profile & { kills: number; deaths: number; ratingChange: number }>;
 }
 export type ClientMessage =
-  | { type: 'hello'; token: string }
+  | { type: 'hello'; token: string; readyProtocol?: 1 }
   | { type: 'create'; ranked: boolean; crewId?: string; practice?: boolean; practiceDifficulty?: PracticeDifficulty }
   | { type: 'join'; code: string }
   | { type: 'start' }
   | { type: 'rematch' }
+  | { type: 'ready'; preparationId: string; ready: boolean }
   | { type: 'leave' }
   | { type: 'input'; input: InputFrame }
   | { type: 'ping'; t: number };

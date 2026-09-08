@@ -9,12 +9,14 @@ import { GameStore } from './store.js';
 import { RULES, type ClientMessage, type GameEvent, type PracticeDifficulty, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
 
 export interface ServerOptions { port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[] }
-interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; alive: boolean }
-interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; practiceDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null }
+interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; alive: boolean; supportsReadiness: boolean }
+interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; practiceDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null; preparation?: { id: string; expiresAt: number; ready: Set<string> } }
 class HttpError extends Error { constructor(public readonly status: number, message: string) { super(message); } }
 class ProtocolError extends Error { constructor(public readonly code: string, message: string) { super(message); } }
 const ROOM_LIFETIME = 2 * 60 * 60 * 1000;
 const DISCONNECT_GRACE = 30_000;
+const PREPARATION_TIMEOUT = 45_000;
+const GAME_UPDATE_MESSAGE = 'A player is using an older game page. Everyone should refresh the page before starting.';
 const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.glb': 'model/gltf-binary', '.webmanifest': 'application/manifest+json' };
 
 export function createGameServer(options: ServerOptions = {}) {
@@ -127,12 +129,39 @@ export function createGameServer(options: ServerOptions = {}) {
     connection.socket.send(JSON.stringify(message));
   }
   function roomSnapshot(room: Room): RoomSnapshot {
-    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, ...(room.practice ? { practiceDifficulty: room.practiceDifficulty } : {}), ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}) })), expiresAt: room.expiresAt };
+    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, ...(room.practice ? { practiceDifficulty: room.practiceDifficulty } : {}), ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}), ...(room.preparation ? { ready: !!p.bot || (p.connected && room.preparation.ready.has(p.id)) } : {}) })), expiresAt: room.expiresAt, ...(room.preparation ? { preparation: { id: room.preparation.id, expiresAt: room.preparation.expiresAt } } : {}) };
   }
   function broadcast(room: Room, message: ServerMessage) { for (const connection of room.sockets.values()) send(connection, message); }
-  function broadcastRoom(room: Room) { broadcast(room, { type: 'room', room: roomSnapshot(room) }); }
+  function broadcastRoom(room: Room) { room.phase = room.engine.phase; broadcast(room, { type: 'room', room: roomSnapshot(room) }); }
   function electConnectedHost(room: Room) {
     if (!room.sockets.has(room.hostId) && room.sockets.size) room.hostId = room.sockets.keys().next().value!;
+  }
+  function cancelPreparation(room: Room, code: string, message: string) {
+    if (!room.preparation) return;
+    room.preparation = undefined; room.engine.cancelPreparation(); room.abandoned = false;
+    broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot() });
+    // The client clears prior errors on room transitions, so the lobby's reason
+    // must follow its final room state and survive the next unchanged tick.
+    broadcast(room, { type: 'error', code, message });
+  }
+  function advancePreparation(room: Room, now: number) {
+    const preparation = room.preparation;
+    if (!preparation || room.engine.phase !== 'preparing') return;
+    if (now >= preparation.expiresAt) {
+      cancelPreparation(room, 'PREPARATION_TIMEOUT', 'Players were not ready in time. You are back in the lobby; the host can try again.'); return;
+    }
+    const humans = [...room.engine.players.values()].filter(p => !p.bot);
+    if (humans.some(p => p.connected && !room.sockets.get(p.id)?.supportsReadiness)) {
+      cancelPreparation(room, 'GAME_UPDATE_REQUIRED', GAME_UPDATE_MESSAGE); return;
+    }
+    if (humans.length < (room.practice ? 1 : 2)) {
+      cancelPreparation(room, 'PREPARATION_CANCELLED', 'A player left before the match was ready. Invite a friend and try again.'); return;
+    }
+    // Reserve a temporarily disconnected participant's place until recovery or
+    // grace expiry. Their old acknowledgment cannot start a round without them.
+    if (!humans.every(p => p.connected && room.sockets.has(p.id) && preparation.ready.has(p.id))) return;
+    room.engine.beginPreparedCountdown(now); room.preparation = undefined;
+    broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot(now) });
   }
   function finishRoom(room: Room, reason: string) {
     let ranked = false; let finalReason = reason;
@@ -157,11 +186,11 @@ export function createGameServer(options: ServerOptions = {}) {
     const room = connection.roomId ? rooms.get(connection.roomId) : undefined; const id = connection.profile?.id;
     if (!room || !id) { connection.roomId = null; return; }
     if (room.sockets.get(id) !== connection) { connection.roomId = null; return; }
-    room.sockets.delete(id); room.engine.setConnected(id, false);
+    room.sockets.delete(id); room.engine.setConnected(id, false); room.preparation?.ready.delete(id);
     if (disconnect) room.disconnected.set(id, Date.now());
     else {
       room.disconnected.delete(id);
-      if (room.engine.phase === 'waiting' || room.engine.phase === 'finished') room.engine.removePlayer(id);
+      if (room.engine.phase === 'waiting' || room.engine.phase === 'preparing' || room.engine.phase === 'finished') room.engine.removePlayer(id);
       else { room.abandoned = true; room.disconnected.set(id, Date.now() - DISCONNECT_GRACE); }
     }
     connection.roomId = null;
@@ -169,6 +198,7 @@ export function createGameServer(options: ServerOptions = {}) {
     if (!room.sockets.size) room.emptySince = Date.now();
     if (!disconnect && (room.engine.phase === 'playing' || room.engine.phase === 'countdown') && !room.practice && room.sockets.size < 2) room.engine.finish('Match ended because a player left.', Date.now(), true);
     broadcastRoom(room);
+    if (room.preparation) advancePreparation(room, Date.now());
     if (!room.sockets.size && !disconnect) destroyRoom(room);
   }
   function attach(connection: Connection, room: Room) {
@@ -179,12 +209,17 @@ export function createGameServer(options: ServerOptions = {}) {
     if (room.practice && room.hostId !== profile.id) throw new Error('The practice range is a solo room. Create a friends match to play together.');
     if (room.ranked && (!room.crewId || !store.isMember(profile.id, room.crewId))) throw new Error('Join this friend group before entering its ranked match.');
     leaveRoom(connection);
-    connection.roomId = room.id; room.sockets.set(profile.id, connection); room.disconnected.delete(profile.id); room.emptySince = 0;
-    room.engine.addPlayer(profile); electConnectedHost(room); broadcastRoom(room); send(connection, { type: 'snapshot', snapshot: room.engine.snapshot() });
+    connection.roomId = room.id; room.sockets.set(profile.id, connection); room.disconnected.delete(profile.id); room.emptySince = 0; room.preparation?.ready.delete(profile.id);
+    room.engine.addPlayer(profile); electConnectedHost(room);
+    if (room.preparation) {
+      advancePreparation(room, Date.now());
+      if (!room.preparation) return; // Cancellation already published the final lobby and reason.
+    }
+    broadcastRoom(room); send(connection, { type: 'snapshot', snapshot: room.engine.snapshot() });
     if (room.engine.phase === 'finished' && room.resultEvent) send(connection, { type: 'event', event: room.resultEvent });
   }
   wss.on('connection', (socket) => {
-    const connection: Connection = { socket, profile: null, roomId: null, connectedAt: Date.now(), bucketAt: Date.now(), messages: 0, controlAt: Date.now(), controls: 0, alive: true }; connections.add(connection);
+    const connection: Connection = { socket, profile: null, roomId: null, connectedAt: Date.now(), bucketAt: Date.now(), messages: 0, controlAt: Date.now(), controls: 0, alive: true, supportsReadiness: false }; connections.add(connection);
     socket.on('pong', () => { connection.alive = true; });
     socket.on('message', (data, binary) => {
       try {
@@ -200,7 +235,7 @@ export function createGameServer(options: ServerOptions = {}) {
           const profile = store.authenticate(message.token); if (!profile) { send(connection, { type: 'error', code: 'AUTH_REQUIRED', message: 'Your player key was not recognized.' }); socket.close(1008, 'Authentication required'); return; }
           const previous = playersOnline.get(profile.id);
           if (previous && previous !== connection) { leaveRoom(previous, true); previous.socket.close(4001, 'Player connected in another tab'); }
-          connection.profile = profile; playersOnline.set(profile.id, connection); send(connection, { type: 'welcome', playerId: profile.id });
+          connection.profile = profile; connection.supportsReadiness = message.readyProtocol === 1; playersOnline.set(profile.id, connection); send(connection, { type: 'welcome', playerId: profile.id });
           // Restore a disconnected player's room automatically using the authenticated identity.
           const previousRoom = [...rooms.values()].find((room) => room.expiresAt > now && room.disconnected.has(profile.id) && now - room.disconnected.get(profile.id)! <= DISCONNECT_GRACE);
           if (previousRoom) attach(connection, previousRoom);
@@ -243,13 +278,27 @@ export function createGameServer(options: ServerOptions = {}) {
         if (message.type === 'leave') { leaveRoom(connection); return; }
         const room = connection.roomId ? rooms.get(connection.roomId) : undefined;
         if (!room) throw new Error('Join a room first.');
+        if (message.type === 'ready') {
+          if (typeof message.preparationId !== 'string' || message.preparationId.length > 100 || typeof message.ready !== 'boolean') throw new Error('Invalid readiness message.');
+          if (!room.preparation || room.engine.phase !== 'preparing' || message.preparationId !== room.preparation.id) throw new ProtocolError('PREPARATION_STALE', 'This readiness request is no longer active.');
+          if (room.sockets.get(connection.profile.id) !== connection || !room.engine.players.get(connection.profile.id)?.connected) throw new Error('Reconnect before marking yourself ready.');
+          const wasReady = room.preparation.ready.has(connection.profile.id);
+          if (message.ready) room.preparation.ready.add(connection.profile.id); else room.preparation.ready.delete(connection.profile.id);
+          advancePreparation(room, now);
+          if (room.preparation && wasReady !== message.ready) broadcastRoom(room);
+          return;
+        }
         if (message.type === 'start' || message.type === 'rematch') {
           if (room.hostId !== connection.profile.id) throw new Error('Only the room host can start a match.');
           if (message.type === 'rematch' && room.engine.phase !== 'finished') throw new Error('Finish this match before starting a rematch.');
           if (room.engine.phase !== 'waiting' && room.engine.phase !== 'finished') throw new Error('This match has already started.');
           if (!room.practice && [...room.engine.players.values()].filter((p) => !p.bot && p.connected).length < 2) throw new Error('Invite at least one friend before starting.');
+          if ([...room.engine.players.values()].some(p => !p.bot && p.connected && !room.sockets.get(p.id)?.supportsReadiness)) throw new ProtocolError('GAME_UPDATE_REQUIRED', GAME_UPDATE_MESSAGE);
           for (const [id, player] of room.engine.players) if (!player.connected) { room.engine.removePlayer(id); room.disconnected.delete(id); }
-          room.abandoned = false; room.resultEvent = null; room.engine.start(now); broadcastRoom(room); return;
+          room.engine.prepare(now);
+          room.abandoned = false; room.resultEvent = null;
+          room.preparation = { id: room.engine.id, expiresAt: now + PREPARATION_TIMEOUT, ready: new Set() };
+          broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot(now) }); return;
         }
         throw new Error('Unknown game message.');
       } catch (error) { send(connection, { type: 'error', message: error instanceof Error ? error.message : 'The server could not complete that action.', ...(error instanceof ProtocolError ? { code: error.code } : {}) }); }
@@ -268,12 +317,13 @@ export function createGameServer(options: ServerOptions = {}) {
       for (const [id, since] of room.disconnected) {
         if (now - since <= DISCONNECT_GRACE) continue;
         room.disconnected.delete(id);
-        if (room.engine.phase === 'waiting' || room.engine.phase === 'finished') { room.engine.removePlayer(id); electConnectedHost(room); broadcastRoom(room); }
+        if (room.engine.phase === 'waiting' || room.engine.phase === 'preparing' || room.engine.phase === 'finished') { room.engine.removePlayer(id); electConnectedHost(room); broadcastRoom(room); }
         else if (!room.practice) {
           room.abandoned = true;
           if (room.sockets.size < 2) room.engine.finish('Match ended because a player disconnected.', now, true);
         }
       }
+      if (room.preparation) advancePreparation(room, now);
       room.engine.step(now, dt);
       if (room.phase !== room.engine.phase) { room.phase = room.engine.phase; broadcastRoom(room); }
       if (snapshotTick % 2 === 0 && room.sockets.size) broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot(now) });

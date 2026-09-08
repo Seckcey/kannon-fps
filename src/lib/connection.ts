@@ -63,7 +63,7 @@ export class ArenaConnection {
         this.connectionLost(socket, 1006, 'The arena did not respond. Please try again.');
       }
     }, 10000);
-    socket.onopen = () => { if (socket === this.socket && !this.closed) socket.send(JSON.stringify({ type: 'hello', token: this.token } satisfies ClientMessage)); };
+    socket.onopen = () => { if (socket === this.socket && !this.closed) socket.send(JSON.stringify({ type: 'hello', token: this.token, readyProtocol: 1 } satisfies ClientMessage)); };
     socket.onmessage = message => {
       if (socket !== this.socket) return;
       let data: ServerMessage;
