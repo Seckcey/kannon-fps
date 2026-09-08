@@ -6,7 +6,7 @@ This release implements the agreed private third-person phone/desktop game, fixe
 
 ## Mobile recovery and simultaneous combat
 
-The next release repairs stale touch input after backgrounding, silent connection loss, leaving during reconnect, and missing host/results state when players return. A healthy connection survives a brief background transition; an unresponsive one reconnects automatically. Touch movement, aim, sprint, and queued actions release when focus or pointer capture is lost, and a fresh gesture resumes play. Background time no longer lowers graphics quality.
+This release repairs stale touch input after backgrounding, silent connection loss, leaving during reconnect, and missing host/results state when players return. A healthy connection survives a brief background transition; an unresponsive one reconnects automatically. Touch movement, aim, sprint, and queued actions release when focus or pointer capture is lost, and a fresh gesture resumes play. Background time no longer lowers graphics quality. The change is tracked in [PR #2](https://github.com/Seckcey/kannon-fps/pull/2).
 
 The server restores host control when all players disconnect and somebody returns, replays the original completed result without writing standings again, and resolves shots from the same simulation tick together. Mutual eliminations and simultaneous score-limit draws no longer depend on player join order.
 
@@ -14,6 +14,9 @@ The server restores host control when all players disconnect and somebody return
 - The nine-group desktop/touch browser acceptance flow passes again against the production build at 1536×1024, 852×393, and 390×844 with no application errors or warnings.
 - A focused Edge browser test uses real offline/online transitions while a touch joystick is held and aim/sprint are enabled. The same room recovers automatically, stale controls stay released, a fresh touch fires, leaving stays at the menu, and the next practice creates a new room. No browser errors or warnings occurred.
 - Multi-touch ownership, lost pointer capture, cancelled taps, and two simulated 15-second background suspensions were checked in Chrome. Graphics quality and shadows remained stable.
+- The Linux candidate `055c8f67e969b5cbd34bf3956b10f3b8256b6f61` passed a real 60-second eight-player transport run on Coastline using Node 24.20.0 with the app and load generator sharing one CPU and 512 MiB. All eight players moved, fired both weapons, and reloaded: 14,410 input frames, 1,295 server-confirmed AR shots, and 159 shotgun shots. Ninth-player rejection preserved that player's previous room; a deliberate disconnect restored one identity, pose, health, ammunition, score, and fresh input sequence. There were no unexpected disconnects or errors.
+- Continuous Linux peers received 15.05 snapshots/sec and 30.10 simulation ticks/sec. The worst peer's snapshot gap was 67.61 ms at p95 and 69.20 ms maximum; every consecutive snapshot advanced two ticks. Latest acknowledged input age was at most 34.34 ms p95, and the sampled profile request took 4.88 ms. This was loopback traffic in a disposable container with temporary memory-backed data and no published port, not a phone rendering, wide-area latency, or production capacity guarantee.
+- Local Windows transport testing passed the same functional eight-player checks but measured about 24 simulation ticks/sec and 12 snapshots/sec; a separate two-player baseline was similarly affected. The Linux candidate met the intended cadence. Host scheduling must be measured rather than inferred from configured timer intervals.
 
 ## First playable local verification
 

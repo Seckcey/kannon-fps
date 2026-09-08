@@ -36,7 +36,7 @@ docker compose --env-file .env -p kannon-arena -f deploy/compose.yml -f deploy/c
 
 Verify `/health` reports that revision and the container becomes healthy. Updates end active matches. Retain the previous image for rollback and keep the existing `kannon-arena_arena-data` volume. To roll back code, restore the previous checkout and `KANNON_VERSION`, then run the same scoped `up` command with the retained image. Do not restore or remove player data just to revert code.
 
-The container has a 512 MiB memory limit, one CPU, 128 PIDs, rotating logs, and `unless-stopped` restart policy. No capacity beyond the measured two-player acceptance run is claimed.
+The container has a 512 MiB memory limit, one CPU, 128 PIDs, rotating logs, and `unless-stopped` restart policy. An isolated eight-player Linux test under the same CPU/memory limits sustained the intended 30 Hz simulation and 15 Hz snapshots for 60 seconds, including reconnect recovery. The app and load generator shared those limits; this does not establish capacity for multiple concurrent rooms or physical-device/wide-area performance. See [release verification](RELEASE.md) for measurements.
 
 ## One server and origin
 
