@@ -1,0 +1,25 @@
+Kannon Scout: third-party motion data acknowledgement
+
+The data used in this project was obtained from mocap.cs.cmu.edu. The database
+was created with funding from NSF EIA-0196217.
+
+Source publisher: Carnegie Mellon University Graphics Lab Motion Capture Database
+Database: http://mocap.cs.cmu.edu/
+Usage FAQ: http://mocap.cs.cmu.edu/faqs.php
+
+The Scout's Walk and Run lower-body animation derives from source 09_01, frames
+15–103 at 120 Hz, retargeted to the Kannon skeleton and retimed for game movement.
+This is modified CMU capture data, not an original Kannon capture or a CC0 asset.
+
+The publisher permits copying, modification and redistribution, including use
+within commercial products. It prohibits selling the motion data directly,
+including after format conversion. These source or derived motions must not be
+sold as a motion-data or converted-animation pack. The application's code license
+does not replace these separate data terms.
+
+Only 09.asf and 09_01.amc are retained in the repository, together with source URLs,
+retrieval times and file digests in art/source/motion/cmu-09/provenance.json.
+The source notice is art/source/motion/cmu-09/CMU-USAGE-NOTICE.md.
+
+Scout geometry, materials, armature, authored weapon poses, and the six other
+actions (Idle, Jump, Aim, Fire, Reload and Heal) are original Kannon work.

@@ -2,3 +2,6 @@
 *.png binary
 *.webp binary
 *.woff2 binary
+# Preserve the exact publisher bytes verified by the motion provenance digests.
+art/source/motion/cmu-09/09.asf binary
+art/source/motion/cmu-09/09_01.amc binary

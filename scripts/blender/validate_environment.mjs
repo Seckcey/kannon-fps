@@ -47,7 +47,7 @@ for (const obstacle of obstacles) {
   assert.deepEqual(node.extras.sizeXYZ, [obstacle.w, obstacle.h, obstacle.d]);
 }
 
-const coreTriangles = []; const opaqueTriangles = []; let vertices = 0; let triangles = 0; let primitives = 0;
+const coreTriangles = []; const opaqueTriangles = []; const allTriangles = []; let vertices = 0; let triangles = 0; let primitives = 0; let upwardGroundArea = 0;
 const batches = [];
 function inGameplaySolid(point) {
   const tolerance = .041;
@@ -65,11 +65,20 @@ for (const [nodeIndex, node] of gltf.nodes.entries()) {
     for (const point of positions) {
       assert.ok(Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z));
       if (core) assert.ok(inGameplaySolid(point), `Decorative vertex must not invent gameplay cover: ${node.name} ${point.toArray()}`);
+      else assert.ok(!(Math.abs(point.x) < 31.96 && Math.abs(point.z) < 31.96 && point.y > .06 && point.y < 4), `Exterior detail must stay outside reachable lanes: ${node.name} ${point.toArray()}`);
     }
     for (const normal of accessor(primitive.attributes.NORMAL)) assert.ok(Math.abs(Math.hypot(...normal) - 1) < .002, 'Unit exported normals');
     const opaque = !['EnvLeaves', 'EnvFlower'].includes(gltf.materials[primitive.material].name);
-    if (core || opaque) for (let i = 0; i < indices.length; i += 3) {
+    for (let i = 0; i < indices.length; i += 3) {
       const triangle = [positions[indices[i]], positions[indices[i + 1]], positions[indices[i + 2]]];
+      if (node.name === 'ArenaCore_EnvGround' && triangle.every(point => point.y >= -.651 && point.y <= .041)) {
+        const [a, b, c] = triangle;
+        const normal = new Vector3().subVectors(b, a).cross(new Vector3().subVectors(c, a));
+        // XZ projected area catches duplicate upward floor layers even when
+        // they are separated slightly in Y and share a single material draw.
+        upwardGroundArea += Math.max(0, normal.y) / 2;
+      }
+      allTriangles.push(triangle);
       if (core) coreTriangles.push(triangle);
       if (opaque) opaqueTriangles.push(triangle);
     }
@@ -78,14 +87,20 @@ for (const [nodeIndex, node] of gltf.nodes.entries()) {
 }
 assert.ok(triangles <= 70_000, `Desktop environment budget: ${triangles} triangles`);
 assert.ok(vertices <= 140_000, `Bounded indexed environment budget: ${vertices} vertices`);
-assert.ok(primitives <= 18, `Environment color batches: ${primitives}`);
+assert.equal(primitives, 15, `Frozen integration contract: ${primitives} environment color batches`);
 assert.ok(bytes.length <= 7_000_000, `Packed environment budget: ${bytes.length} bytes`);
+assert.ok(Math.abs(upwardGroundArea - 64 * 64) < .01, `Only one upward floor layer may cover the arena: ${upwardGroundArea} m²; expected 4096 m²`);
 
 const hit = new Vector3();
 function nearest(origin, direction, limit, frontFacesOnly = false, candidates = coreTriangles) {
   const ray = new Ray(origin, direction); let distance = Infinity;
   for (const [a, b, c] of candidates) if (ray.intersectTriangle(a, b, c, frontFacesOnly, hit)) { const d = origin.distanceTo(hit); if (d <= limit) distance = Math.min(distance, d); }
   return distance;
+}
+for (const axis of ['x', 'z']) for (const side of [-1, 1]) {
+  const origin = new Vector3(23, -.0025, 23); origin[axis] = side * 32.05;
+  const direction = new Vector3(); direction[axis] = -side;
+  assert.ok(nearest(origin, direction, .06, true) < .06, `Floor slab side joins the paving without a boundary gap: ${axis}/${side}`);
 }
 for (const obstacle of obstacles) {
   for (const axis of ['x', 'y', 'z']) for (const side of [-1, 1]) {
@@ -100,7 +115,7 @@ for (const [name, origin, direction, distance] of [
   ['central lane', [0, 1, -5], [0, 0, 1], 12],
   ['west flank', [-27, 1, -25], [0, 0, 1], 50],
   ['east flank', [27, 1, -25], [0, 0, 1], 50],
-]) assert.equal(nearest(new Vector3(...origin), new Vector3(...direction), distance), Infinity, `${name} remains visually open`);
+]) assert.equal(nearest(new Vector3(...origin), new Vector3(...direction), distance, false, allTriangles), Infinity, `${name} remains visually open across the complete environment`);
 
 const leaf = gltf.materials.find(material => material.name === 'EnvLeaves');
 assert.equal(leaf.alphaMode, 'MASK'); assert.equal(leaf.alphaCutoff, .5); assert.equal(leaf.doubleSided, true);
@@ -111,6 +126,8 @@ const exteriorProbes = [
   ['landmark cliff', [72, 2, -150], [0, 0, 1], 15],
   ['coastal facade', [-30, 2, -10], [-1, 0, 0], 8],
   ['olive trunk', [-35, 3, 24.5], [0, 0, -1], 3],
+  ['west archive silhouette', [-30, 11, -30], [-1, 0, 0], 8],
+  ['east pavilion silhouette', [30, 11, -29], [1, 0, 0], 8],
 ];
 for (const [name, origin, direction, limit] of exteriorProbes) assert.ok(nearest(new Vector3(...origin), new Vector3(...direction), limit, true, opaqueTriangles) < limit, `${name} has visible outward-facing geometry`);
 for (const material of gltf.materials) assert.equal(Boolean(material.doubleSided), ['EnvLeaves', 'EnvFlower'].includes(material.name), `${material.name} has the intended face-culling mode`);
@@ -123,6 +140,6 @@ const images = gltf.images.map(image => {
   const view = gltf.bufferViews[image.bufferView];
   return { name: image.name, mimeType: image.mimeType, bytes: view.byteLength };
 });
-const report = { status: 'passed', asset: 'public/models/environment.glb', bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), triangles, exportedVertices: vertices, colorBatches: primitives, materials: gltf.materials.length, images, batches, colliderReferences: obstacles.length, surfaceChecks: obstacles.length * 6, outwardWindingChecks: obstacles.length * 6 + 1 + exteriorProbes.length, clearRouteChecks: 4, coordinateSystem: 'metres; Y up; floor y=0', mapSha256: createHash('sha256').update(mapSource).digest('hex') };
+const report = { status: 'passed', asset: 'public/models/environment.glb', bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), triangles, exportedVertices: vertices, colorBatches: primitives, materials: gltf.materials.length, images, batches, colliderReferences: obstacles.length, surfaceChecks: obstacles.length * 6, outwardWindingChecks: obstacles.length * 6 + 1 + exteriorProbes.length, clearRouteChecks: 4, floorBoundaryChecks: 4, upwardGroundAreaSquareMetres: upwardGroundArea, coordinateSystem: 'metres; Y up; floor y=0', mapSha256: createHash('sha256').update(mapSource).digest('hex') };
 writeFileSync(new URL('art/source/environment-export-review.json', root), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));

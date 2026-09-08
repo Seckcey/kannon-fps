@@ -1,0 +1,32 @@
+{
+  "publisher": "Carnegie Mellon University Graphics Lab Motion Capture Database",
+  "selected_motion": "09_01",
+  "selected_loop_source_frames": [
+    15,
+    103
+  ],
+  "capture_fps": 120,
+  "usage_notice": "CMU-USAGE-NOTICE.md",
+  "sources": [
+    {
+      "file": "09.asf",
+      "url": "http://mocap.cs.cmu.edu/subjects/09/09.asf",
+      "response_url": "http://mocap.cs.cmu.edu/subjects/09/09.asf",
+      "retrieved_at_utc": "2026-09-08T07:47:04.250991+00:00",
+      "bytes": 7260,
+      "sha256": "be10dbce393fd60a2d322410032d618757afcc5bb2f7a508d887c5b0213f1897",
+      "description": "Subject09 calibrated skeleton; additional single targeted acquisition authorized after measured speed mismatch",
+      "transport": "Original CMU HTTP endpoint; digest records retrieved bytes, not a publisher signature"
+    },
+    {
+      "file": "09_01.amc",
+      "url": "http://mocap.cs.cmu.edu/subjects/09/09_01.amc",
+      "response_url": "http://mocap.cs.cmu.edu/subjects/09/09_01.amc",
+      "retrieved_at_utc": "2026-09-08T07:47:04.821209+00:00",
+      "bytes": 118653,
+      "sha256": "02c94e8c2d4d2ff05f9a784f06403700c2c9d7caedd9bd92b50284d1a05f2bee",
+      "description": "run; original catalog subject09 trial01,120Hz",
+      "transport": "Original CMU HTTP endpoint; digest records retrieved bytes, not a publisher signature"
+    }
+  ]
+}

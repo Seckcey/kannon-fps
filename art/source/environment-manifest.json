@@ -1,5 +1,6 @@
 {
   "asset": "public/models/environment.glb",
+  "artRevision": "sunbreak-art-depth",
   "groups": [
     "ArenaCore",
     "ArenaTrim",
@@ -191,10 +192,24 @@
   ],
   "coordinateSystem": "metres; Y up; ground y=0",
   "originalArtwork": true,
+  "budget": {
+    "maxTriangles": 70000,
+    "maxBytes": 7000000,
+    "maxColorBatches": 15
+  },
+  "leafAtlasAlphaCoverage": 0.3133,
   "notes": [
     "Original authored geometry, generated basecolor artwork, and authored PBR/foliage maps.",
-    "The observatory and tree trunks are outside the 64 m playable square; high canopies may overhang.",
+    "Asymmetric exterior archive/gallery/pavilion framing; closed shuttered facade bays are distinct from low tactical barrier fittings.",
+    "Connected mature olive crowns use 340 compound-spray cards per tree; cypress trees use 145. Canopies have no opaque filler shells.",
+    "Broad paving variation uses existing vertex colors; no additional texture/decal layer or raised floor geometry.",
+    "The observatory settlement, exterior terraces and tree trunks are outside the 64 m playable square; high canopies may overhang.",
     "Sky/water/lighting remain runtime systems; preview-only water is at y=-9.",
-    "Authoritative collision is unchanged; rendered surface relief is at most 4 cm."
+    "Authoritative collision is unchanged; rendered surface relief is at most 4 cm.",
+    "Blender previews establish source appearance only; separate gameplay/GPU acceptance is recorded in docs/ART_DEPTH.md and docs/RELEASE.md.",
+    "Petrol metal uses low-contrast isotropic wear, nearly flat normals and roughness between 0.43 and 0.60; crossed directional wave patterns are removed.",
+    "Six masonry planters contain rooted bougainvillea stems, connected leaf sprays and flower clusters; detached single-leaf perimeter scatter is removed.",
+    "Flush shutter surrounds, pilasters and fittings use distinct surface depths inside the 4 cm envelope to avoid coplanar black artifacts at their intersections.",
+    "The Y=0 paving grid is the only upward floor layer. The underlying slab retains sides and bottom but omits its hidden top, preventing a redundant floor-sized PBR shading pass inside the same draw."
   ]
 }

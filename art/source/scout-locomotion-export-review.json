@@ -1,0 +1,68 @@
+{
+  "status": "passed",
+  "scope": "Actual exported GLB skin at 480 Hz; CPU AnimationMixer. Contact bands exclude penetration. No actor height correction. This does not prove runtime crossfade contact.",
+  "assetBytes": 2720096,
+  "assetSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+  "soleVertices": {
+    "left": 1315,
+    "right": 1318
+  },
+  "results": [
+    {
+      "clip": "Walk",
+      "referenceSpeed": 6.5,
+      "duration": 0.5333333333333333,
+      "samples": 257,
+      "minFloor": 0.006525703539103126,
+      "maxFloor": 0.09599994774550187,
+      "seamPosition": 2.3451838096703913e-7,
+      "seamVelocity": 2.5416173046527595,
+      "contactBands": [
+        {
+          "heightMetres": 0.02,
+          "contactFrames": 80,
+          "sampledIntervals": 256,
+          "contactDuty": 0.3125,
+          "horizontalSlipMedian": 0.5077928508210088,
+          "horizontalSlipP95": 1.7502546801030887
+        },
+        {
+          "heightMetres": 0.04,
+          "contactFrames": 137,
+          "sampledIntervals": 256,
+          "contactDuty": 0.53515625,
+          "horizontalSlipMedian": 0.6560287397540968,
+          "horizontalSlipP95": 2.7428545553725843
+        }
+      ]
+    },
+    {
+      "clip": "Run",
+      "referenceSpeed": 9,
+      "duration": 0.4666666666666667,
+      "samples": 225,
+      "minFloor": 0.0063104661173827015,
+      "maxFloor": 0.09639599701757143,
+      "seamPosition": 3.368111125697996e-8,
+      "seamVelocity": 3.2870013539558283,
+      "contactBands": [
+        {
+          "heightMetres": 0.02,
+          "contactFrames": 58,
+          "sampledIntervals": 224,
+          "contactDuty": 0.25892857142857145,
+          "horizontalSlipMedian": 0.9234488157051423,
+          "horizontalSlipP95": 2.7152973632286415
+        },
+        {
+          "heightMetres": 0.04,
+          "contactFrames": 102,
+          "sampledIntervals": 224,
+          "contactDuty": 0.45535714285714285,
+          "horizontalSlipMedian": 0.9597662542761926,
+          "horizontalSlipP95": 5.978104173729032
+        }
+      ]
+    }
+  ]
+}

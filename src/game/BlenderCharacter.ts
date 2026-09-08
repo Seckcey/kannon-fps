@@ -4,6 +4,9 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RULES, type PlayerState, type Slot } from '../../shared/protocol';
 import { createCharacter, type CharacterModel } from './Character';
 import { ARENA_ASSETS, getArenaAssetBuffer } from './assets';
+import { createGaitTurn, GaitDirection } from './GaitTurn';
+import { createLegContact, type LegContact } from './LegContact';
+import { CharacterBlend } from './CharacterBlend';
 
 let assetPromise: Promise<GLTF> | null = null;
 const loadScout = () => assetPromise ??= getArenaAssetBuffer(ARENA_ASSETS.character).then(buffer => {
@@ -19,7 +22,8 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
   const muzzle = new THREE.Object3D(); muzzle.position.set(0.23, 1.25, -1.1); root.add(muzzle);
   let model: THREE.Object3D | null = null;
   let mixer: THREE.AnimationMixer | null = null;
-  let currentAction: THREE.AnimationAction | null = null;
+  let blend: CharacterBlend | null = null;
+  let legContact: LegContact | null = null;
   let overlayAction: THREE.AnimationAction | null = null;
   let disposed = false;
   let kick = 0;
@@ -34,7 +38,8 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
   const lowerSpineBase = new THREE.Quaternion();
   const offset = new THREE.Quaternion();
   const pitchAxis = new THREE.Vector3(1, 0, 0);
-  const boneUp = new THREE.Vector3(0, 1, 0);
+  const turnGait = createGaitTurn();
+  const gaitDirection = new GaitDirection();
   let muzzleSource: THREE.Object3D | null = null;
   let shotgunMuzzle: THREE.Object3D | null = null;
   const actions = new Map<string, THREE.AnimationAction>();
@@ -95,9 +100,10 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
       if (upperBody || name === 'Jump') { action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; }
       actions.set(name.toLowerCase(), action);
     }
-    currentAction = actions.get('idle') ?? actions.values().next().value ?? null;
-    currentAction?.play();
+    (actions.get('idle') ?? actions.values().next().value)?.play();
     mixer.update(0);
+    blend = new CharacterBlend(actions);
+    legContact = createLegContact(model);
     if (spine) spineBase.copy((spine as THREE.Bone).quaternion);
     if (pelvis) pelvisBase.copy((pelvis as THREE.Bone).quaternion);
     if (lowerSpine) lowerSpineBase.copy((lowerSpine as THREE.Bone).quaternion);
@@ -127,13 +133,11 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
       const animation = !grounded ? 'jump' : speed > 7.2 ? 'run' : speed > 0.3 ? 'walk' : motion?.aim ? 'aim' : 'idle';
       const forward = player.vx * Math.sin(player.yaw) - player.vz * Math.cos(player.yaw);
       const lateral = player.vx * Math.cos(player.yaw) + player.vz * Math.sin(player.yaw);
-      const backwards = forward < -speed * 0.25;
-      const next = actions.get(animation) ?? actions.get('idle');
-      if (next && next !== currentAction) {
-        next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1).play();
-        currentAction?.crossFadeTo(next, 0.16, false); currentAction = next;
-      }
-      if (currentAction && (animation === 'walk' || animation === 'run')) currentAction.timeScale = (backwards ? -1 : 1) * THREE.MathUtils.clamp(speed / (animation === 'run' ? 7.4 : 5.1), 0.65, 1.55);
+      const backwards = gaitDirection.update(forward, speed);
+      // The exported cycles are retimed for 6.5/9 m/s. Slower touch/aim movement
+      // must slow the feet proportionally instead of retaining the old rate floor.
+      const gaitRate = (backwards ? -1 : 1) * THREE.MathUtils.clamp(speed / (animation === 'run' ? 9 : 6.5), 0.01, 1.55);
+      blend?.update(animation, animation === 'walk' || animation === 'run' ? gaitRate : 1, dt);
       const nextOverlay = player.healingUntil > time ? actions.get('heal') : player.reloadingUntil > time ? actions.get('reload') : undefined;
       const deadline = nextOverlay === actions.get('heal') ? player.healingUntil : nextOverlay ? player.reloadingUntil : 0;
       if (nextOverlay !== (overlayAction ?? undefined) || deadline !== overlayDeadline) {
@@ -150,11 +154,16 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
       if (spine) spine.quaternion.copy(spineBase);
       if (pelvis) pelvis.quaternion.copy(pelvisBase);
       if (lowerSpine) lowerSpine.quaternion.copy(lowerSpineBase);
+      legContact?.restore();
       mixer.update(dt);
-      const targetTurn = speed > 0.3 && grounded ? THREE.MathUtils.clamp(Math.atan2(backwards ? -lateral : lateral, backwards ? -forward : forward), -1.08, 1.08) : 0;
+      const targetTurn = speed > 0.3 && grounded ? THREE.MathUtils.clamp(Math.atan2(backwards ? -lateral : lateral, backwards ? -forward : forward), -Math.PI / 2, Math.PI / 2) : 0;
       gaitTurn = THREE.MathUtils.damp(gaitTurn, targetTurn, 10, dt);
-      if (pelvis) { pelvisBase.copy(pelvis.quaternion); pelvis.quaternion.multiply(offset.setFromAxisAngle(boneUp, -gaitTurn)); }
-      if (lowerSpine) { lowerSpineBase.copy(lowerSpine.quaternion); lowerSpine.quaternion.multiply(offset.setFromAxisAngle(boneUp, gaitTurn)); }
+      if (pelvis) pelvisBase.copy(pelvis.quaternion);
+      if (lowerSpine) lowerSpineBase.copy(lowerSpine.quaternion);
+      if (pelvis && lowerSpine) turnGait(pelvis, lowerSpine, gaitTurn);
+      // Rotation blending can straighten the legs before the pelvis rises.
+      // Constrain just the leg joints during grounded fades; never lift the actor.
+      if (grounded && blend && blend.transitionRemaining > 0) legContact?.apply(player.y);
       if (spine) {
         spineBase.copy(spine.quaternion);
         spine.quaternion.multiply(offset.setFromAxisAngle(pitchAxis, player.pitch * 0.78 + kick * 0.018));

@@ -1,8 +1,8 @@
 {
   "file": "public/models/scout.glb",
-  "bytes": 2658568,
-  "exportedVertices": 22654,
-  "triangles": 20868,
+  "bytes": 2720096,
+  "exportedVertices": 22486,
+  "triangles": 20922,
   "bones": 18,
   "clips": [
     "Idle",
@@ -23,14 +23,31 @@
   },
   "eightPlayerBodyAndARDraws": 56,
   "muzzle": [
-    0.1350005143465291,
-    1.3319993455578272,
-    -0.846999860553418
+    0.13500020086800835,
+    1.4570002606400878,
+    -0.8469994806788761
   ],
   "shotgunMuzzle": [
-    0.1350005578440922,
-    1.3319995961193676,
-    -0.9239997672777042
+    0.1350001862424987,
+    1.4570005171691296,
+    -0.9239994377074476
+  ],
+  "additiveNeutralFrames": [
+    {
+      "clip": "Fire",
+      "maxRotationErrorRadians": 0.0003903207791404663,
+      "maxTranslationError": 0
+    },
+    {
+      "clip": "Reload",
+      "maxRotationErrorRadians": 0.0003903207791404663,
+      "maxTranslationError": 0
+    },
+    {
+      "clip": "Heal",
+      "maxRotationErrorRadians": 0.0003903207791404663,
+      "maxTranslationError": 0
+    }
   ],
   "coordinateSystem": "metres; Y up; -Z forward",
   "status": "passed"

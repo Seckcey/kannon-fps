@@ -48,13 +48,41 @@ function visit(index, parent = new Matrix4()) {
 }
 for (const index of gltf.scenes[gltf.scene ?? 0].nodes) visit(index);
 const muzzle = new Vector3().setFromMatrixPosition(world.get('muzzle'));
-assert.ok(Math.abs(muzzle.x - .135) < .01 && Math.abs(muzzle.y - 1.332) < .01 && Math.abs(muzzle.z + .847) < .01, 'Muzzle sits at the forward gun barrel after Blender-to-glTF axis conversion.');
+assert.ok(Math.abs(muzzle.x - .135) < .01 && Math.abs(muzzle.y - 1.457) < .01 && Math.abs(muzzle.z + .847) < .01, 'Shouldered muzzle sits at the forward gun barrel after Blender-to-glTF axis conversion.');
 const shotgunMuzzle = new Vector3().setFromMatrixPosition(world.get('muzzle_shotgun'));
-assert.ok(shotgunMuzzle.distanceTo(new Vector3(.135, 1.332, -.924)) < .01, 'Shotgun effects use the longer shotgun barrel.');
+assert.ok(shotgunMuzzle.distanceTo(new Vector3(.135, 1.457, -.924)) < .01, 'Shotgun effects use the longer shotgun barrel.');
 const supportHand = new Vector3().setFromMatrixPosition(world.get('hand_l'));
-assert.ok(supportHand.distanceTo(new Vector3(.135, 1.30, -.51)) < .09, 'Support wrist reaches the fore-end grip.');
+assert.ok(supportHand.distanceTo(new Vector3(.135, 1.425, -.51)) < .09, 'Support wrist reaches the raised fore-end grip.');
 const triggerHand = new Vector3().setFromMatrixPosition(world.get('hand_r'));
-assert.ok(triggerHand.distanceTo(new Vector3(.135, 1.255, -.327)) < .04, 'Trigger wrist reaches the pistol grip.');
-const report = { file: 'public/models/scout.glb', bytes: bytes.length, exportedVertices: vertices, triangles, bones: 18, clips: expected, embeddedTextures: gltf.images.length, materialDraws: primitives, eightPlayerBodyAndARDraws: (primitives.scout_body + primitives.weapon_ar) * 8, muzzle: muzzle.toArray(), shotgunMuzzle: shotgunMuzzle.toArray(), coordinateSystem: 'metres; Y up; -Z forward', status: 'passed' };
+assert.ok(triggerHand.distanceTo(new Vector3(.135, 1.38, -.327)) < .04, 'Trigger wrist reaches the raised pistol grip.');
+// Runtime makes these clips additive relative to their own first frame. If that
+// frame differs from Idle, part of the authored action disappears during blending.
+const binStart = 20 + jsonLength + 8;
+function firstTransform(animation, node, property) {
+  const channel = animation.channels.find(item => item.target.node === node && item.target.path === property);
+  assert.ok(channel, `${animation.name} includes ${gltf.nodes[node].name}.${property}`);
+  const accessor = gltf.accessors[animation.samplers[channel.sampler].output];
+  assert.equal(accessor.componentType, 5126, 'Animation transforms are float32.');
+  const view = gltf.bufferViews[accessor.bufferView];
+  const start = binStart + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+  return Array.from({ length: property === 'rotation' ? 4 : 3 }, (_, index) => bytes.readFloatLE(start + index * 4));
+}
+const neutralPose = gltf.animations.find(animation => animation.name === 'Idle');
+const additiveNeutralFrames = [];
+for (const name of ['Fire', 'Reload', 'Heal']) {
+  const animation = gltf.animations.find(item => item.name === name);
+  let maxRotationError = 0; let maxTranslationError = 0;
+  for (const [index, node] of gltf.nodes.entries()) {
+    if (!/^(chest|neck|head|upper_arm_[lr]|forearm_[lr]|hand_[lr])$/.test(node.name)) continue;
+    maxRotationError = Math.max(maxRotationError, new Quaternion().fromArray(firstTransform(animation, index, 'rotation')).angleTo(new Quaternion().fromArray(firstTransform(neutralPose, index, 'rotation'))));
+    maxTranslationError = Math.max(maxTranslationError, new Vector3().fromArray(firstTransform(animation, index, 'translation')).distanceTo(new Vector3().fromArray(firstTransform(neutralPose, index, 'translation'))));
+  }
+  assert.ok(maxRotationError < .002 && maxTranslationError < .0001, `${name} starts from the same upper-body pose as Idle for additive playback.`);
+  additiveNeutralFrames.push({ clip: name, maxRotationErrorRadians: maxRotationError, maxTranslationError });
+}
+const report = { file: 'public/models/scout.glb', bytes: bytes.length, exportedVertices: vertices, triangles, bones: 18, clips: expected, embeddedTextures: gltf.images.length, materialDraws: primitives, eightPlayerBodyAndARDraws: (primitives.scout_body + primitives.weapon_ar) * 8, muzzle: muzzle.toArray(), shotgunMuzzle: shotgunMuzzle.toArray(), additiveNeutralFrames, coordinateSystem: 'metres; Y up; -Z forward', status: 'passed' };
 writeFileSync(fileURLToPath(new URL('../../art/source/scout-export-review.json', import.meta.url)), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));
+// Structural validity alone can hide between-frame floor penetration. Inspect
+// the exported skinned locomotion through the production animation interpolator.
+await import('./validate_locomotion.mjs');

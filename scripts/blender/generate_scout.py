@@ -1,14 +1,19 @@
-"""Original Kannon Scout, modeled and animated in Blender. No downloaded assets.
+"""Original Kannon Scout geometry and rig, modeled and animated in Blender.
 
 Run: blender --background --python scripts/blender/generate_scout.py
 Units: metres. Blender +Y is forward; exported glTF -Z is forward, Y is up.
-The animation is authored keyframe motion, not motion capture.
+Walk/Run lower-body motion derives from the credited CMU 09_01 run capture.
+Six other actions and weapon upper-body poses are original authored motion.
 """
 import bpy
 import math
 import json
+import sys
 from pathlib import Path
 from mathutils import Matrix, Vector
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from scout_locomotion import retarget_locomotion
+from scout_export import export_scout
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'public' / 'models'
@@ -32,8 +37,8 @@ def material(name, color, metallic=0.0, roughness=.5):
 
 armor = material('CeramicArmor', (.69, .665, .60), .18, .39)
 accent = material('PlayerAccent', (.018, .12, .14), .28, .34)
-pack_teal = material('PetrolTeal', (.009, .061, .073), .32, .36)
-suit = material('WovenUndersuit', (.023, .029, .031), .02, .89)
+pack_teal = material('PetrolTeal', (.014, .098, .109), .32, .39)
+suit = material('WovenUndersuit', (.036, .045, .050), .02, .89)
 rubber = material('FlexibleRubber', (.021, .027, .031), .05, .69)
 gunmetal = material('Gunmetal', (.047, .055, .058), .7, .32)
 steel = material('BrushedTitanium', (.29, .32, .33), .82, .3)
@@ -45,6 +50,7 @@ light.node_tree.nodes.get('Principled BSDF').inputs['Emission Strength'].default
 white = material('Marking', (.86, .85, .74), .02, .55)
 parts = []
 weapon_parts = {'weapon_ar': [], 'weapon_shotgun': [], 'healing_item': []}
+WEAPON_LIFT = .125
 
 # Tactical rest pose: natural human limb lengths, both hands around the weapon.
 bones = {
@@ -67,6 +73,22 @@ bones = {
  'shin_l': ((-.115,.015,.535), (-.12,0,.125), 'thigh_l'),
  'foot_l': ((-.12,0,.125), (-.12,.18,.065), 'shin_l'),
 }
+# Author the weapon at high ready, with equal human arm lengths and a visible
+# elbow bend. The same 18 exported bones remain; Blender bakes the arm solve.
+def elbow_for(shoulder, wrist, side, upper=.29, lower=.285):
+    shoulder,wrist=Vector(shoulder),Vector(wrist)
+    forward=wrist-shoulder;distance=forward.length;forward.normalize()
+    bend=Vector((.65 if side=='r' else -.65,-.18,-1))
+    bend=(bend-forward*bend.dot(forward)).normalized()
+    along=(upper*upper-lower*lower+distance*distance)/(2*distance)
+    return shoulder+forward*along+bend*math.sqrt(max(0,upper*upper-along*along))
+for side in ['r','l']:
+    hand,tip,parent=bones['hand_'+side]
+    hand=Vector(hand)+Vector((0,0,WEAPON_LIFT));tip=Vector(tip)+Vector((0,0,WEAPON_LIFT))
+    shoulder=Vector(bones['upper_arm_'+side][0]);elbow=elbow_for(shoulder,hand,side)
+    bones['upper_arm_'+side]=(tuple(shoulder),tuple(elbow),'chest')
+    bones['forearm_'+side]=(tuple(elbow),tuple(hand),'upper_arm_'+side)
+    bones['hand_'+side]=(tuple(hand),tuple(tip),parent)
 armdata = bpy.data.armatures.new('ScoutSkeleton')
 rig = bpy.data.objects.new('ScoutRig', armdata)
 bpy.context.collection.objects.link(rig)
@@ -150,25 +172,31 @@ def limb(name, bone, widths, mat=suit):
     a,b=Vector(bones[bone][0]),Vector(bones[bone][1]); axis=(b-a).normalized()
     side=Vector((1,0,0)); side=(side-axis*side.dot(axis)).normalized(); front=axis.cross(side)
     verts,faces=[],[]; n=16
-    for i,radius in enumerate(widths):
-        c=a.lerp(b,i/(len(widths)-1))
+    fractions=[0,.12,.27,.43,.58,.72,.80,.87,.94,1]
+    for i,fraction in enumerate(fractions):
+        sample=fraction*(len(widths)-1);index=min(len(widths)-2,int(sample));blend=sample-index
+        radius=widths[index]*(1-blend)+widths[index+1]*blend
+        # Compression folds remain part of the tailored surface instead of separate joint rings.
+        fold=([0,0,0,0,0,.001,-.004,.003,-.002,0][i])
+        c=a.lerp(b,fraction)
         for j in range(n):
             angle=2*math.pi*j/n
-            verts.append(tuple(c+side*math.cos(angle)*radius+front*math.sin(angle)*radius*.84))
-    for i in range(len(widths)-1):
+            shaped=radius+fold*(.65+.35*math.sin(angle*2+.6))
+            verts.append(tuple(c+side*math.cos(angle)*shaped+front*math.sin(angle)*shaped*.84))
+    for i in range(len(fractions)-1):
         for j in range(n): faces.append((i*n+j,i*n+(j+1)%n,(i+1)*n+(j+1)%n,(i+1)*n+j))
-    faces.extend([tuple(range(n-1,-1,-1)),tuple((len(widths)-1)*n+j for j in range(n))])
+    faces.extend([tuple(range(n-1,-1,-1)),tuple((len(fractions)-1)*n+j for j in range(n))])
     mesh=bpy.data.meshes.new(name); mesh.from_pydata(verts,[],faces); mesh.update()
     uv=mesh.uv_layers.new(name='Surface UV')
     for poly in mesh.polygons:
         for idx in poly.loop_indices:
-            vi=mesh.loops[idx].vertex_index; uv.data[idx].uv=(vi%n/n,vi//n/(len(widths)-1))
+            vi=mesh.loops[idx].vertex_index; uv.data[idx].uv=(vi%n/n,vi//n/(len(fractions)-1))
     obj=bpy.data.objects.new(name,mesh); bpy.context.collection.objects.link(obj)
     return register(obj,mat,bone)
 
-def panel(name, center, width, height, depth, mat, bone, reverse=False, group=None):
+def panel(name, center, width, height, depth, mat, bone, reverse=False, group=None, outline=None):
     """Closed, fitted ceramic plate: tapered silhouette, rolled rim and compound crown."""
-    outline=[(-.32,-.50),(.31,-.50),(.48,-.32),(.50,.22),(.31,.47),(-.22,.50),(-.49,.29),(-.46,-.30)]
+    outline=outline or [(-.32,-.50),(.31,-.50),(.48,-.32),(.50,.22),(.31,.47),(-.22,.50),(-.49,.29),(-.46,-.30)]
     cx,cy,cz=center; facing=-1 if reverse else 1
     vertices=[];faces=[]
     for scale,d in [(1,0),(1,depth*.72),(.79,depth)]:
@@ -197,8 +225,9 @@ def deltoid_shell(name, center, bone):
             polar=.10+row/(rings-1)*1.94
             for j in range(segments):
                 a=j/segments*math.tau
-                width=.094-(.006 if inside else 0)
-                verts.append((cx+sign*(math.cos(polar)*.041+math.sin(polar)*math.cos(a)*width),cy+math.sin(polar)*math.sin(a)*.104,cz+math.cos(polar)*(.111-(.006 if inside else 0))))
+                width=.082-(.005 if inside else 0)
+                # A shallow deltoid wrap, with a swept lower edge and flatter crown.
+                verts.append((cx+sign*(math.cos(polar)*.022+math.sin(polar)*math.cos(a)*width),cy+math.sin(polar)*math.sin(a)*.096,cz+math.cos(polar)*(.085-(.005 if inside else 0))-.016*max(0,math.sin(a))))
     count=rings*segments
     for inner in range(2):
         offset=inner*count
@@ -213,14 +242,13 @@ def deltoid_shell(name, center, bone):
     import bmesh
     bm=bmesh.new();bm.from_mesh(mesh);bmesh.ops.recalc_face_normals(bm,faces=bm.faces);bm.to_mesh(mesh);bm.free()
     obj=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(obj);register(obj,armor,bone)
-    panel(name+'_rear_inset',(cx,cy-.102,cz+.010),.077,.086,.007,rubber,bone,True)
-    panel(name+'_rear_identifier',(cx,cy-.112,cz+.015),.052,.050,.004,accent,bone,True)
-    tube(name+'_rotary_seal',(cx+sign*.087,cy,cz+.008),(cx+sign*.095,cy,cz+.008),.024,gunmetal,bone,16)
-    tube(name+'_rotary_cap',(cx+sign*.096,cy,cz+.008),(cx+sign*.10,cy,cz+.008),.018,bronze,bone,16)
+    panel(name+'_rear_inset',(cx,cy-.095,cz+.008),.067,.033,.005,rubber,bone,True)
+    panel(name+'_rear_identifier',(cx,cy-.102,cz+.009),.052,.012,.003,accent,bone,True)
+    box(name+'_edge_clasp',(cx+sign*.078,cy-.014,cz-.012),(.014,.053,.031),bronze,bone,.005)
     return obj
 
 # Flexible anatomically shaped base; no sphere mannequin joints.
-torso=section_mesh('tailored_torso',[(0,0,1.01,.164,.107),(0,0,1.10,.174,.116),(0,0,1.20,.202,.128),(0,0,1.33,.227,.133),(0,0,1.43,.239,.122),(0,0,1.49,.17,.099)],suit,'spine')
+torso=section_mesh('tailored_torso',[(0,-.008,1.01,.158,.107),(0,-.009,1.10,.162,.117),(0,-.005,1.20,.191,.137),(0,0,1.33,.222,.146),(0,-.004,1.43,.226,.132),(0,-.008,1.49,.156,.103)],suit,'spine',24)
 torso.vertex_groups.clear()
 spine_weights=torso.vertex_groups.new(name='spine');chest_weights=torso.vertex_groups.new(name='chest');pelvis_weights=torso.vertex_groups.new(name='pelvis')
 for vertex in torso.data.vertices:
@@ -240,21 +268,26 @@ for side,sign in [('r',1),('l',-1)]:
     panel('knee_accent_'+side,(sign*.115,.098,.548),.048,.036,.004,bronze,'shin_'+side)
     shin=panel('shin_guard_'+side,(sign*.12,.046,.309),.133,.293,.054,armor,'shin_'+side)
     panel('shin_inset_'+side,(sign*.12,.109,.319),.036,.171,.004,rubber,'shin_'+side)
-    for z in [.195,.45]: section_mesh('shin_strap_'+side,[(sign*.12,0,z-.012,.074,.079),(sign*.12,0,z+.012,.074,.079)],rubber,'shin_'+side,20)
+    for z,rx,ry in [(.195,.059,.064),(.45,.073,.076)]: section_mesh('shin_strap_'+side,[(sign*.12,0,z-.008,rx,ry),(sign*.12,0,z+.008,rx,ry)],rubber,'shin_'+side,20)
     # Shaped realistic combat boot with extended toe and layered sole.
-    box('boot_sole_'+side,(sign*.12,.057,.032),(.127,.273,.054),rubber,'foot_'+side,.014)
-    box('boot_heel_'+side,(sign*.12,-.025,.074),(.126,.128,.087),rubber,'foot_'+side,.018)
+    sole=box('boot_sole_'+side,(sign*.12,.057,.032),(.127,.273,.047),rubber,'foot_'+side,.011)
+    for vertex in sole.data.vertices:
+        y=vertex.co.y; taper=.86 if y<-.028 else 1-.08*max(0,(y-.12)/.075)
+        vertex.co.x=sign*.12+(vertex.co.x-sign*.12)*taper
+        vertex.co.z+=.008*max(0,(y-.13)/.065)
+    section_mesh('boot_heel_'+side,[(sign*.12,-.031,.043,.054,.056),(sign*.12,-.035,.09,.057,.061),(sign*.12,-.022,.128,.049,.051)],rubber,'foot_'+side,20)
     section_mesh('boot_upper_'+side,[(sign*.12,.058,.044,.064,.126),(sign*.12,.061,.08,.063,.121),(sign*.12,.035,.115,.059,.094),(sign*.12,-.005,.158,.048,.056)],rubber,'foot_'+side,20)
     box('toe_cap_'+side,(sign*.12,.137,.093),(.110,.090,.027),armor,'foot_'+side,.013)
     section_mesh('boot_ankle_'+side,[(sign*.12,0,.07,.062,.070),(sign*.12,-.008,.13,.057,.06),(sign*.12,-.003,.20,.046,.05)],suit,'foot_'+side,16)
     for z,y in [(.116,.080),(.139,.051),(.161,.025)]: box('boot_lace_'+side,(sign*.12,y,z),(.071,.014,.009),rubber,'foot_'+side,.003)
     for yy in [-.05,.0,.055,.11,.175]: box('sole_tread_'+side,(sign*.12,yy,.014),(.137,.018,.014),gunmetal,'foot_'+side,.003)
     # Thigh armor occupies the outer/front face; cloth remains visible around it.
-    panel('thigh_shell_'+side,(sign*.142,.082,.749),.154,.282,.043,armor,'thigh_'+side)
-    panel('thigh_insert_'+side,(sign*.158,.132,.789),.062,.104,.006,rubber,'thigh_'+side)
+    thigh_outline=[(-.29,-.5),(.20,-.47),(.37,-.25),(.49,.30),(.31,.49),(-.37,.46),(-.48,.21),(-.42,-.21)]
+    panel('thigh_shell_'+side,(sign*.144,.075,.749),.187,.321,.037,armor,'thigh_'+side,outline=thigh_outline)
+    panel('thigh_insert_'+side,(sign*.164,.124,.813),.041,.038,.004,rubber,'thigh_'+side)
     panel('thigh_identifier_'+side,(sign*.127,.137,.705),.033,.045,.003,accent,'thigh_'+side)
-    for z in [.662,.842]: section_mesh('thigh_band_'+side,[(sign*.111,0,z-.013,.106,.10),(sign*.111,0,z+.013,.106,.10)],rubber,'thigh_'+side,20)
-    box('outer_thigh_marker_'+side,(sign*.218,.039,.79),(.011,.071,.083),accent,'thigh_'+side,.004)
+    for z,rx,ry in [(.662,.097,.091),(.842,.105,.096)]: section_mesh('thigh_band_'+side,[(sign*.111,0,z-.008,rx,ry),(sign*.111,0,z+.008,rx,ry)],rubber,'thigh_'+side,20)
+    box('outer_thigh_marker_'+side,(sign*.218,.039,.79),(.008,.071,.022),accent,'thigh_'+side,.003)
     # Anatomical upper arm armor and forearm hard shell align to skeleton.
     shoulder=Vector(bones['upper_arm_'+side][0])
     deltoid_shell('pauldron_'+side,shoulder+Vector((sign*.004,0,-.018)),'upper_arm_'+side)
@@ -282,7 +315,7 @@ for side,sign in [('r',1),('l',-1)]:
 
 # Front cuirass is cut into sternum and lateral plates, with a clear dark collar.
 for s in [-1,1]:
-    panel('pectoral_shell',(s*.100,.121,1.391),.207,.195,.046,armor,'chest')
+    panel('pectoral_shell',(s*.098,.130,1.388),.207,.207,.042,armor,'chest',outline=[(-.36,-.45),(.22,-.50),(.45,-.29),(.49,.14),(.28,.46),(-.24,.50),(-.49,.29),(-.43,-.22)])
     tube('pectoral_fastener',(s*.16,.162,1.436),(s*.16,.17,1.436),.005,gunmetal,'chest',8)
 box('sternum_inset',(0,.154,1.365),(.015,.009,.139),rubber,'chest',.003)
 box('sternum_badge',(.083,.184,1.406),(.048,.005,.011),accent,'chest',.003)
@@ -295,8 +328,8 @@ for s in [-1,1]:
     box('shoulder_harness',(s*.152,-.059,1.414),(.055,.203,.056),rubber,'chest',.014,rotation=(0,s*.16,0))
     box('pack_clip',(s*.143,-.148,1.42),(.052,.031,.059),steel,'chest',.008)
     box('abdominal_flex',(s*.063,.108,1.105),(.105,.028,.036),rubber,'spine',.008)
-    box('belt_pouch',(s*.143,.101,1.005),(.092,.060,.115),armor,'pelvis',.011,rotation=(0,0,s*.15))
-    box('pouch_lid',(s*.143,.14,1.037),(.095,.016,.033),rubber,'pelvis',.007)
+    box('belt_pouch',(s*.143,.101,1.005),(.083,.055,.103),suit,'pelvis',.013,rotation=(0,0,s*.15))
+    box('pouch_lid',(s*.143,.134,1.037),(.085,.012,.023),rubber,'pelvis',.006)
     box('hip_plate',(s*.203,.015,.962),(.048,.130,.106),armor,'pelvis',.011)
 box('belt_front',(0,.099,1.047),(.291,.041,.044),rubber,'pelvis',.008)
 box('belt_buckle',(0,.131,1.047),(.063,.022,.043),steel,'pelvis',.006)
@@ -329,17 +362,16 @@ for text,z,size in [('KANNON',1.378,.016),('S / 07',1.335,.021)]:
     obj=bpy.context.object;obj.name='pack_stencil';obj.data.body=text;obj.data.align_x='CENTER';obj.data.size=size;obj.data.extrude=.0001;obj.data.resolution_u=2
     bpy.ops.object.convert(target='MESH');register(bpy.context.object,white,'chest')
 # Neck and original full helmet with several shell layers.
-tube('neck_gaiter',(0,0,1.475),(0,0,1.6),.074,suit,'neck',20,radius2=.064)
-section_mesh('raised_armored_collar',[(0,0,1.468,.130,.104),(0,-.012,1.496,.117,.101),(0,-.021,1.516,.096,.083)],armor,'chest',24)
-for z in [1.509,1.529,1.549]:
-    bpy.ops.mesh.primitive_torus_add(major_radius=.071,minor_radius=.005,major_segments=24,minor_segments=6,location=(0,0,z))
-    register(bpy.context.object,rubber,'neck')
+tube('neck_gaiter',(0,0,1.475),(0,0,1.603),.073,suit,'neck',20,radius2=.063)
+collar=section_mesh('raised_armored_collar',[(0,0,1.468,.132,.106),(0,-.010,1.505,.123,.106),(0,-.017,1.542,.099,.087)],rubber,'chest',24)
+for vertex in collar.data.vertices:
+    vertex.co.z+=max(-.015,min(.019,-vertex.co.y*.20))
 sphere('helmet_inner',(0,0,1.69),(.106,.113,.137),rubber,'head',24,16)
 section_mesh('helmet_shell',[(0,-.015,1.601,.076,.078),(0,-.016,1.635,.103,.104),(0,-.014,1.713,.113,.118),(0,-.018,1.764,.107,.117),(0,-.021,1.805,.087,.096),(0,-.022,1.831,.049,.061),(0,-.022,1.839,.012,.018)],armor,'head',28)
 # Curved visor patch follows the helmet instead of a flat block.
 verts=[]; faces=[]; cols=20; rows=5
 for i in range(rows):
-    v=i/(rows-1); z=1.656+v*.073
+    v=i/(rows-1); z=1.643+v*.090
     for j in range(cols+1):
         angle=-1.16+2.32*j/cols
         verts.append((math.sin(angle)*.108, .014+math.cos(angle)*(.116+.008*math.sin(v*math.pi)), z+.009*math.cos(angle)))
@@ -351,18 +383,17 @@ obj=bpy.data.objects.new('visor_curved',mesh);bpy.context.collection.objects.lin
 for s in [-1,1]:
     tube('visor_integrated_brow',(0,.134,1.745),(s*.088,.082,1.736),.009,gunmetal,'head',8,radius2=.005)
 panel('helmet_chin',(0,.089,1.614),.147,.053,.037,armor,'head')
-box('chin_vent',(0,.124,1.623),(.075,.011,.020),gunmetal,'head',.006)
 for s in [-1,1]:
     box('helmet_cheek',(s*.087,.046,1.635),(.045,.104,.091),armor,'head',.017,rotation=(0,s*.20,s*.28))
-    tube('helmet_comms',(s*.098,-.005,1.674),(s*.121,-.005,1.674),.044,gunmetal,'head',18)
-    tube('helmet_comms_shell',(s*.12,-.005,1.674),(s*.126,-.005,1.674),.032,armor,'head',18)
+    box('helmet_comms',(s*.110,-.005,1.674),(.026,.058,.070),gunmetal,'head',.011)
+    box('helmet_comms_shell',(s*.125,-.005,1.674),(.012,.049,.059),armor,'head',.008)
     box('helmet_side_marker',(s*.110,-.028,1.751),(.013,.062,.032),accent,'head',.006)
-panel('helmet_rear_panel',(0,-.126,1.681),.103,.066,.010,rubber,'head',True)
-box('helmet_rear_light',(0,-.139,1.691),(.050,.003,.006),light,'head',.001)
+for z in [1.643,1.654,1.665]:
+    box('helmet_rear_vent',(0,-.115,z),(.075,.004,.004),rubber,'head',.001)
+box('helmet_rear_light',(0,-.125,1.695),(.056,.003,.004),light,'head',.001)
 for s in [-1,1]:
     points=[(s*.081,-.078,1.76),(s*.069,-.059,1.807),(s*.048,-.023,1.833),(s*.044,.026,1.826),(s*.068,.071,1.799)]
     for a,b in zip(points,points[1:]):tube('helmet_panel_seam',a,b,.0022,rubber,'head',6)
-    panel('helmet_rear_cheek',(s*.065,-.113,1.726),.055,.059,.012,armor,'head',True)
 # Recessed fasteners, suit seam piping, and equipment clasps give close views scale.
 for s in [-1,1]:
     for z in [1.25,1.455]:
@@ -414,6 +445,9 @@ box('healing_band',(.135,.417,1.275),(.124,.009,.041),accent,'hand_r',.006,group
 box('healing_cross_h',(.135,.424,1.29),(.063,.005,.017),white,'hand_r',.003,group='healing_item')
 box('healing_cross_v',(.135,.424,1.29),(.017,.005,.061),white,'hand_r',.003,group='healing_item')
 box('healing_lid',(.135,.38,1.374),(.094,.054,.025),gunmetal,'hand_r',.007,group='healing_item')
+for objects in weapon_parts.values():
+    for obj in objects:
+        for vertex in obj.data.vertices: vertex.co.z+=WEAPON_LIFT
 
 def consolidate_surfaces(objects):
     """Share one 1024x512 PBR atlas across cloth, ceramic, rubber and machined metals.
@@ -498,17 +532,19 @@ for name,obj in weapons.items(): obj.hide_render=name!='weapon_ar'
 bpy.context.view_layer.update()
 muzzle=bpy.data.objects.new('muzzle',None);bpy.context.collection.objects.link(muzzle)
 muzzle.parent=rig;muzzle.parent_type='BONE';muzzle.parent_bone='hand_r'
-muzzle.matrix_world.translation=(.135,.847,1.332)
+muzzle.matrix_world.translation=(.135,.847,1.332+WEAPON_LIFT)
 muzzle.empty_display_size=.025
 muzzle_shotgun=bpy.data.objects.new('muzzle_shotgun',None);bpy.context.collection.objects.link(muzzle_shotgun)
 muzzle_shotgun.parent=rig;muzzle_shotgun.parent_type='BONE';muzzle_shotgun.parent_bone='hand_r'
-muzzle_shotgun.matrix_world.translation=(.135,.924,1.332)
+muzzle_shotgun.matrix_world.translation=(.135,.924,1.332+WEAPON_LIFT)
 muzzle_shotgun.empty_display_size=.025
 
 # Keyed combat poses preserve the feet at the origin. Locomotion is driven by game physics.
 rig.animation_data_create()
 fps=30
 clips={}
+READY_ROTATIONS={'pelvis':(0,13,0),'spine':(-9,4,0),'chest':(-2,0,0),'neck':(3,0,0),'head':(4,-12,0)}
+READY_LOCATIONS={'pelvis':(0,-.050,-.012)}
 def begin(name,frames):
     action=bpy.data.actions.new(name)
     rig.animation_data.action=action
@@ -518,10 +554,49 @@ def begin(name,frames):
     return action
 def key(frame,rotations={},locations={}):
     for name,p in rig.pose.bones.items():
-        p.rotation_euler=tuple(math.radians(v) for v in rotations.get(name,(0,0,0)))
-        p.location=locations.get(name,(0,0,0))
+        base=READY_ROTATIONS.get(name,(0,0,0));extra=rotations.get(name,(0,0,0))
+        p.rotation_euler=tuple(math.radians(base[i]+extra[i]) for i in range(3))
+        base=READY_LOCATIONS.get(name,(0,0,0));extra=locations.get(name,(0,0,0))
+        p.location=tuple(base[i]+extra[i] for i in range(3))
         p.keyframe_insert('rotation_euler',frame=frame,group=name)
         p.keyframe_insert('location',frame=frame,group=name)
+
+def pose_chain(frame, upper_name, lower_name, end_name, target, bend, orientation=None):
+    """World-space two-bone solve baked into the original skeleton, with explicit end orientation."""
+    bpy.context.view_layer.update()
+    upper=rig.pose.bones[upper_name];lower=rig.pose.bones[lower_name];end_bone=rig.pose.bones[end_name]
+    origin=upper.head.copy();target=Vector(target);direction=target-origin
+    distance=min(direction.length,upper.length+lower.length-.0005);direction.normalize()
+    bend=Vector(bend);bend=(bend-direction*bend.dot(direction)).normalized()
+    along=(upper.length**2-lower.length**2+distance**2)/(2*distance)
+    joint=origin+direction*along+bend*math.sqrt(max(0,upper.length**2-along**2))
+    target=origin+direction*distance
+    for pose,start,finish in [(upper,origin,joint),(lower,joint,target)]:
+        rest=rig.data.bones[pose.name]
+        rotation=(rest.tail_local-rest.head_local).rotation_difference(finish-start)@rest.matrix_local.to_quaternion()
+        pose.matrix=Matrix.Translation(start)@rotation.to_matrix().to_4x4();bpy.context.view_layer.update()
+    rotation=orientation or rig.data.bones[end_name].matrix_local.to_quaternion()
+    end_bone.matrix=Matrix.Translation(target)@rotation.to_matrix().to_4x4()
+    for pose in [upper,lower,end_bone]:
+        pose.keyframe_insert('rotation_euler',frame=frame,group=pose.name)
+        pose.keyframe_insert('location',frame=frame,group=pose.name)
+
+def grip_weapon(frame, lift=0, kick=0, roll=0):
+    # The body can turn and compress while the trigger hand, supporting hand and
+    # rifle remain a connected assembly. Both hands retain their authored wrist angle.
+    target=Vector(bones['hand_r'][0])+Vector((0,-kick*.024,lift+kick*.011))
+    rotation=Matrix.Rotation(math.radians(kick*2.8),4,'X').to_quaternion()@Matrix.Rotation(math.radians(roll),4,'Y').to_quaternion()@rig.data.bones['hand_r'].matrix_local.to_quaternion()
+    pose_chain(frame,'upper_arm_r','forearm_r','hand_r',target,(.7,-.2,-1),rotation)
+    bpy.context.view_layer.update()
+    transform=rig.pose.bones['hand_r'].matrix@rig.data.bones['hand_r'].matrix_local.inverted()
+    target=transform@Vector(bones['hand_l'][0])
+    rotation=transform.to_quaternion()@rig.data.bones['hand_l'].matrix_local.to_quaternion()
+    pose_chain(frame,'upper_arm_l','forearm_l','hand_l',target,(-.65,.1,-1),rotation)
+
+def planted_stance(frame, spread=.175, stagger=.080):
+    for side,sign in [('r',1),('l',-1)]:
+        orientation=Matrix.Rotation(math.radians(-sign*5),4,'Z').to_quaternion()@rig.data.bones['foot_'+side].matrix_local.to_quaternion()
+        pose_chain(frame,'thigh_'+side,'shin_'+side,'foot_'+side,(sign*spread,-sign*stagger,.125),(0,1,0),orientation)
 
 def place_support_hand(frame, target, blend=1):
     """Bake a two-bone reach into the existing rig; no runtime IK or extra bones."""
@@ -558,8 +633,8 @@ def ground_feet(frame,clearance=.008):
 
 begin('Idle',90)
 for frame,phase in [(1,0),(23,1),(46,0),(68,-1),(91,0)]:
-    key(frame,{'thigh_r':(3,0,-1),'thigh_l':(1,0,1),'shin_r':(-5,0,0),'shin_l':(-4,0,0),'foot_r':(2,0,0),'foot_l':(3,0,0),'spine':(phase*.55,0,phase*.35),'chest':(-phase*.3,0,0),'head':(0,phase*.8,phase*.35),'upper_arm_r':(phase*.2,0,0),'upper_arm_l':(-phase*.2,0,0)}, {'chest':(0,phase*.002,0)})
-    ground_feet(frame,.006)
+    key(frame,{'spine':(phase*.55,0,phase*.35),'chest':(-phase*.3,0,0),'head':(0,phase*.8,phase*.35)}, {'chest':(0,phase*.002,0)})
+    planted_stance(frame);grip_weapon(frame,lift=phase*.0015)
 for name,frames,magnitude,bob in [('Walk',22,.78,.010),('Run',18,1,.019)]:
     begin(name,frames)
     # Contact, compression, support, toe-off, recovery, passing, swing and heel strike.
@@ -572,31 +647,41 @@ for name,frames,magnitude,bob in [('Walk',22,.78,.010),('Run',18,1,.019)]:
             position=(index/2+offset)%8;i=int(position);blend=position-i
             angles=[leg[i][a]*(1-blend)+leg[(i+1)%8][a]*blend for a in range(3)]
             for bone,angle in zip(['thigh','shin','foot'],angles):rots[bone+'_'+side]=(angle*magnitude,0,(-2 if side=='r' else 2) if bone=='thigh' else 0)
-        rots.update({'pelvis':(0,2*s,2.2*s),'spine':(-7 if name=='Run' else -4,-1.4*s,-1.6*s),
-                     'chest':(1,.5*s,-.6*s),'head':(2,-.5*s,0)})
+        rots.update({'pelvis':(0,-8+3*s,2.6*s),'spine':(-6 if name=='Run' else -3,-1.4*s,-1.6*s),
+                     'chest':(2,.5*s,-.6*s),'head':(3,-.5*s,0)})
         frame=1+frames*index/16
         key(frame,rots,{'pelvis':(0,abs(math.sin(phase*2))*bob,0)})
-        ground_feet(frame,.006 if name=='Walk' else .006+.016*max(0,math.sin(phase*2))**4)
+        ground_feet(frame,.006 if name=='Walk' else .006+.055*max(0,math.sin(phase*2))**4)
+        grip_weapon(frame,lift=(-.035 if name=='Run' else -.008)+.007*math.sin(phase*2))
 begin('Jump',30)
 for frame,amount in [(1,0),(6,1),(14,.5),(23,.8),(31,0)]:
     key(frame,{'thigh_r':(22*amount,0,-4*amount),'thigh_l':(16*amount,0,4*amount),'shin_r':(-42*amount,0,0),'shin_l':(-33*amount,0,0),'foot_r':(12*amount,0,0),'foot_l':(10*amount,0,0),'spine':(-5*amount,0,0),'head':(4*amount,0,0)})
+    grip_weapon(frame,lift=-.025*amount)
 begin('Aim',60)
 for frame,breath in [(1,0),(31,1),(61,0)]:
-    key(frame,{'thigh_r':(5,0,-1),'thigh_l':(5,0,1),'shin_r':(-10,0,0),'shin_l':(-10,0,0),'foot_r':(5,0,0),'foot_l':(5,0,0),'chest':(-3+breath*.2,0,0),'neck':(2,0,0),'head':(2,0,0),'upper_arm_r':(-3,0,0),'upper_arm_l':(-2,0,0)})
-    ground_feet(frame,.006)
+    key(frame,{'chest':(-2+breath*.2,0,0),'neck':(2,0,0),'head':(3,0,-2)}, {'pelvis':(0,-.008,-.004)})
+    planted_stance(frame,.18,.085);grip_weapon(frame,lift=.038+breath*.001)
 begin('Fire',6)
 for frame,kick in [(1,0),(2,1),(3,.42),(5,.08),(7,0)]:
     key(frame,{'chest':(kick*2,0,0),'upper_arm_r':(-kick*2.8,0,0),'forearm_r':(kick*1.2,0,0),'upper_arm_l':(-kick*1.8,0,0),'head':(-kick*.6,0,0)}, {'chest':(0,0,kick*.007)})
+    planted_stance(frame);grip_weapon(frame,kick=kick)
 begin('Reload',54)
 for frame,amount,target in [(1,0,None),(9,.65,(.095,.43,1.20)),(17,1,(.085,.40,1.125)),(25,1,(-.10,.18,1.045)),(33,1,(.065,.35,1.12)),(40,.9,(.10,.41,1.225)),(48,.3,(.095,.45,1.28)),(55,0,None)]:
     key(frame,{'upper_arm_r':(amount*6,amount*-5,amount*5),'forearm_r':(amount*-5,0,0),'hand_r':(0,amount*5,amount*-4),'head':(amount*7,0,amount*-2)})
-    if target is not None:place_support_hand(frame,target)
+    planted_stance(frame);grip_weapon(frame,lift=-amount*.035,roll=amount*-7)
+    if target is not None:
+        if frame!=25:target=Vector(target)+Vector((0,0,WEAPON_LIFT))
+        place_support_hand(frame,target)
 begin('Heal',90)
 for frame,amount,pulse in [(1,0,0),(16,1,0),(31,1,1),(46,1,0),(61,1,1),(76,.8,0),(91,0,0)]:
     key(frame,{'upper_arm_r':(amount*6,amount*-4,amount*-7),'forearm_r':(amount*-12,0,0),'hand_r':(amount*10,0,0),'head':(amount*8,0,0)})
+    planted_stance(frame);grip_weapon(frame,lift=-amount*.16,roll=amount*-8)
     if amount:
         bpy.context.view_layer.update();deform=rig.pose.bones['hand_r'].matrix@rig.data.bones['hand_r'].matrix_local.inverted()
-        place_support_hand(frame,deform@Vector((.082,.316,1.352-pulse*.012)),amount)
+        place_support_hand(frame,deform@Vector((.082,.316,1.352+WEAPON_LIFT-pulse*.012)),amount)
+
+locomotion=retarget_locomotion(rig,body,clips,SOURCE/'motion'/'cmu-09')
+(SOURCE/'scout-locomotion-review.json').write_text(json.dumps(locomotion,indent=2)+'\n')
 
 # Each action gets a separate named NLA track; exporter emits all eight clips.
 rig.animation_data.action=None
@@ -633,11 +718,15 @@ bpy.ops.object.select_all(action='DESELECT')
 for obj in [rig,body,muzzle,muzzle_shotgun,*weapons.values()]: obj.select_set(True)
 bpy.context.view_layer.objects.active=rig
 for obj in weapons.values(): obj.hide_render=False
-bpy.ops.export_scene.gltf(filepath=str(OUT/'scout.glb'),export_format='GLB',use_selection=True,export_yup=True,export_animations=True,export_animation_mode='NLA_TRACKS',export_nla_strips=True,export_skins=True,export_all_influences=False,export_apply=False,export_lights=False,export_cameras=False,export_morph=False)
+export_review=export_scout(OUT/'scout.glb',rig,clips,dict(export_format='GLB',use_selection=True,export_yup=True,export_animations=True,export_animation_mode='NLA_TRACKS',export_nla_strips=True,export_skins=True,export_all_influences=False,export_apply=False,export_lights=False,export_cameras=False,export_morph=False))
 for name,obj in weapons.items(): obj.hide_render=name!='weapon_ar'
+rig.animation_data.action=clips['Idle'][0]
+if clips['Idle'][0].slots:rig.animation_data.action_slot=clips['Idle'][0].slots[0]
+scene.frame_set(1);bpy.context.view_layer.update()
+bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'scout.blend'))
 scene.render.filepath=str(SOURCE/'scout-front.png');bpy.ops.render.render(write_still=True)
 camera.location=(2.5,-3.2,1.9);point_at(camera,(0,.01,.97))
 scene.render.filepath=str(SOURCE/'scout-back.png');bpy.ops.render.render(write_still=True)
-stats={'vertex_count':sum(len(o.data.vertices) for o in [body,*weapons.values()]),'triangles':sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in [body,*weapons.values()]),'bones':len(bones),'animations':list(clips),'units':'metres','forward':'glTF -Z','up':'glTF +Y','source':'Original Blender geometry and hand-authored keyframe animations; no external assets or motion capture.'}
+stats={'vertex_count':sum(len(o.data.vertices) for o in [body,*weapons.values()]),'triangles':sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in [body,*weapons.values()]),'bones':len(bones),'animations':list(clips),'units':'metres','forward':'glTF -Z','up':'glTF +Y','source':'Original Blender geometry, rig, surfaces and six authored actions. Walk/Run lower-body motion derives from CMU 09_01, frames 15–103; see motion/cmu-09/CMU-USAGE-NOTICE.md.','animation_export':export_review}
 (SOURCE/'scout-manifest.json').write_text(json.dumps(stats,indent=2)+'\n')
 print('KANNON_ASSET_COMPLETE '+json.dumps(stats))

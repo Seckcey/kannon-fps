@@ -1,6 +1,6 @@
 {
-  "vertex_count": 11247,
-  "triangles": 20868,
+  "vertex_count": 11268,
+  "triangles": 20922,
   "bones": 18,
   "animations": [
     "Idle",
@@ -15,5 +15,10 @@
   "units": "metres",
   "forward": "glTF -Z",
   "up": "glTF +Y",
-  "source": "Original Blender geometry and hand-authored keyframe animations; no external assets or motion capture."
+  "source": "Original Blender geometry, rig, surfaces and six authored actions. Walk/Run lower-body motion derives from CMU 09_01, frames 15\u2013103; see motion/cmu-09/CMU-USAGE-NOTICE.md.",
+  "animation_export": {
+    "locomotion_hz": 120,
+    "other_clips_hz": 30,
+    "method": "Only Walk/Run sampler buffers replaced; other clips and geometry retained from base export."
+  }
 }
