@@ -1,5 +1,7 @@
 # Coastal galleries
 
+This art pass is live through [PR #9](https://github.com/Seckcey/kannon-fps/pull/9), implementation `b73e3e5c11ff3d317a7e958f130d0795f9b254ab`. The [release record](RELEASE.md), [deployment receipt](verification/coastal-gallery-deployment.json) and [public rendered acceptance](verification/coastal-gallery-live.json) identify its separate source, hosting and browser checks.
+
 The coastal architecture replaces shallow exterior window boxes with structural stone arches, broad connected piers, 0.8 m upper galleries and half-metre floor setbacks. Closed lower shutters distinguish scenery from playable routes. Two lower wings sit farther south on masonry sea walls; their detailed returns face north into the arena.
 
 The main north approach and selected spawn views gain more legible architectural depth. The side approaches expose more coastline after the lower wings move. The south-facing platform view remains open water; this is a change to selected compositions, not an improvement in every direction. The scenery remains simpler than the illustrated concept.

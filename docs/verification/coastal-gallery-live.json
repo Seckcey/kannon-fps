@@ -1,0 +1,72 @@
+{
+  "status": "passed",
+  "revision": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+  "entry": "/assets/index-BG98Ud0A.js",
+  "scope": "Public HTTPS/WSS Balanced practice, native touch-emulated menu/Ready/fire/leave actions at 1280x720 CSS on desktop IAB. One intended QA profile, unranked temporary room. No clock/input/world-state injection. No physical-phone or desktop-pointer-lock claim.",
+  "checks": [
+    "Versioned deployed entry loaded",
+    "Arena rendered and Ready UI displayed",
+    "Native Ready displayed a 3-second countdown",
+    "AR fire consumed one round",
+    "All three AI rivals moved and fired",
+    "Damage visible in health/shield HUD",
+    "Explicit Leave match returned to menu"
+  ],
+  "modelResourceTiming": [
+    {
+      "decodedBodySize": 2679764,
+      "duration": 499.40000000596046,
+      "transferSize": 2680064,
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=scout-grounded-v1"
+    },
+    {
+      "decodedBodySize": 6620096,
+      "duration": 1001.5,
+      "transferSize": 6620396,
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-coastal-v1"
+    }
+  ],
+  "modelDigestEvidence": "Independent exact versioned public URL hashes in coastal-gallery-deployment.json; browser resource timing establishes one request and matching body size, not a separately hashed browser response.",
+  "observations": {
+    "snapshots": 532,
+    "truncated": [
+      true,
+      false
+    ],
+    "phases": [
+      "playing"
+    ],
+    "events": {
+      "damage": 69,
+      "shot": 98,
+      "elimination": 10,
+      "respawn": 11,
+      "heal": 1
+    },
+    "playerShots": 1,
+    "rivals": [
+      {
+        "id": "bot-scout",
+        "positions": 427,
+        "shots": 34
+      },
+      {
+        "id": "bot-moxie",
+        "positions": 347,
+        "shots": 47
+      },
+      {
+        "id": "bot-rook",
+        "positions": 341,
+        "shots": 16
+      }
+    ],
+    "note": "Counts describe sampled windows; the first network buffer was truncated."
+  },
+  "logs": [],
+  "explicitExit": true,
+  "images": [
+    "../art/coastal-public-ready.jpg",
+    "../art/coastal-public-gameplay.jpg"
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "status": "passed_read_only_public_qa_data_recheck",
+  "verifiedAtUtc": "2026-09-08T16:05:31.842267+00:00",
+  "revision": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+  "runtimeHealthy": true,
+  "restarts": 0,
+  "repositoryClean": true,
+  "environmentUnchanged": true,
+  "data": {
+    "integrity": "ok",
+    "schemaUnchanged": true,
+    "backupSha256": "7693623e15d14883bf3ee50d120c282e0a5cf1b609e508191669becc586bfd60",
+    "retainedBackups": 11,
+    "retainedBackupsUnchanged": true,
+    "tables": {
+      "profiles": {
+        "before": 10,
+        "after": 11,
+        "preserved": true
+      },
+      "crews": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "memberships": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "stats": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "matches": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "match_pairs": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      }
+    }
+  },
+  "exactExpectedCounts": {
+    "profiles": 11,
+    "crews": 1,
+    "memberships": 1,
+    "stats": 0,
+    "matches": 0,
+    "match_pairs": 0
+  },
+  "protected": {
+    "count": 65,
+    "canonicalJsonSha256": "ace161ce9e356041499e248d731faf29fc09be57930b33161e81e28e16a1cfba",
+    "sameAsImplementationPreflight": true,
+    "historicalChanges": []
+  },
+  "writes": false,
+  "scope": "Read-only verification; existing10 profile rows preserved, intended eleventh QA profile present by exact total; no new session or account created"
+}

@@ -1,0 +1,207 @@
+{
+  "status": "deployment_independently_verified",
+  "target": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+  "prior": "f13acf4fed71279241de1848230fae21d19af569",
+  "frozenSourceCandidate": "a9470f65c53653ed203ba95acb5930b219a86584",
+  "verifiedAtUtc": "2026-09-08T16:01:30.107115+00:00",
+  "ci": {
+    "url": "https://github.com/Seckcey/kannon-fps/actions/runs/34247872113",
+    "headSha": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "scriptSha256": "605d0434bb4538bddb1e8bf5e5698621fa9013667679e79f4a0ce625e2173bea",
+  "rawByteAdapterExitCode": 0,
+  "runtime": {
+    "revision": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+    "imageId": "sha256:f999dbc931da7350a57778d9211abe520843982a273bf53f405d33b2a702aad3",
+    "state": "running",
+    "health": "healthy",
+    "restarts": 0,
+    "port": "127.0.0.1:14350 -> 3001",
+    "user": "node",
+    "readOnly": true,
+    "privileged": false,
+    "memoryBytes": 536870912,
+    "nanoCpus": 1000000000,
+    "pidsLimit": 128,
+    "capDrop": [
+      "ALL"
+    ],
+    "security": [
+      "no-new-privileges:true"
+    ]
+  },
+  "backup": {
+    "bytes": 77824,
+    "sha256": "7693623e15d14883bf3ee50d120c282e0a5cf1b609e508191669becc586bfd60",
+    "integrity": "ok",
+    "counts": {
+      "profiles": 10,
+      "crews": 1,
+      "memberships": 1,
+      "stats": 0,
+      "matches": 0,
+      "match_pairs": 0
+    },
+    "priorBackupsRetained": 11
+  },
+  "data": {
+    "integrity": "ok",
+    "schemaUnchanged": true,
+    "backupSha256": "7693623e15d14883bf3ee50d120c282e0a5cf1b609e508191669becc586bfd60",
+    "retainedBackups": 11,
+    "retainedBackupsUnchanged": true,
+    "tables": {
+      "profiles": {
+        "before": 10,
+        "after": 10,
+        "preserved": true
+      },
+      "crews": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "memberships": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "stats": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "matches": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "match_pairs": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      }
+    }
+  },
+  "protected": {
+    "count": 65,
+    "beforeAfterIndependentExactlyEqual": true,
+    "canonicalJsonSha256": "ace161ce9e356041499e248d731faf29fc09be57930b33161e81e28e16a1cfba",
+    "historicalBaseline": {
+      "note": "Pre-existing restart-count drift between the previous closeout and this deployment; deployment baseline itself stayed exactly unchanged.",
+      "changedRows": 1,
+      "identityStateHealthPreserved": true
+    }
+  },
+  "priorImageTagsRetained": 21,
+  "repository": {
+    "cleanMain": true,
+    "headAndOriginMain": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab"
+  },
+  "environmentOnlyVersionChanged": true,
+  "originAndPublicHttpWsWssSmoke": "passed",
+  "httpAssets": [
+    {
+      "origin": "http://127.0.0.1:14350",
+      "revision": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+      "models": [
+        {
+          "model": "scout",
+          "bytes": 2679764,
+          "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+        },
+        {
+          "model": "environment",
+          "bytes": 6620096,
+          "sha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b"
+        }
+      ]
+    },
+    {
+      "origin": "https://kpop.8westventures.com",
+      "revision": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+      "models": [
+        {
+          "model": "scout",
+          "bytes": 2679764,
+          "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+        },
+        {
+          "model": "environment",
+          "bytes": 6620096,
+          "sha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b"
+        }
+      ]
+    }
+  ],
+  "exactVersionedHttpAssetsAndBundle": [
+    {
+      "origin": "http://127.0.0.1:14350",
+      "status": "ok",
+      "revision": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+      "models": [
+        {
+          "name": "scout",
+          "path": "/models/scout.glb?v=scout-grounded-v1",
+          "bytes": 2679764,
+          "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+        },
+        {
+          "name": "environment",
+          "path": "/models/environment.glb?v=sunbreak-coastal-v1",
+          "bytes": 6620096,
+          "sha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b"
+        }
+      ],
+      "bundle": {
+        "path": "/assets/index-BG98Ud0A.js",
+        "bytes": 234999,
+        "sha256": "d884c4f425eb7433f2aae457adadbbddc6e5b6b36847486494808b6a5a0f2b04"
+      }
+    },
+    {
+      "origin": "https://kpop.8westventures.com",
+      "status": "ok",
+      "revision": "b73e3e5c11ff3d317a7e958f130d0795f9b254ab",
+      "models": [
+        {
+          "name": "scout",
+          "path": "/models/scout.glb?v=scout-grounded-v1",
+          "bytes": 2679764,
+          "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+        },
+        {
+          "name": "environment",
+          "path": "/models/environment.glb?v=sunbreak-coastal-v1",
+          "bytes": 6620096,
+          "sha256": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b"
+        }
+      ],
+      "bundle": {
+        "path": "/assets/index-BG98Ud0A.js",
+        "bytes": 234999,
+        "sha256": "d884c4f425eb7433f2aae457adadbbddc6e5b6b36847486494808b6a5a0f2b04"
+      }
+    }
+  ],
+  "models": {
+    "scout": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+    "environment": "43ff13d3f2d8376bf03e1a2a84c94e6b0804bfe8998c31f4a304c0d993e64f9b"
+  },
+  "limits": [
+    "No new profiles or game sessions created by deployment/postflight checks.",
+    "Rendered public acceptance is performed separately by the coordinating release owner.",
+    "No claim of physical-phone, two-household or WAN latency acceptance."
+  ],
+  "rawByteAdapterSha256": "44dd08eb1a4616eb839d8b23d0e773b4da15e107a4ee416e0a7637eb841bd21b",
+  "sourceScope": {
+    "changedPaths": 46,
+    "sourceBlobPins": 13,
+    "mergedTreeEqualsApprovedSource": true,
+    "gameplayRuntimeInfrastructureAndScoutUnchanged": true,
+    "assetLoaderEnvironmentUrlOnly": true,
+    "environmentVersion": "sunbreak-coastal-v1"
+  }
+}
