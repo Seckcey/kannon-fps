@@ -115,6 +115,7 @@ export class GameView {
     this.audio = new GameAudio(this.settings.volume);
     this.setSettings(this.settings);
     this.resizeObserver = new ResizeObserver(this.resize); this.resizeObserver.observe(container);
+    document.addEventListener('visibilitychange', this.visibilityChange);
     this.resize();
     this.raf = requestAnimationFrame(this.frame);
   }
@@ -187,6 +188,12 @@ export class GameView {
     if (this.disposed) return;
     event.preventDefault(); this.options.input.setPaused(true);
     this.options.onError?.('Your graphics were interrupted. Rejoin the match to restore your view.');
+  };
+
+  private visibilityChange = () => {
+    // Time spent in another app is not a slow GPU frame and must not lower graphics quality.
+    this.lastFrame = performance.now();
+    this.frames = 0; this.statsTime = 0; this.slowTime = 0;
   };
 
   private receiveSnapshot(snapshot: WorldSnapshot, now: number) {
@@ -344,6 +351,7 @@ export class GameView {
 
   dispose() {
     this.disposed = true; cancelAnimationFrame(this.raf); this.resizeObserver.disconnect(); this.audio.dispose();
+    document.removeEventListener('visibilitychange', this.visibilityChange);
     for (const entry of this.players.values()) { entry.model.dispose(); entry.label.remove(); }
     this.players.clear(); this.world.dispose();
     disposeCharacterResources();

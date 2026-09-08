@@ -18,11 +18,16 @@ interface Runtime {
   input: InputFrame; receivedAt: number; lastFire: number; jumpDown: boolean; fireDown: boolean;
   reloadSlot: 1 | 2 | null; presses: Partial<Record<PressAction, PendingPress>>;
 }
+interface ShotResult {
+  attacker: PlayerState; event: Extract<GameEvent, { type: 'shot' }>;
+  damage: Array<{ target: PlayerState; amount: number }>;
+}
 export interface EngineOptions { practice?: boolean; now?: number; onEvent?: (event: GameEvent) => void; onFinish?: (reason: string) => void }
 export class MatchEngine {
   id = randomUUID(); phase: Phase = 'waiting'; tick = 0; startedAt = 0; countdownUntil = 0; endedAt = 0;
   winnerIds: string[] = []; readonly players = new Map<string, PlayerState>(); readonly runtime = new Map<string, Runtime>();
   readonly practice: boolean; private readonly onEvent: (event: GameEvent) => void; private readonly onFinish: (reason: string) => void;
+  private resolvingShots = false;
   constructor(options: EngineOptions = {}) { this.practice = options.practice ?? false; this.onEvent = options.onEvent ?? (() => {}); this.onFinish = options.onFinish ?? (() => {}); }
   addPlayer(profile: Profile, now = Date.now(), bot = false): PlayerState {
     const existing = this.players.get(profile.id);
@@ -37,7 +42,15 @@ export class MatchEngine {
   }
   removePlayer(id: string) { this.players.delete(id); this.runtime.delete(id); }
   setConnected(id: string, connected: boolean) {
-    const player = this.players.get(id); if (player) { player.connected = connected; if (!connected) { const rt = this.runtime.get(id)!; rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: player.pitch, slot: player.slot }; rt.receivedAt = 0; rt.presses = {}; player.healingUntil = 0; player.reloadingUntil = 0; } }
+    const player = this.players.get(id);
+    if (!player) return;
+    player.connected = connected;
+    if (!connected) {
+      const rt = this.runtime.get(id)!;
+      rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: player.pitch, slot: player.slot };
+      rt.receivedAt = 0; rt.presses = {}; rt.jumpDown = false; rt.fireDown = false; rt.reloadSlot = null;
+      player.vx = 0; player.vy = 0; player.vz = 0; player.healingUntil = 0; player.reloadingUntil = 0;
+    }
   }
   acceptInput(id: string, input: InputFrame, now = Date.now()): boolean {
     const runtime = this.runtime.get(id); if (!runtime || input.seq <= runtime.input.seq) return false;
@@ -68,6 +81,7 @@ export class MatchEngine {
     if (this.phase === 'countdown' && now >= this.countdownUntil) { this.phase = 'playing'; this.startedAt = now; }
     if (this.phase !== 'playing') return;
     if (now - this.startedAt >= RULES.matchSeconds * 1000) { this.finish('Time is up.', now); return; }
+    const shots: Array<{ player: PlayerState; input: InputFrame }> = [];
     for (const player of this.players.values()) {
       if (player.health <= 0) { if (now >= player.respawnAt && player.connected) this.respawn(player, now); continue; }
       if (!player.connected || player.bot) continue;
@@ -104,11 +118,18 @@ export class MatchEngine {
         const ammo = fireInput.slot === 1 ? player.ammoAR : player.ammoShotgun;
         const cadence = fireInput.slot === 1 ? RULES.arCadenceMs : RULES.shotgunCadenceMs;
         if (ammo === 0) { if (player.slot === fireInput.slot) this.reload(player, rt, now); }
-        else if (now - rt.lastFire >= cadence) { rt.lastFire = now; if (fireInput.slot === 1) player.ammoAR--; else player.ammoShotgun--; this.fire(player, fireInput, now); }
+        else if (now - rt.lastFire >= cadence) {
+          rt.lastFire = now; if (fireInput.slot === 1) player.ammoAR--; else player.ammoShotgun--;
+          shots.push({ player, input: fireInput });
+        }
       }
       rt.fireDown = input.fire;
-      if ((this.phase as Phase) === 'finished') break;
     }
+    // Every player moves and every valid shot is accepted before tracing. Damage
+    // is applied only after all traces, so map insertion/join order cannot stop
+    // the other player from firing a valid shot in the same simulation tick.
+    const results = shots.map(({ player, input }) => this.traceShot(player, input, now));
+    this.resolveShots(results, now);
   }
   private reload(player: PlayerState, rt: Runtime, now: number) {
     const slot = player.slot;
@@ -140,7 +161,7 @@ export class MatchEngine {
     }
     return { to: add(origin, scale(direction, distance)), target, distance };
   }
-  private fire(player: PlayerState, input: InputFrame, now: number) {
+  private traceShot(player: PlayerState, input: InputFrame, now: number): ShotResult {
     const slot = input.slot as 1 | 2;
     const eye = cameraPosition(player, input.yaw, input.pitch, input.aim);
     const viewDirection = directionFromAngles(input.yaw, input.pitch);
@@ -157,8 +178,35 @@ export class MatchEngine {
         const existing = damage.get(hit.target.id); damage.set(hit.target.id, { target: hit.target, amount: (existing?.amount ?? 0) + amount });
       }
     }
-    this.onEvent({ type: 'shot', playerId: player.id, slot, from: muzzle, to: displayTo, hit: didHit, at: now });
-    for (const { target, amount } of damage.values()) this.damage(target, player, Math.round(amount), now);
+    return {
+      attacker: player, event: { type: 'shot', playerId: player.id, slot, from: muzzle, to: displayTo, hit: didHit, at: now },
+      damage: [...damage.values()].map(({ target, amount }) => ({ target, amount: Math.round(amount) })),
+    };
+  }
+  private resolveShots(results: ShotResult[], now: number) {
+    const targets = new Map<string, { target: PlayerState; contributors: Array<{ attacker: PlayerState; amount: number }> }>();
+    for (const result of results) {
+      this.onEvent(result.event);
+      for (const hit of result.damage) {
+        const entry = targets.get(hit.target.id) ?? { target: hit.target, contributors: [] };
+        entry.contributors.push({ attacker: result.attacker, amount: hit.amount }); targets.set(hit.target.id, entry);
+      }
+    }
+    // Equal simultaneous contributions use a per-tick hash rather than join
+    // order; the highest damage contribution receives elimination credit.
+    const tieBreak = (targetId: string, attackerId: string) => {
+      let hash = 2166136261;
+      for (const character of `${this.tick}:${targetId}:${attackerId}`) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+      return hash >>> 0;
+    };
+    this.resolvingShots = true;
+    try {
+      for (const { target, contributors } of targets.values()) {
+        contributors.sort((a, b) => b.amount - a.amount || tieBreak(target.id, a.attacker.id) - tieBreak(target.id, b.attacker.id) || a.attacker.id.localeCompare(b.attacker.id));
+        this.damage(target, contributors[0]!.attacker, contributors.reduce((total, hit) => total + hit.amount, 0), now);
+      }
+    } finally { this.resolvingShots = false; }
+    if ([...this.players.values()].some((player) => player.kills >= RULES.scoreLimit)) this.finish('Elimination limit reached.', now);
   }
   damage(target: PlayerState, attacker: PlayerState, amount: number, now: number): void {
     if (target.health <= 0 || target.protectedUntil > now) return;
@@ -169,7 +217,7 @@ export class MatchEngine {
     if (target.health <= 0) {
       target.deaths++; attacker.kills++; target.respawnAt = now + RULES.respawnMs; target.reloadingUntil = 0; target.vx = 0; target.vz = 0;
       this.onEvent({ type: 'elimination', playerId: target.id, attackerId: attacker.id, at: now });
-      if (attacker.kills >= RULES.scoreLimit) this.finish('Elimination limit reached.', now);
+      if (attacker.kills >= RULES.scoreLimit && !this.resolvingShots) this.finish('Elimination limit reached.', now);
     }
   }
   snapshot(now = Date.now()): WorldSnapshot {

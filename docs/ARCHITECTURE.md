@@ -2,13 +2,19 @@
 
 React/Vite provide menus and HUD. The Three.js gameplay bundle loads when a match starts. Input, animation, and rendering run outside React; HUD updates follow snapshots. Local movement prediction corrects to authoritative state; opponents interpolate buffered snapshots.
 
-One Node process serves static assets, HTTP API, and WebSocket matches. The simulation runs at 30 Hz, snapshots at 15 Hz. Rooms live in memory; profiles, crew membership, ratings, and history persist in SQLite with WAL and foreign keys. Restarting ends live rooms but preserves committed data. This is a single-process design for an invited community, not horizontal scaling.
+One Node process serves static assets, HTTP API, and WebSocket matches. The simulation targets 30 Hz, snapshots 15 Hz; actual cadence depends on host scheduling and load. Rooms live in memory; profiles, crew membership, ratings, and history persist in SQLite with WAL and foreign keys. Restarting ends live rooms but preserves committed data. This is a single-process design for an invited community, not horizontal scaling.
 
 ## Rules and networking
 
 `shared/protocol.ts` defines messages/rules, `shared/map.ts` solid obstacles/spawns, and `shared/physics.ts` movement, gravity, rays, and shoulder camera clipping. Clients send sequenced input intentions, never accepted positions, damage, or scores. The server validates bounds, sequence, cadence, ammo, reload, healing, line of sight, and protection. Brief action edges survive packet batching; stale input and disconnect clear actions.
 
 Hits start at the shoulder view and are checked from the muzzle, preventing a visible camera from firing through cover in front of the weapon. Hit testing uses current server positions; there is no rewind/lag compensation yet. Movement time steps are capped against teleporting, so substantial event-loop stalls can slow movement while the wall-clock timer continues.
+
+Within one simulation tick, all players finish movement and valid shots are accepted before any damage resolves. Mutual lethal hits can trade eliminations, and simultaneous score-limit hits can draw. If multiple attackers damage the same victim in that tick, the largest contribution receives elimination credit; equal contributions use a deterministic per-tick tie-break independent of join order. Weapon statistics remain unchanged.
+
+The browser detects eight seconds of silence while visible and retires stalled sockets without waiting for TCP closure. Coming back online retries automatically. Foreground return probes a quiet connection for up to 1.5 seconds before replacement, allowing a healthy connection to retain the host role. Authentication/session-replacement closures never trigger automatic takeover. Explicitly leaving retires the socket so delayed room messages cannot reopen the match.
+
+Disconnected players have a 30-second recovery window. Movement, actions, and published velocities clear on disconnect. The first connected player becomes host when the former host is absent, including when an entire room returns from a connection loss. Rejoining a finished room replays its cached result explanation without writing ratings again; a rematch clears that cached result.
 
 ## Identity and privacy
 
@@ -31,6 +37,8 @@ Results, both periods, and opponent counters commit atomically. Unique match IDs
 ## Art
 
 Blender exports the scout, armature, weapons, and eight hand-keyed clips. GLTFLoader and SkeletonUtils instantiate individual skinned players; the accent material distinguishes them. AnimationMixer blends locomotion and upper-body actions. Server state determines whether an action succeeds. The arena uses batched geometry aligned to shared collision and a generated limestone material. Automatic/Low graphics reduce rendering cost; actual phone performance still requires measurement.
+
+Touch controls retain ownership of individual fingers, release interrupted captures, and reset joystick/Aim/Sprint displays when input is cancelled. Background or paused callbacks cannot reactivate movement; players resume with a fresh gesture. Background suspension resets frame timing rather than counting as sustained poor GPU performance.
 
 ## Primary references
 

@@ -193,3 +193,76 @@ test('batched shot cannot bypass a reload by switching slots, and held AR still 
   engine.acceptInput('a', input({ seq: 5, fire: true, slot: 1 }), 3550); engine.step(3550, 0); assert.equal(a.ammoAR, 18);
   engine.acceptInput('a', input({ seq: 6, fire: true, slot: 1 }), 3700); engine.step(3700, 0); assert.equal(a.ammoAR, 17);
 });
+test('disconnect immediately clears published velocity and actions, and reconnect waits for fresh input', () => {
+  const { engine, a } = playing(); Object.assign(a, { x: -28, y: 0, z: 12 });
+  engine.acceptInput('a', input({ seq: 100, moveX: 1, jump: true, fire: true }), 3100); engine.step(3100, 1 / 30);
+  assert.ok(a.vx > 0 && a.vy > 0); const ammo = a.ammoAR;
+  engine.acceptInput('a', input({ seq: 101, moveZ: 1, reload: true }), 3110);
+  engine.setConnected('a', false);
+  assert.deepEqual([a.vx, a.vy, a.vz, a.healingUntil, a.reloadingUntil], [0, 0, 0, 0, 0]);
+  const position = { x: a.x, y: a.y, z: a.z }; engine.step(3400, 1 / 30);
+  assert.deepEqual({ x: a.x, y: a.y, z: a.z }, position); assert.equal(a.ammoAR, ammo);
+  engine.addPlayer({ id: 'a', name: 'Dad', color: '#fff' }, 3500); engine.step(3500, 1 / 30);
+  assert.equal(a.vx, 0); assert.equal(a.vz, 0); assert.equal(a.ammoAR, ammo); assert.equal(a.reloadingUntil, 0);
+  assert.equal(engine.acceptInput('a', input({ seq: 1, moveX: -1 }), 3600), true); engine.step(3600, 1 / 30); assert.ok(a.vx < 0);
+});
+function simultaneousDuel(order: string[], kills = 0) {
+  const events: GameEvent[] = []; let finishCount = 0;
+  const engine = new MatchEngine({ onEvent: event => events.push(event), onFinish: () => { finishCount++; } });
+  for (const id of order) engine.addPlayer({ id, name: id, color: '#fff' }, 0);
+  engine.start(0); engine.step(3000, 0);
+  const a = engine.players.get('a')!, b = engine.players.get('b')!;
+  Object.assign(a, { x: -28, y: 0, z: 12, health: 24, shield: 0, protectedUntil: 0, kills });
+  Object.assign(b, { x: -28, y: 0, z: -2, health: 24, shield: 0, protectedUntil: 0, kills });
+  engine.acceptInput('a', input({ fire: true, ...aimAt(a, b) }), 3100);
+  engine.acceptInput('b', input({ fire: true, ...aimAt(b, a) }), 3100);
+  engine.step(3100, 0);
+  return { engine, a, b, events, finishCount };
+}
+test('mutual lethal shots resolve together independently of join order', () => {
+  for (const order of [['a', 'b'], ['b', 'a']]) {
+    const { engine, a, b, events } = simultaneousDuel(order);
+    assert.deepEqual([a.health, b.health, a.kills, b.kills, a.deaths, b.deaths], [0, 0, 1, 1, 1, 1]);
+    assert.equal(a.ammoAR, 29); assert.equal(b.ammoAR, 29); assert.equal(engine.phase, 'playing');
+    assert.equal(events.filter(event => event.type === 'shot' && event.hit).length, 2);
+  }
+});
+test('simultaneous score-limit eliminations finish once as a draw', () => {
+  for (const order of [['a', 'b'], ['b', 'a']]) {
+    const { engine, a, b, finishCount } = simultaneousDuel(order, RULES.scoreLimit - 1);
+    assert.equal(a.kills, RULES.scoreLimit); assert.equal(b.kills, RULES.scoreLimit);
+    assert.equal(engine.phase, 'finished'); assert.deepEqual(new Set(engine.winnerIds), new Set(['a', 'b']));
+    assert.equal(engine.endedAt, 3100);
+    assert.equal(finishCount, 1, 'A simultaneous score-limit draw must persist/announce only one result.');
+  }
+});
+test('same-tick shots still respect wall occlusion and shotgun range', () => {
+  const { engine, a, b, events } = playing();
+  Object.assign(a, { x: -28, y: 0, z: 0 }); Object.assign(b, { x: -10, y: 0, z: 0 });
+  engine.acceptInput('a', input({ fire: true, ...aimAt(a, b) }), 3100);
+  engine.acceptInput('b', input({ fire: true, ...aimAt(b, a) }), 3100); engine.step(3100, 0);
+  assert.equal(a.shield, 50); assert.equal(b.shield, 50); assert.equal(a.ammoAR, 29); assert.equal(b.ammoAR, 29);
+  assert.ok(events.filter(event => event.type === 'shot').every(event => event.type === 'shot' && !event.hit));
+  Object.assign(a, { x: -28, z: 26 }); Object.assign(b, { x: -28, z: -26 });
+  engine.acceptInput('a', input({ seq: 2, fire: true, slot: 2, ...aimAt(a, b) }), 4100);
+  engine.acceptInput('b', input({ seq: 2, fire: true, slot: 2, ...aimAt(b, a) }), 4100); engine.step(4100, 0);
+  assert.equal(a.shield, 50); assert.equal(b.shield, 50); assert.equal(a.ammoShotgun, 5); assert.equal(b.ammoShotgun, 5);
+});
+test('simultaneous contributions grant one elimination without using join order to break equal damage', () => {
+  const credited: string[] = [];
+  for (const order of [['a', 'b', 'c'], ['b', 'a', 'c']]) {
+    const engine = new MatchEngine();
+    for (const id of order) engine.addPlayer({ id, name: id, color: '#fff' }, 0);
+    engine.start(0); engine.step(3000, 0);
+    const a = engine.players.get('a')!, b = engine.players.get('b')!, c = engine.players.get('c')!;
+    Object.assign(a, { x: -29, y: 0, z: 12, protectedUntil: 0 });
+    Object.assign(b, { x: -25.5, y: 0, z: 12, protectedUntil: 0 });
+    Object.assign(c, { x: -28, y: 0, z: -2, health: 24, shield: 0, protectedUntil: 0 });
+    engine.acceptInput('a', input({ fire: true, ...aimAt(a, c) }), 3100);
+    engine.acceptInput('b', input({ fire: true, ...aimAt(b, c) }), 3100); engine.step(3100, 0);
+    assert.equal(c.health, 0); assert.equal(c.deaths, 1); assert.equal(a.kills + b.kills, 1);
+    assert.equal(a.ammoAR, 29); assert.equal(b.ammoAR, 29);
+    credited.push(a.kills ? 'a' : 'b');
+  }
+  assert.equal(credited[0], credited[1]);
+});
