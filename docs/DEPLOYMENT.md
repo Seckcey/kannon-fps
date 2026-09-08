@@ -1,6 +1,42 @@
 # Deployment
 
-No public host, domain, paid service, or remote production instance was provisioned. Two-household acceptance remains pending.
+The first playable build is deployed on the user-authorized Coastline Hyper-V Linux VM. The repository is at `/srv/8west/apps/kannon-fps`, with a dedicated `kannon-arena` Compose project. Other applications and their storage are unchanged. No paid service was provisioned.
+
+## Cloudflare route
+
+Configure the existing host's Cloudflare Tunnel with:
+
+| Field | Value |
+| --- | --- |
+| Public hostname | `kpop.8westventures.com` |
+| Service type | **HTTP** |
+| Service URL | **`127.0.0.1:14350`** |
+
+The complete origin is `http://127.0.0.1:14350`. Cloudflared runs in the host network. The game intentionally binds only to loopback; no inbound firewall opening is needed for this tunnel layout. Forward `/`, `/api`, assets, and `/ws` to the same service. The production override explicitly allows the browser origin `https://kpop.8westventures.com`.
+
+After routing, players use **https://kpop.8westventures.com** without an explicit port. Cloudflare configuration was left for the user as requested; public HTTPS/WSS and two-household acceptance remain pending.
+
+## Coastline operation
+
+The ignored root `.env` contains the exact `KANNON_VERSION` source commit, `PORT=14350`, and `BIND_ADDRESS=127.0.0.1`. Always pass it explicitly because the Compose files live in `deploy/`:
+
+```sh
+ssh coastline
+cd /srv/8west/apps/kannon-fps
+docker compose --env-file .env -p kannon-arena -f deploy/compose.yml -f deploy/coastline.compose.yml ps
+curl --fail http://127.0.0.1:14350/health
+```
+
+For a tested update, fast-forward `main`, set `KANNON_VERSION` in `.env` to the full `git rev-parse HEAD` value, then run:
+
+```sh
+docker compose --env-file .env -p kannon-arena -f deploy/compose.yml -f deploy/coastline.compose.yml build
+docker compose --env-file .env -p kannon-arena -f deploy/compose.yml -f deploy/coastline.compose.yml up -d --no-build
+```
+
+Verify `/health` reports that revision and the container becomes healthy. Updates end active matches. Retain the previous image for rollback and keep the existing `kannon-arena_arena-data` volume. To roll back code, restore the previous checkout and `KANNON_VERSION`, then run the same scoped `up` command with the retained image. Do not restore or remove player data just to revert code.
+
+The container has a 512 MiB memory limit, one CPU, 128 PIDs, rotating logs, and `unless-stopped` restart policy. No capacity beyond the measured two-player acceptance run is claimed.
 
 ## One server and origin
 

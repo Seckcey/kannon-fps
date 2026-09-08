@@ -5,6 +5,12 @@ client on port 3001. Deploy one instance with persistent storage. Active rooms l
 in memory; restarting the process ends those rooms. Player profiles, crews, and
 recorded match results live in the database on the data volume.
 
+The deployed Coastline instance uses `http://127.0.0.1:14350` for the Cloudflare
+Tunnel hostname `kpop.8westventures.com`. See [Coastline operation](../docs/DEPLOYMENT.md#coastline-operation)
+for the exact project and environment-file commands. The generic commands below
+create the default local deployment; use the documented Coastline override when
+operating that host.
+
 ## Run the container
 
 From the repository root, with Docker Engine running:

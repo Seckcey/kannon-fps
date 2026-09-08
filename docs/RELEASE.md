@@ -12,6 +12,7 @@ This release implements the agreed private third-person phone/desktop game, fixe
 - Playwright Edge rendered tests pass at 1536×1024 desktop, 852×393 touch landscape, and 390×844 touch portrait with no application console errors/warnings. The in-app browser acquisition timed out, so Playwright used the installed Edge browser.
 - Actual UI path verified: menu → private room → two players → host start/countdown → desktop and touch gameplay → leave/incomplete results → crew creation/standings → practice range.
 - Real pointer lock, WASD movement, fire, reload, jump, slots, touch joystick, touch fire/reload, Escape, and quit/re-enter canvas disposal were exercised. Quick-tap loss, spawn-slot reset, and explicit pointer unlock were repaired during testing.
+- Two isolated browser sessions completed a real 300-second ranked draw. Both players received exactly one match, zero wins, unchanged 1,000 rating, and one history entry in monthly/all-time standings. Rematch reset the timer, health, shield, slot, ammunition, and healing; leaving it added no result. No browser or asset errors occurred.
 
 ## Visual comparison
 
@@ -19,11 +20,19 @@ Compared generated lobby/gameplay references with rendered screenshots using dir
 
 The desktop title initially wrapped into four lines; its sizing and explicit line spans were corrected. The real menu keeps the reference's required copy, control order, and visual direction. Icons are native SVG and controls are real HTML. The standalone illustration differs in pose framing from the concept. Gameplay uses free-look Blender models and lighter real-time geometry rather than the illustrated environment; those detail differences remain intentional and are not described as pixel-identical final art.
 
-## Deployment target
+Hosted screenshots: [loaded lobby](art/verified-lobby.png), [desktop gameplay](art/verified-gameplay-desktop.png), and [emulated touch landscape](art/verified-gameplay-touch.png). The lobby screenshot waits for the illustration request to finish. The heading was also corrected to refresh its crew member count and use singular/plural wording; focused two-browser verification passed for one member, two members after joining, and monthly standings.
 
-The user authorized Coastline hosting. Read-only preflight confirmed the expected Hyper-V Linux VM, available capacity, a writable `/srv/8west/apps`, no existing Kannon checkout, and unused port 14350. Cloudflared runs in the host network, so the intended origin is `http://127.0.0.1:14350` for `kpop.8westventures.com`.
+## Coastline deployment
 
-Deploy only a dedicated `kannon-arena` Compose project and data volume. Existing applications and stopped migration sources are protected. Live commit, health, CI, container and postflight results are recorded after deployment.
+The user authorized Coastline hosting. Read-only preflight confirmed the expected Hyper-V Linux VM, available capacity, a writable `/srv/8west/apps`, no existing Kannon checkout, and unused port 14350. The dedicated game now runs there. Cloudflared runs in the host network, so the verified origin is `http://127.0.0.1:14350` for `kpop.8westventures.com`.
+
+- Implementation [PR #1](https://github.com/Seckcey/kannon-fps/pull/1) merged as `4c6c4e0e95a0f9a3daecc021e5ea6ca199b82999`; [main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34186643146) passed, including a real Docker image and production smoke run. The release also includes the subsequent crew member-count display correction and these operational notes.
+- Linux Node 24 container build and production HTTP/WebSocket smoke passed. `/health` reports the deployed source revision; the hosted Blender GLB SHA-256 matches the verified export above. The configured public HTTPS Origin passed the WebSocket origin check; anonymous room creation was rejected.
+- The full desktop/touch UI acceptance flow passed against the actual Coastline container through SSH forwarding, with nine check groups and no browser errors/warnings. This verifies the hosted origin, not Cloudflare's public route. Two temporary QA profiles and their private test crew are isolated from future family crews; no ranked scores were awarded on this hosted run.
+- Container `kannon-arena-arena-1` is healthy, runs as `node`, binds only `127.0.0.1:14350`, and uses its own `kannon-arena_arena-data` volume and network. Read-only root, dropped capabilities, no-new-privileges, 512 MiB/one CPU/128 PID limits, and rotating logs were inspected.
+- All 65 existing containers retained identical IDs, states, and restart counts after deployment. Their sorted identity/state/restart SHA-256 remained `a421ed263d2c48117954d226f2db42d4bfa863e0b2b2e8df324f15c5fc688e4a`. Protected HTTP checks matched preflight, with no newly unhealthy services. Intentionally stopped migration sources remained stopped.
+
+See [deployment instructions](DEPLOYMENT.md) for the exact Cloudflare fields, scoped update commands, and backup/rollback procedures. Recurring off-host backups are not configured.
 
 ## Remaining acceptance
 
