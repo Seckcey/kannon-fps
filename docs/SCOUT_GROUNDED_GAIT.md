@@ -2,7 +2,7 @@
 
 This release refines the existing Blender character's Walk and Run clips. Feet slide less through their near-ground phases, the repeating stride has a smaller velocity discontinuity, and unstable knee direction near a straight captured leg is corrected. The model remains stylized. This is a bounded animation improvement, not Fortnite parity or a launch-quality claim.
 
-The source checkout contains the checked candidate. Deployment and the exact running revision are recorded in [Release verification](RELEASE.md) and [/health](https://kpop.8westventures.com/health).
+Status: deployed September 8, 2026 at [kpop.8westventures.com](https://kpop.8westventures.com). Source `30d1f9d88e4f663f46d474fcefd55e44de990941` merged through [PR #7](https://github.com/Seckcey/kannon-fps/pull/7) as `c0d7f12957123b105c7e961c8cb8b1ba160cfab6` with an identical whole tree and [successful main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34232619677). [Deployment](verification/scout-grounded-deployment.json) and [public rendered practice](verification/scout-grounded-live.json) passed. [/health](https://kpop.8westventures.com/health) identifies the running build, including later documentation closeouts.
 
 ## Implementation
 

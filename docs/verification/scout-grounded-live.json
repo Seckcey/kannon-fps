@@ -1,0 +1,97 @@
+{
+  "status": "passed",
+  "checkedAtUtc": "2026-09-08T13:36:35.949Z",
+  "targetRevision": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+  "healthBefore": {
+    "revision": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+    "status": "ok"
+  },
+  "healthAfter": {
+    "revision": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+    "status": "ok"
+  },
+  "url": "https://kpop.8westventures.com",
+  "browser": "Installed Edge via Playwright",
+  "viewport": "1536x864 desktop",
+  "quality": "auto",
+  "checks": [
+    "Exact supplied runtime revision before and after acceptance",
+    "Exact built index-BjSaAVpj.js entry bundle before practice/profile writes",
+    "Every observed AR/shotgun has valid one/nine trace metadata; any observed damage metadata is internally consistent",
+    "Public HTTPS entry and real WSS Balanced practice",
+    "Three authoritative AI rivals each moved and fired",
+    "One browser GET per exact scout-grounded-v1/sunbreak-v3 GLB URL with pinned SHA-256",
+    "Explicit exit returns to the menu without reconnecting"
+  ],
+  "practice": {
+    "difficulty": "normal",
+    "botCount": 3,
+    "moved": 3,
+    "fired": 3,
+    "ranked": false
+  },
+  "builtClient": {
+    "path": "/assets/index-BjSaAVpj.js",
+    "responses": [
+      {
+        "url": "https://kpop.8westventures.com/assets/index-BjSaAVpj.js",
+        "status": 200
+      }
+    ]
+  },
+  "combatMetadata": {
+    "shots": {
+      "total": 23,
+      "ar": 23,
+      "shotgun": 0
+    },
+    "traces": {
+      "total": 23,
+      "world": 10,
+      "player": 12,
+      "range": 1,
+      "protectedPlayer": 0,
+      "shieldedPlayer": 6
+    },
+    "damage": {
+      "events": 12,
+      "shieldDamage": 100,
+      "healthDamage": 170,
+      "shieldBreaks": 2
+    }
+  },
+  "modelResponses": [
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "status": 200,
+      "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=scout-grounded-v1",
+      "status": 200,
+      "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+    }
+  ],
+  "modelRequests": [
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=scout-grounded-v1",
+      "method": "GET"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "method": "GET"
+    }
+  ],
+  "sockets": [
+    "wss://kpop.8westventures.com/ws"
+  ],
+  "appErrors": [],
+  "externalAnalyticsCspWarnings": [
+    "public: Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+  ],
+  "warnings": [
+    "public: THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ],
+  "screenshot": "docs/art/scout-grounded-live.png",
+  "limits": "One desktop browser through Cloudflare. No physical-phone, two-household, network-adversity, full-round, or performance claim. Shotgun and damage observations depend on natural practice behavior; this short run does not require either and reports their actual counts. Metadata checks use received server events only, without injecting inputs or state. This creates one QA browser profile and an unranked temporary practice; no crew or rating writes. Known Cloudflare beacon CSP diagnostics are reported separately and are not suppressed as general domain errors."
+}

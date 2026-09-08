@@ -1,0 +1,148 @@
+{
+  "status": "deployment_independently_verified",
+  "target": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+  "prior": "8cb6b064d09351dc2c4e6a5b6ed81660d47af3ce",
+  "frozenSourceCandidate": "30d1f9d88e4f663f46d474fcefd55e44de990941",
+  "verifiedAtUtc": "2026-09-08T13:37:29.281327+00:00",
+  "ci": {
+    "url": "https://github.com/Seckcey/kannon-fps/actions/runs/34232619677",
+    "headSha": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "scriptSha256": "4322897e233994c76795abf7707a175b18bc4bd3f5d382afa76619af9f6569f0",
+  "rawByteAdapterExitCode": 0,
+  "runtime": {
+    "revision": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+    "imageId": "sha256:f29738c78be037a320b6481a857b56ec81705c742129dd6ad99f94ff48a1d3d0",
+    "state": "running",
+    "health": "healthy",
+    "restarts": 0,
+    "port": "127.0.0.1:14350 -> 3001",
+    "user": "node",
+    "readOnly": true,
+    "privileged": false,
+    "memoryBytes": 536870912,
+    "nanoCpus": 1000000000,
+    "pidsLimit": 128,
+    "capDrop": [
+      "ALL"
+    ],
+    "security": [
+      "no-new-privileges:true"
+    ]
+  },
+  "backup": {
+    "bytes": 77824,
+    "sha256": "6009aa2e71861fe80b3480e1dcd9cab5dae0ba5682f57f9ed2d25f90c42d0687",
+    "integrity": "ok",
+    "counts": {
+      "profiles": 8,
+      "crews": 1,
+      "memberships": 1,
+      "stats": 0,
+      "matches": 0,
+      "match_pairs": 0
+    },
+    "priorBackupsRetained": 7
+  },
+  "data": {
+    "integrity": "ok",
+    "schemaUnchanged": true,
+    "backupSha256": "6009aa2e71861fe80b3480e1dcd9cab5dae0ba5682f57f9ed2d25f90c42d0687",
+    "retainedBackups": 7,
+    "retainedBackupsUnchanged": true,
+    "tables": {
+      "profiles": {
+        "before": 8,
+        "after": 9,
+        "preserved": true
+      },
+      "crews": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "memberships": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "stats": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "matches": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "match_pairs": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      }
+    }
+  },
+  "protected": {
+    "count": 65,
+    "beforeAfterIndependentExactlyEqual": true,
+    "canonicalJsonSha256": "ffa2b2a790e2cc1a68682f6d5998d8d7da70582087cb0f4cb04553ad4ee713f7",
+    "historicalBaseline": {
+      "note": "Pre-existing restart-count drift between the previous closeout and this deployment; deployment baseline itself stayed exactly unchanged.",
+      "changedRows": 1,
+      "identityStateHealthPreserved": true
+    }
+  },
+  "priorImageTagsRetained": 16,
+  "repository": {
+    "cleanMain": true,
+    "headAndOriginMain": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6"
+  },
+  "environmentOnlyVersionChanged": true,
+  "originAndPublicHttpWsWssSmoke": "passed",
+  "httpAssets": [
+    {
+      "origin": "http://127.0.0.1:14350",
+      "revision": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+      "models": [
+        {
+          "model": "scout",
+          "bytes": 2679764,
+          "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+        },
+        {
+          "model": "environment",
+          "bytes": 6698732,
+          "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+        }
+      ]
+    },
+    {
+      "origin": "https://kpop.8westventures.com",
+      "revision": "c0d7f12957123b105c7e961c8cb8b1ba160cfab6",
+      "models": [
+        {
+          "model": "scout",
+          "bytes": 2679764,
+          "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+        },
+        {
+          "model": "environment",
+          "bytes": 6698732,
+          "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+        }
+      ]
+    }
+  ],
+  "models": {
+    "scout": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+    "environment": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+  },
+  "limits": [
+    "No new profiles or game sessions created by deployment/postflight checks.",
+    "Rendered public acceptance is performed separately by the coordinating release owner.",
+    "No claim of physical-phone, two-household or WAN latency acceptance."
+  ]
+}
