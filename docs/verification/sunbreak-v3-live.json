@@ -1,0 +1,65 @@
+{
+  "status": "passed",
+  "checkedAtUtc": "2026-09-08T09:36:49.265Z",
+  "targetRevision": "884e24d422e1666a5caccc90a642da7b58de594d",
+  "healthBefore": {
+    "revision": "884e24d422e1666a5caccc90a642da7b58de594d",
+    "status": "ok"
+  },
+  "healthAfter": {
+    "revision": "884e24d422e1666a5caccc90a642da7b58de594d",
+    "status": "ok"
+  },
+  "url": "https://kpop.8westventures.com",
+  "browser": "Installed Edge via Playwright",
+  "viewport": "1536x864 desktop",
+  "quality": "auto",
+  "checks": [
+    "Exact supplied runtime revision before and after acceptance",
+    "Public HTTPS entry and real WSS Balanced practice",
+    "Three authoritative AI rivals each moved and fired",
+    "One browser fetch per sunbreak-v3 GLB with exact pinned SHA-256",
+    "Explicit exit returns to the menu without reconnecting"
+  ],
+  "practice": {
+    "difficulty": "normal",
+    "botCount": 3,
+    "moved": 3,
+    "fired": 3,
+    "ranked": false
+  },
+  "modelResponses": [
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "status": 200,
+      "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=sunbreak-v3",
+      "status": 200,
+      "sha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e"
+    }
+  ],
+  "modelRequests": [
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=sunbreak-v3",
+      "method": "GET"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "method": "GET"
+    }
+  ],
+  "sockets": [
+    "wss://kpop.8westventures.com/ws"
+  ],
+  "appErrors": [],
+  "externalAnalyticsCspWarnings": [
+    "public: Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+  ],
+  "warnings": [
+    "public: THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ],
+  "screenshot": "../art/sunbreak-v3-live.png",
+  "limits": "One desktop browser through Cloudflare. No physical-phone, two-household, network-adversity, full-round, or performance claim. This creates one QA browser profile and an unranked temporary practice; no crew or rating writes. Known Cloudflare beacon CSP diagnostics are reported separately and are not suppressed as general domain errors."
+}

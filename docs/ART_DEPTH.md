@@ -2,6 +2,8 @@
 
 This development pass builds on the shipped Sunbreak environment and active practice release. It improves composition and character presentation without changing the arena's collision footprint, accepted camera, loadout, movement speeds or match rules.
 
+The upgrade shipped through [PR #4](https://github.com/Seckcey/kannon-fps/pull/4) as implementation `884e24d422e1666a5caccc90a642da7b58de594d`. Coastline and public HTTPS/WSS practice acceptance passed with the exact model hashes below. [RELEASE.md](RELEASE.md) records CI, deployment, data preservation and the live capture; `/health` identifies the running revision, including later documentation closeouts.
+
 ## Visible changes
 
 Asymmetric exterior terraces frame the center of the arena. Closed service shutters distinguish the playable buildings from low tactical cover, while shallow frames and fitted metal corners add visible construction depth. Taller scenery remains outside the playable boundary. Connected mature tree crowns replace scattered branch clumps; six rooted perimeter planters replace isolated leaf fragments. Teal metal uses restrained nondirectional wear, and shallow facade surfaces avoid coplanar overlap.

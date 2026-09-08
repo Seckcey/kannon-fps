@@ -1,0 +1,167 @@
+{
+  "independentReadOnlyCloseout": "passed",
+  "ci": "https://github.com/Seckcey/kannon-fps/actions/runs/34209569042",
+  "summary": {
+    "status": "deployment_checks_passed",
+    "verifiedAtUtc": "2026-09-08T09:34:56.174265+00:00",
+    "target": "884e24d422e1666a5caccc90a642da7b58de594d",
+    "prior": "cba200e93a5e6a58025df64016ae10c43ef64d26",
+    "backup": "/app/data/backups/pre-art-cba200e9-to-884e24d422e1-20260908T093446Z.sqlite",
+    "scoutSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+    "environmentSha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d",
+    "protectedContainers": 65,
+    "priorImagesAndBackupsRetained": true,
+    "auditDirectory": "/tmp/kannon-art-release.884e24d422e1.cxK3Ih",
+    "limits": "Exact-commit CI and rendered acceptance are supplied by the coordinating release owner; this script verifies deployment/data/HTTP/WSS/isolation and does not claim physical-phone acceptance."
+  },
+  "runtime": {
+    "id": "5549155ba16b8cd7c51330d49738615af889d8c3137ca27e6c96fc27f841a371",
+    "imageId": "sha256:f34c82ec24347b7bb94fb5b4ca77ab390ceb6a0f431920855a77f672ca05cb06",
+    "image": "kannon-arena:884e24d422e1666a5caccc90a642da7b58de594d",
+    "user": "node",
+    "state": "running",
+    "restarts": 0,
+    "oomKilled": false,
+    "revision": "884e24d422e1666a5caccc90a642da7b58de594d",
+    "project": "kannon-arena",
+    "service": "arena",
+    "readOnly": true,
+    "privileged": false,
+    "init": true,
+    "memory": 536870912,
+    "nanoCpus": 1000000000,
+    "pidsLimit": 128,
+    "capDrop": [
+      "ALL"
+    ],
+    "security": [
+      "no-new-privileges:true"
+    ],
+    "portBindings": {
+      "3001/tcp": [
+        {
+          "HostIp": "127.0.0.1",
+          "HostPort": "14350"
+        }
+      ]
+    },
+    "tmpfs": {
+      "/tmp": "size=64m,mode=1777"
+    },
+    "restartPolicy": "unless-stopped",
+    "logging": {
+      "Config": {
+        "max-file": "3",
+        "max-size": "10m"
+      },
+      "Type": "json-file"
+    },
+    "networkMode": "kannon-arena_default",
+    "health": "healthy",
+    "mounts": [
+      {
+        "type": "volume",
+        "name": "kannon-arena_arena-data",
+        "destination": "/app/data",
+        "rw": true
+      }
+    ]
+  },
+  "repo": {
+    "path": "/srv/8west/apps/kannon-fps",
+    "branch": "main",
+    "clean": true,
+    "revision": "884e24d422e1666a5caccc90a642da7b58de594d"
+  },
+  "dataReceipt": {
+    "integrity": "ok",
+    "schemaUnchanged": true,
+    "backupSha256": "beefad6c64c7aff130c3fa1fe23a3a4549c845985dcabc232e459819eca8ecaf",
+    "retainedBackups": 1,
+    "retainedBackupsUnchanged": true,
+    "tables": {
+      "profiles": {
+        "before": 5,
+        "after": 5,
+        "preserved": true
+      },
+      "crews": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "memberships": {
+        "before": 1,
+        "after": 1,
+        "preserved": true
+      },
+      "stats": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "matches": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      },
+      "match_pairs": {
+        "before": 0,
+        "after": 0,
+        "preserved": true
+      }
+    }
+  },
+  "protected": {
+    "count": 65,
+    "unchanged": true,
+    "canonicalJsonSha256": "86562feef47a2443194deb3aa377f160b23d17040cdddecc37a03118425435a0"
+  },
+  "httpAssets": [
+    {
+      "origin": "http://127.0.0.1:14350",
+      "revision": "884e24d422e1666a5caccc90a642da7b58de594d",
+      "models": [
+        {
+          "model": "scout",
+          "bytes": 2720096,
+          "sha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e"
+        },
+        {
+          "model": "environment",
+          "bytes": 6698732,
+          "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+        }
+      ]
+    },
+    {
+      "origin": "https://kpop.8westventures.com",
+      "revision": "884e24d422e1666a5caccc90a642da7b58de594d",
+      "models": [
+        {
+          "model": "scout",
+          "bytes": 2720096,
+          "sha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e"
+        },
+        {
+          "model": "environment",
+          "bytes": 6698732,
+          "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+        }
+      ]
+    }
+  ],
+  "executedScriptSha256": "6042fbd7f2d216726057c68dbd181b627ee21a9c284cb4a4fa8c17d976daf7f0",
+  "wrapperOutcome": {
+    "exitCode": 127,
+    "phase": "after deployment_checks_passed",
+    "cause": "PowerShell text pipeline appended a standalone carriage return after the successful script.",
+    "reconciliation": "Independent read-only receipt/runtime/health/protected-container/retained-image checks passed; no redeploy.",
+    "futureDispatch": "Node spawnSync with the script file as raw Buffer stdin; do not use PowerShell string piping."
+  },
+  "preflightRepairs": [
+    "Parenthesized three Docker json/index label expressions.",
+    "Used checked curl for Cloudflare client compatibility while preserving status/TLS/size/timeout/revision/hash checks.",
+    "Handled missing optional Health map entries as null; healthy Kannon remains required."
+  ]
+}
