@@ -1,5 +1,15 @@
 # Release verification
 
+## Scout motion and platform practice — candidate accepted
+
+Implementation `25f31bada5062bf69ad8008c690e0a2a9f18ca71` in [PR #6](https://github.com/Seckcey/kannon-fps/pull/6) fits the Blender scout's shoulder plates and upper back, corrects reload/heal movement prediction, makes gait follow resolved visible travel, and lets practice rivals use the existing south stairs/platform. Shared physics, collision, weapons, scoring and human-only private matches are unchanged.
+
+All 133 tests, asset checks, TypeScript and build passed, with [successful candidate CI](https://github.com/Seckcey/kannon-fps/actions/runs/34222571450). [Sixteen controlled renderer cases](verification/scout-motion-renderer.json), [ten desktop/touch input groups](verification/scout-motion-ui.json), [fixed-budget eight-moving-character A/B/A](verification/scout-motion-performance.json) and [isolated Linux platform/multiplayer/practice tests](verification/scout-motion-linux.json) provide separate acceptance. Median desktop FPS was 53/54/53; no speedup claim follows. The [driver-warning review](verification/scout-motion-driver-review.json) reproduced the warning in the unchanged baseline and confirmed both builds rendered through re-entry/rotation without application errors. Its driver-internal cause remains unresolved.
+
+The scout is 2,672,192 bytes, 21,658 vertices, 20,114 triangles, 18 bones and eight unchanged clips; SHA-256 `077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0`. The environment remains `6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d`. [Source identity](verification/scout-motion-source.json) reconciles the frozen pre-commit checks and built client with the implementation commit.
+
+See [the motion-polish record](SCOUT_MOTION_POLISH.md) for methods and limits. Deployment and public rendered verification remain pending. The preceding combat release below remains the running implementation. Physical phones, two-household play, foot slip/loop velocity seams and absence of server rewind remain open limits; these checks do not establish Fortnite parity.
+
 ## Combat feedback — deployed September 8, 2026
 
 This change makes accepted shots easier to read: every shotgun pellet has its own contact effect, shield and armor responses reflect accepted damage, and respawn feedback waits for the player's new living position. Fixed-capacity render batches bound combat effects during sustained firing. The Blender scout retains its mapped surface detail during impact pulses. Weapon balance, movement, collision, scoring and both shipped models are unchanged.
