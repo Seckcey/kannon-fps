@@ -45,6 +45,69 @@
         "playbackAtTarget": 1,
         "referenceSpeed": 6.5,
         "note": "Playback is actual speed divided by this clip reference, including aiming and slow analog movement. Runtime turns use world-up and preserve upper orientation."
+      },
+      "postRetarget": {
+        "method": "Post-warp periodic seam and baseline-labelled rolling support with stable-plane two-bone ankle IK",
+        "samplesHz": 240,
+        "samples": 129,
+        "seamWindowSeconds": 0.016666666666666666,
+        "constantPelvisDropMetres": 0.04,
+        "planeStabilization": {
+          "radiusSeconds": 0.0625,
+          "sigmaSeconds": 0.025,
+          "confidenceBendMetres": [
+            0.02,
+            0.06
+          ],
+          "neighborWeight": "Original bend height squared"
+        },
+        "horizontalFadeOutsideMaskSeconds": 0.03,
+        "reachMarginMetres": 0.005,
+        "fixedBaselineContactHeight": 0.04,
+        "fullSupportHeight": 0.04,
+        "maximumHorizontalCorrection": 0.08,
+        "flightBlend": "Cubic Hermite preserving support-edge correction value and derivative",
+        "contactWindows": {
+          "l": [
+            {
+              "firstSample": 108,
+              "samples": 36,
+              "seconds": 0.15,
+              "rollingSupportVertexChanges": 4,
+              "windowCorrectionScale": 0.9750397205352783,
+              "reachIncludesFlightBlend": true,
+              "maximumHorizontalCorrectionMetres": 0.06554229293953807
+            }
+          ],
+          "r": [
+            {
+              "firstSample": 46,
+              "samples": 34,
+              "seconds": 0.14166666666666666,
+              "rollingSupportVertexChanges": 5,
+              "windowCorrectionScale": 1,
+              "reachIncludesFlightBlend": true,
+              "maximumHorizontalCorrectionMetres": 0.04612252137585247
+            }
+          ]
+        },
+        "postSeamFootHeightProfilePreserved": true,
+        "maximumAnkleVerticalErrorMetres": 3.2782554626464844e-07,
+        "reachLimitedSamples": 0,
+        "maximumUnreachableMetres": 0,
+        "unreachableFallback": "Nearest fixed-length sphere projection; occurrence count and errors reported",
+        "maximumRequestedToSolvedMetres": 4.425419093643873e-07,
+        "maximumFeasibleToSolvedMetres": 4.425419093643873e-07,
+        "minimumKneeHeightMetres": 0.04480340689237125,
+        "minimumOriginalKneeHeightMetres": 0.0005388613443058208,
+        "maximumLocalRotationStepRadians": {
+          "thigh": 0.0946825340643789,
+          "shin": 0.12810058998632223
+        },
+        "maximumAnkleCorrectionMetres": 0.0767840451933352,
+        "sampledFloorMin": 0.006423920392990112,
+        "unchangedUpperBodyLocalCurves": true,
+        "limits": "Actual 120 Hz GLB skin, seam velocities and controller transitions require independent validation. Residual reverse foot-roll drift and acceleration remain measurable; this is not a perfect foot-locking guarantee."
       }
     },
     {
@@ -81,6 +144,69 @@
         "playbackAtTarget": 1,
         "referenceSpeed": 9,
         "note": "Playback is actual speed divided by this clip reference, including aiming and slow analog movement. Runtime turns use world-up and preserve upper orientation."
+      },
+      "postRetarget": {
+        "method": "Post-warp periodic seam and baseline-labelled rolling support with stable-plane two-bone ankle IK",
+        "samplesHz": 240,
+        "samples": 113,
+        "seamWindowSeconds": 0.016666666666666666,
+        "constantPelvisDropMetres": 0.04,
+        "planeStabilization": {
+          "radiusSeconds": 0.0625,
+          "sigmaSeconds": 0.025,
+          "confidenceBendMetres": [
+            0.02,
+            0.06
+          ],
+          "neighborWeight": "Original bend height squared"
+        },
+        "horizontalFadeOutsideMaskSeconds": 0.03,
+        "reachMarginMetres": 0.005,
+        "fixedBaselineContactHeight": 0.04,
+        "fullSupportHeight": 0.04,
+        "maximumHorizontalCorrection": 0.08,
+        "flightBlend": "Cubic Hermite preserving support-edge correction value and derivative",
+        "contactWindows": {
+          "l": [
+            {
+              "firstSample": 97,
+              "samples": 27,
+              "seconds": 0.1125,
+              "rollingSupportVertexChanges": 5,
+              "windowCorrectionScale": 0.7532992859340908,
+              "reachIncludesFlightBlend": true,
+              "maximumHorizontalCorrectionMetres": 0.0567332960425366
+            }
+          ],
+          "r": [
+            {
+              "firstSample": 43,
+              "samples": 25,
+              "seconds": 0.10416666666666667,
+              "rollingSupportVertexChanges": 6,
+              "windowCorrectionScale": 1,
+              "reachIncludesFlightBlend": true,
+              "maximumHorizontalCorrectionMetres": 0.04933385670091641
+            }
+          ]
+        },
+        "postSeamFootHeightProfilePreserved": true,
+        "maximumAnkleVerticalErrorMetres": 4.172325134277344e-07,
+        "reachLimitedSamples": 0,
+        "maximumUnreachableMetres": 0,
+        "unreachableFallback": "Nearest fixed-length sphere projection; occurrence count and errors reported",
+        "maximumRequestedToSolvedMetres": 5.721444387658831e-07,
+        "maximumFeasibleToSolvedMetres": 5.721444387658831e-07,
+        "minimumKneeHeightMetres": 0.044803551050529355,
+        "minimumOriginalKneeHeightMetres": 0.0005755298948190141,
+        "maximumLocalRotationStepRadians": {
+          "thigh": 0.12475482137150574,
+          "shin": 0.16055178136235015
+        },
+        "maximumAnkleCorrectionMetres": 0.06941653573943724,
+        "sampledFloorMin": 0.006480960175395012,
+        "unchangedUpperBodyLocalCurves": true,
+        "limits": "Actual 120 Hz GLB skin, seam velocities and controller transitions require independent validation. Residual reverse foot-roll drift and acceleration remain measurable; this is not a perfect foot-locking guarantee."
       }
     }
   ]

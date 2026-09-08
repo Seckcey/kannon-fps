@@ -1,0 +1,721 @@
+{
+  "schemaVersion": 1,
+  "title": "Independent final exported-skin gait review",
+  "scope": "CPU exported GLB skin comparison, not a visual, input, controller-crossfade, phone or FPS claim. Real Three LoopRepeat is sampled for two cycles plus one seam-neighbor sample. Poses use 480 samples/clip-second; physical velocities are scaled analytically by signed playback rate.",
+  "status": "correctness-passed-with-four-proposed-improvement-failures",
+  "automaticProposedAcceptance": false,
+  "tools": {
+    "independentValidator": {
+      "file": "grounded-gait-acceptance-v2.mjs",
+      "sha256": "7ad8b0aa0e5160e1f857eacc7f7edd419a9d19f097cc6413b2614455b9584af5",
+      "version": "scoped-representation-v2",
+      "previousFrozenSha256": "4b8ecb6f2c683473d50bdc0ad250d7fd034d3d175bbb5e5ba77005abf53701fd",
+      "previousFileUnchanged": true
+    },
+    "witnessSampler": {
+      "file": "grounded-gait-witness-detail.mjs",
+      "sha256": "0e0421285914012dec3e5844bf311de3db4980fa888d710ad623cf8832fe4855"
+    },
+    "nodeVersion": "v26.4.0"
+  },
+  "inputs": {
+    "baseline": {
+      "sha256": "077be3e5789c136e1607e11cf7d9a243ee4324c44bc92877a3522d706e57bfd0",
+      "bytes": 2672192,
+      "role": "shipped Scout before this Walk/Run edit"
+    },
+    "candidate": {
+      "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+      "bytes": 2679764,
+      "role": "final full-source generation"
+    },
+    "candidate10": {
+      "sha256": "156d01bfe24f256f02688f393bc27e3212b261a1600b2c1985c335c222fe2292",
+      "role": "previous fast rebake"
+    }
+  },
+  "immutableInputProof": {
+    "savedBaselineHashStillMatchesInput": true,
+    "savedFinalHashStillMatchesInput": true,
+    "mainScoutStillMatchesBaseline": true,
+    "isolatedWorktreeScoutStillMatchesFinal": true,
+    "qaDidNotWriteSourceOrRepositoryAssets": true
+  },
+  "preservation": {
+    "rawWholeAssetExact": false,
+    "rawNonGaitStructureExact": false,
+    "scopedRepresentationEquivalent": true,
+    "strictUnchanged": "Decoded POSITION, NORMAL, JOINTS, WEIGHTS, remaining attributes, node hierarchy and rig rest data except the two named muzzle transforms below, inverse bind matrices, skin assignment, materials, encoded image bytes and other scene data remain exact. Six other clips retain exact sampler interpolation and Float32 input/output values.",
+    "uv": {
+      "attribute": "TEXCOORD_0",
+      "sameMetadataCountAndType": true,
+      "tolerance": 1e-7,
+      "changedScalarComponents": 42,
+      "maximumAbsoluteError": 5.960464477539063e-8,
+      "primitives": [
+        {
+          "mesh": "tailored_torso",
+          "primitive": 0,
+          "attribute": "TEXCOORD_0",
+          "metadataExact": true,
+          "changedComponents": 34,
+          "maximumAbsoluteError": 5.960464477539063e-8,
+          "tolerance": 1e-7,
+          "equivalent": true
+        },
+        {
+          "mesh": "tailored_torso",
+          "primitive": 1,
+          "attribute": "TEXCOORD_0",
+          "metadataExact": true,
+          "changedComponents": 3,
+          "maximumAbsoluteError": 5.960464477539063e-8,
+          "tolerance": 1e-7,
+          "equivalent": true
+        },
+        {
+          "mesh": "Cube.084",
+          "primitive": 0,
+          "attribute": "TEXCOORD_0",
+          "metadataExact": true,
+          "changedComponents": 4,
+          "maximumAbsoluteError": 5.960464477539063e-8,
+          "tolerance": 1e-7,
+          "equivalent": true
+        },
+        {
+          "mesh": "Cube.113",
+          "primitive": 0,
+          "attribute": "TEXCOORD_0",
+          "metadataExact": true,
+          "changedComponents": 1,
+          "maximumAbsoluteError": 5.960464477539063e-8,
+          "tolerance": 1e-7,
+          "equivalent": true
+        }
+      ]
+    },
+    "triangleRepresentation": [
+      {
+        "mesh": "tailored_torso",
+        "primitive": 0,
+        "attribute": "indices",
+        "metadataExact": true,
+        "triangles": 15894,
+        "equivalent": true,
+        "rule": "Exact oriented triangle multiset; only triangle order and cyclic start may differ. No reversed winding, added or removed triangles."
+      }
+    ],
+    "muzzle": {
+      "names": [
+        "muzzle",
+        "muzzle_shotgun"
+      ],
+      "tolerance": 0.000001,
+      "maximumTransformComponentError": 2.384185791015625e-7
+    },
+    "sixOtherClips": [
+      {
+        "name": "Idle",
+        "exactSamplerAndValues": true
+      },
+      {
+        "name": "Jump",
+        "exactSamplerAndValues": true
+      },
+      {
+        "name": "Aim",
+        "exactSamplerAndValues": true
+      },
+      {
+        "name": "Fire",
+        "exactSamplerAndValues": true
+      },
+      {
+        "name": "Reload",
+        "exactSamplerAndValues": true
+      },
+      {
+        "name": "Heal",
+        "exactSamplerAndValues": true
+      }
+    ],
+    "nonLegLocalGaitTracks": [
+      {
+        "clip": "Walk",
+        "tracks": 33,
+        "rawExact": false,
+        "sameWithinReportedFloat32Tolerance": true,
+        "inputMaximumError": 0,
+        "outputMaximumError": 3.5762786865234375e-7
+      },
+      {
+        "clip": "Run",
+        "tracks": 33,
+        "rawExact": false,
+        "sameWithinReportedFloat32Tolerance": true,
+        "inputMaximumError": 0,
+        "outputMaximumError": 2.788738342474062e-7
+      }
+    ],
+    "candidate10ToFullGeneration": [
+      {
+        "clip": "Walk",
+        "trackCount": 54,
+        "sameTargetSet": true,
+        "exactAllTracks": false,
+        "maxInputError": 0,
+        "maxOutputError": 2.384185791015625e-7,
+        "allTrackCountsAndInterpolationUnchanged": true
+      },
+      {
+        "clip": "Run",
+        "trackCount": 54,
+        "sameTargetSet": true,
+        "exactAllTracks": false,
+        "maxInputError": 0,
+        "maxOutputError": 1.7881393432617188e-7,
+        "allTrackCountsAndInterpolationUnchanged": true
+      }
+    ],
+    "geometryCaveat": "Representation equivalence is not byte identity. Triangle equivalence permits order and cyclic starting index only, preserving oriented multiplicity and rejecting reversal; only Float32 VEC2 TEXCOORD_0 noise has the 1e-7 tolerance."
+  },
+  "checks": {
+    "cases": 8,
+    "soleVertices": {
+      "left": 1315,
+      "right": 1318
+    },
+    "correctness": {
+      "status": "passed",
+      "checks": 64
+    },
+    "proposedImprovement": {
+      "checks": 120,
+      "passed": 116,
+      "failed": 4,
+      "status": "not-demonstrated"
+    },
+    "gates": {
+      "seamVelocityReductionAtLeast": 0.5,
+      "legacy20mmP95ReductionAtLeast": 0.25,
+      "legacy40mmP95MaximumRegression": 0.05,
+      "fixedStanceP95ReductionAtLeast": 0.2,
+      "maximumBaselineStanceCoverageLoss": 0.05,
+      "persistentStanceMaxDriftToleranceMetres": 0.002,
+      "note": "These are explicit proposed improvement gates, not existing product requirements. Baseline/self comparison must not satisfy improvement gates. Exact rolling-contact drift is not claimed zero."
+    }
+  },
+  "referenceSpeedMetrics": [
+    {
+      "case": "Walk/forward/6.5",
+      "baseline": {
+        "floor": 0.006525702422409906,
+        "slip20P95": 1.750258877313698,
+        "slip40P95": 2.742854555372694,
+        "repeatVelocitySeamMax": 2.541586413826117
+      },
+      "candidate": {
+        "floor": 0.006537855137769144,
+        "slip20P95": 0.11011865912966495,
+        "slip40P95": 0.4413536760314163,
+        "repeatVelocitySeamMax": 0.9517020597109528,
+        "authoredEndpointPositionClosure": 0
+      },
+      "jointDiagnostics": {
+        "scope": "Diagnostic comparison at 480 samples per clip second. Finite-difference accelerations are not an established perceptual acceptance limit.",
+        "baseline": [
+          {
+            "bone": "shin_l",
+            "maxLocalAngularSpeedRadPerSec": 28.446857209671112,
+            "maxWorldStepMetres": 0.026623798598064814,
+            "maxWorldAccelerationMps2": 2024.3967908970626
+          },
+          {
+            "bone": "shin_r",
+            "maxLocalAngularSpeedRadPerSec": 26.206581022837565,
+            "maxWorldStepMetres": 0.02665349978633672,
+            "maxWorldAccelerationMps2": 1614.6695212365776
+          }
+        ],
+        "candidate": [
+          {
+            "bone": "shin_l",
+            "maxLocalAngularSpeedRadPerSec": 30.220020463188465,
+            "maxWorldStepMetres": 0.027283187370450046,
+            "maxWorldAccelerationMps2": 3954.9995530469946
+          },
+          {
+            "bone": "shin_r",
+            "maxLocalAngularSpeedRadPerSec": 24.392608503686546,
+            "maxWorldStepMetres": 0.02690574356839598,
+            "maxWorldAccelerationMps2": 2518.947060747362
+          }
+        ]
+      }
+    },
+    {
+      "case": "Run/forward/9",
+      "baseline": {
+        "floor": 0.00631046611738223,
+        "slip20P95": 2.715297399429333,
+        "slip40P95": 5.979219617369218,
+        "repeatVelocitySeamMax": 3.287000435398106
+      },
+      "candidate": {
+        "floor": 0.006461623015914908,
+        "slip20P95": 0.6632661768771445,
+        "slip40P95": 1.7155928841979233,
+        "repeatVelocitySeamMax": 1.5341284834600553,
+        "authoredEndpointPositionClosure": 0
+      },
+      "jointDiagnostics": {
+        "scope": "Diagnostic comparison at 480 samples per clip second. Finite-difference accelerations are not an established perceptual acceptance limit.",
+        "baseline": [
+          {
+            "bone": "shin_l",
+            "maxLocalAngularSpeedRadPerSec": 36.176840126746605,
+            "maxWorldStepMetres": 0.0359965806706831,
+            "maxWorldAccelerationMps2": 2369.8687582159996
+          },
+          {
+            "bone": "shin_r",
+            "maxLocalAngularSpeedRadPerSec": 36.783501747703,
+            "maxWorldStepMetres": 0.037708320014465634,
+            "maxWorldAccelerationMps2": 2084.6755281159176
+          }
+        ],
+        "candidate": [
+          {
+            "bone": "shin_l",
+            "maxLocalAngularSpeedRadPerSec": 35.04255796532623,
+            "maxWorldStepMetres": 0.03670691759838484,
+            "maxWorldAccelerationMps2": 4056.4487894916288
+          },
+          {
+            "bone": "shin_r",
+            "maxLocalAngularSpeedRadPerSec": 35.122869293766676,
+            "maxWorldStepMetres": 0.03756804737353681,
+            "maxWorldAccelerationMps2": 3044.0064115789733
+          }
+        ]
+      }
+    }
+  ],
+  "proposedFailures": [
+    {
+      "case": "Walk/reverse/2",
+      "failedGate": "Walk/reverse/2: l/0.02 persistent per-window maximum drift cannot regress",
+      "toleranceMetres": 0.002,
+      "windows": [
+        {
+          "vertexKey": "2:tailored_torso:6681",
+          "startPhase": 0.015625,
+          "endPhase": 0.13671875,
+          "seconds": 0.2098958333333333,
+          "baselineMaxDriftMetres": 0.010091725364428122,
+          "candidateMaxDriftMetres": 0.014382956933556078,
+          "increaseMetres": 0.004291231569127956,
+          "excessBeyondToleranceMetres": 0.002291231569127956,
+          "baselineNetDriftMetres": 0.0059066299247239485,
+          "candidateNetDriftMetres": 0.009371726449336218,
+          "baselinePathMetres": 0.03734171985726733,
+          "candidatePathMetres": 0.02692189502485141
+        }
+      ]
+    },
+    {
+      "case": "Walk/reverse/4",
+      "failedGate": "Walk/reverse/4: l/0.02 persistent per-window maximum drift cannot regress",
+      "toleranceMetres": 0.002,
+      "windows": [
+        {
+          "vertexKey": "2:tailored_torso:6681",
+          "startPhase": 0.015625,
+          "endPhase": 0.13671875,
+          "seconds": 0.10494791666666665,
+          "baselineMaxDriftMetres": 0.010091725364428122,
+          "candidateMaxDriftMetres": 0.014382956933556078,
+          "increaseMetres": 0.004291231569127956,
+          "excessBeyondToleranceMetres": 0.002291231569127956,
+          "baselineNetDriftMetres": 0.0059066299247239485,
+          "candidateNetDriftMetres": 0.009371726449336218,
+          "baselinePathMetres": 0.03734171985726733,
+          "candidatePathMetres": 0.02692189502485141
+        }
+      ]
+    },
+    {
+      "case": "Walk/reverse/6.5",
+      "failedGate": "Walk/reverse/6.5: l/0.02 persistent per-window maximum drift cannot regress",
+      "toleranceMetres": 0.002,
+      "windows": [
+        {
+          "vertexKey": "2:tailored_torso:6681",
+          "startPhase": 0.015625,
+          "endPhase": 0.13671875,
+          "seconds": 0.06458333333333333,
+          "baselineMaxDriftMetres": 0.010091725364428122,
+          "candidateMaxDriftMetres": 0.014382956933556078,
+          "increaseMetres": 0.004291231569127956,
+          "excessBeyondToleranceMetres": 0.002291231569127956,
+          "baselineNetDriftMetres": 0.005906629924723965,
+          "candidateNetDriftMetres": 0.009371726449336237,
+          "baselinePathMetres": 0.03734171985726734,
+          "candidatePathMetres": 0.026921895024851414
+        }
+      ]
+    },
+    {
+      "case": "Run/reverse/9",
+      "failedGate": "Run/reverse/9: l/0.02 persistent per-window maximum drift cannot regress",
+      "toleranceMetres": 0.002,
+      "windows": [
+        {
+          "vertexKey": "2:tailored_torso:6768",
+          "startPhase": 0.013392857142857142,
+          "endPhase": 0.11160714285714286,
+          "seconds": 0.04583333333333333,
+          "baselineMaxDriftMetres": 0.0069389793399746965,
+          "candidateMaxDriftMetres": 0.013450596574571379,
+          "increaseMetres": 0.006511617234596682,
+          "excessBeyondToleranceMetres": 0.004511617234596682,
+          "baselineNetDriftMetres": 0.00572785939027933,
+          "candidateNetDriftMetres": 0.007827838876592991,
+          "baselinePathMetres": 0.028372288546085846,
+          "candidatePathMetres": 0.02541482895075972
+        }
+      ]
+    }
+  ],
+  "witnessContext": [
+    {
+      "clip": "Walk",
+      "direction": "reverse",
+      "referenceSpeedMps": 6.5,
+      "baseline": {
+        "start": {
+          "phase": 0.015625,
+          "elapsedSeconds": 0,
+          "heightMetres": 0.033854310221434425,
+          "footMinimumMetres": 0.019671784920806366,
+          "worldDriftMetres": 0
+        },
+        "maximumDriftPoint": {
+          "phase": 0.125,
+          "elapsedSeconds": 0.058333333333333334,
+          "heightMetres": 0.02122213364085946,
+          "footMinimumMetres": 0.009542289833453186,
+          "worldDriftMetres": 0.010091725364428122
+        },
+        "end": {
+          "phase": 0.13671875,
+          "elapsedSeconds": 0.06458333333333333,
+          "heightMetres": 0.0309361156688508,
+          "footMinimumMetres": 0.019011239165998183,
+          "worldDriftMetres": 0.005906629924723965
+        },
+        "heightMinMetres": 0.010259970916803023,
+        "heightMaxMetres": 0.033854310221434425,
+        "footMinimumMaxMetres": 0.019671784920806366
+      },
+      "candidate": {
+        "start": {
+          "phase": 0.015625,
+          "elapsedSeconds": 0,
+          "heightMetres": 0.03313773484559407,
+          "footMinimumMetres": 0.018641523371921133,
+          "worldDriftMetres": 0
+        },
+        "maximumDriftPoint": {
+          "phase": 0.125,
+          "elapsedSeconds": 0.058333333333333334,
+          "heightMetres": 0.021222623587126,
+          "footMinimumMetres": 0.009542781496901697,
+          "worldDriftMetres": 0.014382956933556078
+        },
+        "end": {
+          "phase": 0.13671875,
+          "elapsedSeconds": 0.06458333333333333,
+          "heightMetres": 0.03108363954329263,
+          "footMinimumMetres": 0.019147697303207735,
+          "worldDriftMetres": 0.009371726449336237
+        },
+        "heightMinMetres": 0.01026019230110415,
+        "heightMaxMetres": 0.03313773484559407,
+        "footMinimumMaxMetres": 0.019147697303207735
+      },
+      "body": [
+        {
+          "name": "pelvis",
+          "xDeltaRange": [
+            -0.0011101750314112147,
+            0
+          ],
+          "yDeltaRange": [
+            -0.041067599232127994,
+            -0.04000002145767201
+          ],
+          "zDeltaRange": [
+            0,
+            0.00022870839182644737
+          ],
+          "maximumPositionDifference": 0.04108323870898618
+        },
+        {
+          "name": "chest",
+          "xDeltaRange": [
+            -3.66993375203184e-8,
+            0.0030536382750086027
+          ],
+          "yDeltaRange": [
+            -0.04105407262037475,
+            -0.03999981631522376
+          ],
+          "zDeltaRange": [
+            -1.0161964286714564e-7,
+            0.00021515842649988404
+          ],
+          "maximumPositionDifference": 0.04116804438617524
+        },
+        {
+          "name": "shin_l",
+          "xDeltaRange": [
+            -0.0029253889181467263,
+            0.0014161473073483338
+          ],
+          "yDeltaRange": [
+            -0.03602175676925956,
+            -0.007581605548534265
+          ],
+          "zDeltaRange": [
+            -0.05376134403302707,
+            -0.04088536055365474
+          ],
+          "maximumPositionDifference": 0.05721130022056633
+        },
+        {
+          "name": "foot_l",
+          "xDeltaRange": [
+            -0.006275210078395828,
+            0.009570430145435842
+          ],
+          "yDeltaRange": [
+            -0.000031091567613550364,
+            0.00018408347469733854
+          ],
+          "zDeltaRange": [
+            -0.0011398072602734621,
+            0.000678612838525855
+          ],
+          "maximumPositionDifference": 0.009595448864437963
+        }
+      ]
+    },
+    {
+      "clip": "Run",
+      "direction": "reverse",
+      "referenceSpeedMps": 9,
+      "baseline": {
+        "start": {
+          "phase": 0.013392857142857142,
+          "elapsedSeconds": 0,
+          "heightMetres": 0.021569187298404874,
+          "footMinimumMetres": 0.01892093245101968,
+          "worldDriftMetres": 0
+        },
+        "maximumDriftPoint": {
+          "phase": 0.10714285714285714,
+          "elapsedSeconds": 0.04375,
+          "heightMetres": 0.02910252116476752,
+          "footMinimumMetres": 0.012845523898253261,
+          "worldDriftMetres": 0.0069389793399746965
+        },
+        "end": {
+          "phase": 0.11160714285714286,
+          "elapsedSeconds": 0.04583333333333333,
+          "heightMetres": 0.03254636492852324,
+          "footMinimumMetres": 0.0169334367508959,
+          "worldDriftMetres": 0.00572785939027933
+        },
+        "heightMinMetres": 0.008956433996731765,
+        "heightMaxMetres": 0.03254636492852324,
+        "footMinimumMaxMetres": 0.01892093245101968
+      },
+      "candidate": {
+        "start": {
+          "phase": 0.013392857142857142,
+          "elapsedSeconds": 0,
+          "heightMetres": 0.01856231944787539,
+          "footMinimumMetres": 0.0159125103691831,
+          "worldDriftMetres": 0
+        },
+        "maximumDriftPoint": {
+          "phase": 0.10714285714285714,
+          "elapsedSeconds": 0.04375,
+          "heightMetres": 0.029102747654615457,
+          "footMinimumMetres": 0.012845703686576079,
+          "worldDriftMetres": 0.013450596574571379
+        },
+        "end": {
+          "phase": 0.11160714285714286,
+          "elapsedSeconds": 0.04583333333333333,
+          "heightMetres": 0.03259890588822582,
+          "footMinimumMetres": 0.016963780313775625,
+          "worldDriftMetres": 0.007827838876592991
+        },
+        "heightMinMetres": 0.008957054010952703,
+        "heightMaxMetres": 0.03259890588822582,
+        "footMinimumMaxMetres": 0.016963780313775625
+      },
+      "body": [
+        {
+          "name": "pelvis",
+          "xDeltaRange": [
+            -0.000025581253045002918,
+            0.0003457315905927888
+          ],
+          "yDeltaRange": [
+            -0.043189284113222426,
+            -0.04000002145767201
+          ],
+          "zDeltaRange": [
+            -0.0004029679925739646,
+            0
+          ],
+          "maximumPositionDifference": 0.043190910230657194
+        },
+        {
+          "name": "chest",
+          "xDeltaRange": [
+            -0.0009468749376562897,
+            0.00005898023316985249
+          ],
+          "yDeltaRange": [
+            -0.0421716838812074,
+            -0.040000033219781184
+          ],
+          "zDeltaRange": [
+            -5.964056920548799e-8,
+            0.002585295004652488
+          ],
+          "maximumPositionDifference": 0.0422614628684944
+        },
+        {
+          "name": "shin_l",
+          "xDeltaRange": [
+            -0.002942682867382612,
+            0.0009897463558389552
+          ],
+          "yDeltaRange": [
+            -0.03967750594814584,
+            -0.00794891507847606
+          ],
+          "zDeltaRange": [
+            -0.05340018355644566,
+            -0.04117950144117791
+          ],
+          "maximumPositionDifference": 0.0597390735157969
+        },
+        {
+          "name": "foot_l",
+          "xDeltaRange": [
+            -0.00497270884724299,
+            0.006391408812029063
+          ],
+          "yDeltaRange": [
+            -0.002763711646695255,
+            0.00018185530269315686
+          ],
+          "zDeltaRange": [
+            -0.001615621479021001,
+            -0.00023679176880045394
+          ],
+          "maximumPositionDifference": 0.006592499759676754
+        }
+      ]
+    }
+  ],
+  "interpretation": [
+    "Four failed rate cases describe two distinct left-foot reverse-playback windows: the Walk trajectory is the same geometry at 2, 4 and 6.5 m/s. Every failure remains a failure under the declared baseline+2 mm maximum drift gate.",
+    "The persistent points travel a shorter total horizontal path, yet their maximum and net distance from the window start increase. Net movement can cancel, so neither lower path length nor improved p95 overrides the maximum-drift failures.",
+    "At the final maximum drift the selected points are 21.22 mm (Walk) and 29.10 mm (Run) above the floor, while another part of the same foot remains below20 mm. Their complete height ranges are about10.26–33.14 mm and8.96–32.60 mm. This is compatible with rolling a foot rather than holding a flat sole, but does not prove that the added drift looks natural.",
+    "The source intentionally lowers the animated pelvis by4 cm to provide knee flexion; in these near-seam windows pelvis differences reach41.08/43.19 mm and chest differences41.17/42.26 mm. Actor root transforms, rig rest geometry and physics heights are not shifted. Upper LOCAL track preservation does not mean unchanged upper WORLD position.",
+    "The candidate removes the observed earlier iteration knee angular spike and reduces broad slip and loop velocity seams. Finite-difference knee acceleration remains higher than baseline in places; there is no zero-slip, biomechanical, physical-device or Fortnite-level quality claim.",
+    "Release may use the separately recorded actual-controller and moving-scene reviews to judge this bounded tradeoff. This independent script does not certify all proposed improvement gates, and no gate was reduced to fit the candidate."
+  ],
+  "negativeValidation": {
+    "scopedRepresentation": [
+      {
+        "mutation": "Float32 TEXCOORD_0 changed by1e-4",
+        "inputSha256": "adeac29415c4a07942a8ea5962f4a581cc3232156141f4055e03815bd7f56d82",
+        "result": "rejected-before-motion-sampling",
+        "message": "Non-gait asset preservation failed; do not compare vertex identities or claim a Walk/Run-only change"
+      },
+      {
+        "mutation": "One nondegenerate triangle has reversed winding",
+        "inputSha256": "b12bdaa434247516e5664e862d77c7321a740f1478984b26fd42bdb1378c6a1f",
+        "result": "rejected-before-motion-sampling",
+        "message": "Non-gait asset preservation failed; do not compare vertex identities or claim a Walk/Run-only change"
+      }
+    ],
+    "rootNormalValidator": {
+      "sha256": "d17a5e737543c60382e0198b6c9337d6c00731ed2890d6778db1e6630311d041",
+      "copiedByteIdentically": true,
+      "scope": "Local Node execution of TEMP-isolated copied validator with original provenance files; not a GitHub CI run.",
+      "results": [
+        {
+          "case": "shipped baseline077",
+          "result": "rejected",
+          "exitCode": 1,
+          "reason": "Walk loop velocity seam regressed:2.541614556212813m/s",
+          "logSha256": "6a4c2958f53056a9f022380112dd6e56d2a8ddc88c9d637e538beef7d4dfb8ec"
+        },
+        {
+          "case": "terminal pelvis+40mm and shortened terminal timestamp",
+          "result": "rejected",
+          "exitCode": 1,
+          "reason": "Walk actual terminal position seam0.04000000096857549m",
+          "fixtureSha256": "d49116ec265243195105202403b2fcd8d607fc08884f06189a14c7f5a20e9480",
+          "logSha256": "46a752a492d0cec4df16895c0ba3554e4a66ec0fd04c3ac21373585e376a4e20"
+        },
+        {
+          "case": "candidate10 fast rebake",
+          "result": "passed",
+          "exitCode": 0,
+          "logSha256": "830df2bdb269a684aa88ddb745b25bce1f380c6b00db1fbdfc98c8d739b77456"
+        }
+      ]
+    }
+  },
+  "separateRootReportedEvidence": {
+    "scope": "Reported by the release coordinator, not rerun by this independent CPU review. Consult the separate full receipts for exact scopes.",
+    "finalController": {
+      "cases": 16,
+      "frames": 2268,
+      "errors": 0
+    },
+    "finalMovingScenes": {
+      "scenes": 4,
+      "errors": 0
+    },
+    "fullCheck": {
+      "tests": 133,
+      "passed": true
+    }
+  },
+  "retainedTempEvidence": {
+    "fullReport": {
+      "file": "grounded-gait-final-acceptance-v2.json",
+      "sha256": "3a89b7640ebf3f71d6d5a99052688f45d5e502dafc0fd890b18f5760172260ec"
+    },
+    "representationDetail": {
+      "file": "grounded-gait-final-nongait-detail.json",
+      "sha256": "68c6fa522f1d2d70822d9c0b9a731fa15c9ffa1cf522e4ba5a539ac3531d9b61"
+    },
+    "witnessDetail": {
+      "file": "grounded-gait-final-witness-detail.json",
+      "sha256": "bc0aa32bf3772698dbb686a6510e921648fd0b199fe27e7d901715a9883316d2"
+    }
+  }
+}

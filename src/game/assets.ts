@@ -1,6 +1,6 @@
 /** Versioned URLs keep a new art release from reusing the previous cached model. */
 export const ARENA_ASSETS = {
-  character: '/models/scout.glb?v=scout-shoulders-v1',
+  character: '/models/scout.glb?v=scout-grounded-v1',
   environment: '/models/environment.glb?v=sunbreak-v3',
 } as const;
 

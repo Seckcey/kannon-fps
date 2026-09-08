@@ -1,0 +1,40 @@
+{
+  "scope": "Frozen local working-tree implementation, reconciled by per-file hashes with the subsequent commit; source generation, full checks, controller and visual observations are separate evidence.",
+  "baseRevision": "8cb6b064d09351dc2c4e6a5b6ed81660d47af3ce",
+  "scoutSha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+  "environmentSha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d",
+  "sourceFiles": {
+    "art/source/scout-back.png": "fe660bf7cb817553ba5cad83eca8f123b8fe28531be263fbc4ead51872ce7703",
+    "art/source/scout-export-review.json": "19b294c56bd2ecdca663b24ea6624221e5c7dbe1ecb7cd6ca613c99cd9ea673e",
+    "art/source/scout-front.png": "dc58f6fc1c79e7435816686fe1bd29e0b923ca1a6bbf0d888b87ef26a982c3ee",
+    "art/source/scout-locomotion-export-review.json": "56302af415fa8de5dcb85f0cf198f7dac64acbcb911190e2402698758b4a0e8b",
+    "art/source/scout-locomotion-migration-review.json": "7fa97c12f708e0fe9b2087b7ed44e794be6bd761f05777b342b7b3de1fc79968",
+    "art/source/scout-locomotion-review.json": "c1d641ed2472a006358aa59e4033cc096b70f69934786ac010087617b30416cf",
+    "art/source/scout.blend": "db31bddffb845a5bf7b9544c8c9b852e7db654940fb2673f587da28564a088a5",
+    "public/models/scout.glb": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9",
+    "scripts/blender/scout_grounded.py": "41510779b4b395f9627b60768070d8a7ab0ab05eea284d5e41c45451cf1dce85",
+    "scripts/blender/scout_locomotion.py": "aed3d1e0b13c845889995b37966e95dc35bb184790906f89f74051a28358d3a1",
+    "scripts/blender/validate_locomotion.mjs": "d17a5e737543c60382e0198b6c9337d6c00731ed2890d6778db1e6630311d041",
+    "src/game/assets.ts": "123a343886a4c3e77adc50583a4de955f756165954352ca35b99c45b93ec254a"
+  },
+  "generation": {
+    "blender": "5.2.1 LTS",
+    "command": "blender --background --python scripts/blender/generate_scout.py",
+    "completed": true
+  },
+  "checks": {
+    "command": "npm run check",
+    "tests": 133,
+    "passed": 133,
+    "failed": 0,
+    "assets": true,
+    "types": true,
+    "productionBuild": true,
+    "logSha256": "6191111ffe9f7c24d3b68e829ec84bb938a4f76ff33b8403a46a529201c88851"
+  },
+  "entryBundle": "index-BjSaAVpj.js",
+  "limits": [
+    "No new physical-phone, wide-area latency, multiplayer-capacity or FPS acceptance.",
+    "Server/shared/runtime controller and game rules are unchanged; only the client model URL changes."
+  ]
+}
