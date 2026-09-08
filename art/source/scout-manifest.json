@@ -1,0 +1,19 @@
+{
+  "vertex_count": 11083,
+  "triangles": 21056,
+  "bones": 18,
+  "animations": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Aim",
+    "Fire",
+    "Reload",
+    "Heal"
+  ],
+  "units": "metres",
+  "forward": "glTF -Z",
+  "up": "glTF +Y",
+  "source": "Original Blender geometry and hand-authored keyframe animations; no external assets or motion capture."
+}

@@ -1,0 +1,17 @@
+# Use with compose.yml. KANNON_VERSION must be the exact source commit.
+services:
+  arena:
+    image: kannon-arena:${KANNON_VERSION:?Set the tested source commit}
+    build:
+      args:
+        BUILD_REVISION: ${KANNON_VERSION:?Set the tested source commit}
+    environment:
+      ALLOWED_ORIGINS: https://kpop.8westventures.com
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

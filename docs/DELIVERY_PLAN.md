@@ -1,33 +1,19 @@
-# Delivery and validation plan
+# Delivery and acceptance
 
-## 0. Repository foundation
+## First playable build
 
-Initialize the local checkout and remote main branch with a product brief and this delivery plan. This milestone does not deliver a game.
+Implemented: approved third-person view, fixed loadout/healing, respawns/protection, server-owned multiplayer, private invitations/crews, persistent rankings/history, keyboard/mouse and touch interfaces, and a practice range. Blender source, a skinned glTF model, eight clips, and reproducible generation/validation scripts are included.
 
-## 1. Local playable prototype
+Validation includes TypeScript, simulation/storage regressions, HTTP/WebSocket acceptance, CI, and deployment definitions. Browser acceptance separately exercises rendered menus and gameplay. See the release record for exact results and limitations.
 
-After confirming devices and delivery format, select the engine and dependencies. Build one arena with movement, aiming, firing, and a target. Add reproducible setup and build instructions, dependency lockfiles, appropriate ignore rules, and CI with the first implementation.
+## Internet release gates
 
-Acceptance: a fresh checkout can install and build successfully; the intended device can run the prototype with usable controls. Document actual frame-rate observations and device details.
+1. Select and approve hosting and any cost; no provider was provisioned by this implementation.
+2. Deploy with HTTPS/WSS, persistent SQLite, backups, and restart policy.
+3. Verify live build identity, assets, invitations, crew privacy, a completed ranked result, and rematch.
+4. Test actual iPhone/Safari, Android/Chrome, and intended desktops. Record frame rates and controls; tune touch ergonomics with the players.
+5. Play from two separate internet connections, including brief disconnection/recovery. Two tabs and emulated mobile sizes cannot prove this gate.
 
-## 2. Two-player match
+## After the first playtest
 
-Implement the authoritative multiplayer server, private rooms, two-player membership, health, respawning, timer, scores, and rematches.
-
-Acceptance: two clients see consistent match state; duplicate or invalid actions cannot award extra damage or points; a third client cannot join a full room; expired invites cannot join a match. Verify score and timer agreement at match end.
-
-## 3. Remote-play deployment
-
-Choose hosting with explicit agreement on any charges. Deploy the client and server with encrypted connections, server-side secrets, health checks, bounded rooms, and an operational restart procedure.
-
-Acceptance: test from two separate internet connections, not just two tabs on the same computer. Record observed latency and behavior during delay, brief disconnection, room expiry, and server restart. Verify that neither household needs router port forwarding.
-
-## 4. Family playtest and release
-
-Have both intended players join and complete a match, then rematch. Fix blockers and document the final play URL, controls, known limitations, deployment version, and recovery steps.
-
-Acceptance: both players can repeat the entire flow without developer assistance. Do not mark remote play complete until this evidence exists.
-
-## Current state
-
-Only repository provisioning is in scope for the initial documentation commit. All playable milestones above remain pending.
+Tune weapon balance, healing, spawns, phone aim assistance, and map routes using observed gameplay. Improve animation/environment detail within the mobile budget. Add content after the core game loop is enjoyable and reliable.

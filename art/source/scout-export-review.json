@@ -1,0 +1,25 @@
+{
+  "file": "public/models/scout.glb",
+  "bytes": 3599552,
+  "exportedVertices": 24026,
+  "triangles": 21056,
+  "bones": 18,
+  "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Aim",
+    "Fire",
+    "Reload",
+    "Heal"
+  ],
+  "embeddedTextures": 6,
+  "muzzle": [
+    0.13499990383556765,
+    1.3319999004813747,
+    -0.8470000042956585
+  ],
+  "coordinateSystem": "metres; Y up; -Z forward",
+  "status": "passed"
+}
