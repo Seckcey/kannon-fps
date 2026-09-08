@@ -1,10 +1,21 @@
-# First playable release verification
+# Release verification
 
 ## Build scope
 
 This release implements the agreed private third-person phone/desktop game, fixed AR/shotgun/healing loadout, respawns, five-minute/15-elimination matches, private crew standings/history, and original Blender character/weapon animation. It is a playable first release, not a claim of finished AAA art, real-device acceptance, or tournament-grade networking.
 
-## Local verification
+## Mobile recovery and simultaneous combat
+
+The next release repairs stale touch input after backgrounding, silent connection loss, leaving during reconnect, and missing host/results state when players return. A healthy connection survives a brief background transition; an unresponsive one reconnects automatically. Touch movement, aim, sprint, and queued actions release when focus or pointer capture is lost, and a fresh gesture resumes play. Background time no longer lowers graphics quality.
+
+The server restores host control when all players disconnect and somebody returns, replays the original completed result without writing standings again, and resolves shots from the same simulation tick together. Mutual eliminations and simultaneous score-limit draws no longer depend on player join order.
+
+- `npm run check` passes all 53 client, simulation, storage, HTTP, and WebSocket tests, TypeScript, Blender validation, and the production build.
+- The nine-group desktop/touch browser acceptance flow passes again against the production build at 1536×1024, 852×393, and 390×844 with no application errors or warnings.
+- A focused Edge browser test uses real offline/online transitions while a touch joystick is held and aim/sprint are enabled. The same room recovers automatically, stale controls stay released, a fresh touch fires, leaving stays at the menu, and the next practice creates a new room. No browser errors or warnings occurred.
+- Multi-touch ownership, lost pointer capture, cancelled taps, and two simulated 15-second background suspensions were checked in Chrome. Graphics quality and shadows remained stable.
+
+## First playable local verification
 
 - 29 simulation/storage/HTTP/WebSocket regressions pass, including action taps surviving input batching, damage/cover validation, healing, respawns, host transfer, privacy, draw handling, and atomic/idempotent ratings.
 - TypeScript and the production build pass; production dependencies report no known npm audit vulnerabilities at verification time.
@@ -28,7 +39,7 @@ The user authorized Coastline hosting. Read-only preflight confirmed the expecte
 
 - Implementation [PR #1](https://github.com/Seckcey/kannon-fps/pull/1) merged as `4c6c4e0e95a0f9a3daecc021e5ea6ca199b82999`; [main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34186643146) passed, including a real Docker image and production smoke run. The release also includes the subsequent crew member-count display correction and these operational notes.
 - Linux Node 24 container build and production HTTP/WebSocket smoke passed. `/health` reports the deployed source revision; the hosted Blender GLB SHA-256 matches the verified export above. The configured public HTTPS Origin passed the WebSocket origin check; anonymous room creation was rejected.
-- The full desktop/touch UI acceptance flow passed against the actual Coastline container through SSH forwarding, with nine check groups and no browser errors/warnings. This verifies the hosted origin, not Cloudflare's public route. Two temporary QA profiles and their private test crew are isolated from future family crews; no ranked scores were awarded on this hosted run.
+- The full desktop/touch UI acceptance flow passed against the actual Coastline container through SSH forwarding, with nine check groups and no browser errors/warnings. Public HTTPS, the built client, and WSS subsequently passed through `https://kpop.8westventures.com` after the user configured Cloudflare. Two temporary QA profiles and their private test crew are isolated from future family crews; no ranked scores were awarded on this hosted run.
 - Container `kannon-arena-arena-1` is healthy, runs as `node`, binds only `127.0.0.1:14350`, and uses its own `kannon-arena_arena-data` volume and network. Read-only root, dropped capabilities, no-new-privileges, 512 MiB/one CPU/128 PID limits, and rotating logs were inspected.
 - All 65 existing containers retained identical IDs, states, and restart counts after deployment. Their sorted identity/state/restart SHA-256 remained `a421ed263d2c48117954d226f2db42d4bfa863e0b2b2e8df324f15c5fc688e4a`. Protected HTTP checks matched preflight, with no newly unhealthy services. Intentionally stopped migration sources remained stopped.
 
@@ -36,4 +47,4 @@ See [deployment instructions](DEPLOYMENT.md) for the exact Cloudflare fields, sc
 
 ## Remaining acceptance
 
-Physical iPhone/Android performance, phone aim balancing, adverse wide-area latency, and a two-household family playtest remain unverified. Emulated touch dimensions and same-computer clients do not prove them. Cloudflare routing must be pointed to the verified origin before public HTTPS/WSS acceptance.
+Physical iPhone/Android performance, phone aim balancing, adverse wide-area latency, and a two-household family playtest remain unverified. Emulated touch dimensions and same-computer clients do not prove them.

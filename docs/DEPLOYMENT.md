@@ -14,7 +14,7 @@ Configure the existing host's Cloudflare Tunnel with:
 
 The complete origin is `http://127.0.0.1:14350`. Cloudflared runs in the host network. The game intentionally binds only to loopback; no inbound firewall opening is needed for this tunnel layout. Forward `/`, `/api`, assets, and `/ws` to the same service. The production override explicitly allows the browser origin `https://kpop.8westventures.com`.
 
-After routing, players use **https://kpop.8westventures.com** without an explicit port. Cloudflare configuration was left for the user as requested; public HTTPS/WSS and two-household acceptance remain pending.
+Players use **https://kpop.8westventures.com** without an explicit port. The user configured Cloudflare routing; public HTTPS, the built client, and WSS transport have been verified. Physical-device and two-household acceptance remain pending.
 
 ## Coastline operation
 

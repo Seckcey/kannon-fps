@@ -17,6 +17,9 @@ export class InputController {
   private touchX = 0;
   private touchZ = 0;
   private paused = false;
+  private focused = document.hasFocus();
+  private disposed = false;
+  private resetListeners = new Set<() => void>();
   private touchActive = false;
   private settings: InputSettings = { sensitivity: 1, invertY: false };
   private abort = new AbortController();
@@ -28,7 +31,8 @@ export class InputController {
     window.addEventListener('keyup', this.keyUp, options);
     window.addEventListener('mousemove', this.mouseMove, options);
     window.addEventListener('mouseup', this.mouseUp, options);
-    window.addEventListener('blur', this.clear, options);
+    window.addEventListener('blur', this.blur, options);
+    window.addEventListener('focus', this.focus, options);
     document.addEventListener('visibilitychange', this.visibilityChange, options);
     document.addEventListener('pointerlockchange', this.lockChange, options);
     if (canvas) this.attach(canvas);
@@ -37,6 +41,13 @@ export class InputController {
   get locked() { return !!this.canvas && document.pointerLockElement === this.canvas; }
   get isTouch() { return this.touchActive || window.matchMedia('(pointer: coarse)').matches; }
   get isPaused() { return this.paused; }
+  get acceptsInput() { return !this.disposed && !this.paused && this.focused && !document.hidden; }
+
+  /** Touch UI must clear its captured pointers and toggles whenever controls are cancelled. */
+  subscribeReset(listener: () => void) {
+    this.resetListeners.add(listener);
+    return () => { this.resetListeners.delete(listener); };
+  }
 
   attach(canvas: HTMLCanvasElement) {
     if (this.canvas === canvas) return;
@@ -56,22 +67,29 @@ export class InputController {
   /** Server spawn selection must apply even while a countdown/pause disables regular controls. */
   resetSpawnView(yaw: number, pitch = 0) { this.setView(yaw, pitch); this.slot = 1; }
   resumeSequence(lastInputSeq: number) { this.sequence = Math.max(this.sequence, lastInputSeq); }
-  setSlot(slot: Slot) { if (!this.paused) this.slot = slot; }
+  setSlot(slot: Slot) { if (this.acceptsInput) this.slot = slot; }
   setTouchMove(x: number, z: number) {
+    if (!this.acceptsInput) return;
     this.touchActive = true;
     const scale = Math.max(1, Math.hypot(x, z));
     this.touchX = x / scale;
     this.touchZ = z / scale;
   }
   setTouchLook(dx: number, dy: number) {
+    if (!this.acceptsInput) return;
     this.touchActive = true;
-    if (!this.paused) this.look(dx, dy, 0.0042);
+    this.look(dx, dy, 0.0042);
   }
   setAction(action: Action, value: boolean) {
+    if (!this.acceptsInput) return;
     // Explicit HUD actions are valid on hybrid touch laptops as well as coarse-pointer phones.
     this.touchActive = true;
-    if (!this.paused && value && !this.actions[action] && (action === 'fire' || action === 'jump' || action === 'reload')) this.pulses[action] = true;
-    this.actions[action] = !this.paused && value;
+    if (value && !this.actions[action] && (action === 'fire' || action === 'jump' || action === 'reload')) this.pulses[action] = true;
+    this.actions[action] = value;
+  }
+  cancelAction(action: Action) {
+    this.actions[action] = false;
+    if (action === 'fire' || action === 'jump' || action === 'reload') this.pulses[action] = false;
   }
 
   setPaused(paused: boolean) {
@@ -80,7 +98,7 @@ export class InputController {
   }
 
   requestPointerLock() {
-    if (!this.canvas || this.paused || this.isTouch || this.locked) return;
+    if (!this.canvas || !this.acceptsInput || this.isTouch || this.locked) return;
     try {
       const request = this.canvas.requestPointerLock();
       if (request && typeof request.catch === 'function') void request.catch(() => { this.onLockChange?.(false); });
@@ -95,7 +113,7 @@ export class InputController {
   }
 
   peek(): InputFrame {
-    const enabled = !this.paused && (this.locked || this.touchActive);
+    const enabled = this.acceptsInput && (this.locked || this.touchActive);
     const mx = enabled ? this.touchX + Number(this.keys.has('KeyD') || this.keys.has('ArrowRight')) - Number(this.keys.has('KeyA') || this.keys.has('ArrowLeft')) : 0;
     const mz = enabled ? this.touchZ + Number(this.keys.has('KeyW') || this.keys.has('ArrowUp')) - Number(this.keys.has('KeyS') || this.keys.has('ArrowDown')) : 0;
     const scale = Math.max(1, Math.hypot(mx, mz));
@@ -119,7 +137,7 @@ export class InputController {
       this.clear();
       return;
     }
-    if (this.paused || !this.locked || (event.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))) return;
+    if (!this.acceptsInput || !this.locked || (event.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))) return;
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(event.code)) event.preventDefault();
     if (event.code === 'Digit1') this.slot = 1;
     if (event.code === 'Digit2') this.slot = 2;
@@ -129,24 +147,29 @@ export class InputController {
     this.keys.add(event.code);
   };
   private keyUp = (event: KeyboardEvent) => { this.keys.delete(event.code); };
-  private mouseMove = (event: MouseEvent) => { if (this.locked && !this.paused) this.look(event.movementX, event.movementY, 0.0021); };
+  private mouseMove = (event: MouseEvent) => { if (this.locked && this.acceptsInput) this.look(event.movementX, event.movementY, 0.0021); };
   private mouseDown = (event: MouseEvent) => {
-    if (this.paused) return;
+    if (!this.acceptsInput) return;
     if (!this.locked) { if (event.button === 0) this.requestPointerLock(); return; }
     if (event.button === 0) { this.actions.fire = true; this.pulses.fire = true; }
     if (event.button === 2) this.actions.aim = true;
   };
   private mouseUp = (event: MouseEvent) => { if (event.button === 0) this.actions.fire = false; if (event.button === 2) this.actions.aim = false; };
   private contextMenu = (event: Event) => { event.preventDefault(); };
-  private visibilityChange = () => { if (document.hidden) this.clear(); };
+  private blur = () => { this.focused = false; this.clear(); };
+  private focus = () => { this.focused = true; this.clear(); };
+  private visibilityChange = () => { this.focused = document.hasFocus(); this.clear(); };
   private lockChange = () => { if (!this.locked) this.clear(); this.onLockChange?.(this.locked); };
   private clear = () => {
     this.keys.clear(); this.touchX = 0; this.touchZ = 0;
     this.pulses.fire = false; this.pulses.jump = false; this.pulses.reload = false;
     for (const action of Object.keys(this.actions) as Action[]) this.actions[action] = false;
+    for (const listener of [...this.resetListeners]) listener();
   };
 
   dispose() {
+    this.disposed = true;
+    this.resetListeners.clear();
     if (this.locked) document.exitPointerLock();
     this.abort.abort();
     this.canvas?.removeEventListener('mousedown', this.mouseDown);

@@ -14,7 +14,7 @@
 - Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
 - An original Blender model with a skinned armature and eight hand-authored animation clips in the live game.
 
-This first playable build is deployed on Coastline. Point the Cloudflare Tunnel hostname `kpop.8westventures.com` to **HTTP `127.0.0.1:14350`**. Public HTTPS/WSS, real-device performance/controls acceptance, and a two-household playtest remain to be verified after that route is configured. The Blender art uses human proportions with stylized armor; it is not photorealistic or motion-captured.
+This first playable build is deployed on Coastline at **https://kpop.8westventures.com**. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. Public HTTPS/WSS entry points are verified; real-device performance/controls acceptance and a two-household playtest remain. The Blender art uses human proportions with stylized armor; it is not photorealistic or motion-captured.
 
 ## Run locally
 

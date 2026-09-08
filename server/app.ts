@@ -5,11 +5,11 @@ import { resolve, sep, extname } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
 import { MatchEngine, sanitizeInput } from './engine.js';
 import { GameStore } from './store.js';
-import { RULES, type ClientMessage, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
+import { RULES, type ClientMessage, type GameEvent, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
 
 export interface ServerOptions { port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[] }
 interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; alive: boolean }
-interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number }
+interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null }
 class HttpError extends Error { constructor(public readonly status: number, message: string) { super(message); } }
 class ProtocolError extends Error { constructor(public readonly code: string, message: string) { super(message); } }
 const ROOM_LIFETIME = 2 * 60 * 60 * 1000;
@@ -130,6 +130,9 @@ export function createGameServer(options: ServerOptions = {}) {
   }
   function broadcast(room: Room, message: ServerMessage) { for (const connection of room.sockets.values()) send(connection, message); }
   function broadcastRoom(room: Room) { broadcast(room, { type: 'room', room: roomSnapshot(room) }); }
+  function electConnectedHost(room: Room) {
+    if (!room.sockets.has(room.hostId) && room.sockets.size) room.hostId = room.sockets.keys().next().value!;
+  }
   function finishRoom(room: Room, reason: string) {
     let ranked = false; let finalReason = reason;
     const connectedHumans = [...room.engine.players.values()].filter((player) => !player.bot && player.connected).length;
@@ -141,7 +144,8 @@ export function createGameServer(options: ServerOptions = {}) {
         ranked = result.recorded; finalReason = `${reason} ${result.reason}`;
       } catch { finalReason = `${reason} The result could not be saved. Please contact the server owner.`; console.error('Could not persist match result', room.engine.id); }
     }
-    broadcast(room, { type: 'event', event: { type: 'match-end', winnerIds: room.engine.winnerIds, ranked, reason: finalReason, at: room.engine.endedAt } });
+    room.resultEvent = { type: 'match-end', winnerIds: [...room.engine.winnerIds], ranked, reason: finalReason, at: room.engine.endedAt };
+    broadcast(room, { type: 'event', event: room.resultEvent });
     broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot() });
   }
   function destroyRoom(room: Room) {
@@ -160,7 +164,7 @@ export function createGameServer(options: ServerOptions = {}) {
       else { room.abandoned = true; room.disconnected.set(id, Date.now() - DISCONNECT_GRACE); }
     }
     connection.roomId = null;
-    if (room.hostId === id && room.sockets.size) room.hostId = room.sockets.keys().next().value!;
+    electConnectedHost(room);
     if (!room.sockets.size) room.emptySince = Date.now();
     if (!disconnect && (room.engine.phase === 'playing' || room.engine.phase === 'countdown') && !room.practice && room.sockets.size < 2) room.engine.finish('Match ended because a player left.', Date.now(), true);
     broadcastRoom(room);
@@ -175,7 +179,8 @@ export function createGameServer(options: ServerOptions = {}) {
     if (room.ranked && (!room.crewId || !store.isMember(profile.id, room.crewId))) throw new Error('Join this friend group before entering its ranked match.');
     leaveRoom(connection);
     connection.roomId = room.id; room.sockets.set(profile.id, connection); room.disconnected.delete(profile.id); room.emptySince = 0;
-    room.engine.addPlayer(profile); broadcastRoom(room); send(connection, { type: 'snapshot', snapshot: room.engine.snapshot() });
+    room.engine.addPlayer(profile); electConnectedHost(room); broadcastRoom(room); send(connection, { type: 'snapshot', snapshot: room.engine.snapshot() });
+    if (room.engine.phase === 'finished' && room.resultEvent) send(connection, { type: 'event', event: room.resultEvent });
   }
   wss.on('connection', (socket) => {
     const connection: Connection = { socket, profile: null, roomId: null, connectedAt: Date.now(), bucketAt: Date.now(), messages: 0, controlAt: Date.now(), controls: 0, alive: true }; connections.add(connection);
@@ -216,7 +221,7 @@ export function createGameServer(options: ServerOptions = {}) {
           leaveRoom(connection);
           const id = randomUUID(); let code = '';
           do { code = randomBytes(10).toString('hex').toUpperCase(); } while (codes.has(code));
-          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, ...(message.crewId ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0 };
+          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, ...(message.crewId ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0, resultEvent: null };
           room.engine = new MatchEngine({ practice, onEvent: (event) => broadcast(room, { type: 'event', event }), onFinish: (reason) => finishRoom(room, reason) });
           rooms.set(id, room); codes.set(code, id); attach(connection, room);
           if (practice) {
@@ -241,7 +246,7 @@ export function createGameServer(options: ServerOptions = {}) {
           if (room.engine.phase !== 'waiting' && room.engine.phase !== 'finished') throw new Error('This match has already started.');
           if (!room.practice && [...room.engine.players.values()].filter((p) => !p.bot && p.connected).length < 2) throw new Error('Invite at least one friend before starting.');
           for (const [id, player] of room.engine.players) if (!player.connected) { room.engine.removePlayer(id); room.disconnected.delete(id); }
-          room.abandoned = false; room.engine.start(now); broadcastRoom(room); return;
+          room.abandoned = false; room.resultEvent = null; room.engine.start(now); broadcastRoom(room); return;
         }
         throw new Error('Unknown game message.');
       } catch (error) { send(connection, { type: 'error', message: error instanceof Error ? error.message : 'The server could not complete that action.', ...(error instanceof ProtocolError ? { code: error.code } : {}) }); }
@@ -260,7 +265,7 @@ export function createGameServer(options: ServerOptions = {}) {
       for (const [id, since] of room.disconnected) {
         if (now - since <= DISCONNECT_GRACE) continue;
         room.disconnected.delete(id);
-        if (room.engine.phase === 'waiting' || room.engine.phase === 'finished') { room.engine.removePlayer(id); broadcastRoom(room); }
+        if (room.engine.phase === 'waiting' || room.engine.phase === 'finished') { room.engine.removePlayer(id); electConnectedHost(room); broadcastRoom(room); }
         else if (!room.practice) {
           room.abandoned = true;
           if (room.sockets.size < 2) room.engine.finish('Match ended because a player disconnected.', now, true);
