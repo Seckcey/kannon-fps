@@ -1,0 +1,164 @@
+{
+  "status": "passed",
+  "checkedAtUtc": "2026-09-08T14:45:43.120Z",
+  "targetRevision": "979601a88b7a5ea574fed817c1686bf327fe4acf",
+  "healthBefore": {
+    "revision": "979601a88b7a5ea574fed817c1686bf327fe4acf",
+    "status": "ok"
+  },
+  "healthAfter": {
+    "revision": "979601a88b7a5ea574fed817c1686bf327fe4acf",
+    "status": "ok"
+  },
+  "url": "https://kpop.8westventures.com",
+  "browser": "Installed Edge via Playwright",
+  "viewport": "1536x864 desktop",
+  "quality": "auto",
+  "checks": [
+    "Rendered scene waits unready for 3.5 seconds with clock and actors frozen",
+    "Actual native mouse capture sends readiness and remains captured through a fresh three-second countdown",
+    "Exact supplied runtime revision before and after acceptance",
+    "Exact built index-CEXl--Kf.js entry bundle before practice/profile writes",
+    "Every observed AR/shotgun has valid one/nine trace metadata; any observed damage metadata is internally consistent",
+    "Public HTTPS entry and real WSS Balanced practice",
+    "Three authoritative AI rivals each moved and fired",
+    "One browser GET per exact scout-grounded-v1/sunbreak-v3 GLB URL with pinned SHA-256",
+    "Explicit exit returns to the menu without reconnecting"
+  ],
+  "practice": {
+    "difficulty": "normal",
+    "botCount": 3,
+    "moved": 3,
+    "fired": 3,
+    "ranked": false
+  },
+  "entryEvidence": {
+    "requestedWaitMs": 3500,
+    "observedWaitServerMs": 3799,
+    "observedWaitSnapshots": 57,
+    "phases": [
+      {
+        "phase": "waiting",
+        "receivedAt": 1788878727134,
+        "serverTime": 1788878723689,
+        "timeRemaining": 300
+      },
+      {
+        "phase": "preparing",
+        "receivedAt": 1788878727476,
+        "serverTime": 1788878724075,
+        "timeRemaining": 300
+      },
+      {
+        "phase": "countdown",
+        "receivedAt": 1788878733496,
+        "serverTime": 1788878730092,
+        "timeRemaining": 3
+      },
+      {
+        "phase": "playing",
+        "receivedAt": 1788878736543,
+        "serverTime": 1788878733145,
+        "timeRemaining": 299.967
+      }
+    ],
+    "observedCountdownServerMs": 3053,
+    "firstCountdownSeconds": 3,
+    "preparationIdMatchesRound": true,
+    "frozenWaitMs": 3500,
+    "frozenClockSeconds": 300,
+    "nativePointerCapture": true,
+    "retainedThroughCountdown": true,
+    "readyMessages": [
+      {
+        "type": "ready",
+        "ready": true
+      }
+    ]
+  },
+  "builtClient": {
+    "path": "/assets/index-CEXl--Kf.js",
+    "responses": [
+      {
+        "url": "https://kpop.8westventures.com/assets/index-CEXl--Kf.js",
+        "status": 200
+      }
+    ]
+  },
+  "combatMetadata": {
+    "shots": {
+      "total": 15,
+      "ar": 15,
+      "shotgun": 0
+    },
+    "traces": {
+      "total": 15,
+      "world": 3,
+      "player": 9,
+      "range": 3,
+      "protectedPlayer": 0,
+      "shieldedPlayer": 5
+    },
+    "damage": {
+      "events": 9,
+      "shieldDamage": 98,
+      "healthDamage": 100,
+      "shieldBreaks": 1
+    }
+  },
+  "modelResponses": [
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "status": 200,
+      "sha256": "6a0cfc545e49d60519e8a71c933c9048a8aa4dfd7d38687a83b87cace9398d0d"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=scout-grounded-v1",
+      "status": 200,
+      "sha256": "9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9"
+    }
+  ],
+  "modelRequests": [
+    {
+      "url": "https://kpop.8westventures.com/models/scout.glb?v=scout-grounded-v1",
+      "method": "GET"
+    },
+    {
+      "url": "https://kpop.8westventures.com/models/environment.glb?v=sunbreak-v3",
+      "method": "GET"
+    }
+  ],
+  "sockets": [
+    "wss://kpop.8westventures.com/ws"
+  ],
+  "appErrors": [],
+  "externalAnalyticsCspWarnings": [
+    "public: Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+  ],
+  "warnings": [
+    "public: THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ],
+  "screenshot": "../art/round-readiness-live-gameplay.png",
+  "readyScreenshot": "../art/round-readiness-live-ready.png",
+  "limits": "One desktop browser through Cloudflare. No physical-phone, two-household, network-adversity, full-round, or performance claim. Shotgun and damage observations depend on natural practice behavior; this short run does not require either and reports their actual counts. Metadata checks use received server events only, without injecting inputs, clocks, or state. Readiness uses one genuine button click and actual native pointer capture. This creates one QA browser profile and an unranked temporary practice; no crew or rating writes. Known Cloudflare beacon CSP diagnostics are reported separately and are not suppressed as general domain errors.",
+  "evidence": {
+    "sourceCandidate": "c412247bab9cbad377e8515be1ddd77446fcdb8a",
+    "rawReportSha256": "26ecfb8578e67a4babecb40b59165fca6f91d42e55a3098bed997d854073093e",
+    "harnessSha256": "582bcf26fa46039e286b7cf6955bc3a932a78247a251aadbb2e352b7017c63ff",
+    "helperSha256": "01d67c33f4e3273e5600233b998f0d19b361e6a92e7bb74b8b6de0eac688b5d2",
+    "artifacts": [
+      {
+        "path": "docs/art/round-readiness-live-ready.png",
+        "sha256": "eab2a2f2cb7281b30354ca4a74a5539b619944cd6123d61b1dc84e7c1cf6538c",
+        "bytes": 1110964
+      },
+      {
+        "path": "docs/art/round-readiness-live-gameplay.png",
+        "sha256": "472b734efede7a7da7ad9514ac0a75f0d22a9cf741c0cc855444a3625aa3d1b4",
+        "bytes": 1172636
+      }
+    ],
+    "inAppBrowser": "Separate public menu inspected through CUA, then its owned tab closed. Native capture acceptance below uses installed Edge; the initial local CUA capture failure remains separately disclosed.",
+    "screenshotsVisuallyReviewed": true
+  }
+}

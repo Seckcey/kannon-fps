@@ -4,7 +4,7 @@
 
 ## Current live build
 
-- Private 2–8 player free-for-all rooms, host-controlled start, and rematches.
+- Private 2–8 player free-for-all rooms, host-controlled start, and rematches. Each player selects **Ready to play** after their prepared arena renders; everyone's readiness starts the full three-second countdown.
 - Five-minute matches or first to 15 eliminations; three-second respawns.
 - Fixed loadout: **1 AR · 2 Shotgun · 3 Healing ×2**.
 - 100 health and 50 shield per life. Each heal restores up to 50 health after three seconds; damage or firing interrupts it.
@@ -14,11 +14,11 @@
 - Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
 - An original Blender model with a skinned armature and eight animation clips.
 
-The [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) update is live at **https://kpop.8westventures.com** on Coastline. Implementation **[`c0d7f12`](https://github.com/Seckcey/kannon-fps/commit/c0d7f12957123b105c7e961c8cb8b1ba160cfab6)** merged through [PR #7](https://github.com/Seckcey/kannon-fps/pull/7) with [successful main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34232619677). [/health](https://kpop.8westventures.com/health) identifies the running build, including later documentation closeouts. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. All 133 tests, asset/type/build checks, final controller checks and [public rendered practice](docs/verification/scout-grounded-live.json) passed. Real-device controls/performance and a two-household match remain; use the [family playtest guide](docs/FAMILY_PLAYTEST.md). The [release record](docs/RELEASE.md) separates current evidence from earlier releases.
+The [ready-before-countdown update](docs/ROUND_READINESS.md) is live at **https://kpop.8westventures.com** on Coastline. Implementation **[`979601a`](https://github.com/Seckcey/kannon-fps/commit/979601a88b7a5ea574fed817c1686bf327fe4acf)** merged through [PR #8](https://github.com/Seckcey/kannon-fps/pull/8) with [successful main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34239819735). [/health](https://kpop.8westventures.com/health) identifies the running build, including later documentation closeouts. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. All 155 tests and asset/type/build checks passed, alongside [local desktop/touch acceptance](docs/verification/round-readiness-local.json), [isolated Linux acceptance](docs/verification/round-readiness-linux.json) and [public rendered acceptance](docs/verification/round-readiness-live.json). Real-device controls/performance and a two-household match remain; use the [family playtest guide](docs/FAMILY_PLAYTEST.md). The [release record](docs/RELEASE.md) separates these checks from historical art and performance evidence.
 
 ## Sunbreak V3 art and motion
 
-The latest [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) reduces near-floor sliding, smooths the repeating stride and stabilizes knee direction in the Blender Walk/Run clips. It preserves the model's polygon/rig budget and six other actions; residual foot roll and velocity differences remain documented. The preceding [scout form and movement upgrade](docs/SCOUT_MOTION_POLISH.md) fitted the shoulder armor and upper back, aligned gait with visible travel, corrected reload/heal prediction and gave practice rivals the existing stair/platform route. The fixed loadout, authoritative movement, collision and scoring are preserved.
+The deployed [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) reduces near-floor sliding, smooths the repeating stride and stabilizes knee direction in the Blender Walk/Run clips. It preserves the model's polygon/rig budget and six other actions; residual foot roll and velocity differences remain documented. The preceding [scout form and movement upgrade](docs/SCOUT_MOTION_POLISH.md) fitted the shoulder armor and upper back, aligned gait with visible travel, corrected reload/heal prediction and gave practice rivals the existing stair/platform route. The fixed loadout, authoritative movement, collision and scoring are preserved.
 
 The preceding [combat feedback release](docs/COMBAT_FEEDBACK.md) added per-pellet impacts, restrained shield/armor reactions and correctly placed respawn effects. Fixed-capacity render batches keep sustained firing bounded. That release preserved the V3 models; the subsequent scout geometry changes are recorded above.
 
@@ -37,7 +37,9 @@ npm ci
 npm run dev
 ```
 
-Open **http://localhost:5173**. Create a private match, share its room code with another player, and start once at least two people have joined. For solo play, choose **Practice first → choose difficulty → Create practice → Enter practice**. Balanced is the default. Arena and character downloads finish before room entry; later rooms reuse those downloaded models.
+Open **http://localhost:5173**. Create a private match, share its room code with another player, and have the host start once at least two people have joined. Each player then selects **Ready to play** after their prepared arena appears. For solo play, choose **Practice first → choose difficulty → Create practice → Enter practice → Ready to play**. Balanced is the default. Model downloads finish before room entry and later rooms reuse their buffers; the countdown also waits for the current round to render and for deliberate control engagement.
+
+Desktop readiness captures the mouse with that click; phones use the same button without firing or moving. Leaving the page, releasing the mouse, opening a menu or reconnecting while preparing requires readiness again. Preparation expires to the lobby after 45 seconds with a retry explanation. Once countdown begins, menus and disconnects do not pause the round. If an older game page is detected, refresh the players' pages before starting.
 
 Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They use ground routes and the existing south stairs/platform, following visible opponents upward and returning through the stairs. They do not jump or perform general climbing. Rematches keep the chosen difficulty. Practice creates no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent.
 

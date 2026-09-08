@@ -1,0 +1,184 @@
+{
+  "status": "passed_independently_verified",
+  "source": "c412247bab9cbad377e8515be1ddd77446fcdb8a",
+  "productionRevisionUnchanged": "21d32275dd7469fcf0c6967edd5eb63934ab727e",
+  "verifiedAtUtc": "2026-09-08T14:39:39.975Z",
+  "ci": {
+    "headSha": "c412247bab9cbad377e8515be1ddd77446fcdb8a",
+    "runId": "34238582748",
+    "conclusion": "success",
+    "url": "https://github.com/Seckcey/kannon-fps/actions/runs/34238582748"
+  },
+  "scriptPins": {
+    "linuxScript": "a40e23d485c7c46406b07fcdbce6c0bd5d2653912ca6700fa2770e8320ac8eaf",
+    "linuxAdapter": "8806f9034110d8c432f2a2211eeb7243f0e73b16fdc2e1b8a28654dd4ac8ec5c",
+    "eightPlayerHarness": "55bca5236237feaab68f5b1bac7d43ff2f625f85a408b1b43389831b6d4ce360",
+    "practiceHarness": "9d349529ce8761278dc0595d3cbf48395d59f87550ff463e378792fa922c9564"
+  },
+  "sourceScope": {
+    "exactChangedPaths": 27,
+    "sourceBlobPins": 19,
+    "protectedSourceAndModelsUnchanged": true
+  },
+  "build": {
+    "node": "v24.20.0",
+    "platform": "linux",
+    "typecheckAndProductionBuild": "passed",
+    "reviewedModelsMatch": true
+  },
+  "isolation": {
+    "network": "none",
+    "publishedPorts": 0,
+    "productionVolumeMounted": false,
+    "data": "Disposable tmpfs only",
+    "memoryMiB": 512,
+    "cpus": 1,
+    "pids": 128,
+    "user": "node",
+    "readOnlyRootfs": true,
+    "capDrop": [
+      "ALL"
+    ],
+    "noNewPrivileges": true,
+    "restart": "no"
+  },
+  "readiness": {
+    "readyProtocol": 1,
+    "allEightRequired": true,
+    "unreadyHoldMs": 3224,
+    "fullClockDuringPreparation": true,
+    "roundIdMatchesNonce": true,
+    "freshCountdownSeconds": 3
+  },
+  "transport": {
+    "durationSeconds": 60.000320538,
+    "clients": 8,
+    "ninthRejected": true,
+    "reconnectStateAndFreshSequence": "passed",
+    "inputFrames": 14394,
+    "arShots": 1291,
+    "shotgunShots": 165,
+    "snapshotHz": {
+      "min": 15.0353970776384,
+      "max": 15.065711859299608
+    },
+    "worstSnapshotGapMs": {
+      "p95": 67.76626400000532,
+      "p99": 68.39475600000151,
+      "max": 70.85966300000291
+    },
+    "worstLatestAcknowledgedInputAgeMs": {
+      "p95": 34.36800900000162,
+      "p99": 35.173110999996425,
+      "max": 39.83703600000081
+    },
+    "profileHttpRoundTripMs": 2.7463559999996505,
+    "traffic": {
+      "totalReceivedWireBytes": 33564524,
+      "existingFeedbackMetadataBytes": 2106793,
+      "meanPerPlayerWireBytesPerSecond": 69925.71810250285,
+      "meanPerPlayerFeedbackMetadataBytesPerSecond": 4389.128635291425,
+      "feedbackMetadataShareOfReceivedBytes": 0.06276844563623188,
+      "receivedCombatEventBytes": 5220650,
+      "sameCombatEventsWithoutMetadataBytes": 3113857,
+      "maxShotEventBytes": 1844,
+      "receivedTraces": 22145
+    },
+    "unexpectedErrors": []
+  },
+  "practice": [
+    {
+      "difficulty": "easy",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "readinessCapability": 1,
+      "matchingPreparedRound": true,
+      "botsImplicitlyReady": true,
+      "botsMoved": 3,
+      "botShotEvents": 16,
+      "botHitEvents": 12,
+      "traceCount": 40,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    },
+    {
+      "difficulty": "normal",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "readinessCapability": 1,
+      "matchingPreparedRound": true,
+      "botsImplicitlyReady": true,
+      "botsMoved": 3,
+      "botShotEvents": 38,
+      "botHitEvents": 22,
+      "traceCount": 38,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    },
+    {
+      "difficulty": "hard",
+      "initialFixedLoadout": true,
+      "forcedUnranked": true,
+      "crewDetached": true,
+      "realCountdown": true,
+      "readinessCapability": 1,
+      "matchingPreparedRound": true,
+      "botsImplicitlyReady": true,
+      "botsMoved": 3,
+      "botShotEvents": 39,
+      "botHitEvents": 29,
+      "traceCount": 39,
+      "metadataValidated": true,
+      "leaderboardUnchanged": true,
+      "historyUnchanged": true
+    }
+  ],
+  "sampledResources": {
+    "samples": 13,
+    "maxCpuPercent": 15.85,
+    "maxPids": 27,
+    "memorySamples": [
+      "76.24MiB / 512MiB",
+      "82.43MiB / 512MiB",
+      "85.79MiB / 512MiB",
+      "89.68MiB / 512MiB",
+      "90.41MiB / 512MiB",
+      "92MiB / 512MiB",
+      "92.8MiB / 512MiB",
+      "94.5MiB / 512MiB",
+      "94.48MiB / 512MiB",
+      "94.61MiB / 512MiB",
+      "97.95MiB / 512MiB",
+      "49.39MiB / 512MiB",
+      "50.98MiB / 512MiB"
+    ]
+  },
+  "preserved": {
+    "productionCleanMain": true,
+    "productionContainerExactlyUnchanged": true,
+    "productionEnvironmentUnchanged": true,
+    "productionDataMountedOrMutated": false,
+    "protectedContainers": 65,
+    "protectedInventoryExactlyUnchanged": true,
+    "protectedCanonicalJsonSha256": "b41a9d35f19638f57a70640cff7fabfd0aced98a3f4e96cf1ab82b838841488a",
+    "priorImageTagsPreserved": 18
+  },
+  "cleanup": {
+    "ownedQaContainerAbsent": true,
+    "ownedSourceAbsent": true,
+    "candidateImageRetained": true
+  },
+  "limitations": [
+    "One Linux container loopback test; app and load generator share 1CPU/512MiB. Not a WAN/physical-phone/GPU benchmark.",
+    "Each practice difficulty observed 12 seconds after real countdown, not a full five-minute match.",
+    "Input age measures the latest acknowledged frame, not every intermediate frame.",
+    "Received wire-byte fields measure WebSocket message payloads; they exclude WebSocket/TCP/TLS framing overhead.",
+    "Only temporary QA profiles/crew were created in candidate tmpfs; production profile/rating data was never mounted or accessed by the harnesses."
+  ]
+}
