@@ -12,9 +12,17 @@
 - Keyboard/mouse and touch joystick, aiming, firing, jump, sprint, reload, and loadout controls.
 - Solo practice against three moving AI rivals: Scout, Moxie, and Rook, with Relaxed, Balanced, or Challenging difficulty.
 - Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
-- An original Blender model with a skinned armature and eight hand-authored animation clips in the live game.
+- An original Blender model with a skinned armature and eight animation clips.
 
-The Sunbreak visual and active-practice upgrade is live at **https://kpop.8westventures.com** on Coastline. Its verified implementation release, **[`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e)**, was introduced through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3); [/health](https://kpop.8westventures.com/health) reports the current deployed build, including later documentation closeouts. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. Public HTTPS/WSS and rendered practice are verified; real-device performance/controls acceptance and a two-household playtest remain. The Blender art uses human proportions with stylized armor; it is not photorealistic or motion-captured. See the [release record](docs/RELEASE.md) for validation and remaining limits.
+The Sunbreak V2 visual and active-practice upgrade is live at **https://kpop.8westventures.com** on Coastline. Its verified implementation release, **[`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e)**, was introduced through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3); [/health](https://kpop.8westventures.com/health) reports the canonical current deployed build, including later documentation closeouts. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. Public HTTPS/WSS and rendered practice are verified for that release; real-device performance/controls acceptance and a two-household playtest remain. V2 shipped stylized Blender armor and hand-keyed motion. See the [release record](docs/RELEASE.md) for historical validation and remaining limits.
+
+## Current art-depth candidate — pending release
+
+This checkout includes the next [art-depth candidate](docs/ART_DEPTH.md): fuller coastal scenery, more defined architecture, an athletic weapon-ready stance and revised locomotion. It preserves the map collision, fixed loadout, movement speeds and match rules. Local asset/controller evidence belongs to this candidate; it is not a claim that these changes have shipped.
+
+The scout's geometry, rig, surfaces, weapon poses and six actions remain original. Walk and Run lower-body motion now derive from the CMU Graphics Lab's selected `09_01` capture, retargeted and timed in Blender. [Source provenance and separate data terms](art/source/motion/cmu-09/CMU-USAGE-NOTICE.md) and a [public credit notice](public/models/scout-motion-NOTICE.txt) accompany the model. The motion is not CC0 and must not be sold directly as motion data or an animation pack. `.gitattributes` preserves the exact publisher bytes used by the provenance hashes.
+
+Movement animation follows actual speed, keeps the legs aligned with travel while preserving aim, and blends rapid input changes from the current pose. A grounded leg constraint corrects boot penetration during transitions without moving the actor or upper body. The implementation and its limits are described in [Architecture](docs/ARCHITECTURE.md) and [Assets](docs/ASSETS.md). The art remains stylized; these checks do not establish Fortnite-level quality or physical-phone performance.
 
 ## Run locally
 

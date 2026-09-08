@@ -13,11 +13,13 @@ Give a father and son an enjoyable competitive game while apart, with invited fr
 - Each heal restores 50 health after three seconds. Damage or weapon fire interrupts it; activated charges are consumed.
 - Crew ratings, wins, matches, eliminations, deaths, win rate, monthly/all-time standings, five-match placements, and match history.
 - Rematches and clear waiting, connection, and error states.
-- Original Blender-created rigged models with human proportions and believable movement. Current armor is stylized; motion is hand-keyed.
+- Original Blender-created rigged models with human proportions and believable movement. Armor remains stylized; source and third-party motion rights are documented.
 
 ## Current content
 
-The Sunbreak visual and practice upgrade is live at [kpop.8westventures.com](https://kpop.8westventures.com). Its verified implementation release [`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e) was introduced through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3); [/health](https://kpop.8westventures.com/health) identifies the current deployed build. The [release record](RELEASE.md) documents validation and deployment. The current Blender armor and environment are stylized, with hand-keyed animation; photorealism and motion capture are not claimed.
+The Sunbreak V2 visual and practice upgrade is live at [kpop.8westventures.com](https://kpop.8westventures.com). Its verified implementation release [`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e) was introduced through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3); [/health](https://kpop.8westventures.com/health) is the canonical current deployed build identity. The [release record](RELEASE.md) documents historical validation and deployment. V2 shipped stylized Blender armor and scenery with hand-keyed motion.
+
+The current [art-depth candidate](ART_DEPTH.md) is pending release. It improves coastal scenery, architecture and the scout's athletic stance while preserving the game rules and collision. Walk/Run lower-body movement now uses credited CMU motion retargeted in Blender; the model, rig, weapon poses and six other actions remain original. The [retained source notice](../art/source/motion/cmu-09/CMU-USAGE-NOTICE.md) explains its separate rights: the motion is not CC0 and cannot be resold directly as motion data. Rapid direction changes, aimed movement, interrupted transitions and grounded foot placement are handled by the animation controller. These changes target more convincing motion; they do not establish photorealism, perfect foot locking or parity with Fortnite.
 
 Sunbreak Courtyard is a sunny coastal arena with shared collision, cover, stepped elevation, and multiple routes. The AR has a 30-round magazine and the shotgun six rounds; both have unlimited reserve and server-controlled reloads. Everyone receives the same equipment.
 

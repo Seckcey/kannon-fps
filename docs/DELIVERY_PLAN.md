@@ -1,10 +1,10 @@
 # Delivery and acceptance
 
-## Live Sunbreak release
+## Live Sunbreak V2 release
 
-The live Sunbreak implementation was introduced in verified release [`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e), merged through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3) and deployed on Coastline at [kpop.8westventures.com](https://kpop.8westventures.com). The [/health](https://kpop.8westventures.com/health) endpoint identifies the current deployed build, including later documentation closeouts. Sunbreak includes the approved third-person view, fixed loadout/healing, respawns/protection, server-owned multiplayer, private invitations/crews, persistent rankings/history, keyboard/mouse and touch interfaces, plus the coastal environment and active solo practice rivals. Blender source, a skinned glTF model, eight clips, and reproducible generation/validation scripts are included. Armor and scenery remain stylized; animation is hand-keyed, not motion-captured.
+The live Sunbreak V2 implementation was introduced in verified release [`bd58bd3`](https://github.com/Seckcey/kannon-fps/commit/bd58bd35723f8f7b9bb10b58914784b26909533e), merged through [PR #3](https://github.com/Seckcey/kannon-fps/pull/3) and deployed on Coastline at [kpop.8westventures.com](https://kpop.8westventures.com). The [/health](https://kpop.8westventures.com/health) endpoint is the canonical current deployed build identity, including later documentation closeouts. Sunbreak includes the approved third-person view, fixed loadout/healing, respawns/protection, server-owned multiplayer, private invitations/crews, persistent rankings/history, keyboard/mouse and touch interfaces, plus the coastal environment and active solo practice rivals. Blender source, a skinned glTF model, eight clips and reproducible generation/validation scripts are included. V2 shipped stylized armor/scenery and hand-keyed animation.
 
-Validation includes TypeScript, simulation/storage regressions, HTTP/WebSocket acceptance, asset checks, and the [successful main CI run](https://github.com/Seckcey/kannon-fps/actions/runs/34198117228). Browser acceptance separately exercises rendered menus and gameplay. See the [release record](RELEASE.md) for exact results and limitations.
+V2 validation included TypeScript, simulation/storage regressions, HTTP/WebSocket acceptance, asset checks and the [successful main CI run](https://github.com/Seckcey/kannon-fps/actions/runs/34198117228). Browser acceptance separately exercised rendered menus and gameplay. These results belong to that release, not automatically to a later candidate. See the [release record](RELEASE.md) for exact results and limitations.
 
 ## Visual and practice upgrade
 
@@ -13,6 +13,14 @@ The deployed upgrade adds three active practice rivals with Relaxed, Balanced, a
 Room entry prepares retained GLB bytes before admission, then reuses those bytes for rendering. Failed downloads can retry without refetching successful assets. Replacing the player or leaving cancels stale entry work, so a delayed download cannot enter a room as a previous identity.
 
 Focused automated checks cover AI perception, navigation and corner recovery, reaction/aim differences, weapons/healing, match outcomes, rematches, disconnect suspension, invalid settings, persistent-data isolation, asset sharing, timeout/retry, and damaged GLB responses. A seeded match simulation checks movement/collider safety and bounded server work. Rendered acceptance passed all nine groups on the final candidate with no app errors. An isolated Linux candidate also passed a real 60-second eight-player combat/reconnect test and all three practice difficulties. These measurements do not establish physical-phone frame rates, wide-area performance, or capacity for multiple simultaneous rooms.
+
+## Art-depth candidate — pending release
+
+The current candidate improves exterior composition, foliage, architectural detail and the scout's posture without changing collision or match rules. Walk/Run lower-body motion derives from the selected CMU capture; the model, rig, weapon poses and six other actions remain original. Source provenance, a public credit notice and separate motion-data terms are included; `.gitattributes` preserves the exact publisher bytes. The motion is not CC0 or a directly resellable animation pack.
+
+The animation controller uses measured playback rates, world-up leg turns, matching gait phase/rate and interruptible pose weights. A grounded two-bone leg constraint handles transition penetration. Replaying a completed Jump retains its outgoing pose in one reusable donor while a fresh one-shot begins. Validate source/exported geometry, complete controller transitions and actual rendered input separately; a positive source-frame clearance alone does not prove blending is correct.
+
+[ART_DEPTH.md](ART_DEPTH.md) records the candidate's completed checks and remaining limits. Final candidate/CI identity, deployment, origin/public verification and closeout belong to its release record. Do not reuse V2's successful deployment or CI as evidence that this candidate has shipped.
 
 ## Internet release gates
 

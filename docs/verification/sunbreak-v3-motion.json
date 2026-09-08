@@ -1,0 +1,137 @@
+{
+  "status": "passed",
+  "candidateRevision": "8c76d9093988959996422ea0e5a996f1e68013d8",
+  "scope": "Deterministic 120Hz samples through the actual createBlenderCharacter controller loaded by GameView, including every initial crossfade frame. Separate from real-input/network acceptance and FPS.",
+  "sampleRateHz": 120,
+  "scenarioCount": 16,
+  "frameCount": 2268,
+  "scoutSha256": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+  "loadedScoutHash": "7e0b589e779c403dbbe61a5522fcbc4503de99815a6782b18b355cbecfe1091e",
+  "hashUnchanged": true,
+  "runtimeSourceSha256": {
+    "GaitTurn.ts": "ac8b35104f4b488a937a6e0690fccb893a88b8f928f844e364bdb0f3f5438fa9",
+    "CharacterBlend.ts": "f174b66e4ddafb5cce09f2c6772e1d61ffd9af2130b57f707f88ea721685cec7",
+    "LegContact.ts": "17a08643e84124776815a335831d2e83a289bd265bfff7a0879dc58a5a4ddec8",
+    "BlenderCharacter.ts": "9f67b81831e05bee519d1516d25a355a5f5fe7789541df6b13456bfad9ab19d6"
+  },
+  "summary": [
+    {
+      "name": "idle",
+      "frames": 48,
+      "minFirst160ms": 0.00699978092910066,
+      "minAfter160ms": 0.00699978092910066,
+      "maxGrip": 4.2012162816662405E-05
+    },
+    {
+      "name": "idle-to-normal",
+      "frames": 96,
+      "minFirst160ms": 0.0059999098267499995,
+      "minAfter160ms": 0.006879368877430517,
+      "maxGrip": 0.004219340812237012
+    },
+    {
+      "name": "normal-to-sprint",
+      "frames": 96,
+      "minFirst160ms": 0.015407931391410168,
+      "minAfter160ms": 0.006480299008846502,
+      "maxGrip": 0.0021897771859238076
+    },
+    {
+      "name": "sprint-to-aim",
+      "frames": 96,
+      "minFirst160ms": 0.009964570036923366,
+      "minAfter160ms": 0.006610819537311215,
+      "maxGrip": 0.0021975272878222334
+    },
+    {
+      "name": "aim-to-right",
+      "frames": 96,
+      "minFirst160ms": 0.006798940077100563,
+      "minAfter160ms": 0.0067989349343562525,
+      "maxGrip": 0.0022404336038933147
+    },
+    {
+      "name": "right-to-left",
+      "frames": 96,
+      "minFirst160ms": 0.00954316857173539,
+      "minAfter160ms": 0.006798929791659321,
+      "maxGrip": 0.0022404301172229773
+    },
+    {
+      "name": "left-to-right-sprint",
+      "frames": 96,
+      "minFirst160ms": 0.007241207745851817,
+      "minAfter160ms": 0.0063359169558726836,
+      "maxGrip": 0.0020983188683666113
+    },
+    {
+      "name": "right-sprint-to-left-sprint",
+      "frames": 96,
+      "minFirst160ms": 0.006335917153298731,
+      "minAfter160ms": 0.0063359173507260835,
+      "maxGrip": 0.0020983189211223156
+    },
+    {
+      "name": "sprint-to-backward",
+      "frames": 96,
+      "minFirst160ms": 0.006440994526040517,
+      "minAfter160ms": 0.006595391021321012,
+      "maxGrip": 0.0022016796888158076
+    },
+    {
+      "name": "backward-to-slow-touch",
+      "frames": 96,
+      "minFirst160ms": 0.007573983105265331,
+      "minAfter160ms": 0.006516633690737421,
+      "maxGrip": 0.002067554610481316
+    },
+    {
+      "name": "moving-ar-reload",
+      "frames": 252,
+      "minFirst160ms": 0.015583636136258155,
+      "minAfter160ms": 0.006750362900922841,
+      "maxGrip": 0.0011152783298153748
+    },
+    {
+      "name": "moving-shotgun-reload",
+      "frames": 324,
+      "minFirst160ms": 0.015583618559349394,
+      "minAfter160ms": 0.00675033946113854,
+      "maxGrip": 0.0020675386953555187
+    },
+    {
+      "name": "moving-heal",
+      "frames": 396,
+      "minFirst160ms": 0.01570358472868716,
+      "minAfter160ms": 0.006516640076582919,
+      "maxGrip": 0
+    },
+    {
+      "name": "heal-to-ready",
+      "frames": 96,
+      "minFirst160ms": 0.005999968058225683,
+      "minAfter160ms": 0.00699978092910066,
+      "maxGrip": 0.002676742025810666
+    },
+    {
+      "name": "ready-to-fire",
+      "frames": 96,
+      "minFirst160ms": 0.00699978092910066,
+      "minAfter160ms": 0.00699978092910066,
+      "maxGrip": 0.0010943865954492803
+    },
+    {
+      "name": "rapid-stop-start-aim-sprint",
+      "frames": 192,
+      "minFirst160ms": 0.005999910322650459,
+      "minAfter160ms": 0.00599991432423147,
+      "maxGrip": 0.00888257467323344
+    }
+  ],
+  "rapidAnkleStepMaximumMetres": 0.047757286656192915,
+  "rapidAnkleStepLimitMetres": 0.08,
+  "errors": [],
+  "warnings": [
+    "THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+  ]
+}
