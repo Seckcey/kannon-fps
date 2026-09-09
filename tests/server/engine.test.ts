@@ -71,6 +71,22 @@ test('firing or switching away cancels healing and removes spawn protection', ()
   engine.acceptInput('a', input({ seq: 2, slot: 1, fire: true }), 3200); engine.step(3200, 1 / 30);
   assert.equal(a.healingUntil, 0); assert.equal(a.protectedUntil, 0); assert.equal(a.ammoAR, 29);
 });
+
+test('shotgun selection interrupts healing or AR reload without releasing movement and held fire', () => {
+  for (const action of ['heal', 'reload'] as const) {
+    const { engine, a, events } = playing();
+    Object.assign(a, { x: -28, y: 0, z: 20, health: 50, ammoAR: 20 });
+    engine.acceptInput('a', input({ slot: action === 'heal' ? 3 : 1, fire: action === 'heal', reload: action === 'reload' }), 3100);
+    engine.step(3100, 1 / 30);
+    assert.ok(a.healingUntil || a.reloadingUntil);
+    const beforeZ = a.z;
+    engine.acceptInput('a', input({ seq: 2, slot: 2, moveZ: 1, fire: true, jump: true, sprint: true, aim: true, reload: action === 'reload' }), 3200);
+    engine.step(3200, 1 / 30);
+    assert.equal(a.slot, 2); assert.equal(a.healingUntil, 0); assert.equal(a.reloadingUntil, 0);
+    assert.ok(a.z < beforeZ); assert.ok(a.vy > 0);
+    assert.ok(events.some(event => event.type === 'shot' && event.slot === 2));
+  }
+});
 test('authoritative hits respect cadence, shields, reload timers, and wall occlusion', () => {
   const { engine, a, b, events } = playing();
   Object.assign(a, { x: -28, y: 0, z: 12 }); Object.assign(b, { x: -28, y: 0, z: -2 });

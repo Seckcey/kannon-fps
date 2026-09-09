@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
 import { InputController } from '../../src/game/InputController.js';
+import { Loadout } from '../../src/components/Loadout.js';
 
 function browserEnvironment(run: (environment: { window: EventTarget; document: EventTarget & { hidden: boolean; focused: boolean } }) => void) {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -18,6 +19,36 @@ function browserEnvironment(run: (environment: { window: EventTarget; document: 
     if (previousDocument) Object.defineProperty(globalThis, 'document', previousDocument); else Reflect.deleteProperty(globalThis, 'document');
   }
 }
+
+test('weapon icons accept a non-primary finger immediately while moving, firing, aiming, jumping and sprinting', () => {
+  browserEnvironment(() => {
+    const input = new InputController(undefined, { firingMode: 'advanced' });
+    try {
+      input.setTouchMove(0, 1);
+      for (const action of ['fire', 'aim', 'jump', 'sprint', 'reload'] as const) input.setAction(action, true);
+      const shotgun = Loadout({ onSelect: slot => input.setSlot(slot) }).props.children[1];
+      let prevented = false;
+      shotgun.props.onPointerDown({ button: 0, isPrimary: false, pointerType: 'touch', preventDefault() { prevented = true; } });
+      const frame = input.current();
+      assert.equal(prevented, true); assert.equal(frame.slot, 2); assert.equal(frame.moveZ, 1);
+      for (const action of ['fire', 'aim', 'jump', 'sprint', 'reload'] as const) assert.equal(frame[action], true, action);
+    } finally { input.dispose(); }
+  });
+});
+
+test('a delayed compatibility click cannot undo a newer weapon press; keyboard activation still works', () => {
+  const selected: number[] = [];
+  const buttons = Loadout({ onSelect: slot => selected.push(slot) }).props.children;
+  const press = { button: 0, preventDefault() {} };
+  buttons[2].props.onPointerDown(press);
+  buttons[1].props.onPointerDown(press);
+  buttons[2].props.onClick({ detail: 1 });
+  assert.deepEqual(selected, [3, 2]);
+  buttons[0].props.onClick({ detail: 0 });
+  buttons[1].props.onPointerDown({ button: 2, preventDefault() { assert.fail('Right click must be ignored'); } });
+  assert.deepEqual(selected, [3, 2, 1]);
+  assert.equal(Loadout({}).props.children[0].props.disabled, true);
+});
 
 test('late touch movement during a pause cannot resume the player without a fresh gesture', () => {
   browserEnvironment(() => {
