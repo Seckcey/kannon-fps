@@ -3,14 +3,26 @@ export const WORLD_VERSION = 'kannon-town-v1';
 export type Slot = 1 | 2 | 3;
 export type Phase = 'waiting' | 'preparing' | 'countdown' | 'playing' | 'finished';
 export type PracticeDifficulty = 'easy' | 'normal' | 'hard';
+export type RoomVisibility = 'private' | 'public';
 export interface Profile { id: string; name: string; color: string }
 export interface Crew { id: string; name: string; invite: string; ownerId: string; memberCount: number }
 export interface RoomPlayer extends Profile { connected: boolean; ready?: boolean; bot?: boolean }
 export interface RoomSnapshot {
   id: string; code: string; hostId: string; ranked: boolean; practice: boolean;
   crewId?: string; practiceDifficulty?: PracticeDifficulty; phase: Phase; players: RoomPlayer[]; expiresAt: number;
+  visibility?: RoomVisibility; fillBots?: boolean; botDifficulty?: PracticeDifficulty;
   /** Present only while preparing; readiness belongs to this attempt and connection. */
   preparation?: { id: string; expiresAt: number };
+}
+/** Only opted-in, joinable public lobbies expose this small directory entry. */
+export interface AvailableGame {
+  id: string; hostName: string; humanCount: number; botCount: number; maxPlayers: number;
+  fillBots: boolean; botDifficulty?: PracticeDifficulty;
+}
+export function hasMatchOpponents(players: Iterable<{ connected: boolean; bot?: boolean }>): boolean {
+  let humans = 0, participants = 0;
+  for (const player of players) if (player.connected) { participants++; if (!player.bot) humans++; }
+  return humans >= 1 && participants >= 2;
 }
 export interface InputFrame {
   seq: number; moveX: number; moveZ: number; yaw: number; pitch: number;
@@ -54,8 +66,9 @@ export interface MatchHistory {
 }
 export type ClientMessage =
   | { type: 'hello'; token: string; readyProtocol?: 1; worldVersion?: string }
-  | { type: 'create'; ranked: boolean; crewId?: string; practice?: boolean; practiceDifficulty?: PracticeDifficulty }
+  | { type: 'create'; ranked: boolean; crewId?: string; practice?: boolean; practiceDifficulty?: PracticeDifficulty; visibility?: RoomVisibility; fillBots?: boolean; botDifficulty?: PracticeDifficulty }
   | { type: 'join'; code: string }
+  | { type: 'join-public'; roomId: string }
   | { type: 'start' }
   | { type: 'rematch' }
   | { type: 'ready'; preparationId: string; ready: boolean }

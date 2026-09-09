@@ -166,7 +166,7 @@ test('close rivals use ordinary shotgun damage and cannot engage a target behind
   assert.equal(events.filter(e => e.type === 'shot').length, count); assert.equal(human.health, 100); assert.equal(human.shield, 50);
 });
 
-test('AI victories and ties are valid only in practice and rematches reset the whole round', () => {
+test('AI victories and ties are valid with bots enabled and rematches reset the whole round', () => {
   const { engine, human, bots } = practice('normal', 3); const bot = bots[0]!;
   place(human, -28, -2); bot.kills = 14; engine.damage(human, bot, 150, 6000);
   assert.equal(engine.phase, 'finished'); assert.deepEqual(engine.winnerIds, [bot.id]);
@@ -174,7 +174,7 @@ test('AI victories and ties are valid only in practice and rematches reset the w
   for (const p of engine.players.values()) assert.deepEqual([p.kills, p.deaths, p.health, p.shield, p.ammoAR, p.ammoShotgun, p.heals, p.aiming], [0, 0, 100, 50, 30, 6, 2, false]);
   human.kills = 4; bot.kills = 4; engine.finish('Time is up.', 310_000);
   assert.deepEqual(new Set(engine.winnerIds), new Set([human.id, bot.id]));
-  const friends = new MatchEngine(); assert.throws(() => friends.addPlayer(PRACTICE_RIVALS[0]!, 0, true), /only in practice/);
+  const friends = new MatchEngine(); assert.throws(() => friends.addPlayer(PRACTICE_RIVALS[0]!, 0, true), /not enabled/);
 });
 
 test('published aim state follows fresh inputs and clears on expiry, disconnect, death, and respawn', () => {

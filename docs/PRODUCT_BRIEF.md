@@ -6,7 +6,7 @@ Give a father and son an enjoyable competitive game while apart, with invited fr
 
 - Third-person, over-the-shoulder camera; no building.
 - Browser delivery on phones and desktops, touch and keyboard/mouse.
-- Private 2–8 player free-for-all, five minutes or first to 15 eliminations.
+- Public or private free-for-all, up to eight people, five minutes or first to 15 eliminations. Casual matches can fill to four participants with bots and start with one person.
 - Three-second respawns with full starting loadout, 100 health, and 50 shield.
 - Two-second spawn protection, ending on weapon fire.
 - Slot 1 AR, slot 2 shotgun, slot 3 two healing charges per life.
@@ -29,11 +29,13 @@ Kannon Town is the only playable map: two facing two-story houses, garages, upst
 
 On phones, the left side moves and the right side aims. Simple mode defaults to automatic fire after the crosshair rests on a visible rival. Advanced provides manual Fire that can be held and dragged to aim. Healing always needs a deliberate tap. Optional gyroscope aiming is enabled in Settings.
 
-Casual games never affect ratings. Solo practice is a complete round against three named AI rivals: Scout, Moxie, and Rook. Choose **Practice first → difficulty → Create practice → Enter practice → Ready to play**. Relaxed gives slower reactions and more aim error, Balanced is the default, and Challenging responds faster and aims more accurately. Weapons, health, healing, protection, respawns, and the five-minute/15-elimination rules stay the same. Rivals compete with each other as well as the human player and can win or share a draw. Rematches retain difficulty.
+Casual games never affect ratings. Solo practice is a complete round against three named AI rivals: Scout, Moxie, and Rook. Choose **Play against bots → difficulty → Create bot match → Enter bot match → Ready to play**. Relaxed gives slower reactions and more aim error, Balanced is the default, and Challenging responds faster and aims more accurately. Weapons, health, healing, protection, respawns, and the five-minute/15-elimination rules stay the same. Rivals compete with each other as well as the human player and can win or share a draw. Rematches retain difficulty.
 
 Rivals patrol and use cover, react to visible opponents, reload, heal, and choose between AR and shotgun by distance. Navigation covers both houses, four stair routes and the open truck, so visible upper opponents can prompt ascent. Rivals return through the stairs and do not jump or perform general climbing. Bot actions stop when no human is connected; the server match clock continues.
 
-Practice never creates persistent bot profiles, saved match history, or rating updates. The human player's normal saved profile is still used. Practice rooms remain solo; private friends matches contain human players only. There is no progression grind or purchase requirement.
+Bot matches never create persistent bot profiles, saved match history, or rating updates. The human player's normal saved profile is still used. Solo bot rooms remain private and solo; casual private or public matches can fill empty lobby seats with the same AI rivals. Humans replace bots until four people have joined, with room for up to eight people. Ranked crew matches stay private and human-only.
+
+**Available Games** lists public lobbies with room for more people and offers a direct **Join** button without an invitation. It shows the host nickname, player count, and bot settings, refreshes automatically while visible, and handles games that fill up or start before a join completes. Full, empty disconnected, expired, preparing, playing, and finished matches are not listed. Hosts choose Public explicitly when creating a room; Private is the default. There is no progression grind or purchase requirement.
 
 ## Remote play
 
@@ -45,7 +47,7 @@ The first family feedback reports that general gameplay feels good, but iPhone m
 
 ## Deferred scope
 
-Public matchmaking, shrinking battle-royale arenas, additional weapons/maps, bots in friends matches, advanced AI climbing/jumping, voice/chat, progression, purchases, controller support, and console clients remain outside the current scope.
+Automatic matchmaking, joining a match already in progress, shrinking battle-royale arenas, additional weapons/maps, advanced AI climbing/jumping, voice/chat, progression, purchases, controller support, and console clients remain outside the current scope.
 
 ## Success
 

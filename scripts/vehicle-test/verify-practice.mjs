@@ -103,10 +103,10 @@ async function runCase(label, variant, mobile) {
     assert.equal(await page.getByRole('slider', { name: /Game volume/ }).inputValue(), '0');
     await page.getByRole('button', { name: 'Back to arena', exact: true }).click();
     await page.getByLabel('Player name', { exact: true }).fill(mobile ? 'Vehicle Touch QA' : `Vehicle ${variant === 'current' ? 'Before' : 'After'} QA`);
-    await page.getByRole('button', { name: 'Practice first', exact: true }).click();
+    await page.getByRole('button', { name: 'Play against bots', exact: true }).click();
     await page.getByRole('radio', { name: /Relaxed/ }).check();
-    await page.getByRole('button', { name: 'Create practice', exact: true }).click();
-    await page.getByRole('button', { name: 'Enter practice', exact: true }).click();
+    await page.getByRole('button', { name: 'Create bot match', exact: true }).click();
+    await page.getByRole('button', { name: 'Enter bot match', exact: true }).click();
     await page.getByRole('button', { name: 'Ready to play', exact: true }).waitFor({ state: 'visible' });
     assert.equal((await state(page)).phase, 'preparing');
     await page.getByRole('button', { name: 'Ready to play', exact: true }).click();

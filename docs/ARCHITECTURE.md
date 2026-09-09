@@ -26,9 +26,19 @@ Disconnected players have a 30-second recovery window. Movement, actions, and pu
 
 Host start/rematch first enters `preparing`. The fresh preparation ID equals `WorldSnapshot.roundId`; an authenticated `ready` acknowledgment must match it. Every human must be connected and ready before the full three-second countdown begins. The renderer proves a frame of that exact prepared world, then the player deliberately engages controls. Input blocking preserves mouse capture through countdown while clearing held/queued actions; the server discards all inputs outside play. A 45-second timeout or insufficient roster returns to the lobby without a result. Readiness is revoked on recovery and tab replacement. `hello.readyProtocol: 1` and matching `hello.worldVersion` gate older pages before start/rematch and cancel a preparation if an incompatible replacement joins. Input from an incompatible page is also rejected after reconnect into an already playing room. This prevents the old Sunbreak collision client from controlling a player in Kannon Town. See [Round readiness](ROUND_READINESS.md) for lifecycle and verification details.
 
-## Practice opponents
+## Public lobbies and bot filling
 
-`server/bots.ts` generates ordinary input frames for three clearly labeled rivals. The engine applies the same movement, collision, ammo, weapon cadence, healing, protection, respawn, and simultaneous-damage rules to humans and bots. Practice winners include bots, including time-limit or score-limit ties. Friends matches never add AI players.
+Create messages accept `visibility: 'private' | 'public'`, `fillBots: boolean`, and optional `botDifficulty: 'easy' | 'normal' | 'hard'`. Omitted fields retain private, human-only behavior for older clients. The current casual creation UI enables bot filling by default; hosts can turn it off. Ranked rooms must be private with bots disabled, and solo practice cannot be public. Invalid settings are rejected before leaving an existing room.
+
+`GET /api/games` is a no-store, rate-limited public directory requiring no profile creation. Entries contain only a room ID, host nickname, human/bot counts, maximum human capacity, and bot settings. They never expose room invitation codes, crew invitations, keys, or private rosters. Only opted-in, nonempty, waiting casual rooms with available human seats are included. Public joining uses an authenticated `join-public` WebSocket message and rechecks eligibility at admission; stale or full-room errors preserve the player's current room. Invite joining continues to work separately.
+
+The browser refreshes the directory every five seconds while visible and idle. Requests do not overlap; hidden pages and active entry suspend refreshing, and unmounted or superseded responses cannot replace current results. Loading, empty, failure, and joining states remain distinct.
+
+Casual bot filling maintains four total lobby participants until four humans join; further humans can join up to the eight-player limit. Disconnected human reservations count until their 30-second grace expires. Every match requires at least one connected human and two connected participants. Bots are implicitly ready, but every human must deliberately acknowledge preparation. Existing bot opponents allow the last connected human to keep playing after a friend leaves. Bot membership stays fixed during live play; rematches rebuild the roster after pruning disconnected humans. Solo practice remains private and restricted to its host.
+
+## AI opponents
+
+`server/bots.ts` generates ordinary input frames for three clearly labeled rivals. The engine applies the same movement, collision, ammo, weapon cadence, healing, protection, respawn, and simultaneous-damage rules to humans and bots. Bot-enabled matches include AI winners and time-limit or score-limit ties. Casual friends matches can use the same AI controller when the host enables filling.
 
 The optional `practiceDifficulty` create/room field accepts `easy`, `normal`, or `hard`; omitted practice difficulty defaults to `normal`. The UI labels these Relaxed, Balanced, and Challenging. Difficulty adjusts reaction delay, turning, aim error, perception range, burst/rest timing, and engagement distance. It does not grant extra health or damage. Invalid values are rejected before leaving the current room; valid difficulty settings have no effect on human-only matches.
 
@@ -36,7 +46,7 @@ Perception samples visible opponents at 10 Hz with field-of-view and map-occlusi
 
 Bots reload and heal through the existing engine timers. Their actions suspend when no human remains connected, and recovery starts a fresh reaction delay; the match clock continues. Each rematch resets bot decision state and uses a fresh seed. An internal `EngineOptions.practiceSeed` supports reproducible simulations and is never accepted over HTTP or WebSocket.
 
-Practice is always unranked, including a forged create request combining `practice: true` with `ranked: true`. Bot identities, decisions, and practice results stay in room memory. No bot profile, rating, opponent-pair counter, or match-history row is written. Human profile creation/restoration follows the normal persistent identity flow.
+Practice is always unranked, including a forged create request combining `practice: true` with `ranked: true`. Requests combining ranked matches with public visibility or bot filling are rejected. Bot identities, decisions, and casual/solo results stay in room memory. No bot profile, rating, opponent-pair counter, or match-history row is written. Human profile creation/restoration follows the normal persistent identity flow.
 
 ## Room entry and asset lifetime
 
@@ -56,7 +66,7 @@ One WebSocket is active per player. A second replaces the first. Room invitation
 
 Controls include origin checks, payload/rate limits, room bounds, inactivity cleanup, slow-client backpressure, and static file confinement. Proxies must preserve Host/WebSocket upgrades and should apply their own client-address limits. The application ignores spoofable forwarded-address headers, so users behind a proxy share its application address bucket.
 
-These are private-game controls, not comprehensive anti-cheat. A modified client can automate aim, inspect received world state, or create extra profiles. No public matchmaking or stranger discovery is present.
+These controls do not establish comprehensive anti-cheat. A modified client can automate aim, inspect received world state, or create extra profiles. Public discovery lists only explicitly public casual rooms; automatic matchmaking is not implemented.
 
 ## Rankings
 

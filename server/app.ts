@@ -6,11 +6,11 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { MatchEngine, sanitizeInput } from './engine.js';
 import { PRACTICE_RIVALS } from './bots.js';
 import { GameStore } from './store.js';
-import { RULES, WORLD_VERSION, type ClientMessage, type GameEvent, type PracticeDifficulty, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
+import { hasMatchOpponents, RULES, WORLD_VERSION, type AvailableGame, type ClientMessage, type GameEvent, type PracticeDifficulty, type Profile, type RoomSnapshot, type RoomVisibility, type ServerMessage } from '../shared/protocol.js';
 
 export interface ServerOptions { port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[] }
 interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; alive: boolean; supportsReadiness: boolean }
-interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; practiceDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null; preparation?: { id: string; expiresAt: number; ready: Set<string> } }
+interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; practiceDifficulty?: PracticeDifficulty; visibility: RoomVisibility; fillBots: boolean; botDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null; preparation?: { id: string; expiresAt: number; ready: Set<string> } }
 class HttpError extends Error { constructor(public readonly status: number, message: string) { super(message); } }
 class ProtocolError extends Error { constructor(public readonly code: string, message: string) { super(message); } }
 const ROOM_LIFETIME = 2 * 60 * 60 * 1000;
@@ -68,8 +68,13 @@ export function createGameServer(options: ServerOptions = {}) {
       const url = new URL(req.url, 'http://localhost');
       if (url.pathname === '/health' && req.method === 'GET') { json(res, 200, { status: 'ok', game: 'kannon-fps', version: '0.1.0', worldVersion: WORLD_VERSION, revision: process.env.GAME_BUILD_SHA || 'development' }); return; }
       if (url.pathname.startsWith('/api/')) {
-        limit(req, 'api', 180);
+        limit(req, url.pathname === '/api/games' ? 'games' : 'api', 180);
         if (!originAllowed(req)) throw new HttpError(403, 'This origin is not allowed.');
+        if (req.method === 'GET' && url.pathname === '/api/games') {
+          const now = Date.now();
+          const games = [...rooms.values()].flatMap(room => { const game = availableGame(room, now); return game ? [game] : []; });
+          json(res, 200, { games }); return;
+        }
         if (req.method === 'POST' && url.pathname === '/api/profile') {
           limit(req, 'profile', 20); const input = await body(req);
           const result = store.saveProfile(input.name, input.token);
@@ -131,7 +136,22 @@ export function createGameServer(options: ServerOptions = {}) {
     connection.socket.send(JSON.stringify(message));
   }
   function roomSnapshot(room: Room): RoomSnapshot {
-    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, ...(room.practice ? { practiceDifficulty: room.practiceDifficulty } : {}), ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}), ...(room.preparation ? { ready: !!p.bot || (p.connected && room.preparation.ready.has(p.id)) } : {}) })), expiresAt: room.expiresAt, ...(room.preparation ? { preparation: { id: room.preparation.id, expiresAt: room.preparation.expiresAt } } : {}) };
+    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, visibility: room.visibility, fillBots: room.fillBots, ...(room.fillBots ? { botDifficulty: room.botDifficulty } : {}), ...(room.practice ? { practiceDifficulty: room.practiceDifficulty } : {}), ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}), ...(room.preparation ? { ready: !!p.bot || (p.connected && room.preparation.ready.has(p.id)) } : {}) })), expiresAt: room.expiresAt, ...(room.preparation ? { preparation: { id: room.preparation.id, expiresAt: room.preparation.expiresAt } } : {}) };
+  }
+  function availableGame(room: Room, now: number): AvailableGame | null {
+    if (room.visibility !== 'public' || room.ranked || room.practice || room.engine.phase !== 'waiting' || room.expiresAt <= now || !room.sockets.size) return null;
+    const players = [...room.engine.players.values()], humanCount = players.filter(p => !p.bot).length;
+    if (humanCount >= RULES.maxPlayers) return null;
+    return { id: room.id, hostName: room.engine.players.get(room.hostId)!.name, humanCount, botCount: players.filter(p => p.bot).length, maxPlayers: RULES.maxPlayers, fillBots: room.fillBots, ...(room.fillBots ? { botDifficulty: room.botDifficulty } : {}) };
+  }
+  function syncLobbyBots(room: Room) {
+    if (room.engine.phase !== 'waiting' && room.engine.phase !== 'finished') return;
+    // Temporarily disconnected humans keep their seats until their grace expires.
+    const humans = [...room.engine.players.values()].filter(p => !p.bot).length;
+    const desired = room.practice ? 3 : room.fillBots ? Math.max(0, 4 - humans) : 0;
+    const rivals = PRACTICE_RIVALS.slice(0, desired);
+    for (const player of room.engine.players.values()) if (player.bot && !rivals.some(rival => rival.id === player.id)) room.engine.removePlayer(player.id);
+    for (const rival of rivals) if (!room.engine.players.has(rival.id)) room.engine.addPlayer(rival, Date.now(), true);
   }
   function broadcast(room: Room, message: ServerMessage) { for (const connection of room.sockets.values()) send(connection, message); }
   function broadcastRoom(room: Room) { room.phase = room.engine.phase; broadcast(room, { type: 'room', room: roomSnapshot(room) }); }
@@ -140,7 +160,7 @@ export function createGameServer(options: ServerOptions = {}) {
   }
   function cancelPreparation(room: Room, code: string, message: string) {
     if (!room.preparation) return;
-    room.preparation = undefined; room.engine.cancelPreparation(); room.abandoned = false;
+    room.preparation = undefined; room.engine.cancelPreparation(); room.abandoned = false; syncLobbyBots(room);
     broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot() });
     // The client clears prior errors on room transitions, so the lobby's reason
     // must follow its final room state and survive the next unchanged tick.
@@ -156,8 +176,8 @@ export function createGameServer(options: ServerOptions = {}) {
     if (humans.some(p => p.connected && !room.sockets.get(p.id)?.supportsReadiness)) {
       cancelPreparation(room, 'GAME_UPDATE_REQUIRED', GAME_UPDATE_MESSAGE); return;
     }
-    if (humans.length < (room.practice ? 1 : 2)) {
-      cancelPreparation(room, 'PREPARATION_CANCELLED', 'A player left before the match was ready. Invite a friend and try again.'); return;
+    if (humans.length < 1 || room.engine.players.size < 2) {
+      cancelPreparation(room, 'PREPARATION_CANCELLED', 'A player left before the match was ready. You are back in the lobby; the host can try again.'); return;
     }
     // Reserve a temporarily disconnected participant's place until recovery or
     // grace expiry. Their old acknowledgment cannot start a round without them.
@@ -170,7 +190,7 @@ export function createGameServer(options: ServerOptions = {}) {
     const connectedHumans = [...room.engine.players.values()].filter((player) => !player.bot && player.connected).length;
     const completeRoster = !room.abandoned && room.disconnected.size === 0 && connectedHumans >= 2;
     if (room.ranked && !completeRoster) finalReason = `${reason} This incomplete match does not affect the leaderboard.`;
-    if (room.ranked && room.crewId && completeRoster && room.engine.startedAt) {
+    if (room.ranked && !room.practice && !room.fillBots && ![...room.engine.players.values()].some(p => p.bot) && room.crewId && completeRoster && room.engine.startedAt) {
       try {
         const result = store.recordMatch({ id: room.engine.id, crewId: room.crewId, endedAt: room.engine.endedAt, duration: Math.floor((room.engine.endedAt - room.engine.startedAt) / 1000), winnerIds: room.engine.winnerIds, players: [...room.engine.players.values()].filter((p) => !p.bot).map((p) => ({ id: p.id, name: p.name, color: p.color, kills: p.kills, deaths: p.deaths })) });
         ranked = result.recorded; finalReason = `${reason} ${result.reason}`;
@@ -198,7 +218,8 @@ export function createGameServer(options: ServerOptions = {}) {
     connection.roomId = null;
     electConnectedHost(room);
     if (!room.sockets.size) room.emptySince = Date.now();
-    if (!disconnect && (room.engine.phase === 'playing' || room.engine.phase === 'countdown') && !room.practice && room.sockets.size < 2) room.engine.finish('Match ended because a player left.', Date.now(), true);
+    if (!disconnect && (room.engine.phase === 'playing' || room.engine.phase === 'countdown') && !room.practice && !hasMatchOpponents(room.engine.players.values())) room.engine.finish('Match ended because a player left.', Date.now(), true);
+    syncLobbyBots(room);
     broadcastRoom(room);
     if (room.preparation) advancePreparation(room, Date.now());
     if (!room.sockets.size && !disconnect) destroyRoom(room);
@@ -212,7 +233,7 @@ export function createGameServer(options: ServerOptions = {}) {
     if (room.ranked && (!room.crewId || !store.isMember(profile.id, room.crewId))) throw new Error('Join this friend group before entering its ranked match.');
     leaveRoom(connection);
     connection.roomId = room.id; room.sockets.set(profile.id, connection); room.disconnected.delete(profile.id); room.emptySince = 0; room.preparation?.ready.delete(profile.id);
-    room.engine.addPlayer(profile); electConnectedHost(room);
+    room.engine.addPlayer(profile); electConnectedHost(room); syncLobbyBots(room);
     if (room.preparation) {
       advancePreparation(room, Date.now());
       if (!room.preparation) return; // Cancellation already published the final lobby and reason.
@@ -255,21 +276,32 @@ export function createGameServer(options: ServerOptions = {}) {
         if (message.type === 'create') {
           if (typeof message.ranked !== 'boolean' || (message.practice !== undefined && typeof message.practice !== 'boolean') || (message.crewId !== undefined && (typeof message.crewId !== 'string' || message.crewId.length > 100))) throw new Error('Invalid match settings.');
           if (message.practiceDifficulty !== undefined && !['easy', 'normal', 'hard'].includes(message.practiceDifficulty)) throw new Error('Choose a valid practice difficulty.');
+          if (message.visibility !== undefined && !['private', 'public'].includes(message.visibility)) throw new Error('Choose Public or Private for your match.');
+          if (message.fillBots !== undefined && typeof message.fillBots !== 'boolean') throw new Error('Choose whether to fill the room with bots.');
+          if (message.botDifficulty !== undefined && !['easy', 'normal', 'hard'].includes(message.botDifficulty)) throw new Error('Choose a valid bot difficulty.');
           if (rooms.size >= 64) throw new Error('The server is busy. Please try again shortly.');
           const practice = message.practice ?? false; const ranked = message.ranked && !practice;
           const practiceDifficulty = practice ? message.practiceDifficulty ?? 'normal' : undefined;
+          const visibility = message.visibility ?? 'private';
+          const fillBots = !practice && (message.fillBots ?? false);
+          const botDifficulty = fillBots ? message.botDifficulty ?? 'normal' : undefined;
+          if (practice && visibility === 'public') throw new Error('Solo bot matches are private. Create a public casual match to play together.');
+          if (ranked && (visibility === 'public' || fillBots)) throw new Error('Ranked crew matches must be private and have human players only.');
           if (ranked && (!message.crewId || !store.isMember(connection.profile.id, message.crewId))) throw new Error('Choose one of your friend groups for a ranked match.');
           leaveRoom(connection);
           const id = randomUUID(); let code = '';
           do { code = randomBytes(10).toString('hex').toUpperCase(); } while (codes.has(code));
-          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, ...(practice ? { practiceDifficulty } : {}), ...(message.crewId && !practice ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0, resultEvent: null };
-          room.engine = new MatchEngine({ practice, practiceDifficulty, onEvent: (event) => broadcast(room, { type: 'event', event }), onFinish: (reason) => finishRoom(room, reason) });
+          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, visibility, fillBots, ...(fillBots ? { botDifficulty } : {}), ...(practice ? { practiceDifficulty } : {}), ...(message.crewId && ranked ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0, resultEvent: null };
+          room.engine = new MatchEngine({ practice, practiceDifficulty, fillBots, botDifficulty, onEvent: (event) => broadcast(room, { type: 'event', event }), onFinish: (reason) => finishRoom(room, reason) });
           rooms.set(id, room); codes.set(code, id); attach(connection, room);
-          if (practice) {
-            for (const profile of PRACTICE_RIVALS) room.engine.addPlayer(profile, now, true);
-            broadcastRoom(room);
-          }
           return;
+        }
+        if (message.type === 'join-public') {
+          if (typeof message.roomId !== 'string' || message.roomId.length > 100) throw new Error('Choose a game from Available Games.');
+          const room = rooms.get(message.roomId);
+          if (!room || !availableGame(room, now)) throw new ProtocolError('PUBLIC_GAME_UNAVAILABLE', 'This game is full or no longer available. Refresh Available Games and choose another.');
+          if (connection.roomId === room.id) { send(connection, { type: 'room', room: roomSnapshot(room) }); return; }
+          attach(connection, room); return;
         }
         if (message.type === 'join') {
           if (typeof message.code !== 'string' || message.code.length > 32) throw new Error('Enter a valid room code.');
@@ -295,9 +327,10 @@ export function createGameServer(options: ServerOptions = {}) {
           if (room.hostId !== connection.profile.id) throw new Error('Only the room host can start a match.');
           if (message.type === 'rematch' && room.engine.phase !== 'finished') throw new Error('Finish this match before starting a rematch.');
           if (room.engine.phase !== 'waiting' && room.engine.phase !== 'finished') throw new Error('This match has already started.');
-          if (!room.practice && [...room.engine.players.values()].filter((p) => !p.bot && p.connected).length < 2) throw new Error('Invite at least one friend before starting.');
+          if (!hasMatchOpponents(room.engine.players.values()) && !(room.fillBots && [...room.engine.players.values()].some(p => !p.bot && p.connected))) throw new Error('You need another player or an AI rival before starting.');
           if ([...room.engine.players.values()].some(p => !p.bot && p.connected && !room.sockets.get(p.id)?.supportsReadiness)) throw new ProtocolError('GAME_UPDATE_REQUIRED', GAME_UPDATE_MESSAGE);
           for (const [id, player] of room.engine.players) if (!player.connected) { room.engine.removePlayer(id); room.disconnected.delete(id); }
+          syncLobbyBots(room);
           room.engine.prepare(now);
           room.abandoned = false; room.resultEvent = null;
           room.preparation = { id: room.engine.id, expiresAt: now + PREPARATION_TIMEOUT, ready: new Set() };
@@ -320,10 +353,10 @@ export function createGameServer(options: ServerOptions = {}) {
       for (const [id, since] of room.disconnected) {
         if (now - since <= DISCONNECT_GRACE) continue;
         room.disconnected.delete(id);
-        if (room.engine.phase === 'waiting' || room.engine.phase === 'preparing' || room.engine.phase === 'finished') { room.engine.removePlayer(id); electConnectedHost(room); broadcastRoom(room); }
+        if (room.engine.phase === 'waiting' || room.engine.phase === 'preparing' || room.engine.phase === 'finished') { room.engine.removePlayer(id); electConnectedHost(room); syncLobbyBots(room); broadcastRoom(room); }
         else if (!room.practice) {
           room.abandoned = true;
-          if (room.sockets.size < 2) room.engine.finish('Match ended because a player disconnected.', now, true);
+          if (!hasMatchOpponents(room.engine.players.values())) room.engine.finish('Match ended because a player disconnected.', now, true);
         }
       }
       if (room.preparation) advancePreparation(room, now);

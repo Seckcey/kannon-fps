@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { PracticeBots } from './bots.js';
 import { SPAWNS } from '../shared/map.js';
 import { add, cameraPosition, clamp, directionFromAngles, movePlayer, muzzlePosition, normalize, PLAYER_HEIGHT, PLAYER_RADIUS, rayBox, raycastMap, scale, subtract } from '../shared/physics.js';
-import { RULES, type GameEvent, type InputFrame, type Phase, type PlayerState, type PracticeDifficulty, type Profile, type ShotTrace, type Vec3, type WorldSnapshot } from '../shared/protocol.js';
+import { hasMatchOpponents, RULES, type GameEvent, type InputFrame, type Phase, type PlayerState, type PracticeDifficulty, type Profile, type ShotTrace, type Vec3, type WorldSnapshot } from '../shared/protocol.js';
 
 export function idleInput(seq = 0): InputFrame { return { seq, moveX: 0, moveZ: 0, yaw: 0, pitch: 0, fire: false, aim: false, jump: false, sprint: false, reload: false, slot: 1 }; }
 export function sanitizeInput(value: unknown): InputFrame | null {
@@ -25,6 +25,7 @@ interface ShotResult {
 }
 export interface EngineOptions {
   practice?: boolean; practiceDifficulty?: PracticeDifficulty; now?: number;
+  fillBots?: boolean; botDifficulty?: PracticeDifficulty;
   /** Optional reproducible simulation seed. Never accepted by the wire protocol. */
   practiceSeed?: string;
   onEvent?: (event: GameEvent) => void; onFinish?: (reason: string) => void;
@@ -36,9 +37,9 @@ export class MatchEngine {
   private readonly bots: PracticeBots | null;
   private readonly practiceSeed: string | undefined;
   private resolvingShots = false;
-  constructor(options: EngineOptions = {}) { this.practice = options.practice ?? false; this.practiceSeed = options.practiceSeed; this.bots = this.practice ? new PracticeBots(options.practiceDifficulty ?? 'normal', this.practiceSeed ?? this.id) : null; this.onEvent = options.onEvent ?? (() => {}); this.onFinish = options.onFinish ?? (() => {}); }
+  constructor(options: EngineOptions = {}) { this.practice = options.practice ?? false; this.practiceSeed = options.practiceSeed; this.bots = this.practice || options.fillBots ? new PracticeBots((this.practice ? options.practiceDifficulty : options.botDifficulty) ?? 'normal', this.practiceSeed ?? this.id) : null; this.onEvent = options.onEvent ?? (() => {}); this.onFinish = options.onFinish ?? (() => {}); }
   addPlayer(profile: Profile, now = Date.now(), bot = false): PlayerState {
-    if (bot && !this.practice) throw new Error('AI rivals are available only in practice.');
+    if (bot && !this.bots) throw new Error('AI rivals are not enabled for this match.');
     const existing = this.players.get(profile.id);
     if (existing) {
       existing.connected = true; existing.name = profile.name; existing.lastInputSeq = 0; existing.aiming = false;
@@ -82,7 +83,7 @@ export class MatchEngine {
   }
   private resetRound(phase: 'preparing' | 'countdown', now: number): void {
     if (this.phase !== 'waiting' && this.phase !== 'finished') throw new Error('This match has already started.');
-    if (!this.practice && [...this.players.values()].filter((p) => !p.bot && p.connected).length < 2) throw new Error('Invite at least one friend before starting.');
+    if (!hasMatchOpponents(this.players.values())) throw new Error('You need another player or an AI rival before starting.');
     this.id = randomUUID(); this.phase = phase; this.countdownUntil = phase === 'countdown' ? now + RULES.countdownMs : 0; this.startedAt = 0; this.endedAt = 0; this.winnerIds = []; this.tick = 0;
     this.bots?.reset(this.practiceSeed ?? this.id);
     for (const player of this.players.values()) {
@@ -93,7 +94,7 @@ export class MatchEngine {
   }
   beginPreparedCountdown(now = Date.now()): void {
     if (this.phase !== 'preparing') throw new Error('This round is not preparing.');
-    if (!this.practice && [...this.players.values()].filter(p => !p.bot && p.connected).length < 2) throw new Error('Invite at least one friend before starting.');
+    if (!hasMatchOpponents(this.players.values())) throw new Error('You need another player or an AI rival before starting.');
     this.phase = 'countdown'; this.countdownUntil = now + RULES.countdownMs;
     for (const player of this.players.values()) player.protectedUntil = this.countdownUntil + RULES.protectionMs;
   }
@@ -105,7 +106,7 @@ export class MatchEngine {
   finish(reason: string, now = Date.now(), abandoned = false): void {
     if (this.phase === 'finished') return;
     this.phase = 'finished'; this.endedAt = now;
-    const eligible = [...this.players.values()].filter((p) => this.practice || !p.bot);
+    const eligible = [...this.players.values()].filter((p) => this.bots || !p.bot);
     const maxKills = Math.max(0, ...eligible.map((p) => p.kills));
     this.winnerIds = abandoned ? [] : eligible.filter((p) => p.kills === maxKills).map((p) => p.id);
     this.onFinish(reason);
@@ -115,7 +116,7 @@ export class MatchEngine {
     if (this.phase === 'countdown' && now >= this.countdownUntil) { this.phase = 'playing'; this.startedAt = now; }
     if (this.phase !== 'playing') return;
     if (now - this.startedAt >= RULES.matchSeconds * 1000) { this.finish('Time is up.', now); return; }
-    const botsActive = this.practice && [...this.players.values()].some(p => !p.bot && p.connected);
+    const botsActive = !!this.bots && [...this.players.values()].some(p => !p.bot && p.connected);
     if (this.bots) {
       if (!botsActive) this.bots.reset();
       // Plan against a common state before any player moves, retaining the same

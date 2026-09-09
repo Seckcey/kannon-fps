@@ -123,7 +123,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     <div ref={container} className="game-canvas" aria-label="Kannon Town 3D arena"/>
     {(loading || loadError) && <div className="game-cover"><h2>{loadError ? 'Graphics unavailable' : 'Entering Kannon Town…'}</h2><p>{loadError || 'Preparing the arena and your loadout.'}</p><button className={`button ${loadError ? 'primary' : 'secondary'}`} onClick={onLeave}>Back to menu</button></div>}
     <div className="game-hud">
-      <div className="arena-label"><span>Kannon Town</span><strong>{state.room?.practice ? `${practiceLevelName(state.room.practiceDifficulty)} practice` : state.room?.ranked ? 'Ranked crew match' : 'Private match'}</strong></div>
+      <div className="arena-label"><span>Kannon Town</span><strong>{state.room?.practice ? `${practiceLevelName(state.room.practiceDifficulty)} bot match` : state.room?.ranked ? 'Ranked crew match' : state.room?.visibility === 'public' ? 'Public match' : 'Private match'}</strong></div>
       <div className="score-clock"><div><strong>{me?.kills || 0}</strong><span>/ {RULES.scoreLimit}</span></div><time>{clock(preparing || countdown ? RULES.matchSeconds : snapshot?.timeRemaining ?? RULES.matchSeconds)}</time></div>
       <div className="game-top-actions"><span className={`connection-metric ${state.latency > 160 ? 'high-ping' : ''}`}>{state.status === 'connected' ? `${state.latency} ms` : 'Reconnecting…'}</span><button className="icon-button" aria-label="Pause menu" onClick={pause}><Icon name="pause"/></button></div>
       <div className="match-roster">{rows.slice(0, 8).map(p => <div key={p.id}><span className="player-dot" style={{ background: p.color }}/><span>{p.name}</span><strong>{p.kills}</strong></div>)}</div>

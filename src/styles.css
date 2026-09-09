@@ -33,6 +33,34 @@
 }
 
 @layer components {
+  .room-visibility { border: 0; padding: 0; margin: 0 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .room-visibility legend { font-weight: 600; margin-bottom: 10px; }
+  .room-visibility label { display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 3px; cursor: pointer; }
+  .room-visibility label.selected { border-color: var(--lime); background: #26372d; }
+  .room-visibility input { width: 18px; height: 18px; min-height: 18px; padding: 0; margin: 3px 0 0; flex: 0 0 18px; accent-color: var(--lime); }
+  .room-visibility span, .bot-toggle span { display: grid; gap: 5px; }
+  .room-visibility small, .bot-toggle small { color: var(--mint); font-size: 14px; line-height: 1.4; }
+  .bot-setup { display: grid; gap: 16px; padding: 17px; margin-top: 18px; background: #132a37; border-radius: 3px; }
+  .bot-toggle { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+  .bot-toggle input { flex: 0 0 18px; margin: 3px 0 0; }
+  .bot-setup select { margin-top: 7px; }
+  .games-toolbar { display: flex; gap: 20px; align-items: flex-end; justify-content: space-between; }
+  .games-toolbar > label { width: min(320px, 100%); }
+  .games-toolbar input { margin-top: 8px; }
+  .games-note { color: var(--mint); margin: 20px 0; }
+  .games-status { color: var(--lime); padding: 12px 0; }
+  .games-empty { display: grid; justify-items: center; gap: 18px; padding: 48px 24px; margin-top: 24px; border: 1px solid var(--line); background: var(--panel); text-align: center; }
+  .games-empty h2 { font-size: 38px; }
+  .games-empty p { max-width: 540px; color: var(--mint); }
+  .available-games { display: grid; gap: 16px; padding: 0; list-style: none; }
+  .available-games > li { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px; border: 1px solid var(--line); background: var(--panel); border-radius: 3px; }
+  .game-list-copy { display: grid; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+  .game-list-copy h2 { font-size: 36px; }
+  .game-list-copy p, .game-list-copy small { color: var(--mint); }
+  .game-list-copy small { line-height: 1.4; }
+  .public-badge { color: var(--lime); font-size: 13px; font-weight: 600; }
+  .play-options-help { display: grid; gap: 16px; margin-bottom: 35px; max-width: 820px; }
+  .play-options-help h2 { font-size: 36px; }
   .button { display: inline-flex; align-items: center; justify-content: center; gap: 13px; min-height: 62px; padding: 15px 25px; font: italic 700 27px/1.1 var(--display); text-transform: uppercase; letter-spacing: .25px; border: 1.5px solid transparent; border-radius: 3px; transition: background .15s, transform .15s, border-color .15s; }
   .button:not(:disabled):active { transform: translateY(1px); }
   .button.primary { background: var(--lime); color: #112015; clip-path: polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
@@ -353,5 +381,18 @@
     .touch-game .pause-panel { padding: 23px; gap: 12px; } .touch-game .pause-panel h2 { font-size: 39px; } .touch-game .pause-panel .button { font-size: 23px; min-height: 47px; padding: 10px; }
   }
   @media (orientation: portrait) and (max-width: 650px) { .touch-game .portrait-hint { position: absolute; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #061925c9; top: 155px; left: 20px; right: 20px; z-index: 4; font-size: 13px; pointer-events: none; } .touch-right { bottom: 145px; right: 18px; grid-template-columns: 43px 43px 70px; gap: 7px; } .touch-action { width: 43px; height: 43px; } .touch-fire { width: 70px; height: 70px; } .touch-joystick { width: 115px; height: 115px; left: 18px; bottom: 96px; } .touch-sprint { bottom: 218px; left: 53px; } .touch-game .weapon-hud { left: 20px; right: 20px; bottom: 20px; } .touch-game .loadout { justify-content: flex-end; } .touch-game .loadout-slot { width: 75px; } .touch-game .ammo { right: auto; left: 0; bottom: 13px; width: auto; } .touch-game .score-clock { left: 50%; } .touch-game .arena-label { max-width: 127px; } .touch-game .arena-label strong { font-size: 10px; } .touch-game .match-roster { min-width: 113px; max-width: 133px; } .touch-game .connection-metric { display: none; } .touch-game .score-clock > div { padding: 5px 18px 7px; } }
+  @media (max-width: 650px) {
+    .app-header nav { gap: 8px; justify-content: space-between; }
+    .app-header nav button { font-size: clamp(15px, 4.5vw, 19px); padding-inline: 3px; white-space: nowrap; }
+    .games-toolbar { align-items: stretch; flex-direction: column; gap: 16px; }
+    .games-toolbar > label { width: 100%; }
+    .games-toolbar .button-row { gap: 10px; }
+    .available-games > li { align-items: stretch; flex-direction: column; padding: 20px; gap: 18px; }
+    .game-list-copy h2 { font-size: 32px; }
+    .room-visibility { grid-template-columns: 1fr; }
+    .roster-heading { align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+    .rule-strip span { font-size: 14px; gap: 4px; }
+    .rule-strip { gap: 8px; }
+  }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
 }
