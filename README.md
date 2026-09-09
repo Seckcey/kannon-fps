@@ -72,11 +72,13 @@ See [Deployment](docs/DEPLOYMENT.md) for containers, HTTPS, persistent storage, 
 | Sprint | Shift | Toggle Sprint |
 | Jump | Space | Jump button |
 | Reload | R | Reload button |
-| Select slot | 1, 2, 3 | Tap slot |
+| Select slot | 1, 2, 3 | Press the weapon icon, including while moving, aiming, firing or jumping |
 | Scores | Hold Tab | Roster / results screen |
 | Release mouse | Escape | Pause button |
 
 Settings include sensitivity, volume, graphics, inverted vertical look, **Mobile firing**, and optional **gyroscope aiming** with its own sensitivity. Gyroscope access requires a deliberate permission gesture and HTTPS/localhost on supported devices. Landscape is recommended on phones. Releasing the joystick stops movement even while a second finger continues aiming.
+
+Weapon selection responds on contact and interrupts healing or reloading when you switch away. Effects include separate AR/shotgun shots, hit markers, shield breaks, damage, eliminations, healing, respawning, reloading and weapon changes. There is no background music. Audio starts from a deliberate tap or key and retries after interruptions. Supported iPhone browsers use media playback volume. During a match, open **Pause → Settings → Test sound effects** to hear the hit-marker sound; **Game volume** at zero mutes all effects. See the [touch and audio verification](docs/TOUCH_AUDIO.md).
 
 ## Your player and crew
 

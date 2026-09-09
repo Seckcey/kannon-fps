@@ -1,3 +1,6 @@
+type BrowserAudioSession = { type: string };
+const unlockEvents = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
+
 /** Small, self-contained effects bank. Audio is only created after an intentional gesture. */
 export class GameAudio {
   private context: AudioContext | null = null;
@@ -5,17 +8,33 @@ export class GameAudio {
   private noise: AudioBuffer | null = null;
   private volume = 0.65;
   private disposed = false;
+  private session: BrowserAudioSession | null = null;
+  private previousSessionType = 'auto';
   private unlockListener = () => { void this.unlock(); };
 
   constructor(volume = 0.65) {
-    this.volume = volume;
-    window.addEventListener('pointerdown', this.unlockListener);
-    window.addEventListener('keydown', this.unlockListener);
+    this.setVolume(volume);
+    // Touch activation is granted on release, unlike a mouse press. Capture
+    // also reaches taps whose gameplay handler suppresses the browser click.
+    for (const event of unlockEvents) window.addEventListener(event, this.unlockListener, { capture: true, passive: true });
   }
 
   async unlock() {
-    if (this.disposed) return;
+    if (this.disposed || document.hidden) return;
     try {
+      if (!this.session && this.volume > 0) {
+        // Safari otherwise routes Web Audio through the ringer/silent switch.
+        // Effects use media volume; unsupported browsers keep their own route.
+        const session = (navigator as Navigator & { audioSession?: BrowserAudioSession }).audioSession;
+        if (session) {
+          try {
+            const previousType = session.type;
+            session.type = 'playback';
+            this.previousSessionType = previousType;
+            this.session = session;
+          } catch { /* An optional routing API must never block regular audio. */ }
+        }
+      }
       if (!this.context) {
         this.context = new AudioContext();
         this.master = this.context.createGain();
@@ -25,7 +44,9 @@ export class GameAudio {
         const samples = this.noise.getChannelData(0);
         for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
       }
-      if (this.context.state === 'suspended') await this.context.resume();
+      // Safari can report interrupted after an app switch or phone call.
+      // Retry on the next gesture even if an earlier resume is still pending.
+      if (this.context.state !== 'running' && this.context.state !== 'closed') await this.context.resume();
     } catch { /* Audio may be unavailable; gameplay still works. */ }
   }
 
@@ -94,9 +115,12 @@ export class GameAudio {
 
   dispose() {
     this.disposed = true;
-    window.removeEventListener('pointerdown', this.unlockListener);
-    window.removeEventListener('keydown', this.unlockListener);
-    void this.context?.close();
+    for (const event of unlockEvents) window.removeEventListener(event, this.unlockListener, true);
+    void this.context?.close().catch(() => {});
+    if (this.session?.type === 'playback') {
+      try { this.session.type = this.previousSessionType; } catch { /* Optional browser routing. */ }
+    }
+    this.session = null;
     this.context = null;
     this.master = null;
     this.noise = null;

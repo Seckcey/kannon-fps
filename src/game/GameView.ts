@@ -150,6 +150,11 @@ export class GameView {
     this.raf = requestAnimationFrame(this.frame);
   }
 
+  async testSound() {
+    await this.audio.unlock();
+    this.audio.hit();
+  }
+
   setSettings(settings: Partial<GameSettings>) {
     const graphicsChanged = !this.graphicsConfigured || (settings.quality !== undefined && settings.quality !== this.settings.quality);
     this.settings = { ...this.settings, ...settings };

@@ -97,6 +97,7 @@
   .loadout { display: flex; gap: 8px; }
   .loadout-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--mint); background: #081c2bdf; border: 1px solid #66868f; min-width: 116px; height: 108px; padding: 12px 15px 7px; border-radius: 2px; }
   .loadout-slot:disabled { opacity: 1; }
+  .loadout-slot:not(:disabled) { touch-action: none; }
   .slot-number { position: absolute; top: 6px; left: 9px; font: 700 17px var(--body); }
   .slot-name { font: 600 17px var(--display); text-transform: uppercase; }
   .loadout-slot.selected { background: var(--lime); color: #132621; border-color: var(--lime); }
