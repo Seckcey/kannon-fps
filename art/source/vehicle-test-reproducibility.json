@@ -1,0 +1,11 @@
+{
+  "test": "Two consecutive clean Blender background generator invocations produce byte-identical GLB output",
+  "command": "Blender 5.2.1 --background --python scripts/blender/generate_vehicles.py",
+  "output": "public/models/vehicles-improved.glb",
+  "bytes": 2133100,
+  "sha256Before": "074f3e17e2412cd63ea80fcd9557ca7dc63647eb561f8a682dcab6e6fb2d8de6",
+  "sha256After": "074f3e17e2412cd63ea80fcd9557ca7dc63647eb561f8a682dcab6e6fb2d8de6",
+  "byteIdentical": true,
+  "blenderSourceFileCompared": false,
+  "note": "Blender source bookkeeping may vary; reproducibility is established for the actual browser asset."
+}

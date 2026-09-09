@@ -1,0 +1,124 @@
+{
+  "name": "Kannon Town isolated three-vehicle graphics test",
+  "generator": "scripts/blender/generate_vehicles.py",
+  "source": "art/source/vehicle-test.blend",
+  "export": "public/models/vehicles-improved.glb",
+  "blenderVersion": "5.2.1 LTS",
+  "bytes": 2133100,
+  "sha256": "074f3e17e2412cd63ea80fcd9557ca7dc63647eb561f8a682dcab6e6fb2d8de6",
+  "triangles": 78580,
+  "materialBatches": 33,
+  "materials": 13,
+  "vehicles": {
+    "bus": {
+      "triangles": 36044,
+      "drawCalls": 11,
+      "vertices": 21232,
+      "bounds": {
+        "min": [
+          -3.8975,
+          0.16608989238739014,
+          -10.872800087890624
+        ],
+        "max": [
+          -0.9024999999999999,
+          2.992461681365967,
+          0.49599999999999955
+        ]
+      }
+    },
+    "south": {
+      "triangles": 21268,
+      "drawCalls": 11,
+      "vertices": 12677,
+      "bounds": {
+        "min": [
+          -6.2455,
+          0.0015635802410542965,
+          15.190534543991088
+        ],
+        "max": [
+          -1.5549999999999997,
+          1.698,
+          17.207266402244567
+        ]
+      }
+    },
+    "north": {
+      "triangles": 21268,
+      "drawCalls": 11,
+      "vertices": 12677,
+      "bounds": {
+        "min": [
+          1.6549999999999998,
+          0.0015635802410542965,
+          -18.407266402244566
+        ],
+        "max": [
+          6.3455,
+          1.698,
+          -16.390534543991087
+        ]
+      }
+    }
+  },
+  "collisionEnvelopeViolations": 0,
+  "mapSha256": "be4c9ed551f132036b2d432959cd8b169434042ac637d1ce3feb97f15bb55f8b",
+  "textures": [
+    {
+      "path": "art/source/vehicle-materials/Vehicle_Champagne_Metallic_Albedo.jpg",
+      "bytes": 4334,
+      "sha256": "3ce33c9e31eba4ccbedb8dd6f89f0d5371e522e28d734a7089c8af02060d13c6"
+    },
+    {
+      "path": "art/source/vehicle-materials/Vehicle_Champagne_Metallic_ORM.png",
+      "bytes": 42157,
+      "sha256": "873fa903e763f1c78438205b046fb41188468abff5c6a63e607039a1a5f93ced"
+    },
+    {
+      "path": "art/source/vehicle-materials/Vehicle_EnamelMicroNormal.png",
+      "bytes": 50781,
+      "sha256": "854fbad0c958b29c29a1502aaa8d8a1e061f9a7c514b5a9cb3b73a33a9dc27fc"
+    },
+    {
+      "path": "art/source/vehicle-materials/Vehicle_RubberMicroNormal.png",
+      "bytes": 74900,
+      "sha256": "2e4d7f5f5549693ba073f0f528e2a27f4199dd218659cdc24632f2c26693bfb8"
+    },
+    {
+      "path": "art/source/vehicle-materials/Vehicle_SchoolYellow_Enamel_Albedo.jpg",
+      "bytes": 5413,
+      "sha256": "e867678c0c751f797089fe3aa15a5ca8ec977f9502f4b02e9436501796a488fe"
+    },
+    {
+      "path": "art/source/vehicle-materials/Vehicle_SchoolYellow_Enamel_ORM.png",
+      "bytes": 42132,
+      "sha256": "e6d050e7938ae4f9ea22de5eba7301fd304d3bb2c30b2040ced37d89df0bc9d8"
+    },
+    {
+      "path": "art/source/vehicle-materials/Vehicle_SeaGreen_Metallic_Albedo.jpg",
+      "bytes": 3622,
+      "sha256": "06b039e40a230982e6d54d5e9d94d2095d8da8345f5e3284f0470aa19abe2eb7"
+    },
+    {
+      "path": "art/source/vehicle-materials/Vehicle_SeaGreen_Metallic_ORM.png",
+      "bytes": 42065,
+      "sha256": "1595ef842826cf739bedb77b8f46fe2887d73b4cc2b67ac58b1d82a2c8213cbf"
+    }
+  ],
+  "provenance": {
+    "geometry": "Original parametric mesh authored for this repository. No borrowed vehicle brands, models or scans.",
+    "materials": "Original seeded NumPy enamel/dust/roughness/normal maps. No images, photos, AI images, or third-party textures.",
+    "lettering": "Original five-by-seven block glyphs defined in generator. No external fonts.",
+    "license": "Project-owned original work; no additional third-party asset licenses or fees. Blender is the authoring tool only.",
+    "runtimeGlass": "Opaque tinted physically based glass with environment reflection; no transmission, alpha blending, or interior rendering."
+  },
+  "notes": [
+    "Actual apertures, liners, and rolled fender lips surround tires.",
+    "Original unchanged collision boxes remain authoritative; shaped corners and wheel wells create cosmetic inset space.",
+    "Vehicles have compact folded mirrors to satisfy original collision widths.",
+    "Shared maps are embedded in GLB; source textures are not separately downloaded by gameplay.",
+    "Vertex groups retain semantic authored components in the editable Blender source.",
+    "Outward face winding and single-sided materials avoid inward-face self-shadow artifacts."
+  ]
+}

@@ -5,6 +5,10 @@
   "type": "module",
   "engines": { "node": ">=24.0.0" },
   "scripts": {
+    "graphics-test": "node scripts/vehicle-test/serve.mjs --town",
+    "vehicle-test": "node scripts/vehicle-test/serve.mjs",
+    "vehicle-test:assets": "node scripts/blender/split_vehicle_baseline.mjs --check && node scripts/blender/validate_vehicle_test.mjs",
+    "vehicle-test:browser": "node scripts/vehicle-test/verify-browser.mjs",
     "dev": "concurrently -k -n server,client \"tsx watch server/index.ts\" \"vite --host 0.0.0.0\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite --host 0.0.0.0",
@@ -12,7 +16,7 @@
     "build": "npm run typecheck && vite build",
     "start": "tsx server/index.ts",
     "test": "tsx --test tests/server/*.test.ts tests/acceptance/*.test.ts tests/client/*.test.ts",
-    "test:assets": "node scripts/blender/validate_glb.mjs && node scripts/blender/validate_environment.mjs",
+    "test:assets": "node scripts/blender/validate_glb.mjs && node scripts/blender/validate_environment.mjs && npm run vehicle-test:assets && node scripts/blender/validate_town_graphics.mjs",
     "check": "npm run test && npm run test:assets && npm run build"
   },
   "dependencies": {

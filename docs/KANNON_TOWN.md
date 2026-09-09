@@ -1,4 +1,6 @@
-# Kannon Town and mobile controls
+# Kannon Town
+
+The [September 9 graphics release](TOWN_GRAPHICS.md) supersedes the asset counts and visual baseline below. The layout, collision and gameplay described here remain unchanged. and mobile controls
 
 Kannon's first playtest exposed movement that could remain held after an iPhone finger ended. Separate Fire and aiming gestures were also difficult. This release replaces touch ownership, adds Simple and Advanced firing, and makes Kannon Town the only playable map.
 

@@ -20,6 +20,8 @@ test('static serving confines requests to the client directory and gives missing
     assert.ok(!(await result.text()).includes('PRIVATE'), `Never disclose private content via ${path}`);
   }
   const asset = await fetch(base + '/assets/valid.js'); assert.equal(asset.status, 200); assert.match(asset.headers.get('cache-control')!, /immutable/);
+  const scriptPolicy = asset.headers.get('content-security-policy')!.split(';').find(d => d.trim().startsWith('script-src'))!.trim();
+  assert.equal(scriptPolicy, "script-src 'self' 'wasm-unsafe-eval'", 'Bundled art decoder works without allowing JavaScript eval or external scripts');
   const oversized = await fetch(base + '/api/profile', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'x'.repeat(9000) }) }); assert.equal(oversized.status, 413);
 });
 

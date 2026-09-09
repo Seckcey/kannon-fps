@@ -1,0 +1,467 @@
+{
+  "startedAt": "2026-09-09T07:45:20.272Z",
+  "status": "passed",
+  "url": "http://127.0.0.1:3014/",
+  "scope": "Real local practice UI, native desktop/touch input and received authoritative server snapshots; no synthetic gameplay snapshots, clocks, hit results or input frames are injected.",
+  "limitations": [
+    "Mobile checks are desktop Chromium touch emulation, not a physical iPhone test.",
+    "Short unranked practice checks do not establish two-household play, WAN latency, full-round results or device thermal performance.",
+    "This intentionally creates disposable local QA profiles and unranked practice rooms in the isolated server database. Auth/profile tokens are neither inspected nor retained."
+  ],
+  "browserPath": "Browser plugin not available; repository Playwright with installed Edge.",
+  "cases": [
+    {
+      "label": "desktop-improved",
+      "variant": "improved",
+      "mobileEmulated": false,
+      "status": "passed",
+      "checks": [
+        "Actual artwork readiness, deliberate Ready, countdown and four-player practice",
+        "Native pointer capture through countdown",
+        "Keyboard movement and authoritative release stop",
+        "Mouse look/manual fire/ADS produce a server shot",
+        "All three loadout slots reach authoritative snapshots",
+        "Each expected model downloaded once; candidate practice does not download original artwork",
+        "Escape release and deliberate mouse recapture",
+        "Pause and explicit Leave match return to the menu"
+      ],
+      "captures": [
+        {
+          "path": "practice-desktop-improved-gameplay.png",
+          "kind": "Actual local practice GameView capture; real server and native input"
+        }
+      ],
+      "afterMove": {
+        "phase": "playing",
+        "player": {
+          "x": -24.067500000000045,
+          "y": 0,
+          "z": -18.5,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "reloadingUntil": 0
+        },
+        "input": {
+          "seq": 135,
+          "moveX": 0,
+          "moveZ": 0,
+          "yaw": 1.5707963267948966,
+          "pitch": 0,
+          "slot": 1,
+          "fire": false,
+          "aim": false,
+          "jump": false,
+          "sprint": false,
+          "reload": false
+        },
+        "snapshots": 84,
+        "localShots": 0,
+        "botShots": 0,
+        "phases": [
+          "waiting",
+          "preparing",
+          "countdown",
+          "playing"
+        ],
+        "players": 4,
+        "pointerLocked": true,
+        "errors": []
+      },
+      "travel": 3.932499999999955,
+      "layout": {
+        "title": "Kannon Arena — Your crew. Your arena.",
+        "text": "KANNON TOWN\nRELAXED PRACTICE\n0/ 15\n04:59\n0 ms\nTown After QA\n0\nScout (AI)\n0\nMoxie (AI)\n0\nRook (AI)\n0\n100\n50\n29\n/ ∞\n1\nAR\n2\nSHOTGUN\n3\nHEAL ×2\nHold Tab for scores · R reload · Shift sprint · Space jump",
+        "viewport": [
+          1280,
+          720
+        ],
+        "canvas": [
+          1280,
+          720,
+          1182,
+          665
+        ],
+        "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "overlay": false,
+        "horizontalOverflow": false,
+        "models": [
+          {
+            "path": "/models/scout.glb",
+            "transferSize": 2680064,
+            "encodedBodySize": 2679764
+          },
+          {
+            "path": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316
+          }
+        ],
+        "controls": []
+      },
+      "finalState": {
+        "phase": "playing",
+        "player": {
+          "x": -24.067500000000045,
+          "y": 0,
+          "z": -18.5,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "ammoAR": 29,
+          "ammoShotgun": 6,
+          "reloadingUntil": 0
+        },
+        "input": {
+          "seq": 153,
+          "moveX": 0,
+          "moveZ": 0,
+          "yaw": 1.7072963267948966,
+          "pitch": 0.22259999999999996,
+          "slot": 1,
+          "fire": false,
+          "aim": false,
+          "jump": false,
+          "sprint": false,
+          "reload": false
+        },
+        "snapshots": 91,
+        "localShots": 1,
+        "botShots": 0,
+        "phases": [
+          "waiting",
+          "preparing",
+          "countdown",
+          "playing"
+        ],
+        "players": 4,
+        "pointerLocked": false,
+        "errors": []
+      }
+    },
+    {
+      "label": "mobile-emulated-improved",
+      "variant": "improved",
+      "mobileEmulated": true,
+      "status": "passed",
+      "checks": [
+        "Actual artwork readiness, deliberate Ready, countdown and four-player practice",
+        "Native touch joystick movement and authoritative release stop",
+        "Native touch look and manual Fire drag/ADS produce a server shot",
+        "Each expected model downloaded once; candidate practice does not download original artwork",
+        "Portrait layout and return to landscape retain the rendered game",
+        "Pause and explicit Leave match return to the menu"
+      ],
+      "captures": [
+        {
+          "path": "practice-mobile-emulated-improved-gameplay.png",
+          "kind": "Actual local practice GameView capture; real server and native input"
+        },
+        {
+          "path": "practice-mobile-emulated-improved-portrait.png",
+          "kind": "Actual local practice GameView capture; real server and native input"
+        }
+      ],
+      "afterMove": {
+        "phase": "playing",
+        "player": {
+          "x": -23.924500000000027,
+          "y": 0,
+          "z": -18.5,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "reloadingUntil": 0
+        },
+        "input": {
+          "seq": 126,
+          "moveX": 0,
+          "moveZ": 0,
+          "yaw": 1.5707963267948966,
+          "pitch": 0,
+          "slot": 1,
+          "fire": false,
+          "aim": false,
+          "jump": false,
+          "sprint": false,
+          "reload": false
+        },
+        "snapshots": 57,
+        "localShots": 0,
+        "botShots": 0,
+        "phases": [
+          "waiting",
+          "preparing",
+          "countdown",
+          "playing"
+        ],
+        "players": 4,
+        "pointerLocked": false,
+        "errors": []
+      },
+      "nativeLookTarget": {
+        "x": 490,
+        "y": 150
+      },
+      "travel": 4.075499999999973,
+      "layout": {
+        "title": "Kannon Arena — Your crew. Your arena.",
+        "text": "KANNON TOWN\nRELAXED PRACTICE\n0/ 15\n04:59\n1 ms\nTown Touch QA\n0\nScout (AI)\n0\nMoxie (AI)\n0\nRook (AI)\n0\n100\n50\n29\n/ ∞\n1\nAR\n2\nSHOTGUN\n3\nHEAL ×2\nSPRINT\nRELOAD\nAIM\nJUMP\nFIRE\nHold fire + drag to aim",
+        "viewport": [
+          852,
+          393
+        ],
+        "canvas": [
+          852,
+          393,
+          852,
+          393
+        ],
+        "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "overlay": false,
+        "horizontalOverflow": false,
+        "models": [
+          {
+            "path": "/models/scout.glb",
+            "transferSize": 2680064,
+            "encodedBodySize": 2679764
+          },
+          {
+            "path": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316
+          }
+        ],
+        "controls": [
+          {
+            "action": "look",
+            "box": {
+              "x": 315.234375,
+              "y": 62.875,
+              "width": 536.765625,
+              "height": 330.125,
+              "top": 62.875,
+              "right": 852,
+              "bottom": 393,
+              "left": 315.234375
+            }
+          },
+          {
+            "action": "move",
+            "box": {
+              "x": 30,
+              "y": 230,
+              "width": 130,
+              "height": 130,
+              "top": 230,
+              "right": 160,
+              "bottom": 360,
+              "left": 30
+            }
+          },
+          {
+            "action": "reload",
+            "box": {
+              "x": 627,
+              "y": 191,
+              "width": 49,
+              "height": 49,
+              "top": 191,
+              "right": 676,
+              "bottom": 240,
+              "left": 627
+            }
+          },
+          {
+            "action": "jump",
+            "box": {
+              "x": 687,
+              "y": 251,
+              "width": 49,
+              "height": 49,
+              "top": 251,
+              "right": 736,
+              "bottom": 300,
+              "left": 687
+            }
+          },
+          {
+            "action": "fire",
+            "box": {
+              "x": 747,
+              "y": 206.5,
+              "width": 78,
+              "height": 78,
+              "top": 206.5,
+              "right": 825,
+              "bottom": 284.5,
+              "left": 747
+            }
+          }
+        ]
+      },
+      "portraitLayout": {
+        "title": "Kannon Arena — Your crew. Your arena.",
+        "text": "Rook (AI)\nKANNON TOWN\nRELAXED PRACTICE\n0/ 15\n04:59\nTown Touch QA\n0\nScout (AI)\n0\nMoxie (AI)\n0\nRook (AI)\n0\n100\n50\n29\n/ ∞\n1\nAR\n2\nSHOTGUN\n3\nHEAL ×2\nSPRINT\nRELOAD\nAIM\nJUMP\nFIRE\nHold fire + drag to aim\nTurn your phone sideways for the best view.",
+        "viewport": [
+          390,
+          844
+        ],
+        "canvas": [
+          390,
+          844,
+          390,
+          844
+        ],
+        "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "overlay": false,
+        "horizontalOverflow": false,
+        "models": [
+          {
+            "path": "/models/scout.glb",
+            "transferSize": 2680064,
+            "encodedBodySize": 2679764
+          },
+          {
+            "path": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316
+          }
+        ],
+        "controls": [
+          {
+            "action": "look",
+            "box": {
+              "x": 144.296875,
+              "y": 135.03125,
+              "width": 245.703125,
+              "height": 708.96875,
+              "top": 135.03125,
+              "right": 390,
+              "bottom": 844,
+              "left": 144.296875
+            }
+          },
+          {
+            "action": "move",
+            "box": {
+              "x": 18,
+              "y": 633,
+              "width": 115,
+              "height": 115,
+              "top": 633,
+              "right": 133,
+              "bottom": 748,
+              "left": 18
+            }
+          },
+          {
+            "action": "reload",
+            "box": {
+              "x": 202,
+              "y": 606,
+              "width": 43,
+              "height": 43,
+              "top": 606,
+              "right": 245,
+              "bottom": 649,
+              "left": 202
+            }
+          },
+          {
+            "action": "jump",
+            "box": {
+              "x": 252,
+              "y": 656,
+              "width": 43,
+              "height": 43,
+              "top": 656,
+              "right": 295,
+              "bottom": 699,
+              "left": 252
+            }
+          },
+          {
+            "action": "fire",
+            "box": {
+              "x": 302,
+              "y": 617.5,
+              "width": 70,
+              "height": 70,
+              "top": 617.5,
+              "right": 372,
+              "bottom": 687.5,
+              "left": 302
+            }
+          }
+        ]
+      },
+      "finalState": {
+        "phase": "playing",
+        "player": {
+          "x": -23.924500000000027,
+          "y": 0,
+          "z": -18.5,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "ammoAR": 29,
+          "ammoShotgun": 6,
+          "reloadingUntil": 0
+        },
+        "input": {
+          "seq": 176,
+          "moveX": 0,
+          "moveZ": 0,
+          "yaw": 1.7513963267948967,
+          "pitch": 0,
+          "slot": 1,
+          "fire": false,
+          "aim": false,
+          "jump": false,
+          "sprint": false,
+          "reload": false
+        },
+        "snapshots": 78,
+        "localShots": 1,
+        "botShots": 0,
+        "phases": [
+          "waiting",
+          "preparing",
+          "countdown",
+          "playing"
+        ],
+        "players": 4,
+        "pointerLocked": false,
+        "errors": []
+      }
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    {
+      "label": "desktop-improved",
+      "type": "console",
+      "message": "THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+    },
+    {
+      "label": "desktop-improved",
+      "type": "console",
+      "message": "THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n\n\n\u0000"
+    }
+  ],
+  "browserVersion": "152.0.4191.66",
+  "finishedAt": "2026-09-09T07:45:35.057Z"
+}
