@@ -11,8 +11,11 @@ export interface ArenaWorld {
   dispose(): void;
 }
 
+/** Local graphics experiment only; normal arena loading remains the default. */
+export interface WorldArtwork { environmentUrl: string; vehicles?: Array<{ name: string; url: string; visible: boolean }> }
+
 /** Original Blender architecture shares coordinates with the authoritative map. */
-export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, onError: (message: string) => void): ArenaWorld {
+export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, onError: (message: string) => void, artwork?: WorldArtwork): ArenaWorld {
   const root = new THREE.Group();
   const atmosphere = createAtmosphere(renderer); root.add(atmosphere.root);
   const textures = new Set<THREE.Texture>();
@@ -22,7 +25,16 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
     for (let current: THREE.Object3D | null = object; current; current = current.parent) if (/Horizon|Exterior/i.test(current.name)) return true;
     return false;
   };
-  getArenaAssetBuffer(ARENA_ASSETS.environment).then(buffer => new GLTFLoader().parseAsync(buffer, '/models/')).then(async gltf => {
+  const load = async () => {
+    if (!artwork) return new GLTFLoader().parseAsync(await getArenaAssetBuffer(ARENA_ASSETS.environment), '/models/');
+    const assets = [{ name: 'VehicleTestTown', url: artwork.environmentUrl, visible: true }, ...(artwork.vehicles ?? [])];
+    const loaded = await Promise.all(assets.map(async asset => {
+      const gltf = await new GLTFLoader().parseAsync(await getArenaAssetBuffer(asset.url), '/models/');
+      gltf.scene.name = asset.name; gltf.scene.visible = asset.visible; return gltf.scene;
+    }));
+    const scene = new THREE.Group(); scene.add(...loaded); return { scene };
+  };
+  load().then(async gltf => {
     const diffuseSky = await atmosphere.diffuseSky;
     if (disposed) {
       gltf.scene.traverse(object => {

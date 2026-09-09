@@ -1,0 +1,379 @@
+{
+  "status": "passed",
+  "baselineExtraction": {
+    "status": "passed",
+    "original": {
+      "bytes": 3922392,
+      "triangles": 31308,
+      "primitives": 13
+    },
+    "targets": [
+      {
+        "id": "bus",
+        "triangles": 2788
+      },
+      {
+        "id": "south",
+        "triangles": 376
+      },
+      {
+        "id": "north",
+        "triangles": 376
+      }
+    ],
+    "outputs": [
+      {
+        "path": "public/models/environment-vehicle-test.glb",
+        "bytes": 3652428,
+        "triangles": 27768,
+        "primitives": 13
+      },
+      {
+        "path": "public/models/vehicles-current.glb",
+        "bytes": 319592,
+        "triangles": 3540,
+        "primitives": 13
+      }
+    ]
+  },
+  "source": "public/models/vehicles-improved.glb",
+  "bytes": 2133100,
+  "sha256": "074f3e17e2412cd63ea80fcd9557ca7dc63647eb561f8a682dcab6e6fb2d8de6",
+  "mapSha256": "be4c9ed551f132036b2d432959cd8b169434042ac637d1ce3feb97f15bb55f8b",
+  "toleranceMetres": 0.00003,
+  "method": "Every world-space vertex and full triangle polygon is checked against the union of the two original collision boxes. Triangle subtraction detects faces bridging outside a concave union even when all vertices are inside.",
+  "protected": [
+    "cargo truck",
+    "all other town triangles",
+    "all original collision references",
+    "shared/map.ts",
+    "generate_town.py",
+    "environment.glb"
+  ],
+  "vehicles": {
+    "bus": {
+      "vertices": 21232,
+      "triangles": 36044,
+      "primitives": 11,
+      "min": [
+        -3.8975000381469727,
+        0.16608989238739014,
+        -10.87279987335205
+      ],
+      "max": [
+        -0.9024999737739563,
+        2.992461681365967,
+        0.4959999918937683
+      ],
+      "materialIds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "outsideVertices": 0,
+      "crossingTriangles": 0,
+      "collisionBoxes": [
+        {
+          "id": "school-bus-body",
+          "min": [
+            -3.9,
+            0.16000000000000014,
+            -9.3
+          ],
+          "max": [
+            -0.8999999999999999,
+            3,
+            0.5
+          ]
+        },
+        {
+          "id": "school-bus-hood",
+          "min": [
+            -3.8,
+            0.35,
+            -10.9
+          ],
+          "max": [
+            -1,
+            1.4500000000000002,
+            -9.299999999999999
+          ]
+        }
+      ]
+    },
+    "south": {
+      "vertices": 12677,
+      "triangles": 21268,
+      "primitives": 11,
+      "min": [
+        -6.245500087738037,
+        0.0015635802410542965,
+        15.190534591674805
+      ],
+      "max": [
+        -1.5549999475479126,
+        1.6979999542236328,
+        17.207265853881836
+      ],
+      "materialIds": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        12,
+        9,
+        10
+      ],
+      "outsideVertices": 0,
+      "crossingTriangles": 0,
+      "collisionBoxes": [
+        {
+          "id": "south-car",
+          "min": [
+            -6.25,
+            0,
+            15.174999999999999
+          ],
+          "max": [
+            -1.5499999999999998,
+            1.3,
+            17.224999999999998
+          ]
+        },
+        {
+          "id": "south-car-cabin",
+          "min": [
+            -5.175,
+            1.02,
+            15.299999999999999
+          ],
+          "max": [
+            -2.625,
+            1.7399999999999998,
+            17.099999999999998
+          ]
+        }
+      ]
+    },
+    "north": {
+      "vertices": 12677,
+      "triangles": 21268,
+      "primitives": 11,
+      "min": [
+        1.6549999713897705,
+        0.0015635802410542965,
+        -18.40726661682129
+      ],
+      "max": [
+        6.3454999923706055,
+        1.6979999542236328,
+        -16.390535354614258
+      ],
+      "materialIds": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        11,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "outsideVertices": 0,
+      "crossingTriangles": 0,
+      "collisionBoxes": [
+        {
+          "id": "north-car",
+          "min": [
+            1.65,
+            0,
+            -18.424999999999997
+          ],
+          "max": [
+            6.35,
+            1.3,
+            -16.375
+          ]
+        },
+        {
+          "id": "north-car-cabin",
+          "min": [
+            2.725,
+            1.02,
+            -18.299999999999997
+          ],
+          "max": [
+            5.275,
+            1.7399999999999998,
+            -16.5
+          ]
+        }
+      ]
+    }
+  },
+  "materials": [
+    {
+      "id": 0,
+      "name": "Vehicle_AmberLens",
+      "roughness": 0.23000000417232513,
+      "metalness": 0.029999999329447746,
+      "extensions": []
+    },
+    {
+      "id": 1,
+      "name": "Vehicle_SchoolYellow_Enamel",
+      "roughness": 1,
+      "metalness": 1,
+      "extensions": [
+        "KHR_materials_clearcoat"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Vehicle_BrushedAluminium",
+      "roughness": 0.23000000417232513,
+      "metalness": 0.8999999761581421,
+      "extensions": []
+    },
+    {
+      "id": 3,
+      "name": "Vehicle_RoadDust",
+      "roughness": 0.9399999976158142,
+      "metalness": 0,
+      "extensions": []
+    },
+    {
+      "id": 4,
+      "name": "Vehicle_TintedAutomotiveGlass",
+      "roughness": 0.125,
+      "metalness": 0.18000000715255737,
+      "extensions": []
+    },
+    {
+      "id": 5,
+      "name": "Vehicle_HeadlampGlass",
+      "roughness": 0.1599999964237213,
+      "metalness": 0.18000000715255737,
+      "extensions": []
+    },
+    {
+      "id": 6,
+      "name": "Vehicle_DeepRecess",
+      "roughness": 0.9800000190734863,
+      "metalness": 0,
+      "extensions": []
+    },
+    {
+      "id": 7,
+      "name": "Vehicle_RedLens",
+      "roughness": 0.2199999988079071,
+      "metalness": 0.05000000074505806,
+      "extensions": []
+    },
+    {
+      "id": 8,
+      "name": "Vehicle_TireRubber",
+      "roughness": 0.9100000262260437,
+      "metalness": 0,
+      "extensions": []
+    },
+    {
+      "id": 9,
+      "name": "Vehicle_WheelSteel",
+      "roughness": 0.4300000071525574,
+      "metalness": 0.7799999713897705,
+      "extensions": []
+    },
+    {
+      "id": 10,
+      "name": "Vehicle_BlackPolymer",
+      "roughness": 0.6399999856948853,
+      "metalness": 0,
+      "extensions": []
+    },
+    {
+      "id": 11,
+      "name": "Vehicle_Champagne_Metallic",
+      "roughness": 1,
+      "metalness": 1,
+      "extensions": [
+        "KHR_materials_clearcoat"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Vehicle_SeaGreen_Metallic",
+      "roughness": 1,
+      "metalness": 1,
+      "extensions": [
+        "KHR_materials_clearcoat"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Vehicle_EnamelMicroNormal",
+      "mimeType": "image/png",
+      "bytes": 50781,
+      "sha256": "854fbad0c958b29c29a1502aaa8d8a1e061f9a7c514b5a9cb3b73a33a9dc27fc"
+    },
+    {
+      "name": "Vehicle_SchoolYellow_Enamel_Albedo",
+      "mimeType": "image/jpeg",
+      "bytes": 5413,
+      "sha256": "e867678c0c751f797089fe3aa15a5ca8ec977f9502f4b02e9436501796a488fe"
+    },
+    {
+      "name": "Vehicle_SchoolYellow_Enamel_ORM",
+      "mimeType": "image/png",
+      "bytes": 42132,
+      "sha256": "e6d050e7938ae4f9ea22de5eba7301fd304d3bb2c30b2040ced37d89df0bc9d8"
+    },
+    {
+      "name": "Vehicle_RubberMicroNormal",
+      "mimeType": "image/png",
+      "bytes": 74900,
+      "sha256": "2e4d7f5f5549693ba073f0f528e2a27f4199dd218659cdc24632f2c26693bfb8"
+    },
+    {
+      "name": "Vehicle_Champagne_Metallic_Albedo",
+      "mimeType": "image/jpeg",
+      "bytes": 4334,
+      "sha256": "3ce33c9e31eba4ccbedb8dd6f89f0d5371e522e28d734a7089c8af02060d13c6"
+    },
+    {
+      "name": "Vehicle_Champagne_Metallic_ORM",
+      "mimeType": "image/png",
+      "bytes": 42157,
+      "sha256": "873fa903e763f1c78438205b046fb41188468abff5c6a63e607039a1a5f93ced"
+    },
+    {
+      "name": "Vehicle_SeaGreen_Metallic_Albedo",
+      "mimeType": "image/jpeg",
+      "bytes": 3622,
+      "sha256": "06b039e40a230982e6d54d5e9d94d2095d8da8345f5e3284f0470aa19abe2eb7"
+    },
+    {
+      "name": "Vehicle_SeaGreen_Metallic_ORM",
+      "mimeType": "image/png",
+      "bytes": 42065,
+      "sha256": "1595ef842826cf739bedb77b8f46fe2887d73b4cc2b67ac58b1d82a2c8213cbf"
+    }
+  ],
+  "violations": []
+}

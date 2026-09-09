@@ -5,6 +5,9 @@
   "type": "module",
   "engines": { "node": ">=24.0.0" },
   "scripts": {
+    "vehicle-test": "node scripts/vehicle-test/serve.mjs",
+    "vehicle-test:assets": "node scripts/blender/split_vehicle_baseline.mjs --check && node scripts/blender/validate_vehicle_test.mjs",
+    "vehicle-test:browser": "node scripts/vehicle-test/verify-browser.mjs",
     "dev": "concurrently -k -n server,client \"tsx watch server/index.ts\" \"vite --host 0.0.0.0\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite --host 0.0.0.0",

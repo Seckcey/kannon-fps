@@ -1,0 +1,860 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "method": "Byte-exact indexed triangle extraction; no Blender regeneration or numeric attribute conversion",
+  "axes": "glTF/game XYZ, all original mesh transforms identity",
+  "protectedFiles": {
+    "public/models/environment.glb": "10bc88dfbf95e878225f60ed620bae0a8786ef8176f442f1dff15e39d1b62723",
+    "shared/map.ts": "be4c9ed551f132036b2d432959cd8b169434042ac637d1ce3feb97f15bb55f8b",
+    "scripts/blender/generate_town.py": "7f0421d701cd087b3960e28ecd2ada10e8a5f987b7e21c8fc363962e4d5c5ddb"
+  },
+  "original": {
+    "bytes": 3922392,
+    "triangles": 31308,
+    "primitives": 13
+  },
+  "originalCollisionReferences": 150,
+  "targets": [
+    {
+      "id": "bus",
+      "group": "Vehicle_bus",
+      "triangles": 2788,
+      "originalMaterials": {
+        "TownGlass": 252,
+        "TownBronzeMetal": 1076,
+        "TownPaint": 96,
+        "TownRubber": 992,
+        "TownLimestoneTrim": 372
+      },
+      "actualVisualBounds": {
+        "min": [
+          -4.107500076293945,
+          -0.019999980926513672,
+          -11.029999732971191
+        ],
+        "max": [
+          -0.7649999856948853,
+          3.0450000762939453,
+          0.5
+        ]
+      },
+      "selectionBounds": {
+        "min": [
+          -4.2,
+          -0.03,
+          -11.04
+        ],
+        "max": [
+          -0.65,
+          3.05,
+          0.51
+        ]
+      }
+    },
+    {
+      "id": "south",
+      "group": "Vehicle_south",
+      "triangles": 376,
+      "originalMaterials": {
+        "TownGlass": 24,
+        "TownBronzeMetal": 24,
+        "TownRubber": 304,
+        "TownLimestoneSiding": 24
+      },
+      "actualVisualBounds": {
+        "min": [
+          -6.364999771118164,
+          0,
+          15.149999618530273
+        ],
+        "max": [
+          -1.434999942779541,
+          1.7699999809265137,
+          17.25
+        ]
+      },
+      "selectionBounds": {
+        "min": [
+          -6.37,
+          -0.001,
+          15.14
+        ],
+        "max": [
+          -1.43,
+          1.78,
+          17.26
+        ]
+      }
+    },
+    {
+      "id": "north",
+      "group": "Vehicle_north",
+      "triangles": 376,
+      "originalMaterials": {
+        "TownGlass": 24,
+        "TownBronzeMetal": 24,
+        "TownRubber": 304,
+        "TownLimestoneSiding": 24
+      },
+      "actualVisualBounds": {
+        "min": [
+          1.534999966621399,
+          0,
+          -18.450000762939453
+        ],
+        "max": [
+          6.465000152587891,
+          1.7699999809265137,
+          -16.350000381469727
+        ]
+      },
+      "selectionBounds": {
+        "min": [
+          1.53,
+          -0.001,
+          -18.46
+        ],
+        "max": [
+          6.47,
+          1.78,
+          -16.34
+        ]
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "path": "public/models/environment-vehicle-test.glb",
+      "bytes": 3652428,
+      "sha256": "4844ead7db36b57ee5b5a343964fbc9d58097488a30596e4c9049b9f3b2ceb34",
+      "triangles": 27768,
+      "primitives": 13,
+      "materialMap": [
+        {
+          "id": 0,
+          "originalId": 0,
+          "name": "TownCliffEarth",
+          "originalJsonSha256": "0a76cdf6c8b7b75318dfa7209f333d90d117cdb09949a279710c873f98c104c1"
+        },
+        {
+          "id": 1,
+          "originalId": 1,
+          "name": "TownGroundAsphalt",
+          "originalJsonSha256": "b964b0400161003e47f69d4f83dbee3c846000fc4255fac5c1ab0c3463f75b0a"
+        },
+        {
+          "id": 2,
+          "originalId": 2,
+          "name": "TownGroundConcrete",
+          "originalJsonSha256": "e6b09ce6ef5fda4841826dd7b04137b48a221b960e75966ae77d58daa834bf8b"
+        },
+        {
+          "id": 3,
+          "originalId": 3,
+          "name": "TownGlass",
+          "originalJsonSha256": "70200156dafd2709c214814c04f2466b3c5527ffb1b5a63a4dd8ee38047667ad"
+        },
+        {
+          "id": 4,
+          "originalId": 4,
+          "name": "TownGroundGrass",
+          "originalJsonSha256": "322ef58012f77890a2640b5b6a95b11273bb87e95f0ee2e7041d7956f155723d"
+        },
+        {
+          "id": 5,
+          "originalId": 5,
+          "name": "TownLeaves",
+          "originalJsonSha256": "60778cb6b90441c0cfe4f1aeb0867727999dafe5b01ef37456d5d635215d2835"
+        },
+        {
+          "id": 6,
+          "originalId": 6,
+          "name": "TownBronzeMetal",
+          "originalJsonSha256": "e171a6daf2e619fa258e451671b5000fbae13203ee7cd8c922581a0c2a819f85"
+        },
+        {
+          "id": 7,
+          "originalId": 7,
+          "name": "TownPaint",
+          "originalJsonSha256": "2ffe59449a8d806b890c71dbfbce48d72c2bfe0a29f97b4397ed5ac1a8f76c83"
+        },
+        {
+          "id": 8,
+          "originalId": 8,
+          "name": "TownGroundRoof",
+          "originalJsonSha256": "bc3369fa47e188941ec3f8794118141f406b06e035009967b76d22a4597f42b9"
+        },
+        {
+          "id": 9,
+          "originalId": 9,
+          "name": "TownRubber",
+          "originalJsonSha256": "61afe9c7390ee21e7f3528132fa0ee765203977b6e868063836dcf8b7d92a3e3"
+        },
+        {
+          "id": 10,
+          "originalId": 10,
+          "name": "TownLimestoneSiding",
+          "originalJsonSha256": "6bba8d510dbd7a9f1f7cafca5a81432d98e70e695736843bb24380961238ab4c"
+        },
+        {
+          "id": 11,
+          "originalId": 11,
+          "name": "TownLimestoneTrim",
+          "originalJsonSha256": "07844462d01512e1aff385f01a02ba6defe669318a396b4b3c46bf44b2c41183"
+        },
+        {
+          "id": 12,
+          "originalId": 12,
+          "name": "TownGroundWood",
+          "originalJsonSha256": "9d21376a59a8022a21e88cfeb79d556cb59debe1cfe66981c5cec693a929cc72"
+        }
+      ],
+      "images": [
+        {
+          "id": 0,
+          "originalId": 0,
+          "name": "TownGroundAsphaltNormal",
+          "bytes": 131049,
+          "sha256": "fcab5075550e755c493aa2aadd7a579676a5468b9f9d6e0f12ad2b211ba405d0"
+        },
+        {
+          "id": 1,
+          "originalId": 1,
+          "name": "TownAsphalt",
+          "bytes": 492152,
+          "sha256": "b190c7ee00c08a9346db2785429b28543114bb7086cf5a0ddf0188b008f31cd5"
+        },
+        {
+          "id": 2,
+          "originalId": 2,
+          "name": "TownGroundGrassNormal",
+          "bytes": 164120,
+          "sha256": "bcfd7e7b2215e8fc43baeaed71e5c54bb5a6361171d9ea12b25daf62c853c678"
+        },
+        {
+          "id": 3,
+          "originalId": 3,
+          "name": "TownGroundGrassBase",
+          "bytes": 25912,
+          "sha256": "e55b029bfabe81bab30b89480f3d72406e727e66d677c84c30b143445f68ff29"
+        },
+        {
+          "id": 4,
+          "originalId": 4,
+          "name": "TownLeavesNormal",
+          "bytes": 164051,
+          "sha256": "1b05662caad4b2ee0f691abdfb9b6235de866f64a125312fede46592fcdc0cc4"
+        },
+        {
+          "id": 5,
+          "originalId": 5,
+          "name": "TownLeavesBase",
+          "bytes": 25887,
+          "sha256": "87d3733ee6a06c85c28d5079482308c98af8c675b19eae7bba20e6bc00947a8c"
+        },
+        {
+          "id": 6,
+          "originalId": 6,
+          "name": "TownPaintBase",
+          "bytes": 19032,
+          "sha256": "68cf8fa597aee827521d0c6e0ba92aa62d9872718059d38afcf32027d91322d0"
+        },
+        {
+          "id": 7,
+          "originalId": 7,
+          "name": "TownGroundRoofNormal",
+          "bytes": 1664,
+          "sha256": "1290a8dc606e60be572ce78a36b896bd1ba0fce26a946268e1f27d5d12b24729"
+        },
+        {
+          "id": 8,
+          "originalId": 8,
+          "name": "TownGroundRoofBase",
+          "bytes": 15721,
+          "sha256": "0117509223ae1d46f20827b5296a1242948938daed2d9823a322e28acaa11ac4"
+        },
+        {
+          "id": 9,
+          "originalId": 9,
+          "name": "TownLimestoneSidingNormal",
+          "bytes": 1555,
+          "sha256": "a994ec25b59e21adbc320cf1e56364dda634edda4ac887fb9cd09fc516ae3882"
+        },
+        {
+          "id": 10,
+          "originalId": 10,
+          "name": "TownLimestoneSidingBase",
+          "bytes": 14385,
+          "sha256": "4dacef39c7ef114b6551235e553dad0b039f60ff5311c533d8bef54efb6d0f43"
+        },
+        {
+          "id": 11,
+          "originalId": 11,
+          "name": "TownGroundWoodNormal",
+          "bytes": 137093,
+          "sha256": "b6b4908ee18343cd179acb52acb71d1d6941d6219141a6a57e299d19837da893"
+        },
+        {
+          "id": 12,
+          "originalId": 12,
+          "name": "TownGroundWoodBase",
+          "bytes": 15936,
+          "sha256": "5562c61721266b3bcee70d190010f8285b57109ae1f60035e367a0caa567f300"
+        }
+      ],
+      "trianglePartitions": [
+        {
+          "group": "environment",
+          "sourceMesh": 0,
+          "sourcePrimitive": 0,
+          "mesh": 0,
+          "primitive": 0,
+          "originalMaterial": 0,
+          "material": 0,
+          "triangles": 1292,
+          "sourceTriangleRanges": [
+            [
+              0,
+              1291
+            ]
+          ],
+          "attributeBytesSha256": "5b89b94b1d7dcae0bdd4af46366a34a7ab414a3075e6c62e791500f13b5702d3"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 1,
+          "sourcePrimitive": 0,
+          "mesh": 1,
+          "primitive": 0,
+          "originalMaterial": 1,
+          "material": 1,
+          "triangles": 12,
+          "sourceTriangleRanges": [
+            [
+              0,
+              11
+            ]
+          ],
+          "attributeBytesSha256": "241ecb2429bcd12d9851f886fbca148c204f1b257acae4ed413e3cd6a4f0bc2b"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 2,
+          "sourcePrimitive": 0,
+          "mesh": 2,
+          "primitive": 0,
+          "originalMaterial": 2,
+          "material": 2,
+          "triangles": 372,
+          "sourceTriangleRanges": [
+            [
+              0,
+              371
+            ]
+          ],
+          "attributeBytesSha256": "ba0622748ad40d9e2f9b1ab20ca9134879b95437e04e111ccd5f5c9fcafb8e2c"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 3,
+          "sourcePrimitive": 0,
+          "mesh": 3,
+          "primitive": 0,
+          "originalMaterial": 3,
+          "material": 3,
+          "triangles": 36,
+          "sourceTriangleRanges": [
+            [
+              252,
+              287
+            ]
+          ],
+          "attributeBytesSha256": "8a558c9d00218b7298aa8de0c389c09ae92cbc3f1671dae206f816ad627f6a8b"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 4,
+          "sourcePrimitive": 0,
+          "mesh": 4,
+          "primitive": 0,
+          "originalMaterial": 4,
+          "material": 4,
+          "triangles": 384,
+          "sourceTriangleRanges": [
+            [
+              0,
+              383
+            ]
+          ],
+          "attributeBytesSha256": "8838a56d2989184a2afb990c5546f4a09f4457a2ad935f424ac0cec081213cae"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 5,
+          "sourcePrimitive": 0,
+          "mesh": 5,
+          "primitive": 0,
+          "originalMaterial": 5,
+          "material": 5,
+          "triangles": 6240,
+          "sourceTriangleRanges": [
+            [
+              0,
+              6239
+            ]
+          ],
+          "attributeBytesSha256": "0261203a26c61fb7554aa7a81e20233e679d3f0624773f315802d26b34672944"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 6,
+          "sourcePrimitive": 0,
+          "mesh": 6,
+          "primitive": 0,
+          "originalMaterial": 6,
+          "material": 6,
+          "triangles": 1376,
+          "sourceTriangleRanges": [
+            [
+              0,
+              263
+            ],
+            [
+              1340,
+              2451
+            ]
+          ],
+          "attributeBytesSha256": "261ac0cd7a39d44e812e26e7661d1c63d32bde6b419f7e67dedb5596c731e053"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 7,
+          "sourcePrimitive": 0,
+          "mesh": 7,
+          "primitive": 0,
+          "originalMaterial": 7,
+          "material": 7,
+          "triangles": 204,
+          "sourceTriangleRanges": [
+            [
+              24,
+              203
+            ],
+            [
+              276,
+              299
+            ]
+          ],
+          "attributeBytesSha256": "eb275c3fa78a96302f2f4d01364d4ade51d9456d6117c6a5780f2d984ade55d2"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 8,
+          "sourcePrimitive": 0,
+          "mesh": 8,
+          "primitive": 0,
+          "originalMaterial": 8,
+          "material": 8,
+          "triangles": 48,
+          "sourceTriangleRanges": [
+            [
+              0,
+              47
+            ]
+          ],
+          "attributeBytesSha256": "86fa863e18bccabf05309049d62afee897b13c936e46a657ddfd50e818b6a0dc"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 9,
+          "sourcePrimitive": 0,
+          "mesh": 9,
+          "primitive": 0,
+          "originalMaterial": 9,
+          "material": 9,
+          "triangles": 608,
+          "sourceTriangleRanges": [
+            [
+              992,
+              1599
+            ]
+          ],
+          "attributeBytesSha256": "4622922356429645838f0910c9bfea02be2ae382c048932bbaf60e4b41af6033"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 10,
+          "sourcePrimitive": 0,
+          "mesh": 10,
+          "primitive": 0,
+          "originalMaterial": 10,
+          "material": 10,
+          "triangles": 732,
+          "sourceTriangleRanges": [
+            [
+              0,
+              719
+            ],
+            [
+              768,
+              779
+            ]
+          ],
+          "attributeBytesSha256": "9ed70f2834d9139dc9967e258326ff193421fb95750d14007b83a5c11d0cd48b"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 11,
+          "sourcePrimitive": 0,
+          "mesh": 11,
+          "primitive": 0,
+          "originalMaterial": 11,
+          "material": 11,
+          "triangles": 14952,
+          "sourceTriangleRanges": [
+            [
+              0,
+              14879
+            ],
+            [
+              15252,
+              15323
+            ]
+          ],
+          "attributeBytesSha256": "b0d91bc21e5611ca8bb66bc841584d8c16a9d9ceaec12c545c4da4436d76a510"
+        },
+        {
+          "group": "environment",
+          "sourceMesh": 12,
+          "sourcePrimitive": 0,
+          "mesh": 12,
+          "primitive": 0,
+          "originalMaterial": 12,
+          "material": 12,
+          "triangles": 1512,
+          "sourceTriangleRanges": [
+            [
+              0,
+              1511
+            ]
+          ],
+          "attributeBytesSha256": "d3b599759a6c6a7d6ab1bfdae31ccc52c73b041c51cf1593e729cc0c78a58e9c"
+        }
+      ]
+    },
+    {
+      "path": "public/models/vehicles-current.glb",
+      "bytes": 319592,
+      "sha256": "d3f37d6b4c9e80a29a33f4352e1fdbd578c52f2666474c9c5e22c30105072d5d",
+      "triangles": 3540,
+      "primitives": 13,
+      "materialMap": [
+        {
+          "id": 0,
+          "originalId": 3,
+          "name": "TownGlass",
+          "originalJsonSha256": "70200156dafd2709c214814c04f2466b3c5527ffb1b5a63a4dd8ee38047667ad"
+        },
+        {
+          "id": 1,
+          "originalId": 6,
+          "name": "TownBronzeMetal",
+          "originalJsonSha256": "e171a6daf2e619fa258e451671b5000fbae13203ee7cd8c922581a0c2a819f85"
+        },
+        {
+          "id": 2,
+          "originalId": 7,
+          "name": "TownPaint",
+          "originalJsonSha256": "2ffe59449a8d806b890c71dbfbce48d72c2bfe0a29f97b4397ed5ac1a8f76c83"
+        },
+        {
+          "id": 3,
+          "originalId": 9,
+          "name": "TownRubber",
+          "originalJsonSha256": "61afe9c7390ee21e7f3528132fa0ee765203977b6e868063836dcf8b7d92a3e3"
+        },
+        {
+          "id": 4,
+          "originalId": 10,
+          "name": "TownLimestoneSiding",
+          "originalJsonSha256": "6bba8d510dbd7a9f1f7cafca5a81432d98e70e695736843bb24380961238ab4c"
+        },
+        {
+          "id": 5,
+          "originalId": 11,
+          "name": "TownLimestoneTrim",
+          "originalJsonSha256": "07844462d01512e1aff385f01a02ba6defe669318a396b4b3c46bf44b2c41183"
+        }
+      ],
+      "images": [
+        {
+          "id": 0,
+          "originalId": 6,
+          "name": "TownPaintBase",
+          "bytes": 19032,
+          "sha256": "68cf8fa597aee827521d0c6e0ba92aa62d9872718059d38afcf32027d91322d0"
+        },
+        {
+          "id": 1,
+          "originalId": 9,
+          "name": "TownLimestoneSidingNormal",
+          "bytes": 1555,
+          "sha256": "a994ec25b59e21adbc320cf1e56364dda634edda4ac887fb9cd09fc516ae3882"
+        },
+        {
+          "id": 2,
+          "originalId": 10,
+          "name": "TownLimestoneSidingBase",
+          "bytes": 14385,
+          "sha256": "4dacef39c7ef114b6551235e553dad0b039f60ff5311c533d8bef54efb6d0f43"
+        }
+      ],
+      "trianglePartitions": [
+        {
+          "group": "bus",
+          "sourceMesh": 3,
+          "sourcePrimitive": 0,
+          "mesh": 0,
+          "primitive": 0,
+          "originalMaterial": 3,
+          "material": 0,
+          "triangles": 252,
+          "sourceTriangleRanges": [
+            [
+              0,
+              251
+            ]
+          ],
+          "attributeBytesSha256": "544ae06f967e3e9728cca31aae2ef0dbdb54e112967ec86d97a49aba6eab6770"
+        },
+        {
+          "group": "bus",
+          "sourceMesh": 6,
+          "sourcePrimitive": 0,
+          "mesh": 1,
+          "primitive": 0,
+          "originalMaterial": 6,
+          "material": 1,
+          "triangles": 1076,
+          "sourceTriangleRanges": [
+            [
+              264,
+              1339
+            ]
+          ],
+          "attributeBytesSha256": "da278eeffe986180d600b4833c053dcf8a0a3609e7a9eb049bee173eabc64d26"
+        },
+        {
+          "group": "bus",
+          "sourceMesh": 7,
+          "sourcePrimitive": 0,
+          "mesh": 2,
+          "primitive": 0,
+          "originalMaterial": 7,
+          "material": 2,
+          "triangles": 96,
+          "sourceTriangleRanges": [
+            [
+              0,
+              23
+            ],
+            [
+              204,
+              275
+            ]
+          ],
+          "attributeBytesSha256": "baaaac3f1604a9bc7fc00e0521d1ad2c951498d53b3d64044fda8c782f67ed6c"
+        },
+        {
+          "group": "bus",
+          "sourceMesh": 9,
+          "sourcePrimitive": 0,
+          "mesh": 3,
+          "primitive": 0,
+          "originalMaterial": 9,
+          "material": 3,
+          "triangles": 992,
+          "sourceTriangleRanges": [
+            [
+              0,
+              991
+            ]
+          ],
+          "attributeBytesSha256": "2bd4dbe6663dcb6f5261dd75b51005ac91335c3af2ebc7237f3fc2fb69a2dd63"
+        },
+        {
+          "group": "bus",
+          "sourceMesh": 11,
+          "sourcePrimitive": 0,
+          "mesh": 4,
+          "primitive": 0,
+          "originalMaterial": 11,
+          "material": 5,
+          "triangles": 372,
+          "sourceTriangleRanges": [
+            [
+              14880,
+              15251
+            ]
+          ],
+          "attributeBytesSha256": "d5e9e4d3dfa61ab9f77210e5baa50e8f549546b415e7323ae0e9f2a86ea65a0d"
+        },
+        {
+          "group": "south",
+          "sourceMesh": 3,
+          "sourcePrimitive": 0,
+          "mesh": 5,
+          "primitive": 0,
+          "originalMaterial": 3,
+          "material": 0,
+          "triangles": 24,
+          "sourceTriangleRanges": [
+            [
+              288,
+              311
+            ]
+          ],
+          "attributeBytesSha256": "2001301438fbe68026a16d51b31e86a35702a64d69421d5072a7411593f43f2e"
+        },
+        {
+          "group": "south",
+          "sourceMesh": 6,
+          "sourcePrimitive": 0,
+          "mesh": 6,
+          "primitive": 0,
+          "originalMaterial": 6,
+          "material": 1,
+          "triangles": 24,
+          "sourceTriangleRanges": [
+            [
+              2452,
+              2475
+            ]
+          ],
+          "attributeBytesSha256": "8a7d3d1420fa8e95f8968b4cf4c366272c4da0708bb47bd2c618dc32026eaa7d"
+        },
+        {
+          "group": "south",
+          "sourceMesh": 9,
+          "sourcePrimitive": 0,
+          "mesh": 7,
+          "primitive": 0,
+          "originalMaterial": 9,
+          "material": 3,
+          "triangles": 304,
+          "sourceTriangleRanges": [
+            [
+              1600,
+              1903
+            ]
+          ],
+          "attributeBytesSha256": "ee14d93ca58db734ada49f4257594c6f54c71d7238e896ac536ffa902c3a8707"
+        },
+        {
+          "group": "south",
+          "sourceMesh": 10,
+          "sourcePrimitive": 0,
+          "mesh": 8,
+          "primitive": 0,
+          "originalMaterial": 10,
+          "material": 4,
+          "triangles": 24,
+          "sourceTriangleRanges": [
+            [
+              720,
+              731
+            ],
+            [
+              744,
+              755
+            ]
+          ],
+          "attributeBytesSha256": "283716b9714b7ef3d6c5da73eca76f4c547f5c5230bb94ac3ef80066af157caa"
+        },
+        {
+          "group": "north",
+          "sourceMesh": 3,
+          "sourcePrimitive": 0,
+          "mesh": 9,
+          "primitive": 0,
+          "originalMaterial": 3,
+          "material": 0,
+          "triangles": 24,
+          "sourceTriangleRanges": [
+            [
+              312,
+              335
+            ]
+          ],
+          "attributeBytesSha256": "7ecda0791df337b527ed59cc5c5f2948cf3215df56a6bf4be4940e38f22d55fe"
+        },
+        {
+          "group": "north",
+          "sourceMesh": 6,
+          "sourcePrimitive": 0,
+          "mesh": 10,
+          "primitive": 0,
+          "originalMaterial": 6,
+          "material": 1,
+          "triangles": 24,
+          "sourceTriangleRanges": [
+            [
+              2476,
+              2499
+            ]
+          ],
+          "attributeBytesSha256": "d9742f97274e9cb860a27c778bfb6d908441c3e914df45c25ffd6175058186bf"
+        },
+        {
+          "group": "north",
+          "sourceMesh": 9,
+          "sourcePrimitive": 0,
+          "mesh": 11,
+          "primitive": 0,
+          "originalMaterial": 9,
+          "material": 3,
+          "triangles": 304,
+          "sourceTriangleRanges": [
+            [
+              1904,
+              2207
+            ]
+          ],
+          "attributeBytesSha256": "37a4a9578bb04f0c5e4adad611b63b70bab8cf30ff2df38242241a060dd93878"
+        },
+        {
+          "group": "north",
+          "sourceMesh": 10,
+          "sourcePrimitive": 0,
+          "mesh": 12,
+          "primitive": 0,
+          "originalMaterial": 10,
+          "material": 4,
+          "triangles": 24,
+          "sourceTriangleRanges": [
+            [
+              732,
+              743
+            ],
+            [
+              756,
+              767
+            ]
+          ],
+          "attributeBytesSha256": "95d5beedd2fe20c11d5c5d60780ab50f6fd3dc6465f49966525727ea9c3f6ae9"
+        }
+      ]
+    }
+  ],
+  "guarantees": [
+    "Every source triangle appears exactly once across both outputs.",
+    "All indexed vertex attributes are byte-identical in original triangle order within each partition.",
+    "All used material values, vertex-color formats, UVs, normals and embedded image payloads are unchanged.",
+    "The common base retains all original collision reference nodes, cargo truck and all non-target map triangles.",
+    "Original environment.glb, generate_town.py and shared/map.ts remain unchanged."
+  ],
+  "caveats": [
+    "The old visual details protrude beyond gameplay collision boxes. Their exact baseline is preserved; new vehicle geometry must fit the original collision union.",
+    "Splitting the original 13 material batches adds 13 current-vehicle draw primitives. This extraction overhead must be stated separately from before/after model cost."
+  ]
+}

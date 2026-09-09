@@ -6,7 +6,7 @@ import type { CharacterModel } from './Character';
 import { disposeCharacterResources } from './Character';
 import { InputController } from './InputController';
 import { GameAudio } from './GameAudio';
-import { createWorld, type ArenaWorld } from './World';
+import { createWorld, type ArenaWorld, type WorldArtwork } from './World';
 import { SUN_DIRECTION, SKY_LIGHT_INTENSITY } from './Atmosphere';
 import type { ArenaPresentation } from './Presentation';
 import { RenderQuality, scenePixelRatio } from './RenderQuality';
@@ -22,6 +22,13 @@ export interface GameSettings {
 }
 export interface GameStats { fps: number; locked: boolean; drawCalls: number }
 export interface GameViewOptions {
+  /** Explicit local harness hooks. Omitted in ordinary gameplay. */
+  graphicsTest?: {
+    artwork?: WorldArtwork;
+    lockQuality?: boolean;
+    beforeRender?: (scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer) => void;
+    afterRender?: (renderer: THREE.WebGLRenderer, cpuSubmitMs: number, frameMs: number) => void;
+  };
   input: InputController;
   getSnapshot: () => WorldSnapshot | null;
   getPlayerId: () => string;
@@ -121,7 +128,9 @@ export class GameView {
     this.sun.shadow.normalBias = 0.065; this.sun.shadow.bias = -0.00025;
     this.sun.shadow.radius = 2;
     this.scene.add(this.sun, this.sun.target);
-    this.world = createWorld(this.renderer, () => { this.environmentReady = true; }, message => this.options.onError?.(message));
+    const experiment = import.meta.env.DEV && new URLSearchParams(location.search).get('vehicles') === 'improved';
+    const artwork = options.graphicsTest?.artwork ?? (experiment ? { environmentUrl: '/models/environment-vehicle-test.glb', vehicles: [{ name: 'VehicleVariant_improved', url: '/models/vehicles-improved.glb', visible: true }] } : undefined);
+    this.world = createWorld(this.renderer, () => { this.environmentReady = true; }, message => this.options.onError?.(message), artwork);
     this.scene.add(this.world.root);
     this.scene.environment = this.world.environment;
     this.scene.background = this.world.background;
@@ -170,6 +179,11 @@ export class GameView {
     }
     this.slowTime = 0;
     this.resize();
+  }
+
+  /** Read-only evidence for the isolated comparison harness. */
+  graphicsTestState() {
+    return { postprocessing: !!this.presentation?.enabled, shadowSize: this.sun.shadow.mapSize.toArray(), qualityScale: this.renderQuality.scale };
   }
 
   /** Called once for each input actually sent to the server, at 30 Hz. */
@@ -429,20 +443,23 @@ export class GameView {
     const currentIds = new Set(this.snapshot?.players.map(player => player.id) ?? []);
     for (const [id, entry] of this.players) if (!currentIds.has(id)) { this.scene.remove(entry.model.root, entry.shadow); entry.model.dispose(); entry.label.remove(); this.players.delete(id); }
     this.world.update(this.elapsed); this.effects.update(elapsedFrame, this.camera);
+    this.options.graphicsTest?.beforeRender?.(this.scene, this.camera, this.renderer);
     this.renderer.info.reset();
+    const submitStarted = this.options.graphicsTest ? performance.now() : 0;
     if (this.presentation?.enabled) this.presentation.render(dt);
     else this.renderer.render(this.scene, this.camera);
+    this.options.graphicsTest?.afterRender?.(this.renderer, performance.now() - submitStarted, elapsedFrame * 1000);
     // Parsing and scene attachment alone do not prove that the player has a usable view.
     this.checkAssetsReady();
     this.checkPreparationRendered();
     if (this.statsTime >= 0.7) {
       const fps = Math.round(this.frames / this.statsTime);
       this.options.onStats?.({ fps, locked: this.options.input.locked, drawCalls: this.renderer.info.render.calls });
-      if (this.settings.quality === 'auto' && this.assetsAnnounced) {
+      if (!this.options.graphicsTest?.lockQuality && this.settings.quality === 'auto' && this.assetsAnnounced) {
         this.slowTime = fps < 38 ? this.slowTime + this.statsTime : Math.max(0, this.slowTime - this.statsTime);
         if (this.slowTime > 2.1 && this.presentation?.enabled) { this.presentation.enabled = false; this.slowTime = 0; this.renderQuality.resetTiming(); }
       }
-      if (this.assetsAnnounced && this.renderQuality.observe(fps, this.statsTime, this.settings.quality)) this.resizePending = true;
+      if (!this.options.graphicsTest?.lockQuality && this.assetsAnnounced && this.renderQuality.observe(fps, this.statsTime, this.settings.quality)) this.resizePending = true;
       this.statsTime = 0; this.frames = 0;
     }
     this.raf = requestAnimationFrame(this.frame);

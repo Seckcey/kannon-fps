@@ -5,6 +5,11 @@ export const ARENA_ASSETS = {
 } as const;
 
 const knownUrls = new Set<string>(Object.values(ARENA_ASSETS));
+// Explicit local experiment assets share the same validated, retryable buffers.
+export const VEHICLE_TEST_ASSETS = {
+  environment: '/models/environment-vehicle-test.glb', current: '/models/vehicles-current.glb', improved: '/models/vehicles-improved.glb',
+} as const;
+for (const url of Object.values(VEHICLE_TEST_ASSETS)) knownUrls.add(url);
 const buffers = new Map<string, Promise<ArrayBuffer>>();
 const retries = new Set<string>();
 
@@ -54,5 +59,8 @@ export function getArenaAssetBuffer(url: string): Promise<ArrayBuffer> {
 
 /** Warm the same retained buffers that the GLTF parsers will consume. */
 export function warmArenaAssets(): Promise<void> {
+  if (import.meta.env?.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('vehicles') === 'improved') {
+    return Promise.all([ARENA_ASSETS.character, VEHICLE_TEST_ASSETS.environment, VEHICLE_TEST_ASSETS.improved].map(getArenaAssetBuffer)).then(() => {});
+  }
   return Promise.all(Object.values(ARENA_ASSETS).map(getArenaAssetBuffer)).then(() => {});
 }
