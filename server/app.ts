@@ -6,7 +6,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { MatchEngine, sanitizeInput } from './engine.js';
 import { PRACTICE_RIVALS } from './bots.js';
 import { GameStore } from './store.js';
-import { RULES, type ClientMessage, type GameEvent, type PracticeDifficulty, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
+import { RULES, WORLD_VERSION, type ClientMessage, type GameEvent, type PracticeDifficulty, type Profile, type RoomSnapshot, type ServerMessage } from '../shared/protocol.js';
 
 export interface ServerOptions { port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[] }
 interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; alive: boolean; supportsReadiness: boolean }
@@ -64,7 +64,7 @@ export function createGameServer(options: ServerOptions = {}) {
     try {
       if (!req.url || req.url.length > 2048) throw new HttpError(400, 'Invalid request.');
       const url = new URL(req.url, 'http://localhost');
-      if (url.pathname === '/health' && req.method === 'GET') { json(res, 200, { status: 'ok', game: 'kannon-fps', version: '0.1.0', revision: process.env.GAME_BUILD_SHA || 'development' }); return; }
+      if (url.pathname === '/health' && req.method === 'GET') { json(res, 200, { status: 'ok', game: 'kannon-fps', version: '0.1.0', worldVersion: WORLD_VERSION, revision: process.env.GAME_BUILD_SHA || 'development' }); return; }
       if (url.pathname.startsWith('/api/')) {
         limit(req, 'api', 180);
         if (!originAllowed(req)) throw new HttpError(403, 'This origin is not allowed.');
@@ -235,7 +235,7 @@ export function createGameServer(options: ServerOptions = {}) {
           const profile = store.authenticate(message.token); if (!profile) { send(connection, { type: 'error', code: 'AUTH_REQUIRED', message: 'Your player key was not recognized.' }); socket.close(1008, 'Authentication required'); return; }
           const previous = playersOnline.get(profile.id);
           if (previous && previous !== connection) { leaveRoom(previous, true); previous.socket.close(4001, 'Player connected in another tab'); }
-          connection.profile = profile; connection.supportsReadiness = message.readyProtocol === 1; playersOnline.set(profile.id, connection); send(connection, { type: 'welcome', playerId: profile.id });
+          connection.profile = profile; connection.supportsReadiness = message.readyProtocol === 1 && message.worldVersion === WORLD_VERSION; playersOnline.set(profile.id, connection); send(connection, { type: 'welcome', playerId: profile.id });
           // Restore a disconnected player's room automatically using the authenticated identity.
           const previousRoom = [...rooms.values()].find((room) => room.expiresAt > now && room.disconnected.has(profile.id) && now - room.disconnected.get(profile.id)! <= DISCONNECT_GRACE);
           if (previousRoom) attach(connection, previousRoom);
@@ -244,6 +244,7 @@ export function createGameServer(options: ServerOptions = {}) {
         if (!connection.profile) throw new Error('Sign in before joining a match.');
         if (message.type === 'input') {
           const room = connection.roomId ? rooms.get(connection.roomId) : undefined; if (!room) return;
+          if (!connection.supportsReadiness) throw new ProtocolError('GAME_UPDATE_REQUIRED', GAME_UPDATE_MESSAGE);
           const input = sanitizeInput(message.input); if (!input) throw new Error('Invalid player input.');
           room.engine.acceptInput(connection.profile.id, input, now); return;
         }

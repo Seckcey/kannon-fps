@@ -1,0 +1,65 @@
+{
+  "at": "2026-09-09T04:34:54.913Z",
+  "nativeChromium": {
+    "status": "passed",
+    "checks": [
+      "missed pointer release",
+      "two simultaneous native contacts",
+      "movement release preserves look",
+      "native cancel",
+      "drag Fire to aim",
+      "AR ADS and shotgun hip fire",
+      "pagehide rejects late motion"
+    ],
+    "counts": {
+      "touchstart": 5,
+      "touchmove": 7,
+      "touchend": 4,
+      "pointercancel": 1
+    }
+  },
+  "webkit": {
+    "status": "passed",
+    "move": 1,
+    "stop": 0,
+    "kind": "WebKit DOM touch lifecycle"
+  },
+  "game": {
+    "autoFire": {
+      "serverShotWithoutFireButton": true,
+      "confirmedHit": true
+    },
+    "status": "passed",
+    "url": "http://127.0.0.1:3045/",
+    "title": "Kannon Arena — Your crew. Your arena.",
+    "viewport": {
+      "width": 852,
+      "height": 393
+    },
+    "travel": 8.458341083085369,
+    "acceptedReleaseVelocity": [
+      0,
+      0
+    ],
+    "errors": [],
+    "controls": [
+      "look",
+      "move",
+      "reload",
+      "jump",
+      "fire"
+    ],
+    "checks": [
+      "rendered map",
+      "ready/countdown",
+      "native movement and independent look",
+      "authoritative stop without respawn",
+      "Simple default",
+      "Advanced selection and Fire drag"
+    ]
+  },
+  "notes": [
+    "Browser plugin absent; in-app browser rendered the game but Input.dispatchTouchEvent is unsupported. Playwright supplies the native touch regression runner.",
+    "WebKit on Windows is engine coverage, not a physical iPhone test."
+  ]
+}

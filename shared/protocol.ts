@@ -1,4 +1,5 @@
 /** Public wire contract. All game outcomes are computed by the server. */
+export const WORLD_VERSION = 'kannon-town-v1';
 export type Slot = 1 | 2 | 3;
 export type Phase = 'waiting' | 'preparing' | 'countdown' | 'playing' | 'finished';
 export type PracticeDifficulty = 'easy' | 'normal' | 'hard';
@@ -52,7 +53,7 @@ export interface MatchHistory {
   players: Array<Profile & { kills: number; deaths: number; ratingChange: number }>;
 }
 export type ClientMessage =
-  | { type: 'hello'; token: string; readyProtocol?: 1 }
+  | { type: 'hello'; token: string; readyProtocol?: 1; worldVersion?: string }
   | { type: 'create'; ranked: boolean; crewId?: string; practice?: boolean; practiceDifficulty?: PracticeDifficulty }
   | { type: 'join'; code: string }
   | { type: 'start' }

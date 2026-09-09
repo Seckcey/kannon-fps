@@ -177,9 +177,9 @@ test('point-blank contacts retain impacts without backwards beams or zero-length
 });
 
 test('visual barrels and tracer strips remain on the visible side of real shared-map cover', () => {
-  const authoritative = { x: 14, y: 1.45, z: 1 }, visual = { x: 15.5, y: 1.45, z: 1 };
+  const authoritative = { x: -11, y: 1.45, z: -4 }, visual = { x: -9.5, y: 1.45, z: -4 };
   const from = resolveVisualMuzzle(authoritative, visual);
-  assert.ok(from.x >= authoritative.x && from.x < 15, 'The cosmetic barrel cannot cross the east building face at x=15');
+  assert.ok(from.x >= authoritative.x && from.x < -10.14, 'The cosmetic barrel cannot cross the house front at x=-10.14');
   assert.equal(from.y, authoritative.y); assert.equal(from.z, authoritative.z);
   const open: Vec3 = { x: -26.865, y: 1.457, z: -.847 };
   assert.ok(resolveVisualMuzzle(origin, open).distanceTo(new THREE.Vector3(open.x, open.y, open.z)) < 1e-8, 'Unobstructed shots begin at the actual modeled barrel');
@@ -191,12 +191,12 @@ test('visual barrels and tracer strips remain on the visible side of real shared
   const glow = batches(effects).find(mesh => mesh.material.blending === THREE.AdditiveBlending)!;
   // The authoritatively clear ray stays east of the west building. An animated
   // barrel offset outside its north face would point through it if not clipped.
-  const event: Shot = { ...shot([{ to: { x: -14, y: 1.45, z: 8 }, kind: 'range' }]), from: { x: -14, y: 1.45, z: -8 }, to: { x: -14, y: 1.45, z: 8 } };
+  const event: Shot = { ...shot([{ to: { x: -9, y: 1.45, z: 8 }, kind: 'range' }]), from: { x: -9, y: 1.45, z: -8 }, to: { x: -9, y: 1.45, z: 8 } };
   const before = structuredClone(event);
-  effects.shot(event, { x: -16, y: 1.45, z: -8 }); effects.update(.07, view);
+  effects.shot(event, { x: -10.7, y: 1.45, z: -8 }); effects.update(.07, view);
   const trails = quads(glow).filter(quad => quad.kind === 1);
   assert.equal(trails.length, 1);
-  assert.ok(trails[0].vertices.every(vertex => vertex.z <= -7.48), 'A cosmetic tracer stops at the nearby north wall, not the accepted distant endpoint');
+  assert.ok(trails[0].vertices.every(vertex => vertex.z <= -6.12), 'A cosmetic tracer stops at the nearby north wall, not the accepted distant endpoint');
   assert.deepEqual(event, before, 'Visual occlusion never rewrites authoritative hit data');
   effects.dispose();
 });

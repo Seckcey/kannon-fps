@@ -2,29 +2,26 @@
 
 **Your crew. Your arena.** An original third-person, no-building browser shooter for a father, son, and invited friends to play on phones and desktops. The repository name remains `kannon-fps`; the approved camera is third-person.
 
-## Current live build
+## Current game
 
 - Private 2–8 player free-for-all rooms, host-controlled start, and rematches. Each player selects **Ready to play** after their prepared arena renders; everyone's readiness starts the full three-second countdown.
 - Five-minute matches or first to 15 eliminations; three-second respawns.
 - Fixed loadout: **1 AR · 2 Shotgun · 3 Healing ×2**.
 - 100 health and 50 shield per life. Each heal restores up to 50 health after three seconds; damage or firing interrupts it.
 - Two seconds of spawn protection, ending immediately on weapon fire.
-- Keyboard/mouse and touch joystick, aiming, firing, jump, sprint, reload, and loadout controls.
+- Keyboard/mouse and independent touch movement/aiming. Mobile Simple mode auto-fires at visible targets; Advanced supports holding and dragging Fire. Optional gyroscope aiming.
+- **Kannon Town**, one compact neighborhood arena with two accessible houses, four stair routes, upstairs sightlines, rear yards, and central bus/truck cover.
 - Solo practice against three moving AI rivals: Scout, Moxie, and Rook, with Relaxed, Balanced, or Challenging difficulty.
 - Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
 - An original Blender model with a skinned armature and eight animation clips.
 
-The [coastal galleries update](docs/COASTAL_GALLERIES.md) is live at **https://kpop.8westventures.com** on Coastline, preserving the [ready-before-countdown flow](docs/ROUND_READINESS.md). Implementation **[`b73e3e5`](https://github.com/Seckcey/kannon-fps/commit/b73e3e5c11ff3d317a7e958f130d0795f9b254ab)** merged through [PR #9](https://github.com/Seckcey/kannon-fps/pull/9) with [successful main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34247872113). [/health](https://kpop.8westventures.com/health) identifies the running build, including later documentation closeouts. Cloudflare Tunnel uses **HTTP `127.0.0.1:14350`**. All 155 tests and asset/type/build checks passed, alongside [controlled art comparisons](docs/verification/coastal-gallery-render.json), [local production-build practice](docs/verification/coastal-gallery-gameplay.json) and [public rendered touch-emulated practice](docs/verification/coastal-gallery-live.json). This IAB session refused desktop mouse capture; that path is unchanged and its earlier acceptance is recorded separately. Real-device controls/performance and a two-household match remain; use the [family playtest guide](docs/FAMILY_PLAYTEST.md). The [release record](docs/RELEASE.md) separates these checks from historical art and performance evidence.
+Play at **https://kpop.8westventures.com**. [/health](https://kpop.8westventures.com/health) identifies the running commit and `worldVersion`; this checkout uses `kannon-town-v1`. Coastline remains behind Cloudflare Tunnel at **HTTP `127.0.0.1:14350`**. The [Kannon Town record](docs/KANNON_TOWN.md) covers the map, mobile changes and current verification; [Release verification](docs/RELEASE.md) retains prior releases. Refresh both devices after the update, then use the [family playtest guide](docs/FAMILY_PLAYTEST.md).
 
-## Sunbreak art and motion
+## Kannon Town and Scout
 
-The deployed [coastal galleries](docs/COASTAL_GALLERIES.md) add recessed stone arches, connected piers and stepped exterior terraces. The environment uses fewer bytes and triangles while preserving the playable map, Scout and materials. The source checks, controlled comparisons and public gameplay evidence are linked in its release record.
+The [original Blender arena](docs/KANNON_TOWN.md) follows the compact two-house arrangement requested from Nuketown. It replaces Sunbreak as the single playable map. Both houses have usable interiors, upstairs rooms and rear balconies; real shared collision matches the rendered architecture and vehicles. The environment is 3,922,392 bytes, 31,308 triangles and 13 material batches.
 
-The deployed [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) reduces near-floor sliding, smooths the repeating stride and stabilizes knee direction in the Blender Walk/Run clips. It preserves the model's polygon/rig budget and six other actions; residual foot roll and velocity differences remain documented. The preceding [scout form and movement upgrade](docs/SCOUT_MOTION_POLISH.md) fitted the shoulder armor and upper back, aligned gait with visible travel, corrected reload/heal prediction and gave practice rivals the existing stair/platform route. The fixed loadout, authoritative movement, collision and scoring are preserved.
-
-The preceding [combat feedback release](docs/COMBAT_FEEDBACK.md) added per-pellet impacts, restrained shield/armor reactions and correctly placed respawn effects. Fixed-capacity render batches keep sustained firing bounded. That release preserved the V3 models; the subsequent scout geometry changes are recorded above.
-
-The deployed [art-depth release](docs/ART_DEPTH.md) adds fuller coastal scenery, more defined architecture, an athletic weapon-ready stance and revised locomotion. It preserves the map collision, fixed loadout, movement speeds and match rules. [Public rendered practice](docs/verification/sunbreak-v3-live.json) verified release `884e24d` over HTTPS/WSS: all three rivals moved and fired, each matching V3 model downloaded once, and explicit exit produced no application errors. Source, controller, real-input and deployment checks remain separate forms of evidence.
+The existing [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) and [combat feedback](docs/COMBAT_FEEDBACK.md) remain. Historical Sunbreak artwork and its release evidence are retained as source history.
 
 The scout's geometry, rig, surfaces, weapon poses and six actions remain original. Walk and Run lower-body motion now derive from the CMU Graphics Lab's selected `09_01` capture, retargeted and timed in Blender. [Source provenance and separate data terms](art/source/motion/cmu-09/CMU-USAGE-NOTICE.md) and a [public credit notice](public/models/scout-motion-NOTICE.txt) accompany the model. The motion is not CC0 and must not be sold directly as motion data or an animation pack. `.gitattributes` preserves the exact publisher bytes used by the provenance hashes.
 
@@ -43,7 +40,7 @@ Open **http://localhost:5173**. Create a private match, share its room code with
 
 Desktop readiness captures the mouse with that click; phones use the same button without firing or moving. Leaving the page, releasing the mouse, opening a menu or reconnecting while preparing requires readiness again. Preparation expires to the lobby after 45 seconds with a retry explanation. Once countdown begins, menus and disconnects do not pause the round. If an older game page is detected, refresh the players' pages before starting.
 
-Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They use ground routes and the existing south stairs/platform, following visible opponents upward and returning through the stairs. They do not jump or perform general climbing. Rematches keep the chosen difficulty. Practice creates no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent.
+Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They use ground routes, both houses, all four stair routes and the open truck, following visible opponents upstairs and returning through the stairs. They do not jump or perform general climbing. Rematches keep the chosen difficulty. Practice creates no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent.
 
 For two players on one computer, use separate browser profiles or an incognito window. The same saved player may have only one active connection; another tab with that player replaces the earlier session.
 
@@ -68,8 +65,8 @@ See [Deployment](docs/DEPLOYMENT.md) for containers, HTTPS, persistent storage, 
 | --- | --- | --- |
 | Move | WASD / arrow keys | Left joystick |
 | Look | Mouse; click to capture | Drag right side |
-| Fire / heal | Left click | Fire / Heal button |
-| Aim | Hold right click | Toggle Aim |
+| Fire / heal | Left click | Simple: aim at a rival to auto-fire. Advanced: hold/drag Fire. Tap Heal in slot 3. |
+| Aim | Hold right click | Toggle Aim; Advanced Fire aims the AR and hip-fires the shotgun |
 | Sprint | Shift | Toggle Sprint |
 | Jump | Space | Jump button |
 | Reload | R | Reload button |
@@ -77,7 +74,7 @@ See [Deployment](docs/DEPLOYMENT.md) for containers, HTTPS, persistent storage, 
 | Scores | Hold Tab | Roster / results screen |
 | Release mouse | Escape | Pause button |
 
-Settings include sensitivity, volume, graphics, and inverted vertical look. Landscape is recommended on phones.
+Settings include sensitivity, volume, graphics, inverted vertical look, **Mobile firing**, and optional **gyroscope aiming** with its own sensitivity. Gyroscope access requires a deliberate permission gesture and HTTPS/localhost on supported devices. Landscape is recommended on phones. Releasing the joystick stops movement even while a second finger continues aiming.
 
 ## Your player and crew
 

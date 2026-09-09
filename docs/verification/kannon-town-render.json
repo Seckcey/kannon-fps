@@ -1,0 +1,528 @@
+{
+  "at": "2026-09-09T04:51:44.026Z",
+  "desktop": {
+    "status": "passed",
+    "url": "http://127.0.0.1:3045/",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "checks": [
+      "native mouse capture through countdown",
+      "keyboard movement and authoritative stop",
+      "mouse look",
+      "manual fire and ADS",
+      "loadout slots",
+      "Escape release and fresh capture",
+      "pause and explicit leave"
+    ],
+    "errors": []
+  },
+  "render": {
+    "street": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 230,
+        "calls": 78,
+        "triangles": 179672,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -6.42516674738102,
+          1.6787574216430698,
+          13.483039478076034
+        ],
+        "fov": 68,
+        "viewpoint": "street"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-0": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 264,
+        "calls": 78,
+        "triangles": 179672,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -30.84910942138575,
+          1.8212425783569302,
+          -17.54
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-0"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-1": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 298,
+        "calls": 78,
+        "triangles": 179672,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          30.84910942138575,
+          1.8212425783569302,
+          19.04
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-1"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-2": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 332,
+        "calls": 75,
+        "triangles": 179496,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -30.84910942138575,
+          1.8212425783569302,
+          20.96
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-2"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-3": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 367,
+        "calls": 78,
+        "triangles": 179672,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          30.84910942138575,
+          1.8212425783569302,
+          -19.46
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-3"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-4": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 402,
+        "calls": 78,
+        "triangles": 179672,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -26.34910942138575,
+          1.8212425783569302,
+          -17.04
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-4"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-5": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 437,
+        "calls": 70,
+        "triangles": 161128,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          25.711898433056792,
+          1.7382131767871045,
+          17.754706583118267
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-5"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-6": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 471,
+        "calls": 66,
+        "triangles": 160792,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -26.34910942138575,
+          1.8212425783569302,
+          19.46
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-6"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "spawn-7": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 504,
+        "calls": 78,
+        "triangles": 179672,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          26.34910942138575,
+          1.8212425783569302,
+          -18.96
+        ],
+        "fov": 68,
+        "viewpoint": "spawn-7"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "teal-ground": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 538,
+        "calls": 75,
+        "triangles": 179496,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -15.843020350721847,
+          1.9493371149119685,
+          2.96
+        ],
+        "fov": 68,
+        "viewpoint": "teal-ground"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "teal-upstairs": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 571,
+        "calls": 70,
+        "triangles": 161128,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -15.840884862962465,
+          5.1777568778121426,
+          0.9600000000000002
+        ],
+        "fov": 68,
+        "viewpoint": "teal-upstairs"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "yellow-ground": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 605,
+        "calls": 78,
+        "triangles": 179672,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          15.843020350721847,
+          1.9493371149119685,
+          1.04
+        ],
+        "fov": 68,
+        "viewpoint": "yellow-ground"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "yellow-upstairs": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 639,
+        "calls": 70,
+        "triangles": 161128,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          15.840884862962465,
+          5.1777568778121426,
+          -0.9599999999999997
+        ],
+        "fov": 68,
+        "viewpoint": "yellow-upstairs"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "rear-balcony": {
+      "errors": [],
+      "ratio": 0.9237604307034013,
+      "scale": 1,
+      "buffer": {
+        "width": 1182,
+        "height": 665
+      },
+      "render": {
+        "frame": 675,
+        "calls": 20,
+        "triangles": 47320,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 65,
+        "textures": 27
+      },
+      "camera": {
+        "position": [
+          -21.164238128957628,
+          5.23452523744346,
+          3.54
+        ],
+        "fov": 68,
+        "viewpoint": "rear-balcony"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    },
+    "high": {
+      "errors": [],
+      "ratio": 0.65,
+      "scale": 0.65,
+      "buffer": {
+        "width": 832,
+        "height": 468
+      },
+      "render": {
+        "frame": 1621,
+        "calls": 150,
+        "triangles": 357634,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 66,
+        "textures": 37
+      },
+      "camera": {
+        "position": [
+          -6.42516674738102,
+          1.6787574216430698,
+          13.483039478076034
+        ],
+        "fov": 68,
+        "viewpoint": "street"
+      },
+      "actorCount": 8,
+      "moving": false,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "programLogs": []
+    }
+  },
+  "resize": {
+    "changes": 8,
+    "blankFrames": 0
+  },
+  "notes": [
+    "Controlled art scenes use actual GameView with fixed snapshots; they are distinct from production-build real-input acceptance.",
+    "Chromium SwiftShader on Windows does not establish physical phone or hardware GPU performance.",
+    "An initial High capture caught a blank frame immediately after adaptive resize. GameView now queues that resize before the next draw. Eight observed resize calls then had zero unpainted frames.",
+    "Desktop production input and Low viewpoint scenes preceded that renderer-only fix. The final High pass verifies the corrected draw ordering."
+  ]
+}

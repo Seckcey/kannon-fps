@@ -32,21 +32,21 @@ test('input rejects malformed values and clamps movement/view without trusting c
   assert.ok(Math.abs(clean.yaw) <= Math.PI * 2); assert.equal('x' in clean, false);
 });
 test('movement normalizes diagonal speed, blocks walls, stays within arena and supports steps', () => {
-  const state = { x: -28, y: 0, z: 25, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0 };
+  const state = { x: -28, y: 0, z: 20, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0 };
   movePlayer(state, input({ moveX: 1, moveZ: 1 }), 0.1);
   assert.ok(Math.abs(Math.hypot(state.vx, state.vz) - 6.5) < 1e-6);
-  Object.assign(state, { x: -25, z: 0 });
+  Object.assign(state, { x: -25, z: -4.9 });
   for (let i = 0; i < 100; i++) movePlayer(state, input({ moveX: 1 }), 1 / 30);
-  assert.ok(state.x < -23.3, 'west block must prevent walking through');
+  assert.ok(state.x < -22.5 && state.x > -23, 'rear house wall must prevent walking through');
   for (let i = 0; i < 500; i++) movePlayer(state, input({ moveX: -1, sprint: true }), 1 / 30);
   assert.ok(state.x >= -31.58);
-  Object.assign(state, { x: 0, y: 0, z: 8, vy: 0 });
+  Object.assign(state, { x: -24.35, y: 0, z: -5.05, vy: 0 });
   for (let i = 0; i < 35; i++) movePlayer(state, input({ moveZ: -1 }), 1 / 30);
-  assert.ok(state.y >= 1.9, `stairs should reach platform, got ${state.y}`);
+  assert.ok(state.y >= 3.19, `stairs should reach platform, got ${state.y}`);
 });
 test('jump requires a fresh press and stale input stops movement', () => {
   const { engine, a } = playing();
-  Object.assign(a, { x: -28, y: 0, z: 25 });
+  Object.assign(a, { x: -28, y: 0, z: 20 });
   engine.acceptInput('a', input({ moveZ: 1, jump: true }), 3100); engine.step(3100, 1 / 30);
   assert.ok(a.vy > 0); assert.equal(a.lastInputSeq, 1);
   engine.step(3500, 1 / 30); assert.equal(a.vx, 0); assert.equal(a.vz, 0);
@@ -112,8 +112,8 @@ test('match timer and reconnect sequence reset remain authoritative', () => {
   engine.step(3000 + RULES.matchSeconds * 1000, 1 / 30); assert.equal(engine.phase, 'finished'); assert.deepEqual(engine.winnerIds, ['a', 'b']);
 });
 test('camera is clipped against shared map geometry', () => {
-  const player = { x: -13.5, y: 0, z: 0 }; const camera = cameraPosition(player, Math.PI / 2, 0, false);
-  assert.ok(camera.x > -15, 'camera must stop in front of west wall');
+  const player = { x: -20.8, y: 0, z: -2 }; const camera = cameraPosition(player, Math.PI / 2, 0, false);
+  assert.ok(camera.x > -21.86, 'camera must stop in front of west wall');
   assert.ok(raycastMap({ x: -28, y: 1, z: 0 }, directionFromAngles(Math.PI / 2, 0), 100) < 6);
 });
 test('stale or disconnected fire cannot continue shooting, and server stalls cannot teleport players', () => {
@@ -128,7 +128,7 @@ test('stale or disconnected fire cannot continue shooting, and server stalls can
 });
 test('shoulder camera cannot shoot through cover that blocks the muzzle', () => {
   const { engine, a, b } = playing();
-  Object.assign(a, { x: -5, y: 0, z: 6 }); Object.assign(b, { x: -5, y: 0.55, z: -6 });
+  Object.assign(a, { x: -24.5, y: 0, z: -9 }); Object.assign(b, { x: -24.5, y: 0, z: -15 });
   engine.acceptInput('a', input({ fire: true, ...aimAt(a, b) }), 3100); engine.step(3100, 0);
   assert.equal(a.ammoAR, 29); assert.equal(b.shield, 50); assert.equal(b.health, 100);
 });
@@ -238,12 +238,12 @@ test('simultaneous score-limit eliminations finish once as a draw', () => {
 });
 test('same-tick shots still respect wall occlusion and shotgun range', () => {
   const { engine, a, b, events } = playing();
-  Object.assign(a, { x: -28, y: 0, z: 0 }); Object.assign(b, { x: -10, y: 0, z: 0 });
+  Object.assign(a, { x: -28, y: 0, z: 0 }); Object.assign(b, { x: -11, y: 0, z: 0 });
   engine.acceptInput('a', input({ fire: true, ...aimAt(a, b) }), 3100);
   engine.acceptInput('b', input({ fire: true, ...aimAt(b, a) }), 3100); engine.step(3100, 0);
   assert.equal(a.shield, 50); assert.equal(b.shield, 50); assert.equal(a.ammoAR, 29); assert.equal(b.ammoAR, 29);
   assert.ok(events.filter(event => event.type === 'shot').every(event => event.type === 'shot' && !event.hit));
-  Object.assign(a, { x: -28, z: 26 }); Object.assign(b, { x: -28, z: -26 });
+  Object.assign(a, { x: -28, z: 20 }); Object.assign(b, { x: 28, z: 20 });
   engine.acceptInput('a', input({ seq: 2, fire: true, slot: 2, ...aimAt(a, b) }), 4100);
   engine.acceptInput('b', input({ seq: 2, fire: true, slot: 2, ...aimAt(b, a) }), 4100); engine.step(4100, 0);
   assert.equal(a.shield, 50); assert.equal(b.shield, 50); assert.equal(a.ammoShotgun, 5); assert.equal(b.ammoShotgun, 5);

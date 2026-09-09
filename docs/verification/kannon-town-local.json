@@ -1,0 +1,45 @@
+{
+  "at": "2026-09-09T04:54:22.841Z",
+  "sourceBase": "d9d3bc6153efd135f04feacbe7d17f8f36b698fd",
+  "node": "v26.4.0",
+  "tests": 172,
+  "passed": 172,
+  "failed": 0,
+  "checks": [
+    "client/server/storage/HTTP/WebSocket tests",
+    "both model validators",
+    "TypeScript",
+    "production build"
+  ],
+  "warnings": [
+    "The optional gameplay bundle exceeds the configured 700 kB build warning threshold."
+  ],
+  "environment": {
+    "map": "Kannon Town",
+    "bytes": 3922392,
+    "sha256": "10bc88dfbf95e878225f60ed620bae0a8786ef8176f442f1dff15e39d1b62723",
+    "triangles": 31308,
+    "vertices": 62188,
+    "primitives": 13,
+    "embeddedTextures": 13,
+    "collisionReferences": 150,
+    "renderedCollisionFaces": 900,
+    "openings": [
+      "-1:front door",
+      "-1:upstairs window",
+      "-1:garage door",
+      "-1:balcony door",
+      "1:front door",
+      "1:upstairs window",
+      "1:garage door",
+      "1:balcony door"
+    ],
+    "stairRoutes": 5,
+    "status": "passed"
+  },
+  "checkLogSha256": "6faaa5ae461291a3bb96887781191869e6ab602d9b7b55656e76e0e6a457e1ce",
+  "entry": {
+    "path": "/assets/index-H57ytLR_.js",
+    "sha256": "6a2e126aab925c2f3204bf9ad650bab49d0e2c782952cfdc0df2d5f585357200"
+  }
+}

@@ -21,19 +21,19 @@ function penetrates(p: Vec3): boolean {
     p.z + PLAYER_RADIUS > b.z - b.d / 2 + 0.01 && p.z - PLAYER_RADIUS < b.z + b.d / 2 - 0.01);
 }
 
-test('navigation finds physically traversable routes around solid cover and under the arch', () => {
+test('navigation finds physically traversable routes around the bus and through house doorways', () => {
   const nav = new BotNavigation();
   for (const [from, to] of [
-    [{ x: -28, y: 0, z: 0 }, { x: -10, y: 0, z: 0 }],
+    [{ x: -28, y: 0, z: 0 }, { x: -11, y: 0, z: 0 }],
     [{ x: -5, y: 0, z: 6 }, { x: -5, y: 0, z: -6 }],
-    [{ x: 0, y: 0, z: 25 }, { x: 0, y: 0, z: 6 }],
+    [{ x: 0, y: 0, z: 20 }, { x: 0, y: 0, z: 6 }],
     [{ x: 0, y: 0, z: -22 }, { x: 0, y: 0, z: -12 }],
   ]) {
     const route = nav.findPath(from!, to!); assert.ok(route.length, 'Every ground destination must be reachable.');
     const state = { ...from!, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0 };
     for (const waypoint of route) {
       assert.ok(nav.clearSegment(state, waypoint));
-      for (let tick = 0; tick < 600 && Math.hypot(state.x - waypoint.x, state.z - waypoint.z) > 0.05; tick++) {
+      for (let tick = 0; tick < 600 && Math.hypot(state.x - waypoint.x, state.z - waypoint.z) > 0.00001; tick++) {
         const distance = Math.hypot(state.x - waypoint.x, state.z - waypoint.z);
         movePlayer(state, { ...idleInput(), yaw: Math.atan2(waypoint.x - state.x, -(waypoint.z - state.z)), moveZ: Math.min(1, distance / (6.5 / 30)) }, 1 / 30);
         assert.ok(!penetrates(state), 'Route must not rely on clipping through a collider.');
@@ -42,13 +42,13 @@ test('navigation finds physically traversable routes around solid cover and unde
     }
     assert.ok(Math.hypot(state.x - to!.x, state.z - to!.z) < 0.06);
   }
-  const elevated = nav.findPath({ x: 0, y: 0, z: 25 }, { x: 0, y: 2, z: 17 });
+  const elevated = nav.findPath({ x: 0, y: 0, z: 20 }, { x: -13, y: 3.2, z: 0 });
   assert.ok(elevated.length && nav.isWalkable(elevated.at(-1)!), 'An elevated target must produce a reachable ground approach.');
 });
 
 test('a rival recovers from navigation padding by walking clear of the corner', () => {
   const { human, bots } = practice(); const bot = bots[0]!, controller = new PracticeBots('normal', 'corner-recovery');
-  place(bot, -18.90741422983519, 21.188407806309858); human.connected = false;
+  place(bot, -4.38, .98); human.connected = false;
   const nav = new BotNavigation(); assert.equal(nav.isWalkable(bot), false); assert.equal(penetrates(bot), false);
   const start = { x: bot.x, y: bot.y, z: bot.z };
   const route = nav.findPath(bot, { x: 0, y: 0, z: 0 }); assert.ok(route.length > 1);
@@ -63,7 +63,7 @@ test('a rival recovers from navigation padding by walking clear of the corner', 
 
 test('unseen opponents cannot change patrol decisions, and acquisition obeys reaction time and aim difficulty', () => {
   const { human, bots } = practice(); const bot = bots[0]!;
-  place(bot, -28, 0, Math.PI / 2); place(human, -10, 0);
+  place(bot, -28, 0, Math.PI / 2); place(human, -11, 0);
   const unseenA = new PracticeBots('hard', 'sight'), unseenB = new PracticeBots('hard', 'sight');
   for (let tick = 0; tick < 60; tick++) {
     const a = unseenA.input(bot, [bot, human], 6000 + tick * 100, 0.1, tick + 1);
@@ -98,7 +98,7 @@ test('unseen opponents cannot change patrol decisions, and acquisition obeys rea
 
 test('rivals reload and heal through the existing server timers and regain the exact fixed loadout on respawn', () => {
   const { engine, human, bots, events } = practice(); const bot = bots[0]!;
-  place(bot, -28, 0, Math.PI / 2); place(human, -10, 0); bot.health = 40; bot.shield = 0; bot.ammoAR = 10;
+  place(bot, -28, 0, Math.PI / 2); place(human, -11, 0); bot.health = 40; bot.shield = 0; bot.ammoAR = 10;
   engine.step(6000, 0); assert.equal(bot.slot, 3); assert.equal(bot.heals, 2);
   engine.step(6030, 0); assert.equal(bot.heals, 1); assert.equal(bot.healingUntil, 9030);
   for (let now = 6060; now < 9030; now += 30) engine.step(now, 0);
@@ -122,7 +122,7 @@ test('a rival releases its AR burst before activating healing after losing sight
     if (events.some(e => e.type === 'shot' && e.playerId === bot.id)) break;
   }
   assert.ok(now < 8000, 'Set up a real held AR burst.');
-  place(bot, -28, 0, Math.PI / 2); place(human, -10, 0); bot.health = 40;
+  place(bot, -28, 0, Math.PI / 2); place(human, -11, 0); bot.health = 40;
   engine.step(now + 110, 0); assert.equal(bot.slot, 3); assert.equal(bot.healingUntil, 0);
   engine.step(now + 150, 0); assert.equal(bot.healingUntil, now + 150 + RULES.healMs); assert.equal(bot.heals, 1);
 });
@@ -130,6 +130,13 @@ test('a rival releases its AR burst before activating healing after losing sight
 test('bot combat respects weapon cadence and damage, pauses on disconnect, and reacquires after recovery', () => {
   const { engine, human, bots, events } = practice('hard'); const bot = bots[0]!;
   place(bot, -28, 12); place(human, -28, -2);
+  // This test advances weapon time with dt=0, so first frame an accurate
+  // stationary shot through the map's clipped shoulder camera.
+  for (let i = 0; i < 20; i++) {
+    const eye = cameraPosition(bot, bot.yaw, bot.pitch, true);
+    bot.yaw = Math.atan2(human.x - eye.x, -(human.z - eye.z));
+    bot.pitch = Math.atan2(human.y + 1.2 - eye.y, Math.hypot(human.x - eye.x, human.z - eye.z));
+  }
   for (let tick = 0; tick < 120; tick++) engine.step(6000 + tick * 1000 / 30, 0);
   const shots = events.filter(e => e.type === 'shot' && e.playerId === bot.id);
   assert.ok(shots.length >= 2);
@@ -153,7 +160,7 @@ test('close rivals use ordinary shotgun damage and cannot engage a target behind
   for (let i = 1; i < shots.length; i++) assert.ok(shots[i]!.at - shots[i - 1]!.at >= RULES.shotgunCadenceMs - 0.001);
   assert.equal(bot.ammoShotgun, RULES.shotgunMagazine - shots.length); assert.equal(bot.ammoAR, RULES.arMagazine);
   assert.ok(events.some(e => e.type === 'damage' && e.attackerId === bot.id && e.amount > RULES.arDamage && e.amount <= 72));
-  place(bot, -28, 0, Math.PI / 2); place(human, -10, 0); human.health = 100; human.shield = 50;
+  place(bot, -28, 0, Math.PI / 2); place(human, -11, 0); human.health = 100; human.shield = 50;
   engine.step(8100, 0); const count = events.filter(e => e.type === 'shot').length;
   for (let tick = 0; tick < 90; tick++) engine.step(8200 + tick * 1000 / 30, 0);
   assert.equal(events.filter(e => e.type === 'shot').length, count); assert.equal(human.health, 100); assert.equal(human.shield, 50);

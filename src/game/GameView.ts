@@ -14,6 +14,8 @@ import { CombatEffects } from './CombatEffects';
 import { DeferredRespawns } from './DeferredRespawns';
 import { MovementPrediction } from './MovementPrediction';
 import { LocomotionVelocity } from './LocomotionVelocity';
+import { AutomaticFire, reticleTarget } from './AutomaticFire';
+import { muzzlePosition } from '../../shared/physics';
 
 export interface GameSettings {
   sensitivity: number; volume: number; quality: 'auto' | 'high' | 'low'; invertY: boolean;
@@ -59,6 +61,7 @@ export class GameView {
   private readonly resizeObserver: ResizeObserver;
   private readonly labels = document.createElement('div');
   private readonly effects = new CombatEffects();
+  private readonly automaticFire = new AutomaticFire();
   private readonly respawns = new DeferredRespawns();
   private localRespawnAt = 0;
   private readonly shadowGeometry = new THREE.PlaneGeometry(1.45, 1.45);
@@ -84,6 +87,7 @@ export class GameView {
   private frames = 0;
   private statsTime = 0;
   private slowTime = 0;
+  private resizePending = false;
   private raf = 0;
   private disposed = false;
   private lastProcessedTick = -1;
@@ -95,7 +99,7 @@ export class GameView {
     this.settings = { ...defaultSettings, ...options.settings };
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
     this.canvas = this.renderer.domElement;
-    this.canvas.setAttribute('aria-label', 'Sunbreak Courtyard live third-person arena. Click to capture mouse; Escape releases it.');
+    this.canvas.setAttribute('aria-label', 'Kannon Town live third-person arena. Click to capture mouse; Escape releases it.');
     this.canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none;outline:none;';
     this.canvas.tabIndex = 0;
     this.canvas.addEventListener('webglcontextlost', this.contextLost);
@@ -223,6 +227,27 @@ export class GameView {
     this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix();
   };
 
+  prepareAutomaticFire(): boolean {
+    const input = this.options.input, now = performance.now();
+    const localId = this.options.getPlayerId();
+    const local = this.snapshot?.players.find(p => p.id === localId);
+    const fresh = !!this.snapshotBuffer.length && now - this.snapshotBuffer[this.snapshotBuffer.length - 1].received < 500;
+    const time = this.serverTime(now);
+    const eligible = this.assetsAnnounced && fresh && input.acceptsInput && input.isTouch && input.firingMode === 'simple'
+      && this.snapshot?.phase === 'playing' && local && local.health > 0 && input.slot !== 3
+      && local.reloadingUntil <= time && local.healingUntil <= time && !input.peek().reload;
+    let target: string | null = null;
+    if (eligible) {
+      const targets = this.snapshot!.players.map(p => {
+        const rendered = this.players.get(p.id)?.position;
+        return rendered ? { ...p, x: rendered.x, y: rendered.y, z: rendered.z } : p;
+      });
+      target = reticleTarget(this.camera.position, this.camera.getWorldDirection(new THREE.Vector3()), muzzlePosition(this.visualPosition), targets, localId, time, input.slot === 1 ? 100 : 40);
+    }
+    input.setAutomaticFire(this.automaticFire.update(target, now));
+    return !!target;
+  }
+
   private checkAssetsReady() {
     const local = this.players.get(this.options.getPlayerId());
     if (!this.disposed && !this.assetsAnnounced && !document.hidden && this.environmentReady && this.characterReady
@@ -340,6 +365,9 @@ export class GameView {
 
   private frame = (now: number) => {
     if (this.disposed) return;
+    // Changing the drawing buffer clears it. Apply adaptive sizes before drawing
+    // the next frame, never after the completed frame is ready for the browser.
+    if (this.resizePending) { this.resizePending = false; this.resize(); }
     const elapsedFrame = Math.max(0.001, (now - this.lastFrame) / 1000);
     const dt = Math.min(0.05, elapsedFrame); this.lastFrame = now;
     this.elapsed += dt; this.frames++; this.statsTime += elapsedFrame;
@@ -414,7 +442,7 @@ export class GameView {
         this.slowTime = fps < 38 ? this.slowTime + this.statsTime : Math.max(0, this.slowTime - this.statsTime);
         if (this.slowTime > 2.1 && this.presentation?.enabled) { this.presentation.enabled = false; this.slowTime = 0; this.renderQuality.resetTiming(); }
       }
-      if (this.assetsAnnounced && this.renderQuality.observe(fps, this.statsTime, this.settings.quality)) this.resize();
+      if (this.assetsAnnounced && this.renderQuality.observe(fps, this.statsTime, this.settings.quality)) this.resizePending = true;
       this.statsTime = 0; this.frames = 0;
     }
     this.raf = requestAnimationFrame(this.frame);
