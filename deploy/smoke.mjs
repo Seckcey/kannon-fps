@@ -23,6 +23,14 @@ const bundle = await fetch(new URL(bundlePath, base), { signal: AbortSignal.time
 assert.equal(bundle.status, 200, 'Production JavaScript bundle must be available.');
 assert.match(bundle.headers.get('content-type') ?? '', /javascript/);
 
+const directory = await fetch(new URL('/api/games', base), { signal: AbortSignal.timeout(5_000) });
+assert.equal(directory.status, 200, 'Available Games must be accessible before creating a player.');
+assert.equal(directory.headers.get('cache-control'), 'no-store');
+const { games } = await directory.json();
+assert.ok(Array.isArray(games), 'The public directory must return a game list.');
+const publicFields = new Set(['id', 'hostName', 'humanCount', 'botCount', 'maxPlayers', 'fillBots', 'botDifficulty']);
+for (const game of games) assert.ok(Object.keys(game).every(key => publicFields.has(key)), 'Public listings must not expose invitations or private profile data.');
+
 const wsUrl = new URL('/ws', base);
 wsUrl.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
 await new Promise((resolve, reject) => {
@@ -43,4 +51,4 @@ await new Promise((resolve, reject) => {
     } catch (error) { finish(error); }
   });
 });
-console.log('Production smoke passed: health, built client bundle, WebSocket transport, anonymous room rejection.');
+console.log('Production smoke passed: health, built client bundle, public directory, WebSocket transport, anonymous room rejection.');

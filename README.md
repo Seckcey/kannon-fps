@@ -4,14 +4,16 @@
 
 ## Current game
 
-- Private 2–8 player free-for-all rooms, host-controlled start, and rematches. Each player selects **Ready to play** after their prepared arena renders; everyone's readiness starts the full three-second countdown.
+- Public or private free-for-all rooms for up to eight people, optional bots, host-controlled start, and rematches. Each player selects **Ready to play** after their prepared arena renders; everyone's readiness starts the full three-second countdown.
 - Five-minute matches or first to 15 eliminations; three-second respawns.
 - Fixed loadout: **1 AR · 2 Shotgun · 3 Healing ×2**.
 - 100 health and 50 shield per life. Each heal restores up to 50 health after three seconds; damage or firing interrupts it.
 - Two seconds of spawn protection, ending immediately on weapon fire.
 - Keyboard/mouse and independent touch movement/aiming. Mobile Simple mode auto-fires at visible targets; Advanced supports holding and dragging Fire. Optional gyroscope aiming.
 - **Kannon Town**, one compact neighborhood arena with two accessible houses, four stair routes, upstairs sightlines, rear yards, and central bus/truck cover.
-- Solo practice against three moving AI rivals: Scout, Moxie, and Rook, with Relaxed, Balanced, or Challenging difficulty.
+- **Play against bots** for a solo match against Scout, Moxie, and Rook, with Relaxed, Balanced, or Challenging difficulty.
+- **Available Games** lists public lobbies with open seats. Join without an invitation; private rooms stay hidden.
+- Casual hosts can **Fill to 4 players with bots** and start alone. People replace bots as they join the lobby, up to eight human players.
 - Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
 - An original Blender model with a skinned armature and eight animation clips.
 
@@ -36,11 +38,11 @@ npm ci
 npm run dev
 ```
 
-Open **http://localhost:5173**. Create a private match, share its room code with another player, and have the host start once at least two people have joined. Each player then selects **Ready to play** after their prepared arena appears. For solo play, choose **Practice first → choose difficulty → Create practice → Enter practice → Ready to play**. Balanced is the default. Model downloads finish before room entry and later rooms reuse their buffers; the countdown also waits for the current round to render and for deliberate control engagement.
+Open **http://localhost:5173**. Choose **Create match**, select **Public** or **Private**, and choose whether to **Fill to 4 players with bots**. Public lobbies appear in **Available Games**; private rooms use invitation links or codes. The host can start with one human plus AI rivals, or at least two humans with bots off. Each player then selects **Ready to play** after their prepared arena appears. For solo play, choose **Play against bots → choose difficulty → Create bot match → Enter bot match → Ready to play**. Balanced is the default. Model downloads finish before room entry and later rooms reuse their buffers; the countdown also waits for the current round to render and for deliberate control engagement.
 
 Desktop readiness captures the mouse with that click; phones use the same button without firing or moving. Leaving the page, releasing the mouse, opening a menu or reconnecting while preparing requires readiness again. Preparation expires to the lobby after 45 seconds with a retry explanation. Once countdown begins, menus and disconnects do not pause the round. If an older game page is detected, refresh the players' pages before starting.
 
-Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They use ground routes, both houses, all four stair routes and the open truck, following visible opponents upstairs and returning through the stairs. They do not jump or perform general climbing. Rematches keep the chosen difficulty. Practice creates no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent.
+Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They use ground routes, both houses, all four stair routes and the open truck, following visible opponents upstairs and returning through the stairs. They do not jump or perform general climbing. Rematches keep the chosen difficulty. Solo and casual bot matches create no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent. Casual bot filling is applied in the lobby and before rematches. Bot rosters stay fixed during play, and a match continues against existing bots if a friend leaves. Public games accept new players only while waiting for the host to start; full, preparing, playing, finished, expired, and empty disconnected rooms are excluded from Available Games.
 
 For two players on one computer, use separate browser profiles or an incognito window. The same saved player may have only one active connection; another tab with that player replaces the earlier session.
 
@@ -101,4 +103,4 @@ Ratings start at 1,000 and reflect results and opponent strength. Five eligible 
 
 See [Product brief](docs/PRODUCT_BRIEF.md), [Delivery plan](docs/DELIVERY_PLAN.md), [Visual direction](docs/DESIGN.md), and [Assets](docs/ASSETS.md).
 
-No public matchmaking, purchases, voice/chat, or paid services have been added. This public repository must never contain player keys, database contents, or private invitations. Server validation protects a small invited community; it does not claim tournament-grade anti-cheat or latency compensation.
+Public lobby discovery is available; automatic matchmaking, purchases, voice/chat, and paid services have not been added. This public repository must never contain player keys, database contents, or private invitations. Server validation protects a small invited community; it does not claim tournament-grade anti-cheat or latency compensation.

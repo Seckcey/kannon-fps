@@ -1,5 +1,17 @@
 # Release verification
 
+## Bots and Available Games — September 9, 2026
+
+**Play against bots** now leads directly to the existing three difficulty choices and a full solo match. **Create match** offers explicit Public/Private visibility and optional **Fill to 4 players with bots** for casual games. Human arrivals replace bots in the lobby, up to eight people. The host can start with one person plus AI rivals; existing bots let the last human keep playing after a friend leaves. Rematches preserve difficulty and refill the roster. Ranked crew matches stay private and human-only.
+
+**Available Games** lists only public casual lobbies with open seats, showing the host nickname and human/bot counts. Players join without an invitation. Full, empty disconnected, expired, preparing, playing, and finished rooms are excluded, and eligibility is rechecked when joining. Failed joins preserve existing rooms. Private codes, crews, and player keys are never directory fields. Browsing does not create a profile, has a separate rate bucket, pauses while hidden/joining, and supports refresh recovery and canceling a slow join.
+
+All **179 tests**, asset checks, TypeScript and the production build passed locally. The production smoke checks health, the built client, no-store public directory, WSS/WS entry and anonymous room rejection. The release workflow repeats checks on Node 24 and validates the unprivileged container. No schema, dependency, model, collision, or weapon changes are required.
+
+Rendered acceptance used the built local client on `http://127.0.0.1:14351`, Edge/Playwright at 1365×900 desktop, 390×844 portrait and 852×393 landscape touch emulation. It covered public creation and discovery, joining from a second player with bot replacement, deliberate readiness and countdown, received bot shots, continued play after the guest left, solo Challenging bots, hidden private rooms, failure/refresh recovery, and canceling a delayed arena download. Page identity, meaningful content, no framework overlay, no horizontal overflow, and the target interactions passed. There were no unexpected application errors; the injected HTTP 503 and previously documented shader precision warnings were distinguished. Touch emulation was explicitly restored after the multi-page resize before validating touch readiness and pause. Physical-phone and two-household acceptance remain separate.
+
+The release pull request and `/health` identify the shipped revision. Deployment retains the scoped Coastline service, runtime limits, player-data volume and rollback image; a checked online SQLite backup precedes replacement. Refresh existing game pages to see the new menu options.
+
 ## Town graphics — September 9, 2026
 
 The [town graphics release](TOWN_GRAPHICS.md) integrates the reviewed school bus and sedans with new building, roof, paving, fence, foliage and material work. It includes actual Three.js before/after captures, reproducible Blender sources, final-export collision/vehicle/truck validation and measured desktop/touch rendering costs. Normal gameplay uses the 7,884,316-byte Meshopt-compressed environment; the local comparison remains available through `npm run graphics-test`. Physical iPhone testing remains outstanding and is not inferred from desktop touch emulation. `/health` and the release pull request identify the exact deployed revision.

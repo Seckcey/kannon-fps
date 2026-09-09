@@ -70,6 +70,7 @@ export async function fixture(t: TestContext) {
     await rm(directory, { recursive: true, force: true });
   });
   return {
+    get store() { return app.store; },
     get base() { return base; },
     async restart() {
       for (const peer of peers) peer.close();
