@@ -1,5 +1,17 @@
 # Release verification
 
+## Kannon Town and mobile controls — September 9, 2026
+
+Kannon's reported iPhone movement latch is addressed by native touch ownership and document-wide contact reconciliation. Releasing movement stops it while a separate aiming finger remains active. Cancellation, backgrounding, rotation, pause, mode changes and death clear controls. Simple reticle auto-fire defaults on for touch; Advanced supports dragging Fire to aim, with AR ADS and shotgun hip fire. Optional gyroscope aiming requests permission through its enable button.
+
+[Kannon Town](KANNON_TOWN.md) replaces Sunbreak as the only map. Both houses, four stairs, upstairs windows, rear balconies/yards and central bus/open-truck cover have matching shared collision. Practice navigation follows the new floor layers and supported routes. Combat rules, scoring, storage, Scout, dependencies and hosting configuration are unchanged; movement bounds now match the fence. Map-version admission and input checks prevent old pages controlling the new world.
+
+All [172 tests, asset checks, TypeScript and build](verification/kannon-town-local.json) pass. [Native browser acceptance](verification/kannon-town-browser.json) confirms two-finger release, stopped authoritative velocity without respawn, automatic server shots and hits using only aiming gestures, and Advanced Fire dragging. WebKit touch lifecycle passes separately. Physical iPhone sensor feel and performance require the [family retest](FAMILY_PLAYTEST.md).
+
+[Desktop/render verification](verification/kannon-town-render.json) passed mouse capture, movement, look, fire/ADS, slots and exit. Resolution adaptation now resizes before drawing; eight observed resize calls had zero blank frames. Fifteen controlled scenes cover all spawns and both house floors.
+
+The environment is 3,922,392 bytes, 31,308 triangles, 62,188 vertices and 13 batches, SHA-256 `10bc88dfbf95e878225f60ed620bae0a8786ef8176f442f1dff15e39d1b62723`. The [asset review](../art/source/town-export-review.json) checks all 150 colliders and 900 rendered faces, plus open doors/windows and truck access. Scout remains `9b668768…`. [/health](https://kpop.8westventures.com/health) identifies the running commit and `kannon-town-v1`; origin remains HTTP `127.0.0.1:14350`. Refresh both players' pages after the update. Current deployment evidence belongs to this release's GitHub pull request; older records below describe their original revisions.
+
 ## Coastal galleries — deployed September 8, 2026
 
 [Coastal galleries](COASTAL_GALLERIES.md) adds recessed upper arches, connected stone piers and stepped exterior terraces. Two lower wings move south with their detailed returns facing the arena. The north approach and selected spawns gain depth; side approaches expose more sea and the south-facing platform view remains open water. The playable map, Scout, materials, movement, loadout and match rules are preserved.

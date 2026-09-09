@@ -10,7 +10,7 @@ const sample = (extra = {}) => ({ x: 0, y: 0, z: 24, vx: 0, vy: 0, vz: -6.5, yaw
 const speed = (value: { vx: number; vz: number }) => Math.hypot(value.vx, value.vz);
 
 test('actual collision stops the gait while authoritative requested velocity remains intact', () => {
-  const wall = OBSTACLES.find(item => item.id === 'west-block')!;
+  const wall = OBSTACLES.find(item => item.id === 'teal-garage-south')!;
   const actor = sample({ x: wall.x, z: wall.z + wall.d / 2 + PLAYER_RADIUS + 1, vz: -9 });
   const gait = new LocomotionVelocity(), input = { ...idleInput(1), moveZ: 1, sprint: true };
   const initialZ = actor.z;
@@ -27,7 +27,7 @@ test('actual collision stops the gait while authoritative requested velocity rem
 });
 
 test('sliding along a real wall animates only the resolved travel direction', () => {
-  const wall = OBSTACLES.find(item => item.id === 'west-block')!;
+  const wall = OBSTACLES.find(item => item.id === 'teal-garage-south')!;
   const actor = sample({ x: wall.x - 1, z: wall.z + wall.d / 2 + PLAYER_RADIUS + .001, vx: 9 / Math.SQRT2, vz: -9 / Math.SQRT2 });
   const gait = new LocomotionVelocity(), input = { ...idleInput(1), moveX: 1, moveZ: 1, sprint: true };
   gait.update(actor, 1 / 60);

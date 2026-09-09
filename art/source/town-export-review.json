@@ -1,0 +1,23 @@
+{
+  "map": "Kannon Town",
+  "bytes": 3922392,
+  "sha256": "10bc88dfbf95e878225f60ed620bae0a8786ef8176f442f1dff15e39d1b62723",
+  "triangles": 31308,
+  "vertices": 62188,
+  "primitives": 13,
+  "embeddedTextures": 13,
+  "collisionReferences": 150,
+  "renderedCollisionFaces": 900,
+  "openings": [
+    "-1:front door",
+    "-1:upstairs window",
+    "-1:garage door",
+    "-1:balcony door",
+    "1:front door",
+    "1:upstairs window",
+    "1:garage door",
+    "1:balcony door"
+  ],
+  "stairRoutes": 5,
+  "status": "passed"
+}

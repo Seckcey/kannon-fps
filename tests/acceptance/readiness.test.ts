@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { RULES, type Crew, type InputFrame, type LeaderboardEntry, type MatchHistory, type RoomSnapshot, type WorldSnapshot } from '../../shared/protocol.js';
-import { fixture, type Peer } from './helpers.js';
+import { fixture, startReady, type Peer } from './helpers.js';
 
 const input = (seq: number): InputFrame => ({ seq, moveX: 1, moveZ: 1, yaw: 1, pitch: .2, fire: true, aim: true, jump: true, sprint: true, reload: true, slot: 2 });
 const preparationId = (room: RoomSnapshot) => {
@@ -185,6 +185,37 @@ test('a completed abandoned round requires a fresh rematch readiness nonce and c
     assert.ok(response.ok);
     const board = await response.json() as { entries: LeaderboardEntry[]; history: MatchHistory[] };
     assert.deepEqual(board.history, []); assert.ok(board.entries.every(entry => entry.matches === 0 && entry.wins === 0));
+  }
+});
+
+test('a stale-map reconnect cannot move or shoot in an already playing round', async t => {
+  const f = await fixture(t), identity = await f.profile('Map Recovery');
+  const modern = await f.connect(identity.token);
+  await modern.command({ type: 'create', ranked: false, practice: true }, 'room');
+  await startReady(modern, [modern]);
+  await modern.wait('snapshot', message => message.snapshot.phase === 'playing');
+  const stale = await f.connect();
+  await stale.command({ type: 'hello', token: identity.token, readyProtocol: 1, worldVersion: 'sunbreak-coastal-v1' }, 'welcome');
+  await stale.wait('room', message => message.room.phase === 'playing');
+  const mark = stale.mark();
+  await stale.command({ type: 'input', input: input(1) }, 'error', message => message.code === 'GAME_UPDATE_REQUIRED');
+  const observed = await stale.wait('snapshot', message => message.snapshot.players.some(player => player.id === identity.profile.id), mark);
+  const player = observed.snapshot.players.find(player => player.id === identity.profile.id)!;
+  assert.equal(player.vx, 0); assert.equal(player.vz, 0); assert.equal(player.lastInputSeq, 0);
+  assert.ok(!stale.messages.slice(mark).some(message => message.type === 'event' && message.event.type === 'shot' && message.event.playerId === identity.profile.id));
+});
+
+test('readiness-capable pages with missing or stale map versions cannot start a mismatched world', async t => {
+  const f = await fixture(t);
+  for (const worldVersion of [undefined, 'sunbreak-coastal-v1', 'future-map']) {
+    const identity = await f.profile('Map Compatibility');
+    const peer = await f.connect();
+    await peer.command({ type: 'hello', token: identity.token, readyProtocol: 1, worldVersion }, 'welcome');
+    await peer.command({ type: 'create', ranked: false, practice: true }, 'room');
+    const error = await peer.command({ type: 'start' }, 'error');
+    assert.equal(error.code, 'GAME_UPDATE_REQUIRED'); assert.match(error.message, /refresh/i);
+    assert.equal(latestRoom(peer).phase, 'waiting');
+    peer.send({ type: 'leave' });
   }
 });
 

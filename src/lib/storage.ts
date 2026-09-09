@@ -1,10 +1,10 @@
 import type { Profile } from '../../shared/protocol';
 
 export interface PlayerSession { token: string; profile: Profile }
-export interface Settings { sensitivity: number; volume: number; quality: 'auto' | 'high' | 'low'; invertY: boolean }
+export interface Settings { sensitivity: number; volume: number; quality: 'auto' | 'high' | 'low'; invertY: boolean; firingMode: 'simple' | 'advanced'; gyroscope: boolean; gyroSensitivity: number }
 const PLAYER_KEY = 'kannon.player.v1';
 const SETTINGS_KEY = 'kannon.settings.v1';
-export const defaultSettings: Settings = { sensitivity: 1, volume: 0.45, quality: 'auto', invertY: false };
+export const defaultSettings: Settings = { sensitivity: 1, volume: 0.45, quality: 'auto', invertY: false, firingMode: 'simple', gyroscope: false, gyroSensitivity: 1 };
 
 export function readPlayer(): PlayerSession | null {
   try {
@@ -23,6 +23,9 @@ export function readSettings(): Settings {
       volume: typeof value.volume === 'number' ? Math.max(0, Math.min(1, value.volume)) : 0.45,
       quality: ['auto', 'high', 'low'].includes(value.quality) ? value.quality : 'auto',
       invertY: value.invertY === true,
+      firingMode: value.firingMode === 'advanced' ? 'advanced' : 'simple',
+      gyroscope: value.gyroscope === true,
+      gyroSensitivity: typeof value.gyroSensitivity === 'number' && Number.isFinite(value.gyroSensitivity) ? Math.max(0.2, Math.min(2.5, value.gyroSensitivity)) : 1,
     };
   } catch { return defaultSettings; }
 }

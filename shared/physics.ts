@@ -1,4 +1,4 @@
-import { ARENA_HALF, OBSTACLES } from './map.js';
+import { ARENA_LIMITS, OBSTACLES } from './map.js';
 import type { InputFrame, Vec3 } from './protocol.js';
 export const PLAYER_RADIUS = 0.42;
 export const PLAYER_HEIGHT = 1.8;
@@ -77,7 +77,7 @@ export function movePlayer(state: KinematicState, input: InputFrame, dt: number,
   for (let index = 0; index < steps; index++) {
     for (const axis of ['x', 'z'] as const) {
       const prior = state[axis]; state[axis] += state[axis === 'x' ? 'vx' : 'vz'] * step;
-      state[axis] = clamp(state[axis], -ARENA_HALF + PLAYER_RADIUS, ARENA_HALF - PLAYER_RADIUS);
+      state[axis] = clamp(state[axis], -ARENA_LIMITS[axis] + PLAYER_RADIUS, ARENA_LIMITS[axis] - PLAYER_RADIUS);
       for (const box of OBSTACLES) {
         if (!overlapsXZ(state, box) || state.y + PLAYER_HEIGHT <= box.y - box.h / 2 + 0.02 || state.y >= box.y + box.h / 2 - 0.01) continue;
         const rise = box.y + box.h / 2 - state.y;

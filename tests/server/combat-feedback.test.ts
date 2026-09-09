@@ -50,15 +50,15 @@ function checkTraces(shot: ShotEvent) {
 test('AR publishes one original muzzle endpoint for range, wall occlusion, and the closest player', () => {
   for (const kind of ['range', 'world', 'player'] as const) {
     const { engine, a, b, events } = playing();
-    Object.assign(a, { x: -28, y: 0, z: kind === 'world' ? 0 : 12 });
-    Object.assign(b, { x: kind === 'player' ? -28 : -10, y: 0, z: kind === 'player' ? -2 : 0 });
+    Object.assign(a, { x: -28, y: kind === 'range' ? 10 : 0, z: kind === 'world' ? -4 : 12 });
+    Object.assign(b, { x: kind === 'player' ? -28 : -11, y: 0, z: kind === 'player' ? -2 : 0 });
     fire(engine, 'a', 3100, kind === 'player' ? aimAt(a, b) : { yaw: kind === 'world' ? Math.PI / 2 : 0 }); engine.step(3100, 0);
     const [shot] = shots(events); assert.ok(shot); checkTraces(shot);
     assert.equal(shot.traces![0]!.kind, kind); assert.equal(shot.hit, kind === 'player');
     assert.equal(a.ammoAR, 29); assert.equal(a.ammoShotgun, 6);
     assert.equal(b.health, 100); assert.equal(b.shield, kind === 'player' ? 26 : 50);
     assert.equal(damage(events).length, kind === 'player' ? 1 : 0);
-    if (kind === 'world') near(shot.to.x, -23); // The west block still occludes the player behind it.
+    if (kind === 'world') near(shot.to.x, -22.14); // The rear house wall occludes the player behind it.
     if (kind === 'player') { assert.equal(shot.traces![0]!.targetId, 'b'); near(shot.to.z, b.z + PLAYER_RADIUS); }
   }
 });
@@ -66,8 +66,8 @@ test('AR publishes one original muzzle endpoint for range, wall occlusion, and t
 test('off-center shotgun hits retain their own endpoints when the center ends at range or a wall', () => {
   for (const center of ['range', 'world'] as const) {
     const { engine, a, b, events } = playing();
-    Object.assign(a, { x: center === 'range' ? -28 : -11, y: 0, z: 12 });
-    Object.assign(b, { x: center === 'range' ? -26.7 : -11.1, y: 0, z: -8 });
+    Object.assign(a, { x: -28, y: center === 'range' ? 10 : 0, z: 12 });
+    Object.assign(b, { x: -26.7, y: center === 'range' ? 10 : 0, z: -8 });
     fire(engine, 'a', 3100, { slot: 2 }); engine.step(3100, 0);
     const [shot] = shots(events); assert.ok(shot); checkTraces(shot);
     assert.equal(shot.traces![0]!.kind, center); assert.equal(shot.hit, true);
@@ -87,7 +87,7 @@ test('off-center shotgun hits retain their own endpoints when the center ends at
 
 test('one shotgun spread can tag separate players without turning the center miss into a player endpoint', () => {
   const { engine, a, b, events } = playing(['a', 'b', 'c']); const c = engine.players.get('c')!;
-  Object.assign(a, { x: -28, y: 0, z: 12 }); Object.assign(b, { x: -26.7, y: 0, z: -8 }); Object.assign(c, { x: -28.55, y: 0, z: -8 });
+  Object.assign(a, { x: -28, y: 10, z: 12 }); Object.assign(b, { x: -26.7, y: 10, z: -8 }); Object.assign(c, { x: -28.55, y: 10, z: -8 });
   fire(engine, 'a', 3100, { slot: 2 }); engine.step(3100, 0);
   const [shot] = shots(events); assert.ok(shot); checkTraces(shot);
   assert.equal(shot.traces![0]!.kind, 'range'); assert.equal(shot.hit, true);

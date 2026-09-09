@@ -1,0 +1,13 @@
+{
+  "name": "Kannon Town",
+  "bytes": 3922392,
+  "sha256": "10bc88dfbf95e878225f60ed620bae0a8786ef8176f442f1dff15e39d1b62723",
+  "triangles": 31308,
+  "batches": 13,
+  "collisionReferences": 150,
+  "mapSha256": "be4c9ed551f132036b2d432959cd8b169434042ac637d1ce3feb97f15bb55f8b",
+  "source": "art/source/kannon-town.blend",
+  "generator": "scripts/blender/generate_town.py",
+  "inspiration": "Nuketown functional arrangement; original Blender geometry and material art",
+  "asphalt": "Image Gen original albedo; see town-materials/asphalt-generated.png"
+}

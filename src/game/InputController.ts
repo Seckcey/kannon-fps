@@ -1,6 +1,6 @@
 import type { InputFrame, Slot } from '../../shared/protocol';
 
-export interface InputSettings { sensitivity: number; invertY: boolean }
+export interface InputSettings { sensitivity: number; invertY: boolean; firingMode: 'simple' | 'advanced'; gyroscope: boolean; gyroSensitivity: number }
 type Action = 'fire' | 'aim' | 'jump' | 'sprint' | 'reload';
 
 /** One input vocabulary for keyboard/mouse and the accessible touch HUD. */
@@ -16,6 +16,8 @@ export class InputController {
   private pulses = { fire: false, jump: false, reload: false };
   private touchX = 0;
   private touchZ = 0;
+  private automaticFire = false;
+  private fireAim = false;
   private paused = false;
   private gameplayBlocked = false;
   private pendingLock: { finish: (locked: boolean) => void } | null = null;
@@ -23,7 +25,7 @@ export class InputController {
   private disposed = false;
   private resetListeners = new Set<() => void>();
   private touchActive = false;
-  private settings: InputSettings = { sensitivity: 1, invertY: false };
+  private settings: InputSettings = { sensitivity: 1, invertY: false, firingMode: 'simple', gyroscope: false, gyroSensitivity: 1 };
   private abort = new AbortController();
 
   constructor(canvas?: HTMLCanvasElement, settings?: Partial<InputSettings>) {
@@ -35,6 +37,8 @@ export class InputController {
     window.addEventListener('mouseup', this.mouseUp, options);
     window.addEventListener('blur', this.blur, options);
     window.addEventListener('focus', this.focus, options);
+    window.addEventListener('pagehide', this.clear, options);
+    window.addEventListener('orientationchange', this.clear, options);
     document.addEventListener('visibilitychange', this.visibilityChange, options);
     document.addEventListener('pointerlockchange', this.lockChange, options);
     document.addEventListener('pointerlockerror', this.lockError, options);
@@ -46,6 +50,7 @@ export class InputController {
   get isPaused() { return this.paused; }
   get canEngage() { return !this.disposed && !this.paused && this.focused && !document.hidden; }
   get acceptsInput() { return this.canEngage && !this.gameplayBlocked; }
+  get firingMode() { return this.settings.firingMode; }
 
   /** Touch UI must clear its captured pointers and toggles whenever controls are cancelled. */
   subscribeReset(listener: () => void) {
@@ -63,8 +68,10 @@ export class InputController {
   }
 
   setSettings(settings: Partial<InputSettings>) {
+    if (settings.firingMode && settings.firingMode !== this.settings.firingMode) this.clear();
     this.settings = { ...this.settings, ...settings };
     this.settings.sensitivity = Math.max(0.15, Math.min(3, this.settings.sensitivity));
+    this.settings.gyroSensitivity = Number.isFinite(this.settings.gyroSensitivity) ? Math.max(.2, Math.min(2.5, this.settings.gyroSensitivity)) : 1;
   }
 
   setView(yaw: number, pitch = 0) { this.yaw = yaw; this.pitch = Math.max(-1.2, Math.min(1.2, pitch)); }
@@ -73,7 +80,10 @@ export class InputController {
   resumeSequence(lastInputSeq: number) { this.sequence = Math.max(this.sequence, lastInputSeq); }
   setSlot(slot: Slot) { if (this.acceptsInput) this.slot = slot; }
   setTouchMove(x: number, z: number) {
+    // Releases are accepted even during a concurrent pause or death transition.
+    if (x === 0 && z === 0) { this.touchX = 0; this.touchZ = 0; return; }
     if (!this.acceptsInput) return;
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return;
     this.touchActive = true;
     const scale = Math.max(1, Math.hypot(x, z));
     this.touchX = x / scale;
@@ -81,6 +91,7 @@ export class InputController {
   }
   setTouchLook(dx: number, dy: number) {
     if (!this.acceptsInput) return;
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
     this.touchActive = true;
     this.look(dx, dy, 0.0042);
   }
@@ -94,6 +105,17 @@ export class InputController {
   cancelAction(action: Action) {
     this.actions[action] = false;
     if (action === 'fire' || action === 'jump' || action === 'reload') this.pulses[action] = false;
+  }
+
+  setAutomaticFire(value: boolean) {
+    this.automaticFire = value && this.acceptsInput && this.isTouch && this.settings.firingMode === 'simple' && this.slot !== 3;
+  }
+  setFireAim(value: boolean) { this.fireAim = value && this.acceptsInput; }
+  applyGyroscope(yaw: number, pitch: number) {
+    if (!this.acceptsInput || !this.settings.gyroscope || !Number.isFinite(yaw) || !Number.isFinite(pitch)) return;
+    this.touchActive = true;
+    this.yaw += yaw * this.settings.gyroSensitivity;
+    this.pitch = Math.max(-1.2, Math.min(1.2, this.pitch + pitch * this.settings.gyroSensitivity * (this.settings.invertY ? -1 : 1)));
   }
 
   setPaused(paused: boolean) {
@@ -143,7 +165,7 @@ export class InputController {
     const scale = Math.max(1, Math.hypot(mx, mz));
     return {
       seq: this.sequence, moveX: mx / scale, moveZ: mz / scale, yaw: this.yaw, pitch: this.pitch, slot: this.slot,
-      fire: enabled && (this.actions.fire || this.pulses.fire), aim: enabled && this.actions.aim,
+      fire: enabled && (this.actions.fire || this.pulses.fire || (this.automaticFire && this.slot !== 3)), aim: enabled && (this.actions.aim || (this.fireAim && this.slot === 1)),
       jump: enabled && (this.actions.jump || this.pulses.jump || this.keys.has('Space')),
       sprint: enabled && (this.actions.sprint || this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')),
       reload: enabled && (this.actions.reload || this.pulses.reload || this.keys.has('KeyR')),
@@ -195,6 +217,7 @@ export class InputController {
   private clear = () => {
     this.pendingLock?.finish(false);
     this.keys.clear(); this.touchX = 0; this.touchZ = 0;
+    this.automaticFire = false; this.fireAim = false;
     this.pulses.fire = false; this.pulses.jump = false; this.pulses.reload = false;
     for (const action of Object.keys(this.actions) as Action[]) this.actions[action] = false;
     for (const listener of [...this.resetListeners]) listener();

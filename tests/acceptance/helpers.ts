@@ -98,7 +98,7 @@ export async function fixture(t: TestContext) {
       const socket = new WebSocket(base.replace(/^http/, 'ws') + '/ws', { origin: base });
       const peer = new Peer(socket); peers.push(peer);
       await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
-      if (token) await peer.command({ type: 'hello', token, readyProtocol: 1 }, 'welcome');
+      if (token) await peer.command({ type: 'hello', token, readyProtocol: 1, worldVersion: 'kannon-town-v1' }, 'welcome');
       return peer;
     },
   };

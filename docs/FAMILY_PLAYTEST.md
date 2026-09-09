@@ -1,13 +1,14 @@
-# First family playtest
+# Kannon Town family playtest
 
-Open [Kannon Arena](https://kpop.8westventures.com) on the phones or desktops you actually plan to use. Phones should start in landscape. Use separate internet connections for this check when possible.
+Refresh [Kannon Arena](https://kpop.8westventures.com) on both devices so the lobby says **Kannon Town**. Start the iPhone in landscape. Keep each player's saved key private.
 
-1. Choose a nickname on each device. On **Leaderboard**, one person creates a crew and shares its invitation; the other joins that crew. Keep each player's backup key private.
-2. Create a private match with that crew selected. Share the room invitation, wait for both players, then have the host start. After the arena appears, each player selects **Ready to play**. The full three-second countdown starts when everyone is ready. Desktop players capture the mouse with that click; phones use the same button.
-3. Play a full round. Try the AR, shotgun, healing, aiming, sprinting and jumping. Pay attention to whether you can see the opponent clearly and tell when shots connect.
-4. Compare the result and crew standings, then rematch and select **Ready to play** again. The first five eligible matches are placement matches. Briefly switch away from the game and return during the rematch; fresh gestures should resume control without stuck movement or firing.
-5. Tell Mary what felt good and what made you want to stop. A short description is enough.
+1. Create or join the same private friends match. The host starts, then each player selects **Ready to play** after the arena appears.
+2. Hold the phone's left joystick and aim with a second finger on the right. Lift only the left thumb. Movement should stop while aiming still works. Repeat after sliding outside the joystick, rotating the phone, pausing and switching away from Safari. Returning requires a fresh gesture.
+3. Start with **Settings → Mobile firing → Simple**. Track a visible rival with the crosshair. The selected AR or shotgun should fire without pressing Fire, and stop when the crosshair leaves the target. Walls and spawn protection prevent automatic firing. Select slot 3 and tap Heal deliberately.
+4. Try **Advanced**. Hold Fire and drag that same finger to aim. The AR aims in; the shotgun fires from the hip. Release to stop. The separate right-side aiming area still works.
+5. Optionally select **Enable gyroscope aiming**, allow the motion request and tilt gently. Adjust its separate sensitivity. Turning it off restores touch-only aiming; declining permission leaves touch usable.
+6. Explore both houses, inside/outside stairs, upstairs windows, yards and the open truck. Play a full round, compare results and crew standings, then rematch. Report stuck doorways, unfair spawns or overly strong sightlines.
 
-Please include each device model and browser, whether you were on Wi-Fi or mobile data, and whether the game felt smooth. For graphics, distinguish small or hard-to-see opponents from blurry scenery or choppy motion. For controls, name the action that felt awkward. Mention any disagreement in the result or standings.
+Tell Mary the iPhone model, browser, Wi-Fi/mobile connection, and preferred firing mode. Most useful first result: whether lifting the movement thumb stops the character on **both** screens without respawning. Also report smoothness, opponent visibility and gyro direction/feel. A short description is enough.
 
-This playtest supplies the real-device and family feedback needed for the next graphics and gameplay pass. Desktop touch emulation and server load checks cannot substitute for it.
+This retest supplies the physical-device and family feedback that browser simulation cannot provide.

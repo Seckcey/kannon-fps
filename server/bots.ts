@@ -1,3 +1,6 @@
+import { BotNavigation } from './navigation.js';
+const sameHeight = (a: Vec3, b: Vec3) => Math.abs(a.y - b.y) < 0.06;
+export { BotNavigation } from './navigation.js';
 import { ARENA_HALF, OBSTACLES, SPAWNS } from '../shared/map.js';
 import { cameraPosition, clamp, muzzlePosition, normalize, PLAYER_HEIGHT, PLAYER_RADIUS, raycastMap, subtract, supportHeight } from '../shared/physics.js';
 import type { InputFrame, PlayerState, PracticeDifficulty, Profile, Vec3 } from '../shared/protocol.js';
@@ -16,154 +19,6 @@ const horizontalDistance = (a: Vec3, b: Vec3) => Math.hypot(a.x - b.x, a.z - b.z
 const angleDelta = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const point = (p: Vec3): Vec3 => ({ x: p.x, y: p.y, z: p.z });
 
-interface Rectangle { minX: number; maxX: number; minZ: number; maxZ: number }
-interface NavigationLayer {
-  id: string; height: number; bounds: Rectangle; support: Rectangle;
-  obstacles: Rectangle[]; physicalObstacles: Rectangle[];
-}
-const inside = (p: Vec3, b: Rectangle) => p.x >= b.minX - 0.001 && p.x <= b.maxX + 0.001 && p.z >= b.minZ - 0.001 && p.z <= b.maxZ + 0.001;
-const sameHeight = (a: Vec3, b: Vec3) => Math.abs(a.y - b.y) < 0.06;
-function intersectsSegment(a: Vec3, b: Vec3, box: Rectangle): boolean {
-  let near = 0, far = 1;
-  for (const [start, delta, min, max] of [[a.x, b.x - a.x, box.minX + 0.001, box.maxX - 0.001], [a.z, b.z - a.z, box.minZ + 0.001, box.maxZ - 0.001]]) {
-    if (Math.abs(delta!) < 1e-9) { if (start! < min! || start! > max!) return false; }
-    else { const low = (min! - start!) / delta!, high = (max! - start!) / delta!; near = Math.max(near, Math.min(low, high)); far = Math.min(far, Math.max(low, high)); }
-  }
-  return near <= far && far >= 0 && near <= 1;
-}
-/** Ground visibility routes plus the courtyard's one ordinary stair route.
- * Different support heights connect only through explicit stair links; neither
- * visibility shortcuts nor recovery can climb cover or walk off a platform.
- * The bounded graph is derived once from the shared collision boxes. */
-export class BotNavigation {
-  private readonly layers: NavigationLayer[];
-  readonly nodes: Vec3[];
-  private readonly edges: Array<Array<{ to: number; cost: number }>>;
-  constructor() {
-    const margin = PLAYER_RADIUS + 0.3;
-    const rectangle = (b: typeof OBSTACLES[number], padding: number): Rectangle => ({
-      minX: b.x - b.w / 2 - padding, maxX: b.x + b.w / 2 + padding,
-      minZ: b.z - b.d / 2 - padding, maxZ: b.z + b.d / 2 + padding,
-    });
-    const makeLayer = (id: string, height: number, bounds: Rectangle, support = bounds): NavigationLayer => {
-      const blockers = OBSTACLES.filter(b => b.y - b.h / 2 < height + PLAYER_HEIGHT && b.y + b.h / 2 > height + 0.01);
-      return { id, height, bounds, support, obstacles: blockers.map(b => rectangle(b, margin)),
-        // A stair transition can legitimately end a tick a few millimeters
-        // before the next rise. Recovery must use its actual body clearance.
-        physicalObstacles: blockers.map(b => rectangle(b, height ? PLAYER_RADIUS : PLAYER_RADIUS + 0.01)) };
-    };
-    const arena = { minX: -ARENA_HALF + PLAYER_RADIUS, maxX: ARENA_HALF - PLAYER_RADIUS, minZ: -ARENA_HALF + PLAYER_RADIUS, maxZ: ARENA_HALF - PLAYER_RADIUS };
-    this.layers = [makeLayer('ground', 0, arena)];
-    const candidates: Vec3[] = [...SPAWNS.map(point), { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: -23 }, { x: -11, y: 0, z: 10 }, { x: 11, y: 0, z: -10 }];
-    for (const box of this.layers[0]!.obstacles) for (const x of [box.minX, box.maxX]) for (const z of [box.minZ, box.maxZ]) candidates.push({ x, y: 0, z });
-
-    // This names the existing route, not a general climbing rule. Fail closed if
-    // future geometry no longer has aligned, overlapping <=45cm stair rises.
-    const steps = [1, 2, 3, 4].map(i => OBSTACLES.find(b => b.id === `south-step-${i}`)!);
-    const platform = OBSTACLES.find(b => b.id === 'south-platform')!;
-    const stairs = [...steps, platform];
-    if (stairs.some((b, i) => !b || b.x !== stairs[0]!.x || b.w < margin * 2 ||
-      b.y + b.h / 2 <= (i ? stairs[i - 1]!.y + stairs[i - 1]!.h / 2 : 0) ||
-      b.y + b.h / 2 - (i ? stairs[i - 1]!.y + stairs[i - 1]!.h / 2 : 0) > 0.45 ||
-      (i > 0 && b.z - b.d / 2 > stairs[i - 1]!.z + stairs[i - 1]!.d / 2))) throw new Error('The existing practice stair route is no longer traversable.');
-    const first = steps[0]!;
-    const chain: Vec3[] = [{ x: first.x, y: 0, z: first.z - first.d / 2 - margin - 0.5 }];
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i]!, next = stairs[i + 1]!, height = step.y + step.h / 2;
-      const support = rectangle(step, PLAYER_RADIUS - 0.01);
-      const bounds = { ...support, minX: step.x - step.w / 2 + margin, maxX: step.x + step.w / 2 - margin };
-      this.layers.push(makeLayer(step.id, height, bounds, support));
-      // A whole body reaches the next rise before its center reaches that box.
-      // In particular, step 4's box center is already at platform height.
-      const minZ = step.z - step.d / 2 - PLAYER_RADIUS + 0.04;
-      const maxZ = next.z - next.d / 2 - margin - 0.04;
-      if (minZ > maxZ) throw new Error('The existing practice stair route lacks a clear tread.');
-      chain.push({ x: step.x, y: height, z: (minZ + maxZ) / 2 });
-    }
-    const upperBounds = rectangle(platform, -margin);
-    this.layers.push(makeLayer(platform.id, platform.y + platform.h / 2, upperBounds, rectangle(platform, PLAYER_RADIUS - 0.01)));
-    chain.push({ x: platform.x, y: platform.y + platform.h / 2, z: upperBounds.minZ + 0.28 });
-    candidates.push(...chain, { x: platform.x, y: platform.y + platform.h / 2, z: platform.z });
-    for (const x of [upperBounds.minX, upperBounds.maxX]) for (const z of [upperBounds.minZ, upperBounds.maxZ]) candidates.push({ x, y: platform.y + platform.h / 2, z });
-    this.nodes = candidates.filter((p, i) => this.isWalkable(p) && candidates.findIndex(q => horizontalDistance(p, q) < 0.01 && sameHeight(p, q)) === i);
-    if (chain.some(p => !this.isWalkable(p))) throw new Error('The existing practice stair route lacks player clearance.');
-    this.edges = this.nodes.map(() => []);
-    for (let a = 0; a < this.nodes.length; a++) for (let b = a + 1; b < this.nodes.length; b++) {
-      if (!this.clearSegment(this.nodes[a]!, this.nodes[b]!)) continue;
-      const cost = horizontalDistance(this.nodes[a]!, this.nodes[b]!);
-      this.edges[a]!.push({ to: b, cost }); this.edges[b]!.push({ to: a, cost });
-    }
-    for (let i = 1; i < chain.length; i++) {
-      const a = this.nodes.findIndex(p => horizontalDistance(p, chain[i - 1]!) < 0.01 && sameHeight(p, chain[i - 1]!));
-      const b = this.nodes.findIndex(p => horizontalDistance(p, chain[i]!) < 0.01 && sameHeight(p, chain[i]!));
-      const cost = horizontalDistance(chain[i - 1]!, chain[i]!) + Math.abs(chain[i]!.y - chain[i - 1]!.y);
-      this.edges[a]!.push({ to: b, cost }); this.edges[b]!.push({ to: a, cost });
-    }
-  }
-  private layerAt(p: Vec3): NavigationLayer | undefined { return this.layers.find(layer => Math.abs(p.y - layer.height) < 0.06 && inside(p, layer.support)); }
-  private supported(p: Vec3): Vec3 { return { x: p.x, y: supportHeight(p), z: p.z }; }
-  /** Only an observed opponent above the existing stairs warrants ascending. */
-  requiresAscent(from: Vec3, observed: Vec3): boolean {
-    const target = this.supported(observed), current = this.supported(from);
-    return this.layerAt(target)?.id === 'south-platform' && (this.layerAt(current)?.id !== 'south-platform' || !this.isWalkable(from));
-  }
-  isWalkable(p: Vec3): boolean {
-    const layer = this.layerAt(p);
-    return !!layer && inside(p, layer.bounds) && !layer.obstacles.some(b => p.x > b.minX + 0.001 && p.x < b.maxX - 0.001 && p.z > b.minZ + 0.001 && p.z < b.maxZ - 0.001);
-  }
-  clearSegment(a: Vec3, b: Vec3): boolean {
-    if (!sameHeight(a, b) || !this.isWalkable(a) || !this.isWalkable(b)) return false;
-    const layer = this.layerAt(a)!;
-    return this.layerAt(b) === layer && !layer.obstacles.some(box => intersectsSegment(a, b, box));
-  }
-  /** A bounded visibility-graph search; no per-tick grid allocation or path search. */
-  findPath(start: Vec3, requestedGoal: Vec3): Vec3[] {
-    const supportedStart = this.supported(start), layer = this.layerAt(supportedStart);
-    if (!layer) return [];
-    // Descending can arrive horizontally while gravity is still settling the
-    // body. Hold position until supported; the follower handles this zero-length
-    // horizontal waypoint without normalizing a zero vector.
-    if (!sameHeight(start, supportedStart)) return [supportedStart, ...this.findPath(supportedStart, requestedGoal)];
-    if (!this.isWalkable(start)) {
-      // Steering can enter the extra navigation margin while the actual body
-      // remains clear. Walk out of that padding before searching, never teleport
-      // or cut through the smaller physical collider to recover a route.
-      const exits = [layer.bounds, ...layer.obstacles].flatMap(b => [
-        { x: b.minX, y: layer.height, z: start.z }, { x: b.maxX, y: layer.height, z: start.z },
-        { x: start.x, y: layer.height, z: b.minZ }, { x: start.x, y: layer.height, z: b.maxZ },
-      ]).filter(p => this.layerAt(p) === layer && this.isWalkable(p) && inside(start, layer.support) && inside(p, layer.support) && !layer.physicalObstacles.some(b => intersectsSegment(start, p, b)))
-        .sort((a, b) => horizontalDistance(start, a) - horizontalDistance(start, b));
-      const exit = exits[0];
-      return exit ? [exit, ...this.findPath(exit, requestedGoal)] : [];
-    }
-    const supportedGoal = this.supported(requestedGoal), goalLayer = this.layerAt(supportedGoal) ?? this.layers[0]!;
-    const reachable = this.nodes.filter(p => this.layerAt(p) === goalLayer);
-    const goal = this.isWalkable(supportedGoal) ? supportedGoal : reachable.reduce((best, p) => horizontalDistance(p, requestedGoal) < horizontalDistance(best, requestedGoal) ? p : best);
-    if (this.clearSegment(start, goal)) return [point(goal)];
-    const count = this.nodes.length, end = count + 1;
-    const points = [...this.nodes, start, goal];
-    const links = this.edges.map(edges => [...edges]); links.push([], []);
-    for (let i = 0; i < count; i++) {
-      if (this.clearSegment(start, points[i]!)) links[count]!.push({ to: i, cost: horizontalDistance(start, points[i]!) });
-      if (this.clearSegment(points[i]!, goal)) links[i]!.push({ to: end, cost: horizontalDistance(points[i]!, goal) });
-    }
-    const costs = new Float64Array(count + 2).fill(Infinity), visited = new Uint8Array(count + 2), previous = new Int16Array(count + 2).fill(-1);
-    costs[count] = 0;
-    for (let iteration = 0; iteration < count + 2; iteration++) {
-      let current = -1, best = Infinity;
-      for (let i = 0; i < count + 2; i++) { const estimate = costs[i]! + horizontalDistance(points[i]!, goal); if (!visited[i] && estimate < best) { best = estimate; current = i; } }
-      if (current < 0) return [];
-      if (current === end) {
-        const route: Vec3[] = [];
-        for (let i = end; i !== count; i = previous[i]!) { if (i < 0) return []; route.push(point(points[i]!)); }
-        return route.reverse();
-      }
-      visited[current] = 1;
-      for (const edge of links[current]!) { const cost = costs[current]! + edge.cost; if (cost < costs[edge.to]!) { costs[edge.to] = cost; previous[edge.to] = current; } }
-    }
-    return [];
-  }
-}
 let navigation: BotNavigation | undefined;
 const getNavigation = () => navigation ??= new BotNavigation();
 
@@ -227,12 +82,12 @@ export class PracticeBots {
       }
       goal = brain.retreat;
     } else brain.retreat = null;
-    if (!goal && visible && (distance > settings.distance + 2 || nav.requiresAscent(player, target!))) goal = target;
+    if (!goal && visible && (distance > settings.distance + 2 || nav.requiresAscent(player, target!) || !nav.isWalkable(player))) goal = target;
     if (!visible) {
       if (target && now - brain.seenAt < 2200 && (horizontalDistance(player, target) > 1 || nav.requiresAscent(player, target))) goal = target;
       else {
         if (!brain.patrol || (horizontalDistance(player, brain.patrol) < 1.2 && sameHeight(player, brain.patrol))) {
-          const choices = nav.nodes.filter(p => horizontalDistance(player, p) > 8 && Math.abs(p.x) < 28 && Math.abs(p.z) < 28);
+          const choices = nav.patrolPoints.filter(p => horizontalDistance(player, p) > 8);
           brain.patrol = choices[Math.floor(brain.random() * choices.length)] ?? nav.nodes[0]!;
         }
         goal = brain.patrol;

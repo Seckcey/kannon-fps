@@ -39,7 +39,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
     gltf.scene.traverse(object => {
       if (!(object instanceof THREE.Mesh)) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
-      object.castShadow = !isHorizon(object) && !materials.every(material => /Ground|Cliff/i.test(material.name));
+      object.castShadow = !isHorizon(object) && !materials.every(material => /GroundGrass|GroundAsphalt|Cliff/i.test(material.name));
       object.receiveShadow = true;
       for (const material of materials) {
         if (configured.has(material)) continue;

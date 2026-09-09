@@ -93,7 +93,7 @@
 
 @layer screens {
   .app-shell { min-height: 100dvh; position: relative; isolation: isolate; }
-  .lobby-art { position: absolute; inset: 95px 0 0; background: url('/assets/sunbreak-lobby.png') center center / cover no-repeat; z-index: -2; }
+  .lobby-art { position: absolute; inset: 95px 0 0; background: url('/assets/kannon-town-lobby.png') center center / cover no-repeat; z-index: -2; }
   .app-header { height: 106px; display: flex; align-items: center; padding: 0 32px; gap: 30px; background: #061521f5; border-bottom: 1px solid #465c68; position: relative; z-index: 5; }
   .wordmark { display: flex; align-items: center; flex-direction: column; padding: 0; width: 239px; text-transform: uppercase; flex-shrink: 0; }
   .wordmark > span { font: italic 800 70px/.85 var(--display); letter-spacing: 2px; }
@@ -326,6 +326,10 @@
   .touch-fire { width: 78px; height: 78px; grid-column: 3; grid-row: 1 / span 2; background: #d7ff5b30; border-color: #e1ff97; }
   .touch-right > :nth-child(3) { grid-column: 2; }
   .portrait-hint { display: none; }
+  .touch-controls { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .touch-mode-hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: max(18px,env(safe-area-inset-bottom)); white-space: nowrap; color: #f2f5e6; background: #092333b8; padding: 5px 9px; font: 500 11px var(--body); pointer-events: none; }
+  .crosshair.auto-target i { background: var(--lime); box-shadow: 0 0 5px #10250b; }
+  .settings-fields .field-label small { font: 400 13px/1.5 var(--body); text-transform: none; letter-spacing: 0; color: var(--muted); }
 }
 
 @layer responsive {

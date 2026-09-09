@@ -1,5 +1,7 @@
 # Sunbreak Relay environment
 
+Historical source, superseded by [Kannon Town](../../docs/KANNON_TOWN.md). The active generator is `scripts/blender/generate_town.py` and active source is `art/source/kannon-town.blend`. Do not run this historical generator against the current public GLB. The quantities and commands below describe the retired Sunbreak map.
+
 `environment.blend` is the editable Blender source for `public/models/environment.glb`.
 The deterministic authoring script reads the current 17 obstacle volumes directly
 from `shared/map.ts`. It builds shallow ashlar courses, closed shuttered facade bays,

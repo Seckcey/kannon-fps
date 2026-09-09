@@ -15,7 +15,7 @@ test('practice settings survive recovery and rematch without creating bot profil
   const connect = async (token: string) => {
     const socket = new WebSocket(base.replace('http:', 'ws:') + '/ws', { origin: base }), peer = new Peer(socket); peers.push(peer);
     await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
-    await peer.command({ type: 'hello', token, readyProtocol: 1 }, 'welcome'); return peer;
+    await peer.command({ type: 'hello', token, readyProtocol: 1, worldVersion: 'kannon-town-v1' }, 'welcome'); return peer;
   };
   const host = await connect(hostIdentity.token), friend = await connect(otherIdentity.token);
   const defaults = await host.command({ type: 'create', ranked: true, practice: true, crewId: crew.id }, 'room', m => m.room.players.length === 4);
