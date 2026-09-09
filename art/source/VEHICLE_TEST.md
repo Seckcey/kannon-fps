@@ -1,6 +1,6 @@
 # Kannon Town vehicle graphics experiment
 
-Local review only. Branch `codex/vehicle-graphics-test`, based on `29e8014911f4822e8736c1307736dcf8d9c8cca9`. This experiment is not approved for merging or deployment.
+Historical local experiment on `codex/vehicle-graphics-test`, based on `29e8014911f4822e8736c1307736dcf8d9c8cca9`. The user subsequently approved the vehicles and authorized a broader graphics release and deployment. See [the current release](../../docs/TOWN_GRAPHICS.md). Measurements below describe the original isolated experiment and its lighting.
 
 Only the school bus, south car and north car are replaced. The original `kannon-town.blend`, `environment.glb`, town generator, cargo truck, map collision, input, cameras, weapons, networking and ranking implementation remain intact. The separate review page uses the existing `GameView`, `InputController`, `TouchControls` and shared movement/collision functions. Its walk-around mode is a movement sandbox; the **Full practice match** link enters ordinary local gameplay with the selected vehicle version.
 

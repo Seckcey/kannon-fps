@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
 import { GameView } from '../game/GameView';
+import { ARENA_ASSETS, VEHICLE_TEST_ASSETS } from '../game/assets';
 import { InputController } from '../game/InputController';
 import { TouchControls } from '../components/TouchControls';
 import { movePlayer } from '../../shared/physics';
@@ -23,6 +24,17 @@ const views: Record<string, { label: string; player: Vec; yaw: number; pitch: nu
   'north-gameplay': { label: 'North car · third person', player: [0, 0, -12.5], yaw: .686, pitch: -.06 },
 };
 const params = new URLSearchParams(location.search);
+const townMode = location.pathname.endsWith('/graphics-test.html');
+if (townMode) Object.assign(views, {
+  'street': { label: 'Main street · architecture', player: [0, 0, 17], yaw: 0, pitch: -.04, camera: [3.5, 3.8, 19.5], target: [-6, 2.2, -3] },
+  'teal-front': { label: 'Teal house · siding and windows', player: [-5, 0, -9], yaw: -1, pitch: 0, camera: [-3.5, 3, -11.5], target: [-11, 3.3, -.5] },
+  'yellow-front': { label: 'Yellow house · facade and garage', player: [5, 0, 16], yaw: 2, pitch: 0, camera: [4.2, 3.4, 18.8], target: [12, 3, 3.5] },
+  'roof-detail': { label: 'Roof · ridge and gutter detail', player: [-7, 0, -13], yaw: 0, pitch: 0, camera: [-9, 7.6, -13.7], target: [-16, 6.8, -3.5] },
+  'teal-room': { label: 'Teal house · ground floor', player: [-13, 0, 0], yaw: 0, pitch: 0, camera: [-10.7, 1.75, 4.8], target: [-16.4, 1.2, -3.1] },
+  'yellow-upstairs': { label: 'Yellow house · upstairs', player: [13, 3.2, 1], yaw: 0, pitch: 0, camera: [14, 4.9, 4.8], target: [9.5, 4.6, -.2] },
+  'yard': { label: 'Backyard · fence and trees', player: [-28, 0, -18.5], yaw: 1.57, pitch: -.04, camera: [-25.5, 2, -16], target: [-32.5, 2.4, -10] },
+  'spawn-gameplay': { label: 'Spawn · normal third person', player: [-28, 0, -18.5], yaw: Math.PI/2, pitch: -.04 },
+});
 const original = params.get('original') === '1';
 const initialQuality: Quality = ['high', 'low', 'auto'].includes(params.get('quality') ?? '') ? params.get('quality') as Quality : 'high';
 type TestApi = {
@@ -38,7 +50,7 @@ function Review() {
   const api = useRef<TestApi | null>(null);
   const [input] = useState(() => new InputController(undefined, { firingMode: 'advanced' }));
   const [variant, setVariant] = useState<Variant>('improved');
-  const [selected, setSelected] = useState('bus-close');
+  const [selected, setSelected] = useState(townMode ? 'street' : 'bus-close');
   const [walking, setWalking] = useState(false);
   const [quality, setQuality] = useState<Quality>(initialQuality);
   const [ready, setReady] = useState(false);
@@ -48,7 +60,7 @@ function Review() {
   const [result, setResult] = useState('');
   useEffect(() => {
     if (!container.current) return;
-    let activeView = 'bus-close', activeVariant: Variant = 'improved', activeQuality = initialQuality, free = false;
+    let activeView = townMode ? 'street' : 'bus-close', activeVariant: Variant = 'improved', activeQuality = initialQuality, free = false;
     let scene: THREE.Scene | undefined, camera: THREE.PerspectiveCamera | undefined, renderer: THREE.WebGLRenderer | undefined;
     let seq = 0, lastJump = false, sampleActive = false, sampleInterrupted = false, gpuDisjointEvents = 0;
     const changedSurface = () => { if (sampleActive) sampleInterrupted = true; };
@@ -70,7 +82,9 @@ function Review() {
       onAssetsReady: () => { window.vehicleTest.ready = true; setReady(true); }, onError: setError,
       graphicsTest: {
         lockQuality: true,
-        artwork: original ? undefined : { environmentUrl: '/models/environment-vehicle-test.glb', vehicles: [
+        artwork: original ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown } : townMode ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown, environmentVisible: false, vehicles: [
+          { name: 'TownVariant_improved', url: ARENA_ASSETS.environment, visible: true },
+        ] } : { environmentUrl: '/models/environment-vehicle-test.glb', vehicles: [
           { name: 'VehicleVariant_current', url: '/models/vehicles-current.glb', visible: false },
           { name: 'VehicleVariant_improved', url: '/models/vehicles-improved.glb', visible: true },
         ] },
@@ -87,6 +101,11 @@ function Review() {
           }
           s.getObjectByName('VehicleVariant_current')?.traverse(obj => { if (obj.name === 'VehicleVariant_current') obj.visible = activeVariant === 'current'; });
           s.getObjectByName('VehicleVariant_improved')?.traverse(obj => { if (obj.name === 'VehicleVariant_improved') obj.visible = activeVariant === 'improved'; });
+          if (townMode) {
+            const baseline = s.getObjectByName('VehicleTestTown'), candidate = s.getObjectByName('TownVariant_improved');
+            if (baseline) baseline.visible = activeVariant === 'current';
+            if (candidate) candidate.visible = activeVariant === 'improved';
+          }
           if (!gl) { gl = r.getContext() as WebGL2RenderingContext; timerExt = gl.getExtension('EXT_disjoint_timer_query_webgl2'); }
           if (timerExt) {
             const disjoint = gl.getParameter(timerExt.GPU_DISJOINT_EXT);
@@ -122,7 +141,7 @@ function Review() {
         viewport: [container.current!.clientWidth, container.current!.clientHeight], devicePixelRatio,
         canvas: renderer ? [renderer.domElement.width, renderer.domElement.height] : null, pixelRatio: renderer?.getPixelRatio(),
         camera: camera ? { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov, projection: camera.projectionMatrix.toArray() } : null,
-        lighting: { exposure: renderer?.toneMappingExposure, toneMapping: renderer?.toneMapping, sun: 3.8, hemisphere: 1.05, environment: scene?.environmentIntensity, shadows: renderer?.shadowMap.enabled },
+        lighting: { exposure: renderer?.toneMappingExposure, toneMapping: renderer?.toneMapping, sun: scene?.children.find(o => o instanceof THREE.DirectionalLight)?.intensity, hemisphere: scene?.children.find(o => o instanceof THREE.HemisphereLight)?.intensity, environment: scene?.environmentIntensity, shadows: renderer?.shadowMap.enabled, streetReflection: scene?.userData.streetReflection },
         drawCalls: renderer?.info.render.calls, triangles: renderer?.info.render.triangles, memory: renderer?.info.memory,
         gpuTimerAvailable: !!timerExt, player: { ...player },
         resources: performance.getEntriesByType('resource').filter(e => e.name.includes('/models/')).map(e => { const r = e as PerformanceResourceTiming; return { name: new URL(r.name).pathname, transferSize: r.transferSize, encodedBodySize: r.encodedBodySize, decodedBodySize: r.decodedBodySize, durationMs: r.duration }; }),
@@ -166,7 +185,7 @@ function Review() {
   return <main className={`vehicle-review ${walking ? 'walking' : ''}`}>
     <div className="review-canvas" ref={container}/>
     <header className="review-toolbar">
-      <div className="review-title"><strong>Kannon Arena <span>Vehicle test</span></strong><small>Local Three.js gameplay renderer · review only</small></div>
+      <div className="review-title"><strong>Kannon Arena <span>{townMode ? 'Town graphics' : 'Vehicle test'}</span></strong><small>Local Three.js gameplay renderer · review only</small></div>
       <div className="review-switch" aria-label="Vehicle version">
         <button disabled={!ready || original || measuring} aria-pressed={variant === 'current'} onClick={() => api.current?.setVariant('current')}>Before</button>
         <button disabled={!ready || original || measuring} aria-pressed={variant === 'improved'} onClick={() => api.current?.setVariant('improved')}>After</button>
@@ -174,7 +193,7 @@ function Review() {
       <label>View<select disabled={measuring} value={selected} onChange={e => api.current?.selectView(e.target.value)}>{Object.entries(views).map(([id, v]) => <option key={id} value={id}>{v.label}</option>)}</select></label>
       <label>Graphics<select disabled={measuring} value={quality} onChange={e => api.current?.setQuality(e.target.value as Quality)}><option value="high">High · fixed</option><option value="auto">Auto · fixed</option><option value="low">Low · fixed</option></select></label>
       <button disabled={!ready || measuring} onClick={() => walking ? api.current?.selectView(selected) : api.current?.walk()}>{walking ? 'Return to fixed view' : 'Walk around'}</button>
-      <a href={`/?vehicles=${variant === 'improved' ? 'improved' : 'current'}`}>Full practice match ↗</a>
+      <a href={`/?graphics=${variant === 'improved' ? 'improved' : 'current'}`}>Full practice match ↗</a>
     </header>
     <div className="review-caption"><b>{original ? 'ORIGINAL UNSPLIT' : variant === 'improved' ? 'AFTER' : 'BEFORE'}</b><span>{walking ? 'Walk-around · combat is in Full practice match' : views[selected].label}</span><small>{quality.toUpperCase()} · fixed quality · {stats.fps} FPS · {stats.drawCalls} draws</small><small className="portrait-note">Landscape shows more of each vehicle.</small></div>
     {(!ready || error) && <div className="review-loading" role="status">{error || 'Loading both vehicle sets and the game renderer…'}</div>}

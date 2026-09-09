@@ -1,6 +1,6 @@
 # Deployment
 
-The game, including Sunbreak's refined Blender environment, captured lower-body locomotion and active practice rivals, is deployed on the user-authorized Coastline Hyper-V Linux VM. The repository is at `/srv/8west/apps/kannon-fps`, with a dedicated `kannon-arena` Compose project. Other applications and their storage are unchanged. No paid service was provisioned. The [release record](RELEASE.md) identifies the verified implementation and its evidence; `/health` reports the exact running build.
+The game, including Kannon Town's refined Blender environment, captured lower-body locomotion and active practice rivals, is deployed on the user-authorized Coastline Hyper-V Linux VM. The repository is at `/srv/8west/apps/kannon-fps`, with a dedicated `kannon-arena` Compose project. Other applications and their storage are unchanged. No paid service was provisioned. The [release record](RELEASE.md) identifies the verified implementation and its evidence; `/health` reports the exact running build.
 
 ## Cloudflare route
 

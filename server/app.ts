@@ -60,7 +60,9 @@ export function createGameServer(options: ServerOptions = {}) {
   const server = createServer(async (req, res) => {
     res.setHeader('x-content-type-options', 'nosniff'); res.setHeader('referrer-policy', 'same-origin'); res.setHeader('x-frame-options', 'DENY');
     res.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=()');
-    res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws: wss: blob:; media-src 'self' blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'");
+    // The bundled Meshopt decoder compiles WebAssembly for compressed art.
+    // This does not permit JavaScript eval or scripts from external origins.
+    res.setHeader('content-security-policy', "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws: wss: blob:; media-src 'self' blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'");
     try {
       if (!req.url || req.url.length > 2048) throw new HttpError(400, 'Invalid request.');
       const url = new URL(req.url, 'http://localhost');

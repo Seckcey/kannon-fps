@@ -1,0 +1,33 @@
+{
+  "name": "Kannon Town graphics release",
+  "blenderVersion": "5.2.1 LTS",
+  "generator": "scripts/blender/generate_town_graphics.py",
+  "source": "art/source/kannon-town-graphics.blend",
+  "export": "public/models/environment-refined.glb",
+  "bytes": 7884316,
+  "sha256": "321e196339ce46905dc181b7ff50b31ec502426460dd98ed0275285ce454e1bd",
+  "triangles": 155724,
+  "primitives": 33,
+  "materials": 33,
+  "images": 41,
+  "clapboardCourses": 596,
+  "trees": 26,
+  "detailTriangles": {
+    "siding": 1204,
+    "concrete": 432,
+    "roof": 168,
+    "metal": 2456,
+    "trim": 3624,
+    "glass": 144,
+    "wood": 72,
+    "fabric": 72,
+    "markings": 1680,
+    "bark": 4856,
+    "leaves": 40908
+  },
+  "collisionReferences": 150,
+  "mapSha256": "be4c9ed551f132036b2d432959cd8b169434042ac637d1ce3feb97f15bb55f8b",
+  "vehicleSourceSha256": "074f3e17e2412cd63ea80fcd9557ca7dc63647eb561f8a682dcab6e6fb2d8de6",
+  "commonSourceSha256": "4844ead7db36b57ee5b5a343964fbc9d58097488a30596e4c9049b9f3b2ceb34",
+  "provenance": "Original procedural additions and maps; common town and approved vehicle inputs retained from this repository. No purchases or third-party source assets."
+}

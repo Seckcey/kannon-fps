@@ -1,5 +1,10 @@
 # Release verification
 
+## Town graphics — September 9, 2026
+
+The [town graphics release](TOWN_GRAPHICS.md) integrates the reviewed school bus and sedans with new building, roof, paving, fence, foliage and material work. It includes actual Three.js before/after captures, reproducible Blender sources, final-export collision/vehicle/truck validation and measured desktop/touch rendering costs. Normal gameplay uses the 7,884,316-byte Meshopt-compressed environment; the local comparison remains available through `npm run graphics-test`. Physical iPhone testing remains outstanding and is not inferred from desktop touch emulation. `/health` and the release pull request identify the exact deployed revision.
+
+
 ## Kannon Town and mobile controls — September 9, 2026
 
 Kannon's reported iPhone movement latch is addressed by native touch ownership and document-wide contact reconciliation. Releasing movement stops it while a separate aiming finger remains active. Cancellation, backgrounding, rotation, pause, mode changes and death clear controls. Simple reticle auto-fire defaults on for touch; Advanced supports dragging Fire to aim, with AR ADS and shotgun hip fire. Optional gyroscope aiming requests permission through its enable button.

@@ -1,5 +1,7 @@
 # Editable vehicle graphics experiment
 
+These reviewed vehicle sources are now included in the [town graphics release](../../docs/TOWN_GRAPHICS.md). This file retains their separate generation recipe.
+
 This source changes only the yellow school bus and the two parked sedans in Kannon Town. The cargo truck and the authored town environment are not part of this export. Gameplay continues using the existing collision boxes in `shared/map.ts`.
 
 ## Reproduce

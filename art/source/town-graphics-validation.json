@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "bytes": 7884316,
+  "sha256": "321e196339ce46905dc181b7ff50b31ec502426460dd98ed0275285ce454e1bd",
+  "triangles": 155724,
+  "vertices": 239015,
+  "primitives": 33,
+  "images": 41,
+  "collisionReferences": 150,
+  "collisionFaces": 864,
+  "openings": [
+    "-1:front door",
+    "-1:upstairs window",
+    "-1:garage door",
+    "-1:balcony door",
+    "1:front door",
+    "1:upstairs window",
+    "1:garage door",
+    "1:balcony door"
+  ],
+  "protectedVehicleTriangles": 78580,
+  "protectedTruckTriangles": 1912,
+  "toleranceMetres": 0.00003,
+  "vehicleEnvelopeProof": "validate_vehicle_test.mjs checks complete triangles against the original collision union; this validator checks those triangles survive the final export unchanged."
+}
