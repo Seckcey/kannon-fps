@@ -1,0 +1,1040 @@
+{
+  "capturedAt": "2026-09-10T06:52:53.502Z",
+  "url": "http://127.0.0.1:5184/graphics-test.html",
+  "captures": [
+    {
+      "file": "town-v2-street-before-desktop.jpg",
+      "title": "Main street",
+      "view": "street",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          3.5,
+          3.8,
+          19.5
+        ],
+        "quaternion": [
+          -0.032052660133614595,
+          0.1983257626218587,
+          0.0064893123491856905,
+          0.9795904285384028
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 85,
+      "triangles": 264032
+    },
+    {
+      "file": "town-v2-street-after-desktop.jpg",
+      "title": "Main street",
+      "view": "street",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          3.5,
+          3.8,
+          19.5
+        ],
+        "quaternion": [
+          -0.032052660133614595,
+          0.1983257626218587,
+          0.0064893123491856905,
+          0.9795904285384028
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 97,
+      "triangles": 358624
+    },
+    {
+      "file": "town-v2-teal-front-before-desktop.jpg",
+      "title": "Teal house front",
+      "view": "teal-front",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3.5,
+          3,
+          -11.5
+        ],
+        "quaternion": [
+          0.0033204059694774825,
+          0.9555091864910188,
+          -0.010764104005698558,
+          0.29474616791473984
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 83,
+      "triangles": 258860
+    },
+    {
+      "file": "town-v2-teal-front-after-desktop.jpg",
+      "title": "Teal house front",
+      "view": "teal-front",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3.5,
+          3,
+          -11.5
+        ],
+        "quaternion": [
+          0.0033204059694774825,
+          0.9555091864910188,
+          -0.010764104005698558,
+          0.29474616791473984
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 94,
+      "triangles": 352535
+    },
+    {
+      "file": "town-v2-yellow-front-before-desktop.jpg",
+      "title": "Yellow house and garage",
+      "view": "yellow-front",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          4.2,
+          3.4,
+          18.8
+        ],
+        "quaternion": [
+          -0.011321453291746341,
+          -0.23353700265444716,
+          -0.002719363930524341,
+          0.9722781999748596
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 82,
+      "triangles": 253758
+    },
+    {
+      "file": "town-v2-yellow-front-after-desktop.jpg",
+      "title": "Yellow house and garage",
+      "view": "yellow-front",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          4.2,
+          3.4,
+          18.8
+        ],
+        "quaternion": [
+          -0.011321453291746341,
+          -0.23353700265444716,
+          -0.002719363930524341,
+          0.9722781999748596
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 96,
+      "triangles": 357988
+    },
+    {
+      "file": "town-v2-teal-room-before-desktop.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 79,
+      "triangles": 253008
+    },
+    {
+      "file": "town-v2-teal-room-after-desktop.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 91,
+      "triangles": 344792
+    },
+    {
+      "file": "town-v2-yard-before-desktop.jpg",
+      "title": "Backyard",
+      "view": "yard",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -25.5,
+          2,
+          -16
+        ],
+        "quaternion": [
+          0.009058196135090254,
+          0.9082994069850282,
+          -0.01969451696869782,
+          0.41775861733158065
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 56,
+      "triangles": 175322
+    },
+    {
+      "file": "town-v2-yard-after-desktop.jpg",
+      "title": "Backyard",
+      "view": "yard",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -25.5,
+          2,
+          -16
+        ],
+        "quaternion": [
+          0.009058196135090254,
+          0.9082994069850282,
+          -0.01969451696869782,
+          0.41775861733158065
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 58,
+      "triangles": 217956
+    },
+    {
+      "file": "town-v2-spawn-gameplay-before-desktop.jpg",
+      "title": "Spawn third person",
+      "view": "spawn-gameplay",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -30.847720303983788,
+          1.8639696024319075,
+          -17.54
+        ],
+        "quaternion": [
+          -0.01414119283354537,
+          -0.7069653645442926,
+          -0.014141192833545367,
+          0.7069653645442926
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 94,
+      "triangles": 295228
+    },
+    {
+      "file": "town-v2-spawn-gameplay-after-desktop.jpg",
+      "title": "Spawn third person",
+      "view": "spawn-gameplay",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -30.847720303983788,
+          1.8639696024319075,
+          -17.54
+        ],
+        "quaternion": [
+          -0.01414119283354537,
+          -0.7069653645442926,
+          -0.014141192833545367,
+          0.7069653645442926
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 114,
+      "triangles": 405293
+    },
+    {
+      "file": "town-v2-bus-gameplay-before-desktop.jpg",
+      "title": "Bus third person",
+      "view": "bus-gameplay",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -9.191185570413975,
+          1.8212425783569302,
+          -15.058574820364477
+        ],
+        "quaternion": [
+          0.003041530718859936,
+          0.9698680874150403,
+          0.012123982556690584,
+          -0.2433097843321207
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 98,
+      "triangles": 295980
+    },
+    {
+      "file": "town-v2-bus-gameplay-after-desktop.jpg",
+      "title": "Bus third person",
+      "view": "bus-gameplay",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -9.191185570413975,
+          1.8212425783569302,
+          -15.058574820364477
+        ],
+        "quaternion": [
+          0.003041530718859936,
+          0.9698680874150403,
+          0.012123982556690584,
+          -0.2433097843321207
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "drawCalls": 112,
+      "triangles": 395656
+    },
+    {
+      "file": "town-v2-street-before-phone.jpg",
+      "title": "Main street",
+      "view": "street",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          3.5,
+          3.8,
+          19.5
+        ],
+        "quaternion": [
+          -0.032052660133614595,
+          0.1983257626218587,
+          0.0064893123491856905,
+          0.9795904285384028
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 62,
+      "triangles": 258874
+    },
+    {
+      "file": "town-v2-street-after-phone.jpg",
+      "title": "Main street",
+      "view": "street",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          3.5,
+          3.8,
+          19.5
+        ],
+        "quaternion": [
+          -0.032052660133614595,
+          0.1983257626218587,
+          0.0064893123491856905,
+          0.9795904285384028
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 72,
+      "triangles": 343773
+    },
+    {
+      "file": "town-v2-teal-room-before-phone.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 55,
+      "triangles": 242714
+    },
+    {
+      "file": "town-v2-teal-room-after-phone.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 67,
+      "triangles": 330858
+    },
+    {
+      "file": "town-v2-spawn-gameplay-before-phone.jpg",
+      "title": "Spawn third person",
+      "view": "spawn-gameplay",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -30.847720303983788,
+          1.8639696024319075,
+          -17.54
+        ],
+        "quaternion": [
+          -0.01414119283354537,
+          -0.7069653645442926,
+          -0.014141192833545367,
+          0.7069653645442926
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 67,
+      "triangles": 278014
+    },
+    {
+      "file": "town-v2-spawn-gameplay-after-phone.jpg",
+      "title": "Spawn third person",
+      "view": "spawn-gameplay",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -30.847720303983788,
+          1.8639696024319075,
+          -17.54
+        ],
+        "quaternion": [
+          -0.01414119283354537,
+          -0.7069653645442926,
+          -0.014141192833545367,
+          0.7069653645442926
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 89,
+      "triangles": 391103
+    },
+    {
+      "file": "town-v2-bus-gameplay-before-phone.jpg",
+      "title": "Bus third person",
+      "view": "bus-gameplay",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -9.191185570413975,
+          1.8212425783569302,
+          -15.058574820364477
+        ],
+        "quaternion": [
+          0.003041530718859936,
+          0.9698680874150403,
+          0.012123982556690584,
+          -0.2433097843321207
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 71,
+      "triangles": 290070
+    },
+    {
+      "file": "town-v2-bus-gameplay-after-phone.jpg",
+      "title": "Bus third person",
+      "view": "bus-gameplay",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -9.191185570413975,
+          1.8212425783569302,
+          -15.058574820364477
+        ],
+        "quaternion": [
+          0.003041530718859936,
+          0.9698680874150403,
+          0.012123982556690584,
+          -0.2433097843321207
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "drawCalls": 89,
+      "triangles": 384722
+    }
+  ]
+}

@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { ARENA_ASSETS, getArenaAssetBuffer } from './assets';
+import { ktx2Loader } from './Ktx2';
+import { environmentAssetUrl, getArenaAssetBuffer, type TextureTier } from './assets';
+import { LightmapPlugin, applyLightmapShading } from './Lightmaps';
 import { createAtmosphere, SKY_LIGHT_INTENSITY } from './Atmosphere';
 
 export interface ArenaWorld {
@@ -9,6 +11,8 @@ export interface ArenaWorld {
   environment: THREE.Texture | null;
   background: THREE.CubeTexture;
   prepareReflections(scene: THREE.Scene): void;
+  /** Grass cards are pure decoration: none on phones, half on desktop Auto, all on High. */
+  setGrassDensity(density: 0 | 1 | 2): void;
   update(time: number): void;
   dispose(): void;
 }
@@ -17,7 +21,7 @@ export interface ArenaWorld {
 export interface WorldArtwork { environmentUrl: string; environmentVisible?: boolean; vehicles?: Array<{ name: string; url: string; visible: boolean }> }
 
 /** Original Blender architecture shares coordinates with the authoritative map. */
-export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, onError: (message: string) => void, artwork?: WorldArtwork): ArenaWorld {
+export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureTier, onReady: () => void, onError: (message: string) => void, artwork?: WorldArtwork): ArenaWorld {
   const root = new THREE.Group();
   const atmosphere = createAtmosphere(renderer); root.add(atmosphere.root);
   const textures = new Set<THREE.Texture>();
@@ -25,13 +29,24 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
   let disposed = false;
   let reflection: THREE.WebGLRenderTarget | null = null;
   const reflectiveMaterials = new Set<THREE.MeshStandardMaterial>();
-  const loader = () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const grassCards: THREE.Mesh[] = [];
+  let grassDensity: 0 | 1 | 2 = 2;
+  const applyGrassDensity = () => {
+    for (const mesh of grassCards) {
+      mesh.visible = grassDensity > 0;
+      const count = mesh.geometry.index?.count ?? mesh.geometry.attributes.position?.count ?? 0;
+      mesh.geometry.setDrawRange(0, grassDensity === 1 ? Math.floor(count / 6) * 3 : count);
+    }
+  };
+  // KTX2 textures stay GPU-compressed; the Basis transcoder is bundled from this origin.
+  const ktx2 = ktx2Loader(renderer);
+  const loader = () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2).register(parser => new LightmapPlugin(parser));
   const isHorizon = (object: THREE.Object3D) => {
     for (let current: THREE.Object3D | null = object; current; current = current.parent) if (/Horizon|Exterior/i.test(current.name)) return true;
     return false;
   };
   const load = async () => {
-    if (!artwork) return loader().parseAsync(await getArenaAssetBuffer(ARENA_ASSETS.environment), '/models/');
+    if (!artwork) return loader().parseAsync(await getArenaAssetBuffer(environmentAssetUrl(textureTier)), '/models/');
     const assets = [{ name: 'VehicleTestTown', url: artwork.environmentUrl, visible: artwork.environmentVisible ?? true }, ...(artwork.vehicles ?? [])];
     const loaded = await Promise.all(assets.map(async asset => {
       const gltf = await loader().parseAsync(await getArenaAssetBuffer(asset.url), '/models/');
@@ -54,8 +69,10 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
     }
     const configured = new Set<THREE.Material>();
     gltf.scene.traverse(object => {
+      if (object.userData.kannonGuide) { object.visible = false; return; }
       if (!(object instanceof THREE.Mesh)) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
+      if (materials.some(material => /GrassCard/i.test(material.name))) grassCards.push(object);
       object.castShadow = !isHorizon(object) && !materials.every(material => /GroundGrass|GroundAsphalt|Cliff/i.test(material.name));
       object.receiveShadow = true;
       for (const material of materials) {
@@ -65,9 +82,14 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
           value.anisotropy = Math.min(key === 'map' ? 4 : key === 'normalMap' ? 2 : 1, renderer.capabilities.getMaxAnisotropy()); textures.add(value);
         }
         if (!(material instanceof THREE.MeshStandardMaterial)) continue;
-        if (/Vehicle_.*(?:Metallic|Enamel|Aluminium|Steel|Glass)|RefinedArchitecturalGlass/.test(material.name)) reflectiveMaterials.add(material);
+        // A transmissive material would make three.js redraw the whole scene into a
+        // transmission buffer every frame. Render such glass as ordinary tinted transparency.
+        if (material instanceof THREE.MeshPhysicalMaterial && material.transmission > 0) {
+          material.transmission = 0; material.transparent = true; material.opacity = Math.min(material.opacity, 0.55);
+        }
+        if (/Vehicle_.*(?:Metallic|Enamel|Aluminium|Steel|Glass)|RefinedArchitecturalGlass|V2_Glass/.test(material.name)) reflectiveMaterials.add(material);
         material.envMapIntensity = /Petrol|Bronze/i.test(material.name) ? 1.05 : 0.75;
-        if (/Leaves|Flower/i.test(material.name)) {
+        if (/Leaves|Flower|GrassCard/i.test(material.name)) {
           material.side = THREE.DoubleSide;
           material.onBeforeCompile = shader => {
             shader.uniforms.uWindTime = windTime;
@@ -78,7 +100,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
           };
           material.customProgramCacheKey = () => 'sunbreak-foliage-v2';
         }
-        if (diffuseSky && /Ground|Limestone|Cliff|Bark|Leaves|Flower/i.test(material.name)) {
+        if (diffuseSky && !material.lightMap && /Ground|Limestone|Cliff|Bark|Leaves|Flower/i.test(material.name)) {
           const configureWind = material.onBeforeCompile;
           material.onBeforeCompile = (shader, activeRenderer) => {
             configureWind.call(material, shader, activeRenderer);
@@ -99,8 +121,15 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
           };
           material.customProgramCacheKey = () => /Leaves|Flower/i.test(material.name) ? 'sunbreak-leaf-diffuse-sky-v2' : 'sunbreak-stone-diffuse-sky-v2';
         }
+        if (material.lightMap) {
+          // Baked sun and sky: no real-time sun, reflections only on glass and metal, no shadow casting.
+          applyLightmapShading(material);
+          material.envMapIntensity = /Glass|Metal|Vehicle_/i.test(material.name) ? 0.8 : 0.2;
+          object.castShadow = false;
+        }
       }
     });
+    applyGrassDensity();
     root.add(gltf.scene); onReady();
   }).catch(() => { if (!disposed) onError('The arena artwork could not load. Return to the lobby and try again.'); });
   return {
@@ -122,6 +151,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
         scene.userData.streetReflection = { size: 128, position: [0, 2.3, -3.5], static: true };
       } finally { generator.dispose(); target.dispose(); }
     },
+    setGrassDensity(density) { grassDensity = density; applyGrassDensity(); },
     update(time) { windTime.value = time; atmosphere.update(time); },
     dispose() { disposed = true; for (const texture of textures) texture.dispose(); reflection?.dispose(); atmosphere.dispose(); },
   };

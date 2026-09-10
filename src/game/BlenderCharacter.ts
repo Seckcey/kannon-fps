@@ -8,12 +8,14 @@ import { createGaitTurn, GaitDirection } from './GaitTurn';
 import { createLegContact, type LegContact } from './LegContact';
 import { CharacterBlend } from './CharacterBlend';
 import { createCharacterImpact, type CharacterImpact } from './CharacterImpact';
+import { applySunVisibility } from './SunVisibility';
+import { ktx2Loader } from './Ktx2';
 
 let assetPromise: Promise<GLTF> | null = null;
 const loadScout = () => assetPromise ??= getArenaAssetBuffer(ARENA_ASSETS.character).then(buffer => {
   const resourcePath = new URL('.', new URL(ARENA_ASSETS.character, document.baseURI)).href;
   // Parse the bytes accepted by warmup; a second download could fail after joining.
-  return new GLTFLoader().parseAsync(buffer, resourcePath);
+  return new GLTFLoader().setKTX2Loader(ktx2Loader()).parseAsync(buffer, resourcePath);
 }).catch(error => { assetPromise = null; throw error; });
 
 /** Uses the exported Blender rig and animation clips; the small fallback only covers loading. */
@@ -48,6 +50,8 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
   const weapons = new Map<Slot, THREE.Object3D[]>();
   const clonedMaterials: THREE.Material[] = [];
   const materialCopies = new Map<THREE.Material, THREE.Material>();
+  // Every material is copied per character so the sun can be scaled by where this player stands.
+  const sunVisibility = fallback.sunVisibility;
   let sharedSkeleton: THREE.Skeleton | null = null;
   const protectedMaterial = new THREE.MeshBasicMaterial({ color: '#85edff', transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false });
   const protection = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), protectedMaterial);
@@ -68,13 +72,11 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
         object.castShadow = true; object.receiveShadow = true;
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         const recolored = materials.map(material => {
-          if (/PlayerAccent/i.test(material.name)) {
-            const existing = materialCopies.get(material); if (existing) return existing;
-            const copy = material.clone();
-            if (copy instanceof THREE.MeshStandardMaterial) copy.color.set(color);
-            clonedMaterials.push(copy); materialCopies.set(material, copy); return copy;
-          }
-          return material;
+          const existing = materialCopies.get(material); if (existing) return existing;
+          const copy = material.clone();
+          if (/PlayerAccent/i.test(material.name) && copy instanceof THREE.MeshStandardMaterial) copy.color.set(color);
+          applySunVisibility(copy, sunVisibility);
+          clonedMaterials.push(copy); materialCopies.set(material, copy); return copy;
         });
         object.material = Array.isArray(object.material) ? recolored : recolored[0];
       }
@@ -120,7 +122,7 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
   });
 
   return {
-    root, muzzle,
+    root, muzzle, sunVisibility,
     impact(kind) {
       if (disposed) return;
       if (impactEffect) impactEffect.impact(kind);

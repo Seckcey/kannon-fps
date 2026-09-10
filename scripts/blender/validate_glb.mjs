@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+/** `--glb public/models/scout-v2.glb` (or SCOUT_GLB) validates another export with the same rig. */
+const scoutArgument = () => { const i = process.argv.indexOf('--glb'); return i >= 0 ? process.argv[i + 1] : process.env.SCOUT_GLB; };
 import { Matrix4, Quaternion, Vector3 } from 'three';
 
-const path = fileURLToPath(new URL('../../public/models/scout.glb', import.meta.url));
+// SCOUT_GLB selects another export with the same rig and clips (scout-v2.glb carries new textures).
+const path = scoutArgument() ? fileURLToPath(new URL(`../../${scoutArgument()}`, import.meta.url)) : fileURLToPath(new URL('../../public/models/scout.glb', import.meta.url));
 const bytes = readFileSync(path);
 assert.equal(bytes.readUInt32LE(0), 0x46546c67, 'Valid binary glTF magic');
 assert.equal(bytes.readUInt32LE(4), 2);
@@ -80,8 +83,9 @@ for (const name of ['Fire', 'Reload', 'Heal']) {
   assert.ok(maxRotationError < .002 && maxTranslationError < .0001, `${name} starts from the same upper-body pose as Idle for additive playback.`);
   additiveNeutralFrames.push({ clip: name, maxRotationErrorRadians: maxRotationError, maxTranslationError });
 }
-const report = { file: 'public/models/scout.glb', bytes: bytes.length, exportedVertices: vertices, triangles, bones: 18, clips: expected, embeddedTextures: gltf.images.length, materialDraws: primitives, eightPlayerBodyAndARDraws: (primitives.scout_body + primitives.weapon_ar) * 8, muzzle: muzzle.toArray(), shotgunMuzzle: shotgunMuzzle.toArray(), additiveNeutralFrames, coordinateSystem: 'metres; Y up; -Z forward', status: 'passed' };
-writeFileSync(fileURLToPath(new URL('../../art/source/scout-export-review.json', import.meta.url)), JSON.stringify(report, null, 2) + '\n');
+const report = { file: scoutArgument() ?? 'public/models/scout.glb', bytes: bytes.length, exportedVertices: vertices, triangles, bones: 18, clips: expected, embeddedTextures: gltf.images.length, materialDraws: primitives, eightPlayerBodyAndARDraws: (primitives.scout_body + primitives.weapon_ar) * 8, muzzle: muzzle.toArray(), shotgunMuzzle: shotgunMuzzle.toArray(), additiveNeutralFrames, coordinateSystem: 'metres; Y up; -Z forward', status: 'passed' };
+const reviewStem = scoutArgument() ? scoutArgument().replace(/^.*[\\/]/, '').replace(/\.glb$/, '') : 'scout';
+writeFileSync(fileURLToPath(new URL(`../../art/source/${reviewStem}-export-review.json`, import.meta.url)), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));
 // Structural validity alone can hide between-frame floor penetration. Inspect
 // the exported skinned locomotion through the production animation interpolator.

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { RULES, type GameEvent } from '../../shared/protocol';
 import type { ArenaConnection } from '../lib/connection';
-import type { PlayerSession, Settings } from '../lib/storage';
+import { isTouchDevice, type PlayerSession, type Settings } from '../lib/storage';
 import { GameView } from '../game/GameView';
 import { InputController } from '../game/InputController';
 import { GyroscopeInput } from '../game/Gyroscope';
@@ -28,7 +28,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const preparation = useRef<PreparationReadiness | null>(null);
   const availability = useRef({ assetsReady: false, renderedPreparationId: '', error: false, paused: false, settings: false });
   const syncControls = useRef<() => void>(() => {});
-  const [touch] = useState(() => matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0);
+  const [touch] = useState(isTouchDevice);
   const [tabScore, setTabScore] = useState(false);
   const [localNow, setLocalNow] = useState(Date.now());
   const lastEvent = useRef<GameEvent | null>(null);

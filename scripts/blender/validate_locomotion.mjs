@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+/** `--glb public/models/scout-v2.glb` (or SCOUT_GLB) validates another export with the same rig. */
+const scoutArgument = () => { const i = process.argv.indexOf('--glb'); return i >= 0 ? process.argv[i + 1] : process.env.SCOUT_GLB; };
 import { createHash } from 'node:crypto';
 import { AnimationMixer, LoopOnce, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -152,6 +154,7 @@ if (baselinePath) {
 }
 const report = { status: 'passed', scope: 'Actual exported GLB skin at 480 Hz; CPU AnimationMixer. Contact bands exclude penetration. No actor height correction. This does not prove runtime crossfade contact.',
   assetBytes: bytes.length, assetSha256: createHash('sha256').update(bytes).digest('hex'), soleVertices: { left: feet.l.length, right: feet.r.length }, gaitLimits, results };
-writeFileSync(new URL('scout-locomotion-export-review.json', source), `${JSON.stringify(report, null, 2)}\n`);
+const reviewStem = scoutArgument() ? scoutArgument().replace(/^.*[\\/]/, '').replace(/\.glb$/, '') : 'scout';
+writeFileSync(new URL(`${reviewStem}-locomotion-export-review.json`, source), `${JSON.stringify(report, null, 2)}\n`);
 if (baselinePath) writeFileSync(new URL('scout-locomotion-migration-review.json', source), `${JSON.stringify({ status: 'passed', baselineSha256: baselineHash, candidateSha256: report.assetSha256, preserved }, null, 2)}\n`);
 console.log(JSON.stringify(report, null, 2));

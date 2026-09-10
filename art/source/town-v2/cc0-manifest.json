@@ -1,0 +1,2022 @@
+{
+  "store": "C:\\it\\kannon-assets",
+  "assets": {
+    "asphalt_02": {
+      "id": "asphalt_02",
+      "name": "Asphalt 02",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/asphalt_02",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\asphalt_02\\asphalt_02_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_diff_2k.jpg",
+          "bytes": 3075676,
+          "sha256": "28f5ba8690553f192c0e5e1a5ff40f34765b4b93f4cc7059b1a3e9c795b6c28c"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\asphalt_02\\asphalt_02_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_nor_gl_2k.jpg",
+          "bytes": 4943950,
+          "sha256": "ffe49db71a0fd34c1e259625df66a302a237597d6ef655307987ec4e45bc6f21"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\asphalt_02\\asphalt_02_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_arm_2k.jpg",
+          "bytes": 1299186,
+          "sha256": "ed70e88640e4ed51cf1c3e57cb20db26983599b20b867c2526439e3a2c849fea"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\asphalt_02\\asphalt_02_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_rough_2k.jpg",
+          "bytes": 2230457,
+          "sha256": "b9a516b61b7040a9245ac206642d5f767ad9589a0169c4a1668221429e8a998c"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\asphalt_02\\asphalt_02_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_ao_2k.jpg",
+          "bytes": 2039487,
+          "sha256": "5fe1737cbbcd55f2fec3632d6170762e5733f24bbc7a7816afb22a23c710b11f"
+        }
+      },
+      "role": "asphalt"
+    },
+    "concrete_floor_01": {
+      "id": "concrete_floor_01",
+      "name": "Concrete Floor 01",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/concrete_floor_01",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\concrete_floor_01\\concrete_floor_01_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_floor_01/concrete_floor_01_diff_2k.jpg",
+          "bytes": 2967720,
+          "sha256": "ca24c52dabae67ef49093f91d8f9b9e5328a3b9fcb1327742ff6181ee542e017"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\concrete_floor_01\\concrete_floor_01_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_floor_01/concrete_floor_01_nor_gl_2k.jpg",
+          "bytes": 3261423,
+          "sha256": "796b010208e346bbeec4c468f286c3892852a454f77cb516d6f4a6e7c240de01"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\concrete_floor_01\\concrete_floor_01_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_floor_01/concrete_floor_01_arm_2k.jpg",
+          "bytes": 760362,
+          "sha256": "a2d1d01781c61a4b4e18bc23b0d5c54308ed5d5886948e3ca9f367ffb6ebc31f"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\concrete_floor_01\\concrete_floor_01_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_floor_01/concrete_floor_01_rough_2k.jpg",
+          "bytes": 1488360,
+          "sha256": "e66fa941d6daa33ba334c853bf126c85f1d77e7b72778073237e4ef8c7c97774"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\concrete_floor_01\\concrete_floor_01_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_floor_01/concrete_floor_01_ao_2k.jpg",
+          "bytes": 1733918,
+          "sha256": "6e961368144f2c5e0b5d4682763d0b2d251d56e0b99deb02738ef299d074960e"
+        }
+      },
+      "role": "concrete"
+    },
+    "grey_roof_01": {
+      "id": "grey_roof_01",
+      "name": "Grey Roof 01",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/grey_roof_01",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\grey_roof_01\\grey_roof_01_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grey_roof_01/grey_roof_01_diff_2k.jpg",
+          "bytes": 1388588,
+          "sha256": "880583ff7508599b1dd6e83a6c70604120ad35f7ad187b1e98457c1a9d7b54ed"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\grey_roof_01\\grey_roof_01_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grey_roof_01/grey_roof_01_nor_gl_2k.jpg",
+          "bytes": 1750511,
+          "sha256": "2e2dbd57a8a1a09936b2a92373408c7658033966ffee25eddfe98b5988491da3"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\grey_roof_01\\grey_roof_01_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grey_roof_01/grey_roof_01_arm_2k.jpg",
+          "bytes": 807658,
+          "sha256": "797d17bc80f144c5106755f339705a9a6f291f927f9d709914486e9e4e7992cb"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\grey_roof_01\\grey_roof_01_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grey_roof_01/grey_roof_01_rough_2k.jpg",
+          "bytes": 1354799,
+          "sha256": "166a04d67faebc17b3efdd05a9ce4786ac99e4d7ed67abfcd05bca8dd0c3eb36"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\grey_roof_01\\grey_roof_01_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grey_roof_01/grey_roof_01_ao_2k.jpg",
+          "bytes": 804437,
+          "sha256": "4bfcb51e2a27ad5de4617ee112bfc758fded2c93c90292e238550b605b34be4d"
+        }
+      },
+      "role": "roof"
+    },
+    "leafy_grass": {
+      "id": "leafy_grass",
+      "name": "Leafy Grass",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/leafy_grass",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\leafy_grass\\leafy_grass_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_diff_2k.jpg",
+          "bytes": 4766204,
+          "sha256": "8e1c6d21365d4b89bc5a35ab664da98a78dbc3ab9ba6100474881c8619a5b113"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\leafy_grass\\leafy_grass_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_nor_gl_2k.jpg",
+          "bytes": 6047262,
+          "sha256": "df0cf0ce96e653f033e5b934d5b12995464bda027aa53bd12e329be889aa9f45"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\leafy_grass\\leafy_grass_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_arm_2k.jpg",
+          "bytes": 4116600,
+          "sha256": "70d61c669fe9d186a84f5bb50e8a337083014d7e46534306a89d47d48fd5eb0e"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\leafy_grass\\leafy_grass_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_rough_2k.jpg",
+          "bytes": 2274652,
+          "sha256": "34e1733bf4064b6950a575ff57e78c8b7ff71b63749eb48a49221bd65de6fb4f"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\leafy_grass\\leafy_grass_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/leafy_grass/leafy_grass_ao_2k.jpg",
+          "bytes": 4175463,
+          "sha256": "bcce4368f6a1affe11b4a643e14cfed7dfb46abf6bb9e6a28a3b87c2de2ddb11"
+        }
+      },
+      "role": "grass"
+    },
+    "white_planks_clean": {
+      "id": "white_planks_clean",
+      "name": "White Planks Clean",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/white_planks_clean",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\white_planks_clean\\white_planks_clean_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_planks_clean/white_planks_clean_diff_2k.jpg",
+          "bytes": 1939546,
+          "sha256": "bc2959b06eb2bd0ff320183be12591afdac2034a23d6c8a0bd540fbf642ea7d8"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\white_planks_clean\\white_planks_clean_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_planks_clean/white_planks_clean_nor_gl_2k.jpg",
+          "bytes": 2771005,
+          "sha256": "b665a00f8e2b05a134a63db407699dd788d3552df966ee5a940ccff6eb4ba415"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\white_planks_clean\\white_planks_clean_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_planks_clean/white_planks_clean_arm_2k.jpg",
+          "bytes": 1893517,
+          "sha256": "a29376780d0c021ef52153776c272c6abbc8e6537520159cffe1c7d1dc91592c"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\white_planks_clean\\white_planks_clean_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_planks_clean/white_planks_clean_rough_2k.jpg",
+          "bytes": 1803008,
+          "sha256": "1f1a0a6382d6826e6282d61786a964d53c17f289514948a58dfde81da806fa28"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\white_planks_clean\\white_planks_clean_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_planks_clean/white_planks_clean_ao_2k.jpg",
+          "bytes": 502868,
+          "sha256": "831c5245492b592540ab1e20a41390d5c73a76b573e126818fa6c51862121e31"
+        }
+      },
+      "role": "planks_white"
+    },
+    "painted_plaster_wall": {
+      "id": "painted_plaster_wall",
+      "name": "Painted Plaster Wall",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/painted_plaster_wall",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_plaster_wall\\painted_plaster_wall_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_diff_2k.jpg",
+          "bytes": 3132937,
+          "sha256": "6fd812ed8dd5be1873c29aeef38ce9bf1fb30a22c6d4b3a12db725e98c26a1be"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_plaster_wall\\painted_plaster_wall_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_nor_gl_2k.jpg",
+          "bytes": 4048392,
+          "sha256": "2d601a46ed5ce2af866741c53cafa3cba472620c272e633b6484d4de16a80eb1"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_plaster_wall\\painted_plaster_wall_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_arm_2k.jpg",
+          "bytes": 2159906,
+          "sha256": "8d6a2e391e87130aabb1dc6fea23e6ebcc80aca6559a0aa82e57b75729055be5"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_plaster_wall\\painted_plaster_wall_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_rough_2k.jpg",
+          "bytes": 1595466,
+          "sha256": "35aad595469533cc3b7cc209cc6c7e065d660211f02c867f4492d3b371b1fee1"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_plaster_wall\\painted_plaster_wall_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_plaster_wall/painted_plaster_wall_ao_2k.jpg",
+          "bytes": 2176195,
+          "sha256": "3d89b5ea1f9d93d611ab0015d887b620ec9c6623e19effadba84ee9345c4c6fc"
+        }
+      },
+      "role": "plaster"
+    },
+    "wood_floor_deck": {
+      "id": "wood_floor_deck",
+      "name": "Wood Floor Deck",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/wood_floor_deck",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\wood_floor_deck\\wood_floor_deck_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_deck/wood_floor_deck_diff_2k.jpg",
+          "bytes": 3804436,
+          "sha256": "1b55c67104cf6398ab976ee7fe4f0d0831c8c9808c13ab286dfc1cf0e4fcf2d0"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\wood_floor_deck\\wood_floor_deck_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_deck/wood_floor_deck_nor_gl_2k.jpg",
+          "bytes": 3121998,
+          "sha256": "6d452c7511ca6797e9bb6809a1ae054d7448725b966d7d2f85ff139648ddd7ec"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\wood_floor_deck\\wood_floor_deck_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_deck/wood_floor_deck_arm_2k.jpg",
+          "bytes": 3185193,
+          "sha256": "d1b6894ccba6a296ea7d3b7a6807d245353541f62c773537407295b4dc719b6e"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\wood_floor_deck\\wood_floor_deck_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_deck/wood_floor_deck_rough_2k.jpg",
+          "bytes": 2881541,
+          "sha256": "c82ee0705926f7d0a235bb5d6a5879a666040a4d1438980f4ed5387935cba786"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\wood_floor_deck\\wood_floor_deck_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_floor_deck/wood_floor_deck_ao_2k.jpg",
+          "bytes": 2754602,
+          "sha256": "cedf58bdeabcf080974185b0a345fbe92a75933626b6d6461b6ee710cc01dc96"
+        }
+      },
+      "role": "floor_wood"
+    },
+    "aerial_grass_rock": {
+      "id": "aerial_grass_rock",
+      "name": "Aerial Grass Rock",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/aerial_grass_rock",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\aerial_grass_rock\\aerial_grass_rock_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg",
+          "bytes": 2624635,
+          "sha256": "1a2ddfa4652adbe00447b940c40019d46f4b88245bc1b341cdf622c2110b7bc5"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\aerial_grass_rock\\aerial_grass_rock_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_nor_gl_2k.jpg",
+          "bytes": 3799025,
+          "sha256": "c6aa14b042ce243f93a6ca807f46a085711c23ad316b104578e92df7770ee285"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\aerial_grass_rock\\aerial_grass_rock_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_arm_2k.jpg",
+          "bytes": 945301,
+          "sha256": "a7daabd9aa877f861ced2830b792709f31a399324db47df2bdac256c0414fc14"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\aerial_grass_rock\\aerial_grass_rock_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_rough_2k.jpg",
+          "bytes": 1495844,
+          "sha256": "fc0fff40e3378f2f54d225db6e3e566a8563bb2c143eef0f09b543c9d4698776"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\aerial_grass_rock\\aerial_grass_rock_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_ao_2k.jpg",
+          "bytes": 2162395,
+          "sha256": "2eb11d2282c78126dff97697ae87a35ac5c1e2b7a3aa0b1c67473a0ae0621d03"
+        }
+      },
+      "role": "hills"
+    },
+    "bark_brown_02": {
+      "id": "bark_brown_02",
+      "name": "Bark Brown 02",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/bark_brown_02",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\bark_brown_02\\bark_brown_02_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_brown_02/bark_brown_02_diff_2k.jpg",
+          "bytes": 2356592,
+          "sha256": "285051e34826ace29f4ab438ad35cc1201b2aae0a6157a5f3c0bf6667bbc539e"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\bark_brown_02\\bark_brown_02_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_brown_02/bark_brown_02_nor_gl_2k.jpg",
+          "bytes": 3707907,
+          "sha256": "aaba4529c3167a7811b4dbf5b4327d054a166c2fc8ea08ebd249a2692adace41"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\bark_brown_02\\bark_brown_02_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_brown_02/bark_brown_02_arm_2k.jpg",
+          "bytes": 849538,
+          "sha256": "d04abcb75755426cb9ae4f3190d5149f631ac35d100b921caeb565e44cd7365a"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\bark_brown_02\\bark_brown_02_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_brown_02/bark_brown_02_rough_2k.jpg",
+          "bytes": 1236654,
+          "sha256": "adafcab150c1ca99150c77198329e251437dc00fa1f66019f75624366926996e"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\bark_brown_02\\bark_brown_02_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_brown_02/bark_brown_02_ao_2k.jpg",
+          "bytes": 1919982,
+          "sha256": "7efd7e23faf79d17cd906e542028020fac0aed0e0ef7f7b996ab3f980a417951"
+        }
+      },
+      "role": "bark"
+    },
+    "fabric_pattern_07": {
+      "id": "fabric_pattern_07",
+      "name": "Fabric Pattern 07",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/fabric_pattern_07",
+      "resolution": "2k",
+      "files": {
+        "col_1": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\fabric_pattern_07\\fabric_pattern_07_col_1_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_pattern_07/fabric_pattern_07_col_1_2k.jpg",
+          "bytes": 2650991,
+          "sha256": "1f4941638b890d4535b1078067be8a831ca302d1e696ed959b4e4512de893cba"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\fabric_pattern_07\\fabric_pattern_07_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_pattern_07/fabric_pattern_07_nor_gl_2k.jpg",
+          "bytes": 2572375,
+          "sha256": "84f15ee5f6b63e7e224051a22426c751cc1fe15a794efd001ebfdb5f84828602"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\fabric_pattern_07\\fabric_pattern_07_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_pattern_07/fabric_pattern_07_arm_2k.jpg",
+          "bytes": 822275,
+          "sha256": "68b0e04fbee9a5e5e896f4e3826376149745afb67b1cf3f5a1144687f33c669f"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\fabric_pattern_07\\fabric_pattern_07_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_pattern_07/fabric_pattern_07_rough_2k.jpg",
+          "bytes": 1657764,
+          "sha256": "be3e311614ee6f31d4cb4a774ed678b7a64189d3e1a55ad71033142185da270a"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\fabric_pattern_07\\fabric_pattern_07_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_pattern_07/fabric_pattern_07_ao_2k.jpg",
+          "bytes": 1387251,
+          "sha256": "3289c92d1f085321c753934efccdada4170b8dc86b29a786a81582975d5e0443"
+        },
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\fabric_pattern_07\\fabric_pattern_07_col_1_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/fabric_pattern_07/fabric_pattern_07_col_1_2k.jpg",
+          "bytes": 2650991,
+          "sha256": "1f4941638b890d4535b1078067be8a831ca302d1e696ed959b4e4512de893cba"
+        }
+      },
+      "role": "fabric"
+    },
+    "painted_metal_shutter": {
+      "id": "painted_metal_shutter",
+      "name": "Painted Metal Shutter",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/painted_metal_shutter",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_metal_shutter\\painted_metal_shutter_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_metal_shutter/painted_metal_shutter_diff_2k.jpg",
+          "bytes": 2474114,
+          "sha256": "0aa6835b7da52960dd371897f1777166210ca07386a2872eb162ab8398595997"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_metal_shutter\\painted_metal_shutter_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_metal_shutter/painted_metal_shutter_nor_gl_2k.jpg",
+          "bytes": 3097249,
+          "sha256": "2757f76146b522c9a0e5c057bd8fcac6600861def33a814c63b8b8e1f6a1d97f"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_metal_shutter\\painted_metal_shutter_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_metal_shutter/painted_metal_shutter_arm_2k.jpg",
+          "bytes": 2565660,
+          "sha256": "86f1b5e96df17d30114007b17ba272b7c8771fc212223257cb2621aa9ce39ce1"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_metal_shutter\\painted_metal_shutter_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_metal_shutter/painted_metal_shutter_rough_2k.jpg",
+          "bytes": 2304207,
+          "sha256": "69baaf22e4be633912567d8518a607b5bcfdca68f5cb049d3c956e81700b8008"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\painted_metal_shutter\\painted_metal_shutter_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/painted_metal_shutter/painted_metal_shutter_ao_2k.jpg",
+          "bytes": 1084235,
+          "sha256": "7a4b761fb1e2adad899695d49cbb4bd7a9bc2d4a3f29b44cd9ff29b325b22ee7"
+        }
+      },
+      "role": "metal_painted"
+    },
+    "brown_mud_leaves_01": {
+      "id": "brown_mud_leaves_01",
+      "name": "Brown Mud Leaves 01",
+      "type": "texture",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/brown_mud_leaves_01",
+      "resolution": "2k",
+      "files": {
+        "Diffuse": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\brown_mud_leaves_01\\brown_mud_leaves_01_Diffuse_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_leaves_01/brown_mud_leaves_01_diff_2k.jpg",
+          "bytes": 4539452,
+          "sha256": "29c997d77f56e4ea16d3e998a306be0c17fddb28ab4822657c7cd8249040ffda"
+        },
+        "nor_gl": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\brown_mud_leaves_01\\brown_mud_leaves_01_nor_gl_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_leaves_01/brown_mud_leaves_01_nor_gl_2k.jpg",
+          "bytes": 5688696,
+          "sha256": "b6ec386e00d9d2a1c3a1da6a98a67066b0dfaa88ddb779341df29700cf081bdf"
+        },
+        "arm": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\brown_mud_leaves_01\\brown_mud_leaves_01_arm_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_leaves_01/brown_mud_leaves_01_arm_2k.jpg",
+          "bytes": 3697743,
+          "sha256": "a80135a30b7ea0f29f093269acae10f83d327dcc0a20bc10083da59843988c15"
+        },
+        "Rough": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\brown_mud_leaves_01\\brown_mud_leaves_01_Rough_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_leaves_01/brown_mud_leaves_01_rough_2k.jpg",
+          "bytes": 2421908,
+          "sha256": "9556215f5fef905c37cdf19c77aef7822f124890f8fb7dcce65d57c5eafc0ca5"
+        },
+        "AO": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\textures\\brown_mud_leaves_01\\brown_mud_leaves_01_AO_2k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_leaves_01/brown_mud_leaves_01_ao_2k.jpg",
+          "bytes": 3813568,
+          "sha256": "76c342dc7b5ee7dc5f2246e24147f16afcaa2c0b31599da4c385404416e16eb8"
+        }
+      },
+      "role": "dirt"
+    },
+    "metal_trash_can": {
+      "id": "metal_trash_can",
+      "name": "Metal Trash Can",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/metal_trash_can",
+      "resolution": "1k",
+      "polycount": 13960,
+      "lods": false,
+      "targetTriangles": 3000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\metal_trash_can.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/metal_trash_can/metal_trash_can_1k.gltf",
+          "bytes": 15481,
+          "sha256": "ccdc55ecfe43db2174c9257891e92551882a874564bb9a7908cafc5268b46c0c"
+        },
+        "textures/metal_trash_can_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\textures\\metal_trash_can_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/metal_trash_can/metal_trash_can_diff_1k.jpg",
+          "bytes": 551939,
+          "sha256": "920c895a31b1cd2c000123c0592c70c33d46562752987da98070e7e0eebb662f"
+        },
+        "textures/metal_trash_can_rust_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\textures\\metal_trash_can_rust_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/metal_trash_can/metal_trash_can_rust_diff_1k.jpg",
+          "bytes": 768161,
+          "sha256": "51c44248305b111d978f7e0cbfe4a71ab7f49549968ce37c54b635d74c2cfba1"
+        },
+        "textures/metal_trash_can_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\textures\\metal_trash_can_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/metal_trash_can/metal_trash_can_arm_1k.jpg",
+          "bytes": 731776,
+          "sha256": "b23dcdb2ed40c1c6cfbd2d2779c6f075025b7269bfbbed2a70c6bdb7167e47fb"
+        },
+        "textures/metal_trash_can_rust_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\textures\\metal_trash_can_rust_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/metal_trash_can/metal_trash_can_rust_nor_gl_1k.jpg",
+          "bytes": 1085844,
+          "sha256": "a5497588e00e5e56db72e701457fc8a46d3a1fa7d9dd7bf9d79e02cada09e84b"
+        },
+        "textures/metal_trash_can_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\textures\\metal_trash_can_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/metal_trash_can/metal_trash_can_nor_gl_1k.jpg",
+          "bytes": 842945,
+          "sha256": "b977f17aa9d4718ffc91a62868b7171b4479578b8cffd1d32001d92552af81a4"
+        },
+        "metal_trash_can.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\metal_trash_can.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/metal_trash_can/metal_trash_can.bin",
+          "bytes": 378288,
+          "sha256": "a9b9f526b655bef865933335f2cfc8c8f0bd1a35fda05b290a93e3061f2b6c8a"
+        },
+        "textures/metal_trash_can_rust_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\metal_trash_can\\textures\\metal_trash_can_rust_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/metal_trash_can/metal_trash_can_rust_arm_1k.jpg",
+          "bytes": 620549,
+          "sha256": "31a6269e98a3a8b2a2d6db8f58724e0151d5312b5137e6d59b5a2ba873989159"
+        }
+      }
+    },
+    "old_tyre": {
+      "id": "old_tyre",
+      "name": "Old Tyre",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/old_tyre",
+      "resolution": "1k",
+      "polycount": 2880,
+      "lods": false,
+      "targetTriangles": 2000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\old_tyre\\old_tyre.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/old_tyre/old_tyre_1k.gltf",
+          "bytes": 2734,
+          "sha256": "ba7b417eb3dc747c356ac3cd1f125754755684eb664737a9f1fc9e490c0b766e"
+        },
+        "textures/old_tyre_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\old_tyre\\textures\\old_tyre_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/old_tyre/old_tyre_diff_1k.jpg",
+          "bytes": 650708,
+          "sha256": "0e34ce658c0844c0c94022233226d495930d514c917a5fa15ffee4760567439e"
+        },
+        "textures/old_tyre_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\old_tyre\\textures\\old_tyre_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/old_tyre/old_tyre_arm_1k.jpg",
+          "bytes": 776823,
+          "sha256": "3bcf192f5b99a7a574f9e21e75927043e6726c601a5da15e3210a31db05e12d4"
+        },
+        "old_tyre.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\old_tyre\\old_tyre.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/old_tyre/old_tyre.bin",
+          "bytes": 84160,
+          "sha256": "659e7982c2de92ca1d13194c97bf112b6dec22d91daecc88e3912d37ce1b7252"
+        },
+        "textures/old_tyre_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\old_tyre\\textures\\old_tyre_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/old_tyre/old_tyre_nor_gl_1k.jpg",
+          "bytes": 722778,
+          "sha256": "34b716e140408985ddbab7d4bf1d8d430edf834cd2fd4639d82b14cb393fa73e"
+        }
+      }
+    },
+    "fire_hydrant": {
+      "id": "fire_hydrant",
+      "name": "Fire Hydrant",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/fire_hydrant",
+      "resolution": "1k",
+      "polycount": 86316,
+      "lods": false,
+      "targetTriangles": 4000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\fire_hydrant.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/fire_hydrant/fire_hydrant_1k.gltf",
+          "bytes": 20926,
+          "sha256": "aaca81b2904e6e5f1fb10a854c7b9a921232624387d1f8757b5c6bdaedcd9eb0"
+        },
+        "fire_hydrant.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\fire_hydrant.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/fire_hydrant/fire_hydrant.bin",
+          "bytes": 1928772,
+          "sha256": "a3c7ed023bc4aff190902764326e7f83ae1a108f6bac2a1b637c38a8e03eb516"
+        },
+        "textures/fire_hydrant_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\textures\\fire_hydrant_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fire_hydrant/fire_hydrant_nor_gl_1k.jpg",
+          "bytes": 490552,
+          "sha256": "f6786775276c7b48f0582fdd7c43984b63b15b7a8e0ea0e2f2af8cdab98c06d7"
+        },
+        "textures/fire_hydrant_aged_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\textures\\fire_hydrant_aged_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fire_hydrant/fire_hydrant_aged_diff_1k.jpg",
+          "bytes": 629331,
+          "sha256": "3198cabcaf5107e59109bd07dfe8e4c87b3f0533173d10fafdaf86f8024a291e"
+        },
+        "textures/fire_hydrant_aged_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\textures\\fire_hydrant_aged_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fire_hydrant/fire_hydrant_aged_arm_1k.jpg",
+          "bytes": 665642,
+          "sha256": "9c46b014735a4e8df5a80e4c030ddb321c9aeaa715ad4ea3eb60e6f0909c9d0a"
+        },
+        "textures/fire_hydrant_aged_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\textures\\fire_hydrant_aged_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fire_hydrant/fire_hydrant_aged_nor_gl_1k.jpg",
+          "bytes": 543768,
+          "sha256": "6fadc78fd5d696bf594ff021aaf93a0c6aced761830f9aa6971c51b17c869c35"
+        },
+        "textures/fire_hydrant_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\textures\\fire_hydrant_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fire_hydrant/fire_hydrant_diff_1k.jpg",
+          "bytes": 570746,
+          "sha256": "a3d0b8b6fcd8a39c8d5067f8ef95e3290053131887398f89baf57c1f8d24ab45"
+        },
+        "textures/fire_hydrant_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\fire_hydrant\\textures\\fire_hydrant_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fire_hydrant/fire_hydrant_arm_1k.jpg",
+          "bytes": 671743,
+          "sha256": "d15bf8fc6389ae48a1060a38057c2093469e62f585c8033d300b80af81d40f9d"
+        }
+      }
+    },
+    "street_lamp_01": {
+      "id": "street_lamp_01",
+      "name": "Street Lamp 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/street_lamp_01",
+      "resolution": "1k",
+      "polycount": 30610,
+      "lods": false,
+      "targetTriangles": 4000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\street_lamp_01\\street_lamp_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/street_lamp_01/street_lamp_01_1k.gltf",
+          "bytes": 6419,
+          "sha256": "5d0358ede168b5e04547780b99d8e6d651cbe644e468e67cb505019047cbd5c8"
+        },
+        "textures/street_lamp_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\street_lamp_01\\textures\\street_lamp_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_01/street_lamp_01_arm_1k.jpg",
+          "bytes": 664324,
+          "sha256": "4b5487a6c7ee300c3cf5449629e01c35409e5c7ac1695edb9fe69d4821853c7c"
+        },
+        "textures/street_lamp_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\street_lamp_01\\textures\\street_lamp_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_01/street_lamp_01_diff_1k.jpg",
+          "bytes": 307889,
+          "sha256": "3e9d3471b33eb1f8075ed741c2b1932103598626d057ca12ef38005ea5fcb165"
+        },
+        "textures/street_lamp_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\street_lamp_01\\textures\\street_lamp_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/street_lamp_01/street_lamp_01_nor_gl_1k.jpg",
+          "bytes": 438623,
+          "sha256": "172af0fd7ed4999e9f520b9f56e1f357a6dba87adbd7b8aa87e0a0b95840c63d"
+        },
+        "street_lamp_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\street_lamp_01\\street_lamp_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/street_lamp_01/street_lamp_01.bin",
+          "bytes": 748908,
+          "sha256": "c283db9b6d95835d9e8fc1692829acadcb21a0623b2daaa7231cec1440488401"
+        }
+      }
+    },
+    "utility_box_01": {
+      "id": "utility_box_01",
+      "name": "Utility Box 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/utility_box_01",
+      "resolution": "1k",
+      "polycount": 4404,
+      "lods": false,
+      "targetTriangles": 2000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\utility_box_01\\utility_box_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/utility_box_01/utility_box_01_1k.gltf",
+          "bytes": 2766,
+          "sha256": "5b9f8c45f2640c9dd831dc3450529e45b24c987208ddcf73010fe717ce8c454e"
+        },
+        "textures/utility_box_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\utility_box_01\\textures\\utility_box_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/utility_box_01/utility_box_01_diff_1k.jpg",
+          "bytes": 558681,
+          "sha256": "6a703a4cdf20c3fc3d0400fa815e5a1834836c96c207bdb57ba9e4a5db3a5532"
+        },
+        "textures/utility_box_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\utility_box_01\\textures\\utility_box_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/utility_box_01/utility_box_01_nor_gl_1k.jpg",
+          "bytes": 557001,
+          "sha256": "1c4e377906c13e864c9c7ffbd31a7d86075f28b948bf54872d6ad3ab38a08124"
+        },
+        "textures/utility_box_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\utility_box_01\\textures\\utility_box_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/utility_box_01/utility_box_01_arm_1k.jpg",
+          "bytes": 716061,
+          "sha256": "e65428774e94b6a8aeb7a23802e0af8f1568952ea79e21a7a3475b957e34956b"
+        },
+        "utility_box_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\utility_box_01\\utility_box_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/utility_box_01/utility_box_01.bin",
+          "bytes": 142552,
+          "sha256": "e4249eb754d7802154eed36bb12070dc24c90fc331f355d60ef7570d61fc0f5c"
+        }
+      }
+    },
+    "planter_box_02": {
+      "id": "planter_box_02",
+      "name": "Planter Box 02",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/planter_box_02",
+      "resolution": "1k",
+      "polycount": 10944,
+      "lods": false,
+      "targetTriangles": 2500,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\planter_box_02\\planter_box_02.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/planter_box_02/planter_box_02_1k.gltf",
+          "bytes": 2787,
+          "sha256": "9ae29e813136cb056c672edbc5833ff5af2042b3cd15abc652e9d3fc338dca71"
+        },
+        "textures/planter_box_02_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\planter_box_02\\textures\\planter_box_02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/planter_box_02/planter_box_02_diff_1k.jpg",
+          "bytes": 620574,
+          "sha256": "0500b512d922e2dc311fb4d1bd23dd982732f1ed2d79264f608487e69ef193c1"
+        },
+        "textures/planter_box_02_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\planter_box_02\\textures\\planter_box_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/planter_box_02/planter_box_02_nor_gl_1k.jpg",
+          "bytes": 735299,
+          "sha256": "c55e6d9db96b71cf4c863735927a80c0a3e4fed1c48229b386e8e1d29af8da58"
+        },
+        "textures/planter_box_02_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\planter_box_02\\textures\\planter_box_02_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/planter_box_02/planter_box_02_arm_1k.jpg",
+          "bytes": 750404,
+          "sha256": "dcb9a181bd084811fdecb3412b5cb5167d9acedda53eb2eae50455e0b4b63b40"
+        },
+        "planter_box_02.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\planter_box_02\\planter_box_02.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/planter_box_02/planter_box_02.bin",
+          "bytes": 359296,
+          "sha256": "eedaf12238996e02f5aa8e44515ec8746cc1bac19cb3480a5914a7b4ea20dcda"
+        }
+      }
+    },
+    "cardboard_box_01": {
+      "id": "cardboard_box_01",
+      "name": "Cardboard Box 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/cardboard_box_01",
+      "resolution": "1k",
+      "polycount": 16952,
+      "lods": false,
+      "targetTriangles": 1500,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\cardboard_box_01\\cardboard_box_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/cardboard_box_01/cardboard_box_01_1k.gltf",
+          "bytes": 2903,
+          "sha256": "6038bcc5bba5a08a5f6643a265977e37e3d14553e62981e144c33a89f10b78e1"
+        },
+        "textures/cardboard_box_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\cardboard_box_01\\textures\\cardboard_box_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/cardboard_box_01/cardboard_box_01_arm_1k.jpg",
+          "bytes": 398433,
+          "sha256": "5db63828d0f904c6a8d9c83afc912260b2a27261c15a28d06360519384574d2b"
+        },
+        "cardboard_box_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\cardboard_box_01\\cardboard_box_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/cardboard_box_01/cardboard_box_01.bin",
+          "bytes": 381936,
+          "sha256": "7212d43b4cb56459e46d31ab34dc7c310fcfbe170f4a588416dea07ae5628a4b"
+        },
+        "textures/cardboard_box_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\cardboard_box_01\\textures\\cardboard_box_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/cardboard_box_01/cardboard_box_01_diff_1k.jpg",
+          "bytes": 567741,
+          "sha256": "122c7ba8c5935e289804a730b480677a4bffdf74a45c91970cba682df92e171c"
+        },
+        "textures/cardboard_box_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\cardboard_box_01\\textures\\cardboard_box_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/cardboard_box_01/cardboard_box_01_nor_gl_1k.jpg",
+          "bytes": 817424,
+          "sha256": "d2d1f529a851966b65411b5094510dd9eba03cd5c0a89921f79325c377a8e8eb"
+        }
+      }
+    },
+    "wooden_crate_02": {
+      "id": "wooden_crate_02",
+      "name": "Wooden Crate 02",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/wooden_crate_02",
+      "resolution": "1k",
+      "polycount": 5176,
+      "lods": false,
+      "targetTriangles": 2000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_crate_02\\wooden_crate_02.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wooden_crate_02/wooden_crate_02_1k.gltf",
+          "bytes": 4150,
+          "sha256": "e90985d317664668988cb95ce707784c94ab0ccc6d13c980ca789fa69a5cf7b6"
+        },
+        "textures/wooden_crate_02_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_crate_02\\textures\\wooden_crate_02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_crate_02/wooden_crate_02_diff_1k.jpg",
+          "bytes": 716110,
+          "sha256": "a6e57123110d2899af9493c22b1918174f1c96c707e7126ac67738d98ee10c07"
+        },
+        "textures/wooden_crate_02_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_crate_02\\textures\\wooden_crate_02_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_crate_02/wooden_crate_02_arm_1k.jpg",
+          "bytes": 819577,
+          "sha256": "a76af97005a66fe8c7cdcabf20174f06813e6a6d5cd9502157c93a57f3c89d5a"
+        },
+        "wooden_crate_02.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_crate_02\\wooden_crate_02.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/wooden_crate_02/wooden_crate_02.bin",
+          "bytes": 150064,
+          "sha256": "e68e272641f704e5241e4108894f0b97363d511944db8b991a48787d0160ea5e"
+        },
+        "textures/wooden_crate_02_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_crate_02\\textures\\wooden_crate_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_crate_02/wooden_crate_02_nor_gl_1k.jpg",
+          "bytes": 546319,
+          "sha256": "59342f730c9f336950f796ef5e4c3b8c794ce5adbd54d98a2ecb679a7e4ae5e8"
+        }
+      }
+    },
+    "Barrel_02": {
+      "id": "Barrel_02",
+      "name": "Barrel 02",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/Barrel_02",
+      "resolution": "1k",
+      "polycount": 2688,
+      "lods": false,
+      "targetTriangles": 1500,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\Barrel_02\\Barrel_02.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/Barrel_02/Barrel_02_1k.gltf",
+          "bytes": 2639,
+          "sha256": "82204368af4d7211c440e7ebcd30979f48ba349d4439f3bf0212f86d4ba5d9d8"
+        },
+        "textures/Barrel_02_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\Barrel_02\\textures\\Barrel_02_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/Barrel_02/Barrel_02_arm_1k.jpg",
+          "bytes": 166615,
+          "sha256": "bd69aa2c5c069482cb48a14aed1f3a1d079bd868d865247206427df5a53202e3"
+        },
+        "Barrel_02.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\Barrel_02\\Barrel_02.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/Barrel_02/Barrel_02.bin",
+          "bytes": 77440,
+          "sha256": "a9a848743a7616710e2b3aee0b61c6fb69abc3910a150856ad21776a6089f29a"
+        },
+        "textures/Barrel_02_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\Barrel_02\\textures\\Barrel_02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/Barrel_02/Barrel_02_diff_1k.jpg",
+          "bytes": 74005,
+          "sha256": "2dd828ce25b5b6b0ffc9b7901d1778767f1897be1c8004f4ec047fc91742cf12"
+        },
+        "textures/Barrel_02_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\Barrel_02\\textures\\Barrel_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/Barrel_02/Barrel_02_nor_gl_1k.jpg",
+          "bytes": 100819,
+          "sha256": "f7029669d04979d20bbe1a80d34e689aff4b1ebe1bcc37a3ee62c8e384229a77"
+        }
+      }
+    },
+    "exterior_aircon_unit": {
+      "id": "exterior_aircon_unit",
+      "name": "Exterior Aircon Unit",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/exterior_aircon_unit",
+      "resolution": "1k",
+      "polycount": 18986,
+      "lods": false,
+      "targetTriangles": 3000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\exterior_aircon_unit.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/exterior_aircon_unit/exterior_aircon_unit_1k.gltf",
+          "bytes": 9634,
+          "sha256": "f19d85c76948903047c2846068aeaa376d5e956a410675268cb6cb6aac5d97c2"
+        },
+        "textures/exterior_aircon_unit_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_01_nor_gl_1k.jpg",
+          "bytes": 472088,
+          "sha256": "e5a6f3c135b942d6efe62a24496c575d03f6a4316188efe65079035d7faf1c38"
+        },
+        "textures/exterior_aircon_unit_01_opacity_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_01_opacity_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_01_opacity_1k.jpg",
+          "bytes": 333675,
+          "sha256": "c19feb434c2b01923fbb3e16ace3aa6d9cb16b05c2a5c479ad237759b2d331d6"
+        },
+        "textures/exterior_aircon_unit_rusted_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_rusted_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_rusted_01_arm_1k.jpg",
+          "bytes": 673246,
+          "sha256": "51c103926b118bf00b902826001db802b15755c6eefa12b00afa24c60d7b341b"
+        },
+        "textures/exterior_aircon_unit_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_01_arm_1k.jpg",
+          "bytes": 651293,
+          "sha256": "14671920f716691dc3b8940432f7aba5c469e3b466441ff8ad500de92d3178fb"
+        },
+        "textures/exterior_aircon_unit_02_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_02_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_02_arm_1k.jpg",
+          "bytes": 484026,
+          "sha256": "1cdfa2d1c938c3af61a5f06510b0d94aeddddd4bdc1832008b3826240dd1535d"
+        },
+        "textures/exterior_aircon_unit_rusted_02_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_rusted_02_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_rusted_02_arm_1k.jpg",
+          "bytes": 605557,
+          "sha256": "6ac4cfca6a8d8bec6ef1ff756652eb1f36b780d1ff7d70d9cb3e0f7fe1faf271"
+        },
+        "exterior_aircon_unit.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\exterior_aircon_unit.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/exterior_aircon_unit/exterior_aircon_unit.bin",
+          "bytes": 494784,
+          "sha256": "b4b9ad082bdaa8f8b437bc14d9981caeaf318334499d4bf65d616fb2ec0c5ca8"
+        },
+        "textures/exterior_aircon_unit_02_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_02_nor_gl_1k.jpg",
+          "bytes": 942230,
+          "sha256": "864c0fb1e55aff910d826a8c1f6a2ad459f7db0124b5846445d466cabf0cadf5"
+        },
+        "textures/exterior_aircon_unit_rusted_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_rusted_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_rusted_01_nor_gl_1k.jpg",
+          "bytes": 583620,
+          "sha256": "14f105cda9172290be2e8b23b8e895099b65e222619850af3b13105901d922e2"
+        },
+        "textures/exterior_aircon_unit_rusted_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_rusted_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_rusted_01_diff_1k.jpg",
+          "bytes": 606076,
+          "sha256": "a8771db98ed7f3d46ce48fd70867f58a74a2530666c339f8dcc14f3e5de86d0b"
+        },
+        "textures/exterior_aircon_unit_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_01_diff_1k.jpg",
+          "bytes": 506664,
+          "sha256": "2ae5005b4836d2c91d1e712d9acf425c7dcc4973b7c0fc6f23da9afaa6381da6"
+        },
+        "textures/exterior_aircon_unit_rusted_02_opacity_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_rusted_02_opacity_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_rusted_02_opacity_1k.jpg",
+          "bytes": 357558,
+          "sha256": "a86bcaf9c4858cf250fd67c9a0ee362504454b9972ff6e1ac44e38bac3213421"
+        },
+        "textures/exterior_aircon_unit_rusted_02_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\exterior_aircon_unit\\textures\\exterior_aircon_unit_rusted_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/exterior_aircon_unit/exterior_aircon_unit_rusted_02_nor_gl_1k.jpg",
+          "bytes": 947477,
+          "sha256": "3af4716b42812b742577594c7a0a342accd79925f02037c152b1da1c5831bb78"
+        }
+      }
+    },
+    "water_manhole_cover": {
+      "id": "water_manhole_cover",
+      "name": "Water Manhole Cover",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/water_manhole_cover",
+      "resolution": "1k",
+      "polycount": 6301,
+      "lods": false,
+      "targetTriangles": 1200,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\water_manhole_cover\\water_manhole_cover.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/water_manhole_cover/water_manhole_cover_1k.gltf",
+          "bytes": 4253,
+          "sha256": "9d692740cb6e70cee977a6ccb54a270271b81250b47468e9ef6387bd58215cf9"
+        },
+        "textures/water_manhole_cover_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\water_manhole_cover\\textures\\water_manhole_cover_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/water_manhole_cover/water_manhole_cover_arm_1k.jpg",
+          "bytes": 669586,
+          "sha256": "6d5856a467c9286fc993f2bd80bb5c30464fd8a127c8418fc8fc6c34bc54231d"
+        },
+        "textures/water_manhole_cover_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\water_manhole_cover\\textures\\water_manhole_cover_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/water_manhole_cover/water_manhole_cover_nor_gl_1k.jpg",
+          "bytes": 1008913,
+          "sha256": "e2c1eac759b8c7430ffc8c59a45f4db98f890f9a22c3d968605a81e99e92bf43"
+        },
+        "textures/water_manhole_cover_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\water_manhole_cover\\textures\\water_manhole_cover_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/water_manhole_cover/water_manhole_cover_diff_1k.jpg",
+          "bytes": 448420,
+          "sha256": "cb78919f60c929125317f19f9ecbba9f21089b7c0d6e0428c68f6fa401e6e720"
+        },
+        "water_manhole_cover.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\water_manhole_cover\\water_manhole_cover.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/water_manhole_cover/water_manhole_cover.bin",
+          "bytes": 202320,
+          "sha256": "ada713d1f6f879164d3475e2ee18d69b4c4ecc8f100126e3921b7b3ea42c9267"
+        }
+      }
+    },
+    "concrete_road_barrier": {
+      "id": "concrete_road_barrier",
+      "name": "Concrete Road Barrier",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/concrete_road_barrier",
+      "resolution": "1k",
+      "polycount": 80776,
+      "lods": true,
+      "targetTriangles": 3000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\concrete_road_barrier\\concrete_road_barrier.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/concrete_road_barrier/concrete_road_barrier_1k.gltf",
+          "bytes": 2868,
+          "sha256": "c371e87d303fff3f0c9fbe88520f7837514364e5c66aac3244e115ffa673d061"
+        },
+        "textures/concrete_road_barrier_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\concrete_road_barrier\\textures\\concrete_road_barrier_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/concrete_road_barrier/concrete_road_barrier_nor_gl_1k.jpg",
+          "bytes": 961760,
+          "sha256": "c1072f51ff5c3d7158f0fbb0aa26e82b816b745b9f03639c4816832af2b37c52"
+        },
+        "textures/concrete_road_barrier_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\concrete_road_barrier\\textures\\concrete_road_barrier_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/concrete_road_barrier/concrete_road_barrier_arm_1k.jpg",
+          "bytes": 619502,
+          "sha256": "b940847648012f2db8c24b16e07ad1e39b3bd33ea493203364deca209606e4b4"
+        },
+        "textures/concrete_road_barrier_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\concrete_road_barrier\\textures\\concrete_road_barrier_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/concrete_road_barrier/concrete_road_barrier_diff_1k.jpg",
+          "bytes": 792641,
+          "sha256": "88b2d79829ffec7b11ac4d9c8554328f30b665d2c17f634197fde4f1ca8696fe"
+        },
+        "concrete_road_barrier.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\concrete_road_barrier\\concrete_road_barrier.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/concrete_road_barrier/concrete_road_barrier.bin",
+          "bytes": 1374016,
+          "sha256": "64a4f9bc6e4af64d714a252c3c13428c430a60569deba3d52ca6b7dd3aa70d8c"
+        }
+      }
+    },
+    "painted_wooden_bench": {
+      "id": "painted_wooden_bench",
+      "name": "Painted Wooden Bench",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/painted_wooden_bench",
+      "resolution": "1k",
+      "polycount": 630,
+      "lods": false,
+      "targetTriangles": 700,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\painted_wooden_bench\\painted_wooden_bench.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/painted_wooden_bench/painted_wooden_bench_1k.gltf",
+          "bytes": 2835,
+          "sha256": "2289ab82f3fe3045bf18f7b9541743d2c65b9f071cb34bbe424d2bc998f3e507"
+        },
+        "textures/painted_wooden_bench_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\painted_wooden_bench\\textures\\painted_wooden_bench_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/painted_wooden_bench/painted_wooden_bench_diff_1k.jpg",
+          "bytes": 545216,
+          "sha256": "9bc533313091ee71eaca5fa6334b71d27935d9d75311f64df6a53c28a67c435c"
+        },
+        "textures/painted_wooden_bench_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\painted_wooden_bench\\textures\\painted_wooden_bench_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/painted_wooden_bench/painted_wooden_bench_nor_gl_1k.jpg",
+          "bytes": 830104,
+          "sha256": "a0f53740d77fc61aac01de0b7e1ae6109445d1756839f739ae31fdf10c9911f2"
+        },
+        "textures/painted_wooden_bench_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\painted_wooden_bench\\textures\\painted_wooden_bench_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/painted_wooden_bench/painted_wooden_bench_arm_1k.jpg",
+          "bytes": 586040,
+          "sha256": "878785565eeff706b8f1e4db7e3d794a544e9cf0e56cee424d9a271ab4ead47e"
+        },
+        "painted_wooden_bench.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\painted_wooden_bench\\painted_wooden_bench.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/painted_wooden_bench/painted_wooden_bench.bin",
+          "bytes": 25444,
+          "sha256": "5799bcb20924105cccd6424de8cdb8e67eb57fddc19c395befeac634a7b2e013"
+        }
+      }
+    },
+    "plastic_crate_03": {
+      "id": "plastic_crate_03",
+      "name": "Plastic Crate 03",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/plastic_crate_03",
+      "resolution": "1k",
+      "polycount": 21740,
+      "lods": false,
+      "targetTriangles": 2000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\plastic_crate_03\\plastic_crate_03.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/plastic_crate_03/plastic_crate_03_1k.gltf",
+          "bytes": 2817,
+          "sha256": "cb4629a4ab7e6f7aa5d6ba9d3dcd6affe59553386acc7612cd5a8bb8f263f05f"
+        },
+        "textures/plastic_crate_03_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\plastic_crate_03\\textures\\plastic_crate_03_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/plastic_crate_03/plastic_crate_03_nor_gl_1k.jpg",
+          "bytes": 772566,
+          "sha256": "a7d01166ab720a51036e9390cb6aa2f8ef057b9d976062bf78205a089100e087"
+        },
+        "textures/plastic_crate_03_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\plastic_crate_03\\textures\\plastic_crate_03_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/plastic_crate_03/plastic_crate_03_diff_1k.jpg",
+          "bytes": 730169,
+          "sha256": "fb7f0b70da651e260aec7ee3506ecdc8aad62e65d2bf9341609e2a18749591bd"
+        },
+        "textures/plastic_crate_03_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\plastic_crate_03\\textures\\plastic_crate_03_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/plastic_crate_03/plastic_crate_03_arm_1k.jpg",
+          "bytes": 937207,
+          "sha256": "b102504f012af9f5b8d3e229a106f6cd74df485f3650558e03fad22b33147452"
+        },
+        "plastic_crate_03.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\plastic_crate_03\\plastic_crate_03.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/plastic_crate_03/plastic_crate_03.bin",
+          "bytes": 897608,
+          "sha256": "bbe5394d543ab57819e926bd23158e8c00706b929273508d79e3b3230001b33e"
+        }
+      }
+    },
+    "wooden_picnic_table": {
+      "id": "wooden_picnic_table",
+      "name": "Wooden Picnic Table",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/wooden_picnic_table",
+      "resolution": "1k",
+      "polycount": 10210,
+      "lods": false,
+      "targetTriangles": 3000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\wooden_picnic_table.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wooden_picnic_table/wooden_picnic_table_1k.gltf",
+          "bytes": 5099,
+          "sha256": "6b0dd9916fd87dba2e5baad06e20c0badf68bc68a5761a13854fa9a215c6bd50"
+        },
+        "textures/wooden_picnic_table_top_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\textures\\wooden_picnic_table_top_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_picnic_table/wooden_picnic_table_top_arm_1k.jpg",
+          "bytes": 747432,
+          "sha256": "50d2b7a0b15c56bf82bc0c918e6eaa5f590a6fd61d32311c8da85c414ace297d"
+        },
+        "textures/wooden_picnic_table_top_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\textures\\wooden_picnic_table_top_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_picnic_table/wooden_picnic_table_top_nor_gl_1k.jpg",
+          "bytes": 625681,
+          "sha256": "1e65787457f9edfdd04f1ee3f777ac2d2a9d43bfbbd3cb40c1e086f939bba419"
+        },
+        "wooden_picnic_table.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\wooden_picnic_table.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/wooden_picnic_table/wooden_picnic_table.bin",
+          "bytes": 279116,
+          "sha256": "1efd51c292843194fbd709452d56d06c9ddc770f43a013db57ca79bfc2731b01"
+        },
+        "textures/wooden_picnic_table_bottom_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\textures\\wooden_picnic_table_bottom_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_picnic_table/wooden_picnic_table_bottom_arm_1k.jpg",
+          "bytes": 699984,
+          "sha256": "555226136c1d754d4aa5da42385a9152a146c5175382c77cced611a6880efd35"
+        },
+        "textures/wooden_picnic_table_top_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\textures\\wooden_picnic_table_top_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_picnic_table/wooden_picnic_table_top_diff_1k.jpg",
+          "bytes": 722582,
+          "sha256": "4aefdef35bf343410dbebd8577dfc968f1d6420ccddc601b19912e84b2accc0a"
+        },
+        "textures/wooden_picnic_table_bottom_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\textures\\wooden_picnic_table_bottom_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_picnic_table/wooden_picnic_table_bottom_nor_gl_1k.jpg",
+          "bytes": 548315,
+          "sha256": "c5d6eb388eceb6d98e92ff31d3f3346d411b1bbcb15c05dc9da71e4a7e398539"
+        },
+        "textures/wooden_picnic_table_bottom_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_picnic_table\\textures\\wooden_picnic_table_bottom_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_picnic_table/wooden_picnic_table_bottom_diff_1k.jpg",
+          "bytes": 680087,
+          "sha256": "887b9a57213f87196fb090419e14d00095af8fa56c93ca6cd7d0d70ef4e5fd27"
+        }
+      }
+    },
+    "compost_bags": {
+      "id": "compost_bags",
+      "name": "Compost Bags",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/compost_bags",
+      "resolution": "1k",
+      "polycount": 18708,
+      "lods": false,
+      "targetTriangles": 3000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\compost_bags\\compost_bags.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/compost_bags/compost_bags_1k.gltf",
+          "bytes": 11308,
+          "sha256": "ccbb538016405b763fd09f804be2ea7d19c61702856b0c51d1d488ef0c88f489"
+        },
+        "textures/compost_bags_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\compost_bags\\textures\\compost_bags_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/compost_bags/compost_bags_arm_1k.jpg",
+          "bytes": 679780,
+          "sha256": "602437897781a5ff00e5edf5a29f881b884ea7f4965d9b26c770b5c5ff47ca72"
+        },
+        "textures/compost_bags_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\compost_bags\\textures\\compost_bags_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/compost_bags/compost_bags_nor_gl_1k.jpg",
+          "bytes": 537959,
+          "sha256": "84b10f72764874621df259a0e62e0e9d0e069f273da9911224eb9ab521863a01"
+        },
+        "compost_bags.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\compost_bags\\compost_bags.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/compost_bags/compost_bags.bin",
+          "bytes": 473352,
+          "sha256": "59f7bd0da2ed5cbed8f620bb48922591859db98ac5e4dbec035f6d44eae3c258"
+        },
+        "textures/compost_bags_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\compost_bags\\textures\\compost_bags_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/compost_bags/compost_bags_diff_1k.jpg",
+          "bytes": 523267,
+          "sha256": "20e0c2d0cc3f8706d8e602a67a450963b5ece5ed571175a2155e60b566dc6ca0"
+        },
+        "textures/compost_bags_sss_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\compost_bags\\textures\\compost_bags_sss_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/compost_bags/compost_bags_sss_1k.jpg",
+          "bytes": 375670,
+          "sha256": "e537888b2e5c63aba0f74ce5947471ad1ccb739534368f1c257bfd2af94204e6"
+        }
+      }
+    },
+    "rusted_wheel_rim_01": {
+      "id": "rusted_wheel_rim_01",
+      "name": "Rusted Wheel Rim 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/rusted_wheel_rim_01",
+      "resolution": "1k",
+      "polycount": 16440,
+      "lods": false,
+      "targetTriangles": 2000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\rusted_wheel_rim_01\\rusted_wheel_rim_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rusted_wheel_rim_01/rusted_wheel_rim_01_1k.gltf",
+          "bytes": 3748,
+          "sha256": "ddbfc1b68e40d0efa8651ef2d62fbcd6d85050aae64fcc7c0ee56dd7e1293a0b"
+        },
+        "textures/rusted_wheel_rim_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\rusted_wheel_rim_01\\textures\\rusted_wheel_rim_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rusted_wheel_rim_01/rusted_wheel_rim_01_arm_1k.jpg",
+          "bytes": 606086,
+          "sha256": "e3c5ec3531901f2b9901d232afb512bd0922289ba64cc9b9f975d1b4ed46da27"
+        },
+        "rusted_wheel_rim_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\rusted_wheel_rim_01\\rusted_wheel_rim_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/rusted_wheel_rim_01/rusted_wheel_rim_01.bin",
+          "bytes": 654048,
+          "sha256": "2dd5797a812d482f432b2a475c78dfddaa1a3e88f27d8d2d2cfebc3852737f5e"
+        },
+        "textures/rusted_wheel_rim_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\rusted_wheel_rim_01\\textures\\rusted_wheel_rim_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rusted_wheel_rim_01/rusted_wheel_rim_01_nor_gl_1k.jpg",
+          "bytes": 816565,
+          "sha256": "6ec1550711bf462579f27237fab6fa77141dadc2b21dc13e6a37c59f185e7ecd"
+        },
+        "textures/rusted_wheel_rim_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\rusted_wheel_rim_01\\textures\\rusted_wheel_rim_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rusted_wheel_rim_01/rusted_wheel_rim_01_diff_1k.jpg",
+          "bytes": 517042,
+          "sha256": "e533e5d6b7d1526218f3795f5e3694541d3a87e428242645d04783bc3e416e61"
+        }
+      }
+    },
+    "security_light": {
+      "id": "security_light",
+      "name": "Security Light",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/security_light",
+      "resolution": "1k",
+      "polycount": 4668,
+      "lods": false,
+      "targetTriangles": 1500,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\security_light\\security_light.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/security_light/security_light_1k.gltf",
+          "bytes": 6556,
+          "sha256": "d82d2191df1e30a75c2f2ce07a8abefcd52b0e8eabc819e2ac854da0f16fba18"
+        },
+        "textures/security_light_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\security_light\\textures\\security_light_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/security_light/security_light_nor_gl_1k.jpg",
+          "bytes": 788815,
+          "sha256": "7d14ecdf5f6c70152ca6fdfc290c72a28553248f0e5a79e7b77c8f601b00ddc2"
+        },
+        "security_light.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\security_light\\security_light.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/security_light/security_light.bin",
+          "bytes": 141352,
+          "sha256": "3d45d473d7ad4ace4ce93790db96dd7d6decbd0180b59a7a2774c690594e70e2"
+        },
+        "textures/security_light_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\security_light\\textures\\security_light_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/security_light/security_light_diff_1k.jpg",
+          "bytes": 588463,
+          "sha256": "2e7064d89f03ef51bffda6f78c86baac1edba3346f82f243aa0c33b20fa8b0e5"
+        },
+        "textures/security_light_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\security_light\\textures\\security_light_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/security_light/security_light_arm_1k.jpg",
+          "bytes": 865226,
+          "sha256": "4f8fe251eb31144de0eff820a7aef205d306b3b5dd4a19aff0ad4e87ca50a767"
+        }
+      }
+    },
+    "trashbag": {
+      "id": "trashbag",
+      "name": "Trashbag",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/trashbag",
+      "resolution": "1k",
+      "polycount": 4482,
+      "lods": false,
+      "targetTriangles": 1500,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\trashbag\\trashbag.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/trashbag/trashbag_1k.gltf",
+          "bytes": 2738,
+          "sha256": "22202e1ec48d924577584dce6751d5ab198fd7c0aee44602e9a7317b5b60a4a7"
+        },
+        "textures/trashbag_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\trashbag\\textures\\trashbag_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/trashbag/trashbag_nor_gl_1k.jpg",
+          "bytes": 573449,
+          "sha256": "33ddb9711bb3ab2ff1ed19fa361a4251909643fada7e5579a28f6346a58b4daf"
+        },
+        "textures/trashbag_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\trashbag\\textures\\trashbag_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/trashbag/trashbag_diff_1k.jpg",
+          "bytes": 332301,
+          "sha256": "676e01cbeef39b51c9ecd67315c952a605c8db9c11544fbe11e14dcbd00be27f"
+        },
+        "textures/trashbag_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\trashbag\\textures\\trashbag_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/trashbag/trashbag_arm_1k.jpg",
+          "bytes": 684660,
+          "sha256": "95e69ba47bc7b84f342cdbe4385cfab670295827740fb09407b967ea2114c0aa"
+        },
+        "trashbag.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\trashbag\\trashbag.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/trashbag/trashbag.bin",
+          "bytes": 106316,
+          "sha256": "7bfac5b9c39a058af347944b437f712718ec129ec883c16339179862cc155fe2"
+        }
+      }
+    },
+    "hand_truck": {
+      "id": "hand_truck",
+      "name": "Hand Truck",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/hand_truck",
+      "resolution": "1k",
+      "polycount": 13220,
+      "lods": false,
+      "targetTriangles": 3000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\hand_truck\\hand_truck.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/hand_truck/hand_truck_1k.gltf",
+          "bytes": 2754,
+          "sha256": "303029ba829f2975ebed80f6f36e38d57cec87379e7214fcfb7d8e6e921c8e58"
+        },
+        "textures/hand_truck_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\hand_truck\\textures\\hand_truck_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/hand_truck/hand_truck_nor_gl_1k.jpg",
+          "bytes": 944148,
+          "sha256": "8674bbaa5562c24efceef0ab77f374ffe32fa583ef5dc2a44846305aa0fd8f79"
+        },
+        "textures/hand_truck_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\hand_truck\\textures\\hand_truck_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/hand_truck/hand_truck_diff_1k.jpg",
+          "bytes": 802329,
+          "sha256": "a1c528e0c88a03a96b89215eab228083f9dd66a502174936bccc0fe427ce345a"
+        },
+        "textures/hand_truck_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\hand_truck\\textures\\hand_truck_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/hand_truck/hand_truck_arm_1k.jpg",
+          "bytes": 894412,
+          "sha256": "30ceadb1fa303f36dc0372a5681203e69715546219838e1bc0634c274407204c"
+        },
+        "hand_truck.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\hand_truck\\hand_truck.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/hand_truck/hand_truck.bin",
+          "bytes": 535704,
+          "sha256": "2a7ca50cdfac207defa68f71600f37e7cdd05d35bc94139df5269ea7d8b7a214"
+        }
+      }
+    },
+    "propane_tank": {
+      "id": "propane_tank",
+      "name": "Propane Tank",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/propane_tank",
+      "resolution": "1k",
+      "polycount": 5238,
+      "lods": false,
+      "targetTriangles": 2000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\propane_tank\\propane_tank.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/propane_tank/propane_tank_1k.gltf",
+          "bytes": 2733,
+          "sha256": "b62862832ab6bfb3262563749b9196cf6dd2b011ca86a7ccb1b35f007e5685b5"
+        },
+        "textures/propane_tank_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\propane_tank\\textures\\propane_tank_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/propane_tank/propane_tank_nor_gl_1k.jpg",
+          "bytes": 659305,
+          "sha256": "e17827f800150fb069dbe36ff4464eaf9f8c4d2d4608f1cc87a48dea0fe3d8f0"
+        },
+        "textures/propane_tank_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\propane_tank\\textures\\propane_tank_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/propane_tank/propane_tank_diff_1k.jpg",
+          "bytes": 702492,
+          "sha256": "09ae9f12f41ed0c8c7fb8e22f16871727b9b6ed7e06cde98ec9b8052395f46a4"
+        },
+        "textures/propane_tank_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\propane_tank\\textures\\propane_tank_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/propane_tank/propane_tank_arm_1k.jpg",
+          "bytes": 675391,
+          "sha256": "c56b34618f8d3a2681f559e66bbd4616010ba092b8266ee4249940e1dfecf820"
+        },
+        "propane_tank.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\propane_tank\\propane_tank.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/propane_tank/propane_tank.bin",
+          "bytes": 174180,
+          "sha256": "1e139c9a5a04de7b44a665cb504670c2e899d1f8f62ad84a238165874d4eea6c"
+        }
+      }
+    },
+    "portable_generator": {
+      "id": "portable_generator",
+      "name": "Portable Generator",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/portable_generator",
+      "resolution": "1k",
+      "polycount": 26419,
+      "lods": false,
+      "targetTriangles": 4000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\portable_generator\\portable_generator.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/portable_generator/portable_generator_1k.gltf",
+          "bytes": 10130,
+          "sha256": "d5afe27834f824dfe753391713c45be03479e8100831f320796030531f61b848"
+        },
+        "textures/portable_generator_spec_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\portable_generator\\textures\\portable_generator_spec_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/portable_generator/portable_generator_spec_1k.jpg",
+          "bytes": 23119,
+          "sha256": "acf30e81c367898eb846f353d77e404f6831ac23bf071e0e718fddb8881b86cb"
+        },
+        "textures/portable_generator_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\portable_generator\\textures\\portable_generator_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/portable_generator/portable_generator_nor_gl_1k.jpg",
+          "bytes": 818829,
+          "sha256": "8a868edab1a2f5ffa50b2b1680c2c342491b3eeeac443734178c445c7286c25d"
+        },
+        "textures/portable_generator_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\portable_generator\\textures\\portable_generator_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/portable_generator/portable_generator_diff_1k.jpg",
+          "bytes": 755079,
+          "sha256": "32acc300105a2df2290d872889b24e1b29ff1ca2c56c0a0cf8fbba0c5966a063"
+        },
+        "textures/portable_generator_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\portable_generator\\textures\\portable_generator_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/portable_generator/portable_generator_arm_1k.jpg",
+          "bytes": 887711,
+          "sha256": "10236e967baddd90ec7d4ab68969b06fb419f98782a2796db94edc0249b0dad2"
+        },
+        "portable_generator.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\portable_generator\\portable_generator.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/portable_generator/portable_generator.bin",
+          "bytes": 939572,
+          "sha256": "fb7dcfedec1331ad541569e4ca8d4157284b2164084b7fe5a97928d4abc0ea2d"
+        }
+      }
+    },
+    "ladder_sectioned_01": {
+      "id": "ladder_sectioned_01",
+      "name": "Ladder Sectioned 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/ladder_sectioned_01",
+      "resolution": "1k",
+      "polycount": 29140,
+      "lods": false,
+      "targetTriangles": 3000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\ladder_sectioned_01\\ladder_sectioned_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/ladder_sectioned_01/ladder_sectioned_01_1k.gltf",
+          "bytes": 7585,
+          "sha256": "68df434461bc1ed2dff4ec10bd34c14a3b319706da512a520f4291abe6fb5132"
+        },
+        "textures/ladder_sectioned_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\ladder_sectioned_01\\textures\\ladder_sectioned_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/ladder_sectioned_01/ladder_sectioned_01_nor_gl_1k.jpg",
+          "bytes": 342722,
+          "sha256": "e8dc89873db016f78d585747aa7f2bb253ce4f620269ad4aeac2eba42d9e4ebd"
+        },
+        "textures/ladder_sectioned_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\ladder_sectioned_01\\textures\\ladder_sectioned_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/ladder_sectioned_01/ladder_sectioned_01_diff_1k.jpg",
+          "bytes": 509874,
+          "sha256": "3154595e9a43befafb994f7faf60f084cb929bbdf4b29be24d7d3cee62fa6a34"
+        },
+        "ladder_sectioned_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\ladder_sectioned_01\\ladder_sectioned_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/ladder_sectioned_01/ladder_sectioned_01.bin",
+          "bytes": 914488,
+          "sha256": "e5d5265fa87cec63bb60a5ec54b787235d257b4e6c45ab7edcc68e7cbb515206"
+        },
+        "textures/ladder_sectioned_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\ladder_sectioned_01\\textures\\ladder_sectioned_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/ladder_sectioned_01/ladder_sectioned_01_arm_1k.jpg",
+          "bytes": 797514,
+          "sha256": "40cd96307107f0fc068b174c496d2f5611495160f915a4c293f55e2109235b13"
+        }
+      }
+    },
+    "garden_hose_wall_mounted_01": {
+      "id": "garden_hose_wall_mounted_01",
+      "name": "Garden Hose Wall Mounted 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/garden_hose_wall_mounted_01",
+      "resolution": "1k",
+      "polycount": 11684,
+      "lods": false,
+      "targetTriangles": 2500,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\garden_hose_wall_mounted_01\\garden_hose_wall_mounted_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01_1k.gltf",
+          "bytes": 4432,
+          "sha256": "7746484fbf4cea3e0d36526b3ceb05aee3ea4cb6a20d54a8c331a95e4e15a45c"
+        },
+        "textures/garden_hose_wall_mounted_01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\garden_hose_wall_mounted_01\\textures\\garden_hose_wall_mounted_01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01_arm_1k.jpg",
+          "bytes": 878931,
+          "sha256": "a046e6e3bdfc5a91513f897df0f315039282df17ffa7217096e23fd2353dd0bc"
+        },
+        "textures/garden_hose_wall_mounted_01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\garden_hose_wall_mounted_01\\textures\\garden_hose_wall_mounted_01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01_nor_gl_1k.jpg",
+          "bytes": 612921,
+          "sha256": "39ea8429455828b523bcff93ebe03ac4673873cb55df94cb894f1b232d9c90d4"
+        },
+        "textures/garden_hose_wall_mounted_01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\garden_hose_wall_mounted_01\\textures\\garden_hose_wall_mounted_01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01_diff_1k.jpg",
+          "bytes": 786985,
+          "sha256": "164ec96f0f2131f7ffb806eb0c55f9fd202e7855cd0d4883130d5438cedea0b5"
+        },
+        "garden_hose_wall_mounted_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\garden_hose_wall_mounted_01\\garden_hose_wall_mounted_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/garden_hose_wall_mounted_01/garden_hose_wall_mounted_01.bin",
+          "bytes": 301688,
+          "sha256": "f55d43656b3be5a968eaa4ac6b833e11e466c8f7fb32615861c432d527a70296"
+        }
+      }
+    },
+    "outdoor_table_chair_set_01": {
+      "id": "outdoor_table_chair_set_01",
+      "name": "Outdoor Table Chair Set 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/outdoor_table_chair_set_01",
+      "resolution": "1k",
+      "polycount": 9828,
+      "lods": false,
+      "targetTriangles": 3500,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\outdoor_table_chair_set_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/outdoor_table_chair_set_01/outdoor_table_chair_set_01_1k.gltf",
+          "bytes": 6826,
+          "sha256": "1b718deb56a9f07b260a5f95926fb7caa5fd27918cacca283414c840e46415f2"
+        },
+        "textures/outdoor_table_chair_set_01_table_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\textures\\outdoor_table_chair_set_01_table_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/outdoor_table_chair_set_01/outdoor_table_chair_set_01_table_nor_gl_1k.jpg",
+          "bytes": 43095,
+          "sha256": "e30e3f639bea22013149e73bcbaeb95805bf831c7b93b80ab83a33e42672b044"
+        },
+        "textures/outdoor_table_chair_set_01_chair_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\textures\\outdoor_table_chair_set_01_chair_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/outdoor_table_chair_set_01/outdoor_table_chair_set_01_chair_arm_1k.jpg",
+          "bytes": 179920,
+          "sha256": "71ac20bb124af45c3ff2fc5eee11d7c9d277ac245ac14ee4ba87291bb768937d"
+        },
+        "textures/outdoor_table_chair_set_01_table_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\textures\\outdoor_table_chair_set_01_table_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/outdoor_table_chair_set_01/outdoor_table_chair_set_01_table_arm_1k.jpg",
+          "bytes": 201642,
+          "sha256": "fecbe0e42db83d6f0ee8186afece1fd5c3a5834ff07926c00ac18468757d4377"
+        },
+        "textures/outdoor_table_chair_set_01_table_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\textures\\outdoor_table_chair_set_01_table_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/outdoor_table_chair_set_01/outdoor_table_chair_set_01_table_diff_1k.jpg",
+          "bytes": 151897,
+          "sha256": "7743a55a3a646ebdd9969e72594cb8b94e318d38956f2172a5e6934609a68bf4"
+        },
+        "outdoor_table_chair_set_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\outdoor_table_chair_set_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/outdoor_table_chair_set_01/outdoor_table_chair_set_01.bin",
+          "bytes": 456856,
+          "sha256": "d62458c79c6c902d1195bff875e42bf7579c6b309c6b96f9cd7543af43170220"
+        },
+        "textures/outdoor_table_chair_set_01_chair_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\textures\\outdoor_table_chair_set_01_chair_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/outdoor_table_chair_set_01/outdoor_table_chair_set_01_chair_nor_gl_1k.jpg",
+          "bytes": 46772,
+          "sha256": "9b57cd67775146b0865f3e5409b54661080625789042846569f7f65ab37258b3"
+        },
+        "textures/outdoor_table_chair_set_01_chair_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\outdoor_table_chair_set_01\\textures\\outdoor_table_chair_set_01_chair_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/outdoor_table_chair_set_01/outdoor_table_chair_set_01_chair_diff_1k.jpg",
+          "bytes": 155372,
+          "sha256": "60ed02a2c36098069235ad82937b2602e8940346f1d6a75c6386e78e03dbacb3"
+        }
+      }
+    },
+    "wooden_barrels_01": {
+      "id": "wooden_barrels_01",
+      "name": "Wooden Barrels 01",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/wooden_barrels_01",
+      "resolution": "1k",
+      "polycount": 33142,
+      "lods": false,
+      "targetTriangles": 4000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\wooden_barrels_01.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wooden_barrels_01/wooden_barrels_01_1k.gltf",
+          "bytes": 31017,
+          "sha256": "ff785e2150198c4cdb3cc74e532b02ce9574d6a7fc3606f5801fcbf68e3136af"
+        },
+        "textures/wooden_barrels_01_barrel02_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_barrel02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_barrel02_nor_gl_1k.jpg",
+          "bytes": 555954,
+          "sha256": "57c3d5682f299c97270228e3ec08f6c982fb2c2696ec30a74d0edbfe067235dd"
+        },
+        "textures/wooden_barrels_01_barrel02_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_barrel02_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_barrel02_arm_1k.jpg",
+          "bytes": 848051,
+          "sha256": "970de5e9f682d4ac2a2098c88dafc1e5a6c27cf1dbe31eb7ed3f8bc2a92eb58f"
+        },
+        "textures/wooden_barrels_01_barrel01_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_barrel01_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_barrel01_arm_1k.jpg",
+          "bytes": 852652,
+          "sha256": "35e34115f7657cadce27422730e936418a30e23397fb5c126591dff711acbf4b"
+        },
+        "textures/wooden_barrels_01_pieces_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_pieces_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_pieces_nor_gl_1k.jpg",
+          "bytes": 620276,
+          "sha256": "3be77f6310507c9c37414809ba31c39c89621e8bde916893bd676d54a5ceade2"
+        },
+        "wooden_barrels_01.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\wooden_barrels_01.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/wooden_barrels_01/wooden_barrels_01.bin",
+          "bytes": 1243556,
+          "sha256": "7de8294b07ecb6bd57ea3542760fa45bbefc296a47dd044723eb599ffc56084f"
+        },
+        "textures/wooden_barrels_01_barrel01_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_barrel01_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_barrel01_nor_gl_1k.jpg",
+          "bytes": 538634,
+          "sha256": "3dfa658b4a38a711887c9e4a492a319b20e2a821e4e08435368f98fe0c78a1b8"
+        },
+        "textures/wooden_barrels_01_pieces_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_pieces_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_pieces_diff_1k.jpg",
+          "bytes": 672604,
+          "sha256": "399134703c974ad4c8bc71107d513e8c89f5ca09f9b6175dc02e2e607b75c43d"
+        },
+        "textures/wooden_barrels_01_barrel01_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_barrel01_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_barrel01_diff_1k.jpg",
+          "bytes": 605063,
+          "sha256": "639e616e8d69acaadbf69725bb3d13f07a28fdff6c6b15e1d7f0574336564c72"
+        },
+        "textures/wooden_barrels_01_barrel02_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_barrel02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_barrel02_diff_1k.jpg",
+          "bytes": 618495,
+          "sha256": "c75f506a0c31093d4d3d425d4c979f49fce2dc99a8e6caefb50809fcf329845e"
+        },
+        "textures/wooden_barrels_01_pieces_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\wooden_barrels_01\\textures\\wooden_barrels_01_pieces_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_barrels_01/wooden_barrels_01_pieces_arm_1k.jpg",
+          "bytes": 904545,
+          "sha256": "785b59a19add1951bcd54d7607c18fcafa5a09068349ac437640d495b45a62fd"
+        }
+      }
+    },
+    "potted_plant_02": {
+      "id": "potted_plant_02",
+      "name": "Potted Plant 02",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/potted_plant_02",
+      "resolution": "1k",
+      "polycount": 69806,
+      "lods": false,
+      "targetTriangles": 6000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\potted_plant_02.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/potted_plant_02/potted_plant_02_1k.gltf",
+          "bytes": 6653,
+          "sha256": "c533dcce0d1aa4379eb7db04601a04983f8df2422b28578de922655a416e64a9"
+        },
+        "textures/potted_plant_02_leaves_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\textures\\potted_plant_02_leaves_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_diff_1k.jpg",
+          "bytes": 167700,
+          "sha256": "3643dce6e6c0a9f40129bd837ec1a11802e8f43ea43cb29e58219d82e0ac632b"
+        },
+        "potted_plant_02.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\potted_plant_02.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/potted_plant_02/potted_plant_02.bin",
+          "bytes": 1852244,
+          "sha256": "9c9812482c78a59789ed32fa842b4cbd9365e09c900c31ebb998e5efe627fe97"
+        },
+        "textures/potted_plant_02_pot_rough_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\textures\\potted_plant_02_pot_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_rough_1k.jpg",
+          "bytes": 114886,
+          "sha256": "4e92ad8ee0f098050785d9a025e2c5a7d55bc7a7f7e1916cc7627fc7824a938f"
+        },
+        "textures/potted_plant_02_leaves_rough_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\textures\\potted_plant_02_leaves_rough_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_rough_1k.jpg",
+          "bytes": 102396,
+          "sha256": "ac8959f70c0e91e77f3cd6fd3f73578b8aed64ac6c33fc34ac027a4e88276960"
+        },
+        "textures/potted_plant_02_pot_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\textures\\potted_plant_02_pot_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_diff_1k.jpg",
+          "bytes": 155244,
+          "sha256": "684949bf24821d7e951d46915366b5a388d2e4ccaaa9d5284e718c83604705e9"
+        },
+        "textures/potted_plant_02_leaves_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\textures\\potted_plant_02_leaves_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_nor_gl_1k.jpg",
+          "bytes": 127232,
+          "sha256": "e0fe090ff7a511729c9bbe59df7288b400430fdab178529443dec75e0f06007d"
+        },
+        "textures/potted_plant_02_pot_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\potted_plant_02\\textures\\potted_plant_02_pot_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_nor_gl_1k.jpg",
+          "bytes": 108343,
+          "sha256": "981a68721c8b7b9ac26b96d0210334599d5e8f529362f505082c071a0a58e86c"
+        }
+      }
+    },
+    "shrub_02": {
+      "id": "shrub_02",
+      "name": "Shrub 02",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/shrub_02",
+      "resolution": "1k",
+      "polycount": 52317,
+      "lods": true,
+      "targetTriangles": 8000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\shrub_02\\shrub_02.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/shrub_02/shrub_02_1k.gltf",
+          "bytes": 8083,
+          "sha256": "99de0a70fe88ad414615cc8d8e020617c8512e2abfe08b911b153a6fcc40d93e"
+        },
+        "textures/shrub_02_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\shrub_02\\textures\\shrub_02_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_02/shrub_02_arm_1k.jpg",
+          "bytes": 313715,
+          "sha256": "7186bf604d5c02f873aef6de2346cc06b6fa48f47d054edbef36d2c3772c0890"
+        },
+        "textures/shrub_02_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\shrub_02\\textures\\shrub_02_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_02/shrub_02_nor_gl_1k.jpg",
+          "bytes": 490815,
+          "sha256": "54c24e433365d5410223b7ebd2b33042b80831f80976e10768114db5ef6911d7"
+        },
+        "shrub_02.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\shrub_02\\shrub_02.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/shrub_02/shrub_02.bin",
+          "bytes": 758692,
+          "sha256": "5c1b79da1cfdbac90599542ccd1f75ba433a3a4d356b1ea03655adb39b0e2c96"
+        },
+        "textures/shrub_02_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\shrub_02\\textures\\shrub_02_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_02/shrub_02_diff_1k.jpg",
+          "bytes": 395120,
+          "sha256": "9956eff294034d70516d867e9668428a23d782feb3d4c34061dce5e44bacd5a8"
+        }
+      }
+    },
+    "modular_electricity_poles": {
+      "id": "modular_electricity_poles",
+      "name": "Modular Electricity Poles",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/modular_electricity_poles",
+      "resolution": "1k",
+      "polycount": 200610,
+      "lods": false,
+      "targetTriangles": 6000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\modular_electricity_poles.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/modular_electricity_poles/modular_electricity_poles_1k.gltf",
+          "bytes": 149324,
+          "sha256": "2032fb781809021258ceeb22f163bd9ddca2a9186173ed99ee61130dbb808c62"
+        },
+        "textures/modular_electricity_poles_pieces_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\textures\\modular_electricity_poles_pieces_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electricity_poles/modular_electricity_poles_pieces_diff_1k.jpg",
+          "bytes": 802771,
+          "sha256": "c681efa29ce6b28eb3377cfcdb35d1c88a9265189920e9979419d2d5b4086c1d"
+        },
+        "modular_electricity_poles.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\modular_electricity_poles.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/modular_electricity_poles/modular_electricity_poles.bin",
+          "bytes": 7215652,
+          "sha256": "143bc8cd007674c74a6bac784a24fd4181234c07498b3a2bbdbf6abcd8a5897f"
+        },
+        "textures/modular_electricity_poles_pieces_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\textures\\modular_electricity_poles_pieces_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electricity_poles/modular_electricity_poles_pieces_arm_1k.jpg",
+          "bytes": 1052303,
+          "sha256": "4648fab787b80889e54ea90e79fcb3de4c644729c16b8616ae79707b3e5515dd"
+        },
+        "textures/modular_electricity_poles_pieces_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\textures\\modular_electricity_poles_pieces_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electricity_poles/modular_electricity_poles_pieces_nor_gl_1k.jpg",
+          "bytes": 865048,
+          "sha256": "c78ec7efc67caebc9d43c1c29e5d3972c23bf17e865267cc3acb793774125caa"
+        },
+        "textures/modular_electricity_poles_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\textures\\modular_electricity_poles_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electricity_poles/modular_electricity_poles_arm_1k.jpg",
+          "bytes": 748382,
+          "sha256": "4765dd2e76a1191b271b2fb1c93354fe3b9cb12a323bafd7f1661effe88fc441"
+        },
+        "textures/modular_electricity_poles_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\textures\\modular_electricity_poles_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electricity_poles/modular_electricity_poles_diff_1k.jpg",
+          "bytes": 658915,
+          "sha256": "da86d0fc97683a99fc2670f8b889b9632dd6da05e9c042c40cc7bf9e4d0b0104"
+        },
+        "textures/modular_electricity_poles_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electricity_poles\\textures\\modular_electricity_poles_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electricity_poles/modular_electricity_poles_nor_gl_1k.jpg",
+          "bytes": 931236,
+          "sha256": "7c77d694c898139a82a66543e33748b4ab7b1f7cf456cdd453d5509810ae238a"
+        }
+      }
+    },
+    "modular_electric_cables": {
+      "id": "modular_electric_cables",
+      "name": "Modular Electric Cables",
+      "type": "model",
+      "licence": "CC0 1.0",
+      "source": "https://polyhaven.com/a/modular_electric_cables",
+      "resolution": "1k",
+      "polycount": 42078,
+      "lods": false,
+      "targetTriangles": 4000,
+      "files": {
+        "gltf": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\modular_electric_cables.gltf",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/modular_electric_cables/modular_electric_cables_1k.gltf",
+          "bytes": 82607,
+          "sha256": "f9292a9eff5bea32dde06356633da84615c508c9c0ee0246fc96c301cfd71fe8"
+        },
+        "textures/modular_electric_cables_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\textures\\modular_electric_cables_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electric_cables/modular_electric_cables_nor_gl_1k.jpg",
+          "bytes": 848440,
+          "sha256": "c32eeb9c064afc0265f38b7f133f41bebee559e416d7064d441098c4821c7dcd"
+        },
+        "textures/modular_electric_cables_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\textures\\modular_electric_cables_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electric_cables/modular_electric_cables_diff_1k.jpg",
+          "bytes": 474284,
+          "sha256": "181c8811d6f3d3f5a0ea02497cd6c375868c558aedf70a8221f301d323430c1a"
+        },
+        "textures/modular_electric_cables_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\textures\\modular_electric_cables_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electric_cables/modular_electric_cables_arm_1k.jpg",
+          "bytes": 797169,
+          "sha256": "d8d48ae3499f575be301fe0b9ae91d4e0316a51c1e1234e186e0e0e9409f1a32"
+        },
+        "textures/modular_electric_cables_boxes_nor_gl_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\textures\\modular_electric_cables_boxes_nor_gl_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electric_cables/modular_electric_cables_boxes_nor_gl_1k.jpg",
+          "bytes": 749676,
+          "sha256": "5e3d896e8bceaa8d843b30941c8d6f50779d4fbde534080dd3837f499471af5a"
+        },
+        "textures/modular_electric_cables_boxes_diff_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\textures\\modular_electric_cables_boxes_diff_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electric_cables/modular_electric_cables_boxes_diff_1k.jpg",
+          "bytes": 646895,
+          "sha256": "7dba8bfdd0a9c46294b5ec4930b4420b102a817469bf002d24136f8c3310c519"
+        },
+        "textures/modular_electric_cables_boxes_arm_1k.jpg": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\textures\\modular_electric_cables_boxes_arm_1k.jpg",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_electric_cables/modular_electric_cables_boxes_arm_1k.jpg",
+          "bytes": 856332,
+          "sha256": "3e1e8f5e854cdae94c5f5eee57241e4679c4198aa95d800873ca2cab87bd6bcc"
+        },
+        "modular_electric_cables.bin": {
+          "path": "C:\\it\\kannon-assets\\polyhaven\\models\\modular_electric_cables\\modular_electric_cables.bin",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/modular_electric_cables/modular_electric_cables.bin",
+          "bytes": 1563316,
+          "sha256": "3990f8b60c244ecfc64f80b1242d2a0fef0a3e39288c9ba9fd31becad4734d8a"
+        }
+      }
+    }
+  },
+  "fetched": "2026-09-10T04:48:24.759Z"
+}

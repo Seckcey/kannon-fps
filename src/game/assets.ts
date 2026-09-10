@@ -1,14 +1,20 @@
 /** Versioned URLs keep a new art release from reusing the previous cached model. */
 export const ARENA_ASSETS = {
-  character: '/models/scout.glb?v=scout-grounded-v1',
-  environment: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
+  character: '/models/scout-v2.glb?v=scout-v2',
+  environment: '/models/environment-v2.glb?v=kannon-town-v2',
+  environmentPhone: '/models/environment-v2-phone.glb?v=kannon-town-v2',
 } as const;
+export type TextureTier = 'phone' | 'full';
+/** Phones load a smaller-texture build of the same town. */
+export const environmentAssetUrl = (tier: TextureTier) => tier === 'phone' ? ARENA_ASSETS.environmentPhone : ARENA_ASSETS.environment;
 
 const knownUrls = new Set<string>(Object.values(ARENA_ASSETS));
 // Explicit local experiment assets share the same validated, retryable buffers.
 export const VEHICLE_TEST_ASSETS = {
   environment: '/models/environment-vehicle-test.glb', current: '/models/vehicles-current.glb', improved: '/models/vehicles-improved.glb',
   originalTown: '/models/environment.glb?v=kannon-town-v1',
+  refinedTown: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
+  townV2: '/models/environment-v2.glb', townV2Phone: '/models/environment-v2-phone.glb',
 } as const;
 for (const url of Object.values(VEHICLE_TEST_ASSETS)) knownUrls.add(url);
 const buffers = new Map<string, Promise<ArrayBuffer>>();
@@ -44,7 +50,9 @@ export function getArenaAssetBuffer(url: string): Promise<ArrayBuffer> {
   const controller = new AbortController();
   const deadline = setTimeout(() => controller.abort(), 60_000);
   const pending = (async () => {
-    const response = await fetch(url, { cache: retries.has(url) ? 'reload' : 'force-cache', signal: controller.signal });
+    // Production URLs carry a version, so the cache is authoritative; development revalidates
+    // so a freshly exported model is never hidden behind yesterday's copy.
+    const response = await fetch(url, { cache: retries.has(url) ? 'reload' : import.meta.env?.DEV ? 'no-cache' : 'force-cache', signal: controller.signal });
     if (!response.ok) { await response.body?.cancel(); throw new Error('The arena artwork could not load. Please try again.'); }
     const buffer = await response.arrayBuffer(); validateGlb(buffer);
     retries.delete(url); return buffer;
@@ -59,9 +67,9 @@ export function getArenaAssetBuffer(url: string): Promise<ArrayBuffer> {
 }
 
 /** Warm the same retained buffers that the GLTF parsers will consume. */
-export function warmArenaAssets(): Promise<void> {
+export function warmArenaAssets(tier: TextureTier = 'full'): Promise<void> {
   if (import.meta.env?.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('graphics') === 'current') {
     return Promise.all([ARENA_ASSETS.character, VEHICLE_TEST_ASSETS.originalTown].map(getArenaAssetBuffer)).then(() => {});
   }
-  return Promise.all(Object.values(ARENA_ASSETS).map(getArenaAssetBuffer)).then(() => {});
+  return Promise.all([ARENA_ASSETS.character, environmentAssetUrl(tier)].map(getArenaAssetBuffer)).then(() => {});
 }

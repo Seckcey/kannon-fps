@@ -38,6 +38,8 @@ export interface CharacterModel {
   root: THREE.Group;
   update(player: PlayerState, dt: number, time: number, local: boolean, motion?: { aim: boolean; grounded: boolean }): void;
   muzzle: THREE.Object3D;
+  /** Direct-sun scale for this character, sampled from the sun-visibility grid each frame. */
+  sunVisibility: { value: number };
   recoil(): void;
   impact(kind: CharacterImpactKind): void;
   dispose(): void;
@@ -47,6 +49,7 @@ export interface CharacterModel {
 export function createCharacter(color: string): CharacterModel {
   const accent = new THREE.MeshStandardMaterial({ color, roughness: 0.48, metalness: 0.25 });
   const impactEffect = createAccentImpact(accent);
+  const sunVisibility = { value: 1 };
   let disposed = false;
   const root = new THREE.Group();
   const hips = new THREE.Group(); hips.position.y = 0.88; root.add(hips);
@@ -139,7 +142,7 @@ export function createCharacter(color: string): CharacterModel {
   protection.position.y = 0.97; protection.scale.set(0.75, 1.07, 0.75); root.add(protection);
   let kick = 0; let cycle = Math.random() * Math.PI * 2;
   return {
-    root, muzzle,
+    root, muzzle, sunVisibility,
     recoil() { kick = 1; },
     impact(kind) { impactEffect.impact(kind); },
     update(player, dt, time, local) {

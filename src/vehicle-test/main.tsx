@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
 import { GameView } from '../game/GameView';
-import { ARENA_ASSETS, VEHICLE_TEST_ASSETS } from '../game/assets';
+import { VEHICLE_TEST_ASSETS } from '../game/assets';
 import { InputController } from '../game/InputController';
 import { TouchControls } from '../components/TouchControls';
 import { movePlayer } from '../../shared/physics';
@@ -36,6 +36,8 @@ if (townMode) Object.assign(views, {
   'spawn-gameplay': { label: 'Spawn · normal third person', player: [-28, 0, -18.5], yaw: Math.PI/2, pitch: -.04 },
 });
 const original = params.get('original') === '1';
+// ?graphics=v2 compares the shipped town (Before) with the lightmapped Kannon Town v2 (After).
+const v2 = townMode && params.get('graphics') === 'v2';
 const initialQuality: Quality = ['high', 'low', 'auto'].includes(params.get('quality') ?? '') ? params.get('quality') as Quality : 'high';
 type TestApi = {
   ready: boolean; selectView: (name: string) => void; setVariant: (variant: Variant) => void;
@@ -82,8 +84,10 @@ function Review() {
       onAssetsReady: () => { window.vehicleTest.ready = true; setReady(true); }, onError: setError,
       graphicsTest: {
         lockQuality: true,
-        artwork: original ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown } : townMode ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown, environmentVisible: false, vehicles: [
-          { name: 'TownVariant_improved', url: ARENA_ASSETS.environment, visible: true },
+        artwork: original ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown } : v2 ? { environmentUrl: VEHICLE_TEST_ASSETS.refinedTown, environmentVisible: false, vehicles: [
+          { name: 'TownVariant_improved', url: params.get('tier') === 'phone' ? VEHICLE_TEST_ASSETS.townV2Phone : VEHICLE_TEST_ASSETS.townV2, visible: true },
+        ] } : townMode ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown, environmentVisible: false, vehicles: [
+          { name: 'TownVariant_improved', url: VEHICLE_TEST_ASSETS.refinedTown, visible: true },
         ] } : { environmentUrl: '/models/environment-vehicle-test.glb', vehicles: [
           { name: 'VehicleVariant_current', url: '/models/vehicles-current.glb', visible: false },
           { name: 'VehicleVariant_improved', url: '/models/vehicles-improved.glb', visible: true },
@@ -147,6 +151,8 @@ function Review() {
         resources: performance.getEntriesByType('resource').filter(e => e.name.includes('/models/')).map(e => { const r = e as PerformanceResourceTiming; return { name: new URL(r.name).pathname, transferSize: r.transferSize, encodedBodySize: r.encodedBodySize, decodedBodySize: r.decodedBodySize, durationMs: r.duration }; }),
       };
     };
+    // Development-only handle for probing draw composition from the browser console.
+    (window as unknown as { kannonScene?: () => THREE.Scene | undefined }).kannonScene = () => scene;
     const testApi: TestApi = { ready: false, selectView, info,
       setVariant(v) { requireIdle(); if (original && v !== 'current') throw new Error('Original scene has no candidate'); activeVariant = v; setVariant(v); },
       setQuality(q) { requireIdle(); activeQuality = q; setQuality(q); view.setSettings({ quality: q }); },

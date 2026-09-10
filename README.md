@@ -21,7 +21,7 @@ Play at **https://kpop.8westventures.com**. [/health](https://kpop.8westventures
 
 ## Kannon Town and Scout
 
-The [original Blender arena](docs/KANNON_TOWN.md) follows the compact two-house arrangement requested from Nuketown. It replaces Sunbreak as the single playable map. Both houses have usable interiors, upstairs rooms and rear balconies; real shared collision matches the rendered architecture and vehicles. The [town graphics release](docs/TOWN_GRAPHICS.md) adds detailed vehicles, siding, roof trim, paving, fences and foliage. The active environment is 7,884,316 bytes, 155,724 triangles and 33 material primitives.
+The [original Blender arena](docs/KANNON_TOWN.md) follows the compact two-house arrangement requested from Nuketown. It replaces Sunbreak as the single playable map. Both houses have usable interiors, upstairs rooms and rear balconies; real shared collision matches the rendered architecture and vehicles. The [town graphics release](docs/TOWN_GRAPHICS.md) added detailed vehicles, siding, roof trim, paving, fences and foliage. [Kannon Town v2](docs/TOWN_V2.md) re-surfaces that geometry with CC0 photo textures, adds street and yard props, bakes sunlight, sky and bounce into lightmaps, and ships GPU-compressed textures in a full and a phone build.
 
 The existing [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) and [combat feedback](docs/COMBAT_FEEDBACK.md) remain. Historical Sunbreak artwork and its release evidence are retained as source history.
 

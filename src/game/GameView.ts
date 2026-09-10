@@ -10,6 +10,8 @@ import { createWorld, type ArenaWorld, type WorldArtwork } from './World';
 import { SUN_DIRECTION, SKY_LIGHT_INTENSITY } from './Atmosphere';
 import type { ArenaPresentation } from './Presentation';
 import { RenderQuality, scenePixelRatio } from './RenderQuality';
+import { buildSunVisibility, type SunVisibilityGrid } from './SunVisibility';
+import { renderTier, type RenderTier } from './RenderTiers';
 import { CombatEffects } from './CombatEffects';
 import { DeferredRespawns } from './DeferredRespawns';
 import { MovementPrediction } from './MovementPrediction';
@@ -64,6 +66,9 @@ export class GameView {
   private renderedPreparationId = '';
   private readonly audio: GameAudio;
   private readonly sun: THREE.DirectionalLight;
+  /** Where the collision map shades the sun, so characters match the baked world. */
+  private readonly sunVisibility: SunVisibilityGrid = buildSunVisibility(raycastMap);
+  private tier: RenderTier = renderTier('auto', false, false);
   private readonly players = new Map<string, RenderPlayer>();
   private readonly resizeObserver: ResizeObserver;
   private readonly labels = document.createElement('div');
@@ -122,15 +127,17 @@ export class GameView {
     this.sun.position.copy(SUN_DIRECTION).multiplyScalar(70);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
-    this.sun.shadow.camera.left = -48; this.sun.shadow.camera.right = 48;
-    this.sun.shadow.camera.top = 48; this.sun.shadow.camera.bottom = -48;
-    this.sun.shadow.camera.near = 1; this.sun.shadow.camera.far = 155;
+    // A tight box follows the local player each frame; see followShadow.
+    this.sun.shadow.camera.left = -24; this.sun.shadow.camera.right = 24;
+    this.sun.shadow.camera.top = 24; this.sun.shadow.camera.bottom = -24;
+    this.sun.shadow.camera.near = 1; this.sun.shadow.camera.far = 120;
     this.sun.shadow.normalBias = 0.065; this.sun.shadow.bias = -0.00025;
     this.sun.shadow.radius = 2;
     this.scene.add(this.sun, this.sun.target);
     const baseline = import.meta.env.DEV && new URLSearchParams(location.search).get('graphics') === 'current';
     const artwork = options.graphicsTest?.artwork ?? (baseline ? { environmentUrl: '/models/environment.glb?v=kannon-town-v1' } : undefined);
-    this.world = createWorld(this.renderer, () => { this.world.prepareReflections(this.scene); this.environmentReady = true; }, message => this.options.onError?.(message), artwork);
+    this.tier = renderTier(this.settings.quality, options.input.isTouch, this.renderer.extensions.has('EXT_color_buffer_float'));
+    this.world = createWorld(this.renderer, this.tier.textureTier, () => { this.world.prepareReflections(this.scene); this.environmentReady = true; }, message => this.options.onError?.(message), artwork);
     this.scene.add(this.world.root);
     this.scene.environment = this.world.environment;
     this.scene.background = this.world.background;
@@ -163,32 +170,54 @@ export class GameView {
     if (!graphicsChanged) return;
     this.graphicsConfigured = true;
     this.renderQuality.reset();
-    const mobile = this.options.input.isTouch;
-    this.renderer.shadowMap.enabled = this.settings.quality !== 'low';
-    const enhanced = (this.settings.quality === 'high' || (this.settings.quality === 'auto' && !mobile)) && this.renderer.extensions.has('EXT_color_buffer_float');
+    this.tier = renderTier(this.settings.quality, this.options.input.isTouch, this.renderer.extensions.has('EXT_color_buffer_float'));
+    // Every tier draws character shadows; the environment's own light is baked.
+    this.renderer.shadowMap.enabled = true;
     const request = ++this.presentationRequest;
-    if (enhanced && this.presentation) this.presentation.enabled = true;
-    else if (enhanced) {
+    if (this.tier.postprocessing && this.presentation) this.presentation.enabled = true;
+    else if (this.tier.postprocessing) {
       // Phones do not download the desktop postprocessing bundle. Direct
       // rendering remains usable while this optional effect becomes ready.
       void import('./Presentation').then(({ ArenaPresentation: Presentation }) => {
         if (this.disposed || request !== this.presentationRequest) return;
-        this.presentation = new Presentation(this.renderer, this.scene, this.camera);
+        this.presentation = new Presentation(this.renderer, this.scene, this.camera, { bloom: this.tier.bloom });
         this.presentation.resize(this.width, this.height);
       }).catch(() => { /* A failed optional enhancement leaves direct rendering available. */ });
     } else { this.presentation?.dispose(); this.presentation = null; }
-    const shadowSize = this.settings.quality === 'high' ? 2048 : mobile ? 1024 : 2048;
-    if (this.sun.shadow.mapSize.x !== shadowSize) {
+    if (this.sun.shadow.mapSize.x !== this.tier.shadowMapSize) {
       this.sun.shadow.map?.dispose(); this.sun.shadow.map = null;
-      this.sun.shadow.mapSize.set(shadowSize, shadowSize); this.sun.shadow.needsUpdate = true;
+      this.sun.shadow.mapSize.set(this.tier.shadowMapSize, this.tier.shadowMapSize); this.sun.shadow.needsUpdate = true;
     }
+    this.world.setGrassDensity(this.tier.grassDensity);
+    const extent = this.tier.shadowHalfExtent;
+    this.sun.shadow.camera.left = -extent; this.sun.shadow.camera.right = extent;
+    this.sun.shadow.camera.top = extent; this.sun.shadow.camera.bottom = -extent;
+    this.sun.shadow.camera.updateProjectionMatrix();
     this.slowTime = 0;
     this.resize();
   }
 
   /** Read-only evidence for the isolated comparison harness. */
   graphicsTestState() {
-    return { postprocessing: !!this.presentation?.enabled, shadowSize: this.sun.shadow.mapSize.toArray(), qualityScale: this.renderQuality.scale };
+    let meshes = 0, casting = 0, lightmapped = 0;
+    this.scene.traverse(object => {
+      if (!(object instanceof THREE.Mesh) || !object.visible) return;
+      meshes++;
+      if (object.castShadow) casting++;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      if (materials.some(material => (material as THREE.MeshStandardMaterial).lightMap)) lightmapped++;
+    });
+    const roots: Record<string, { visible: boolean; meshes: number; triangles: number; casting: number }> = {};
+    this.world.root.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return;
+      let named: THREE.Object3D | null = object, effective = true;
+      for (let current: THREE.Object3D | null = object; current; current = current.parent) { if (!current.visible) effective = false; if (current.name && current.parent && !current.parent.name) named = current; }
+      const key = named?.name || 'unnamed';
+      const entry = roots[key] ??= { visible: effective, meshes: 0, triangles: 0, casting: 0 };
+      entry.meshes++; entry.casting += object.castShadow ? 1 : 0;
+      const index = object.geometry.index; entry.triangles += (index ? index.count : object.geometry.attributes.position?.count ?? 0) / 3;
+    });
+    return { postprocessing: !!this.presentation?.enabled, shadowSize: this.sun.shadow.mapSize.toArray(), qualityScale: this.renderQuality.scale, tier: this.tier.name, meshes, casting, lightmapped, roots };
   }
 
   /** Called once for each input actually sent to the server, at 30 Hz. */
@@ -382,6 +411,16 @@ export class GameView {
     return { ...player, x: THREE.MathUtils.lerp(a.x, b.x, blend), y: THREE.MathUtils.lerp(a.y, b.y, blend), z: THREE.MathUtils.lerp(a.z, b.z, blend), yaw: lerpAngle(a.yaw, b.yaw, blend), pitch: THREE.MathUtils.lerp(a.pitch, b.pitch, blend) };
   }
 
+  /** Centre the character shadow box on the player, snapped to shadow-map texels so the
+   *  shadow edges do not shimmer as the box moves. */
+  private followShadow(center: THREE.Vector3) {
+    const texel = (2 * this.tier.shadowHalfExtent) / this.sun.shadow.mapSize.x;
+    const snapped = center.clone().divideScalar(texel).round().multiplyScalar(texel);
+    this.sun.target.position.copy(snapped);
+    this.sun.position.copy(snapped).addScaledVector(SUN_DIRECTION, 70);
+    this.sun.target.updateMatrixWorld();
+  }
+
   private frame = (now: number) => {
     if (this.disposed) return;
     // Changing the drawing buffer clears it. Apply adaptive sizes before drawing
@@ -433,6 +472,7 @@ export class GameView {
       const shadowFloor = supportHeight(rendered);
       entry.shadow.position.set(rendered.x, shadowFloor + 0.018, rendered.z);
       entry.shadow.scale.setScalar(Math.max(0.5, 1 - (rendered.y - shadowFloor) * 0.16));
+      entry.model.sunVisibility.value = this.sunVisibility.sample(rendered.x, rendered.z, rendered.y);
       if (local || state.health <= 0 || !state.connected) entry.label.style.display = 'none';
       else {
         const head = new THREE.Vector3(rendered.x, rendered.y + 2.2, rendered.z);
@@ -447,6 +487,8 @@ export class GameView {
     }
     const currentIds = new Set(this.snapshot?.players.map(player => player.id) ?? []);
     for (const [id, entry] of this.players) if (!currentIds.has(id)) { this.scene.remove(entry.model.root, entry.shadow); entry.model.dispose(); entry.label.remove(); this.players.delete(id); }
+    const localEntry = this.players.get(localId);
+    this.followShadow(localEntry && this.prediction ? localEntry.position : this.camera.position);
     this.world.update(this.elapsed); this.effects.update(elapsedFrame, this.camera);
     this.options.graphicsTest?.beforeRender?.(this.scene, this.camera, this.renderer);
     this.renderer.info.reset();

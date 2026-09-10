@@ -1,0 +1,54 @@
+{
+  "file": "public/models/scout-v2.glb",
+  "bytes": 2143776,
+  "exportedVertices": 21658,
+  "triangles": 20114,
+  "bones": 18,
+  "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Aim",
+    "Fire",
+    "Reload",
+    "Heal"
+  ],
+  "embeddedTextures": 3,
+  "materialDraws": {
+    "scout_body": 4,
+    "weapon_ar": 3,
+    "weapon_shotgun": 2,
+    "healing_item": 2
+  },
+  "eightPlayerBodyAndARDraws": 56,
+  "muzzle": [
+    0.13500020516983774,
+    1.4570001500734142,
+    -0.8469989750156833
+  ],
+  "shotgunMuzzle": [
+    0.1350002184050543,
+    1.457000020677496,
+    -0.9239989352632568
+  ],
+  "additiveNeutralFrames": [
+    {
+      "clip": "Fire",
+      "maxRotationErrorRadians": 0.0003903207791404663,
+      "maxTranslationError": 0
+    },
+    {
+      "clip": "Reload",
+      "maxRotationErrorRadians": 0.0003903207791404663,
+      "maxTranslationError": 0
+    },
+    {
+      "clip": "Heal",
+      "maxRotationErrorRadians": 0.0003903207791404663,
+      "maxTranslationError": 0
+    }
+  ],
+  "coordinateSystem": "metres; Y up; -Z forward",
+  "status": "passed"
+}
