@@ -9,12 +9,13 @@ import { createLegContact, type LegContact } from './LegContact';
 import { CharacterBlend } from './CharacterBlend';
 import { createCharacterImpact, type CharacterImpact } from './CharacterImpact';
 import { applySunVisibility } from './SunVisibility';
+import { ktx2Loader } from './Ktx2';
 
 let assetPromise: Promise<GLTF> | null = null;
 const loadScout = () => assetPromise ??= getArenaAssetBuffer(ARENA_ASSETS.character).then(buffer => {
   const resourcePath = new URL('.', new URL(ARENA_ASSETS.character, document.baseURI)).href;
   // Parse the bytes accepted by warmup; a second download could fail after joining.
-  return new GLTFLoader().parseAsync(buffer, resourcePath);
+  return new GLTFLoader().setKTX2Loader(ktx2Loader()).parseAsync(buffer, resourcePath);
 }).catch(error => { assetPromise = null; throw error; });
 
 /** Uses the exported Blender rig and animation clips; the small fallback only covers loading. */

@@ -25,8 +25,13 @@ if (!['full', 'phone'].includes(tier)) throw new Error(`Unknown tier ${tier}`);
 process.env.PATH = `${process.env.KTX_BIN ?? 'C:\\it\\tools\\ktx\\bin'}${delimiter}${process.env.PATH ?? ''}`;
 if (spawnSync('ktx', ['--version'], { windowsHide: true }).status !== 0) throw new Error('KTX-Software "ktx" not found. Install it and set KTX_BIN to its bin folder.');
 
-/** Texture size limits per tier. Lightmaps carry lighting only and tolerate more downscaling than colour. */
-const BUDGET = { full: { lightmap: 2048, texture: 2048 }, phone: { lightmap: 1024, texture: 1024 } }[tier];
+/** Texture size limits per tier. Environment colour stays sharpest; normal and roughness maps
+ *  tile at metre scale and read fine at half size; props are small on screen. */
+const BUDGET = {
+  full: { lightmap: 2048, colour: 2048, detail: 1024, prop: 512 },
+  phone: { lightmap: 1024, colour: 1024, detail: 512, prop: 256 },
+}[tier];
+const square = size => [size, size];
 
 await MeshoptDecoder.ready; await MeshoptEncoder.ready;
 const io = new NodeIO().registerExtensions([...ALL_EXTENSIONS, KannonLightmap]).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
@@ -51,6 +56,8 @@ for (const [materialName, entry] of Object.entries(lightmaps.materials ?? {})) {
   material.setExtension(LIGHTMAP_EXTENSION, lightmap);
 }
 if (missing.length) throw new Error(`Lightmap sidecar names materials not in the GLB: ${missing.join(', ')}`);
+for (const name of lightmaps.alphaMask ?? []) materialsByName.get(name)?.setAlphaMode('MASK').setAlphaCutoff(0.5);
+for (const name of lightmaps.doubleSided ?? []) materialsByName.get(name)?.setDoubleSided(true);
 for (const mesh of document.getRoot().listMeshes()) for (const primitive of mesh.listPrimitives()) {
   const material = primitive.getMaterial();
   if (material?.getExtension(LIGHTMAP_EXTENSION) && !primitive.getAttribute('TEXCOORD_1')) {
@@ -61,11 +68,14 @@ for (const mesh of document.getRoot().listMeshes()) for (const primitive of mesh
 await document.transform(
   dedup({ propertyTypes: [PropertyType.ACCESSOR, PropertyType.MESH, PropertyType.TEXTURE, PropertyType.MATERIAL] }),
   prune({ keepAttributes: true, keepExtras: true }),
-  // Normal maps keep the higher-quality UASTC block format; colour, roughness and lightmaps use the smaller ETC1S.
-  toktx({ mode: Mode.UASTC, encoder: sharp, slots: /normalTexture/, resize: [BUDGET.texture, BUDGET.texture], level: 2, rdo: true, rdoLambda: 1.0, zstd: 18 }),
-  toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^LM_/, resize: [BUDGET.lightmap, BUDGET.lightmap], quality: 192 }),
-  toktx({ mode: Mode.ETC1S, encoder: sharp, slots: /^(?!normalTexture)/, pattern: /^(?!LM_)/, resize: [BUDGET.texture, BUDGET.texture], quality: 160 }),
-  meshopt({ encoder: MeshoptEncoder, level: 'medium' }),
+  // Everything is ETC1S (the smallest GPU format). Four passes with disjoint name patterns:
+  // lightmaps, environment colour (2k sets), environment normal/roughness, and props.
+  toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^LM_/, resize: square(BUDGET.lightmap), quality: 200 }),
+  toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^(?!LM_).*_(Diffuse|diff|col_1)_2k/, resize: square(BUDGET.colour), quality: 170 }),
+  toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^(?!LM_)(?!.*_(Diffuse|diff|col_1)_2k).*_2k/, resize: square(BUDGET.detail), quality: 200 }),
+  toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^(?!LM_)(?!.*_2k)/, resize: square(BUDGET.prop), quality: 160 }),
+  // 16-bit positions keep millimetre layering (clapboards, decals) intact in the 60 m house meshes.
+  meshopt({ encoder: MeshoptEncoder, level: 'high', quantizePosition: 16, quantizeTexcoord: 14, quantizeNormal: 10 }),
 );
 
 const glb = await io.writeBinary(document);

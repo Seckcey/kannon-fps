@@ -24,7 +24,9 @@ export async function readGeometry(path, requireColor = false) {
     const read = { 5120: 'readInt8', 5121: 'readUInt8', 5122: 'readInt16LE', 5123: 'readUInt16LE', 5125: 'readUInt32LE', 5126: 'readFloatLE' }[a.componentType];
     const stride = v.byteStride ?? size * width, offset = a.byteOffset ?? 0;
     assert.ok(size && width && offset + (a.count - 1) * stride + width * size <= bytes.length);
-    return Array.from({ length: a.count }, (_, i) => Array.from({ length: width }, (_, j) => bytes[read](offset + i * stride + j * size)));
+    // KHR_mesh_quantization stores normalized integers; scale them back to [-1, 1] or [0, 1].
+    const divisor = a.normalized ? { 5120: 127, 5121: 255, 5122: 32767, 5123: 65535 }[a.componentType] : 1;
+    return Array.from({ length: a.count }, (_, i) => Array.from({ length: width }, (_, j) => bytes[read](offset + i * stride + j * size) / divisor));
   }
   const world = new Map(), triangles = []; let primitives = 0, vertices = 0;
   function visit(index, parent = new Matrix4()) {

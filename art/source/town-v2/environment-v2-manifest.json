@@ -1,0 +1,1356 @@
+{
+  "input": "art/source/town-v2/town-v2-raw.glb",
+  "tier": "full",
+  "bytes": 25518552,
+  "sha256": "a81accf2344eb66cbad40986708251d7a818e3875a4f75cb403bd5068dea1367",
+  "triangles": 367921,
+  "materials": 70,
+  "textures": [
+    {
+      "name": "grass-card",
+      "mime": "image/ktx2",
+      "bytes": 47628,
+      "size": [
+        512,
+        256
+      ]
+    },
+    {
+      "name": "exterior_aircon_unit_01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 46011,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "exterior_aircon_unit_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 53463,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "exterior_aircon_unit_01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 53431,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "exterior_aircon_unit_02_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 57953,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "exterior_aircon_unit_01_opacity_1k",
+      "mime": "image/ktx2",
+      "bytes": 15840,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "exterior_aircon_unit_02_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 43494,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_barrels_01_barrel01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 35250,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_barrels_01_barrel01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 55777,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_barrels_01_barrel01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 58143,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "Barrel_02_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 39172,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "Barrel_02_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 36733,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "Barrel_02_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 50401,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_crate_02_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 39590,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_crate_02_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 61160,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_crate_02_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 61362,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "old_tyre_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 46242,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "old_tyre_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 57283,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "old_tyre_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 51175,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "utility_box_01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 30821,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "utility_box_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 55934,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "utility_box_01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 61661,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "portable_generator_spec_1k",
+      "mime": "image/ktx2",
+      "bytes": 3282,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "portable_generator_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 59071,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "portable_generator_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 64716,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "portable_generator_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 73898,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "portable_generator_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 64716,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "propane_tank_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 43122,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "propane_tank_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 58179,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "propane_tank_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 62547,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "metal_trash_can_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 70329,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "metal_trash_can_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 56029,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "metal_trash_can_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 60544,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "trashbag_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 61797,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "trashbag_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 44455,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "trashbag_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 54434,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_picnic_table_bottom_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 21454,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_picnic_table_bottom_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 58299,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_picnic_table_bottom_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 54768,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_picnic_table_top_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 35823,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_picnic_table_top_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 58318,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "wooden_picnic_table_top_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 54221,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "security_light_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 67860,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "security_light_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 60699,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "security_light_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 74121,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "security_light_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 60699,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "garden_hose_wall_mounted_01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 26124,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "garden_hose_wall_mounted_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 57237,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "garden_hose_wall_mounted_01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 68805,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "ladder_sectioned_01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 31668,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "ladder_sectioned_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 41446,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "ladder_sectioned_01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 64315,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "potted_plant_02_leaves_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 54644,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "potted_plant_02_leaves_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 55944,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "potted_plant_02_leaves_rough_1k",
+      "mime": "image/ktx2",
+      "bytes": 40952,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "potted_plant_02_pot_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 27568,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "potted_plant_02_pot_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 54698,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "potted_plant_02_pot_rough_1k",
+      "mime": "image/ktx2",
+      "bytes": 42760,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "street_lamp_01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 25732,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "street_lamp_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 40031,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "street_lamp_01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 63709,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "street_lamp_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 40031,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "fire_hydrant_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 46349,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "fire_hydrant_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 57810,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "fire_hydrant_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 67205,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "compost_bags_sss_1k",
+      "mime": "image/ktx2",
+      "bytes": 44035,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "compost_bags_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 54533,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "compost_bags_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 50797,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "compost_bags_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 48240,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "plastic_crate_03_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 59230,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "plastic_crate_03_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 60147,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "plastic_crate_03_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 64040,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "metal_trash_can_rust_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 81220,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "metal_trash_can_rust_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 64498,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "metal_trash_can_rust_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 55241,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "outdoor_table_chair_set_01_chair_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 11668,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "outdoor_table_chair_set_01_chair_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 55982,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "outdoor_table_chair_set_01_chair_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 58256,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "outdoor_table_chair_set_01_table_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 10831,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "outdoor_table_chair_set_01_table_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 54528,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "outdoor_table_chair_set_01_table_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 58574,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "cardboard_box_01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 60424,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "cardboard_box_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 54804,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "cardboard_box_01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 37450,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "planter_box_02_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 54893,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "planter_box_02_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 58624,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "planter_box_02_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 63191,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "water_manhole_cover_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 71538,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "water_manhole_cover_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 51177,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "water_manhole_cover_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 68648,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "painted_wooden_bench_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 50134,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "painted_wooden_bench_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 55718,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "painted_wooden_bench_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 50619,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "hand_truck_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 54073,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "hand_truck_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 62082,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "hand_truck_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 69203,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "rusted_wheel_rim_01_nor_gl_1k",
+      "mime": "image/ktx2",
+      "bytes": 63159,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "rusted_wheel_rim_01_diff_1k",
+      "mime": "image/ktx2",
+      "bytes": 51354,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "rusted_wheel_rim_01_arm_1k",
+      "mime": "image/ktx2",
+      "bytes": 51663,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "bark_brown_02_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 280903,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "bark_brown_02_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 231458,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "bark_brown_02_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 892520,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "aerial_grass_rock_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 243146,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "aerial_grass_rock_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 222862,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "aerial_grass_rock_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 835467,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "concrete_floor_01_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 198069,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "concrete_floor_01_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 199326,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "concrete_floor_01_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 835615,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "asphalt_02_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 219136,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "asphalt_02_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 227702,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "asphalt_02_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 797963,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "leafy_grass_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 281923,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "leafy_grass_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 214868,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "leafy_grass_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 933205,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "grey_roof_01_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 226585,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "grey_roof_01_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 216335,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "grey_roof_01_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 761763,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "white_planks_clean_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 89913,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "white_planks_clean_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 132972,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "white_planks_clean_flat_55",
+      "mime": "image/ktx2",
+      "bytes": 20403,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "painted_plaster_wall_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 176202,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "painted_plaster_wall_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 147400,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "painted_plaster_wall_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 684510,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "white_planks_clean_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 550726,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "wood_floor_deck_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 113779,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "wood_floor_deck_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 171466,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "wood_floor_deck_Diffuse_2k",
+      "mime": "image/ktx2",
+      "bytes": 793408,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "fabric_pattern_07_nor_gl_2k",
+      "mime": "image/ktx2",
+      "bytes": 224391,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "fabric_pattern_07_arm_2k",
+      "mime": "image/ktx2",
+      "bytes": 172091,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "fabric_pattern_07_col_1_2k",
+      "mime": "image/ktx2",
+      "bytes": 968847,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "TownPaintBase",
+      "mime": "image/ktx2",
+      "bytes": 13552,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "Vehicle_SchoolYellow_Enamel_Albedo",
+      "mime": "image/ktx2",
+      "bytes": 3663,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "Vehicle_SchoolYellow_Enamel_ORM",
+      "mime": "image/ktx2",
+      "bytes": 3126,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "Vehicle_RubberMicroNormal",
+      "mime": "image/ktx2",
+      "bytes": 1014,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "Vehicle_Champagne_Metallic_Albedo",
+      "mime": "image/ktx2",
+      "bytes": 2991,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "Vehicle_Champagne_Metallic_ORM",
+      "mime": "image/ktx2",
+      "bytes": 1668,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "Vehicle_SeaGreen_Metallic_Albedo",
+      "mime": "image/ktx2",
+      "bytes": 2483,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "Vehicle_SeaGreen_Metallic_ORM",
+      "mime": "image/ktx2",
+      "bytes": 2654,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "LM_arch",
+      "mime": "image/ktx2",
+      "bytes": 513452,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "LM_ground",
+      "mime": "image/ktx2",
+      "bytes": 278825,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "LM_foliage",
+      "mime": "image/ktx2",
+      "bytes": 83059,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "LM_props",
+      "mime": "image/ktx2",
+      "bytes": 147204,
+      "size": [
+        2048,
+        2048
+      ]
+    }
+  ],
+  "lightmapped": [
+    "V2_Leaves",
+    "Prop_aircon_exterior_aircon_unit_01",
+    "Prop_aircon_exterior_aircon_unit_02",
+    "Prop_barrel_wood_wooden_barrels_01_barrel01",
+    "Prop_barrel_steel_Barrel_02",
+    "Prop_crate_wooden_crate_02",
+    "Prop_tyre_old_tyre",
+    "Prop_utility_box_utility_box_01",
+    "Prop_generator_portable_generator",
+    "Prop_generator_portable_generator_glass",
+    "Prop_propane_propane_tank",
+    "Prop_trash_can_metal_trash_can",
+    "Prop_trashbag_trashbag",
+    "Prop_picnic_table_wooden_picnic_table_bottom",
+    "Prop_picnic_table_wooden_picnic_table_table",
+    "Prop_security_light_security_light",
+    "Prop_security_light_security_light_glass",
+    "Prop_hose_garden_hose_wall_mounted_01",
+    "Prop_ladder_ladder_sectioned_01",
+    "Prop_potted_plant_potted_plant_02_leaves",
+    "Prop_potted_plant_potted_plant_02_pot",
+    "Prop_street_lamp_street_lamp_01",
+    "Prop_street_lamp_street_lamp_01_glass",
+    "Prop_hydrant_fire_hydrant",
+    "Prop_compost_bags_compost_bags",
+    "Prop_plastic_crate_plastic_crate_03",
+    "Prop_trash_can_rust_metal_trash_can_rust.002",
+    "Prop_patio_set_outdoor_table_chair_set_01_chair",
+    "Prop_patio_set_outdoor_table_chair_set_01_table",
+    "Prop_cardboard_box_cardboard_box_01",
+    "Prop_planter_planter_box_02",
+    "Prop_manhole_water_manhole_cover",
+    "Prop_bench_painted_wooden_bench",
+    "Prop_hand_truck_hand_truck",
+    "Prop_wheel_rim_rusted_wheel_rim_01",
+    "V2_Concrete",
+    "V2_Asphalt",
+    "V2_Concrete__LM_ground",
+    "V2_Grass",
+    "V2_Metal",
+    "V2_Roof",
+    "V2_Siding",
+    "V2_Plaster",
+    "V2_Trim",
+    "V2_Fence",
+    "V2_FloorWood",
+    "V2_Bark",
+    "V2_Glass",
+    "V2_Fabric",
+    "V2_Markings",
+    "V2_Glass__LM_props",
+    "TownPaint",
+    "TownRubber",
+    "Vehicle_AmberLens",
+    "Vehicle_SchoolYellow_Enamel",
+    "Vehicle_BrushedAluminium",
+    "Vehicle_RoadDust",
+    "Vehicle_TintedAutomotiveGlass",
+    "Vehicle_HeadlampGlass",
+    "Vehicle_DeepRecess",
+    "Vehicle_RedLens",
+    "Vehicle_TireRubber",
+    "Vehicle_WheelSteel",
+    "Vehicle_BlackPolymer",
+    "Vehicle_Champagne_Metallic",
+    "Vehicle_SeaGreen_Metallic"
+  ]
+}

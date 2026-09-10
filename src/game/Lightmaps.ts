@@ -55,5 +55,7 @@ export function applyLightmapShading(material: THREE.MeshStandardMaterial, shado
     shader.uniforms.uSunShadowStrength = { value: shadowStrength };
     shader.fragmentShader = patchLightmapFragment(shader.fragmentShader);
   };
-  material.customProgramCacheKey = () => 'kannon-lightmap-v1';
+  // Combine with any earlier key so wind, sky and lightmap variants never share a program.
+  const previousKey = material.customProgramCacheKey;
+  material.customProgramCacheKey = () => `${previousKey.call(material)}|kannon-lightmap-v1`;
 }

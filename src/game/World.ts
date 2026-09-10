@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
+import { ktx2Loader } from './Ktx2';
 import { environmentAssetUrl, getArenaAssetBuffer, type TextureTier } from './assets';
 import { LightmapPlugin, applyLightmapShading } from './Lightmaps';
 import { createAtmosphere, SKY_LIGHT_INTENSITY } from './Atmosphere';
@@ -28,7 +28,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
   let reflection: THREE.WebGLRenderTarget | null = null;
   const reflectiveMaterials = new Set<THREE.MeshStandardMaterial>();
   // KTX2 textures stay GPU-compressed; the Basis transcoder is bundled from this origin.
-  const ktx2 = new KTX2Loader().detectSupport(renderer);
+  const ktx2 = ktx2Loader(renderer);
   const loader = () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2).register(parser => new LightmapPlugin(parser));
   const isHorizon = (object: THREE.Object3D) => {
     for (let current: THREE.Object3D | null = object; current; current = current.parent) if (/Horizon|Exterior/i.test(current.name)) return true;
@@ -70,16 +70,9 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
           value.anisotropy = Math.min(key === 'map' ? 4 : key === 'normalMap' ? 2 : 1, renderer.capabilities.getMaxAnisotropy()); textures.add(value);
         }
         if (!(material instanceof THREE.MeshStandardMaterial)) continue;
-        if (material.lightMap) {
-          // Baked sun and sky: no real-time sun, a little reflection, and no shadow casting.
-          applyLightmapShading(material);
-          material.envMapIntensity = 0.25;
-          object.castShadow = false;
-          continue;
-        }
-        if (/Vehicle_.*(?:Metallic|Enamel|Aluminium|Steel|Glass)|RefinedArchitecturalGlass/.test(material.name)) reflectiveMaterials.add(material);
+        if (/Vehicle_.*(?:Metallic|Enamel|Aluminium|Steel|Glass)|RefinedArchitecturalGlass|V2_Glass/.test(material.name)) reflectiveMaterials.add(material);
         material.envMapIntensity = /Petrol|Bronze/i.test(material.name) ? 1.05 : 0.75;
-        if (/Leaves|Flower/i.test(material.name)) {
+        if (/Leaves|Flower|GrassCard/i.test(material.name)) {
           material.side = THREE.DoubleSide;
           material.onBeforeCompile = shader => {
             shader.uniforms.uWindTime = windTime;
@@ -90,7 +83,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
           };
           material.customProgramCacheKey = () => 'sunbreak-foliage-v2';
         }
-        if (diffuseSky && /Ground|Limestone|Cliff|Bark|Leaves|Flower/i.test(material.name)) {
+        if (diffuseSky && !material.lightMap && /Ground|Limestone|Cliff|Bark|Leaves|Flower/i.test(material.name)) {
           const configureWind = material.onBeforeCompile;
           material.onBeforeCompile = (shader, activeRenderer) => {
             configureWind.call(material, shader, activeRenderer);
@@ -110,6 +103,12 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
                 }`);
           };
           material.customProgramCacheKey = () => /Leaves|Flower/i.test(material.name) ? 'sunbreak-leaf-diffuse-sky-v2' : 'sunbreak-stone-diffuse-sky-v2';
+        }
+        if (material.lightMap) {
+          // Baked sun and sky: no real-time sun, reflections only on glass and metal, no shadow casting.
+          applyLightmapShading(material);
+          material.envMapIntensity = /Glass|Metal|Vehicle_/i.test(material.name) ? 0.8 : 0.2;
+          object.castShadow = false;
         }
       }
     });
@@ -135,6 +134,6 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
       } finally { generator.dispose(); target.dispose(); }
     },
     update(time) { windTime.value = time; atmosphere.update(time); },
-    dispose() { disposed = true; for (const texture of textures) texture.dispose(); reflection?.dispose(); atmosphere.dispose(); ktx2.dispose(); },
+    dispose() { disposed = true; for (const texture of textures) texture.dispose(); reflection?.dispose(); atmosphere.dispose(); },
   };
 }

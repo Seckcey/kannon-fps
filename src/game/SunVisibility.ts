@@ -50,5 +50,7 @@ export function applySunVisibility(material: THREE.Material, uniform: { value: n
     shader.uniforms.uSunVisibility = uniform;
     shader.fragmentShader = patchSunVisibilityFragment(shader.fragmentShader);
   };
-  material.customProgramCacheKey = () => 'kannon-sun-visibility-v1';
+  // Combine with any earlier key so wind, sky and lightmap variants never share a program.
+  const previousKey = material.customProgramCacheKey;
+  material.customProgramCacheKey = () => `${previousKey.call(material)}|kannon-sun-visibility-v1`;
 }

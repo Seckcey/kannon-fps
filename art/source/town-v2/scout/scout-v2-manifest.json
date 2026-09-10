@@ -1,0 +1,40 @@
+{
+  "input": "public/models/scout.glb",
+  "out": "public/models/scout-v2.glb",
+  "bytes": 2143776,
+  "sha256": "3b282fde3843d7e0a7c14c708c16706ed833299bc35699d7fd9867f2107d15f9",
+  "replaced": [
+    "Scout_MicroNormal",
+    "Scout_Coating",
+    "Scout_MetalRoughness"
+  ],
+  "textures": [
+    {
+      "name": "Scout_MicroNormal",
+      "mime": "image/ktx2",
+      "bytes": 330821,
+      "size": [
+        2048,
+        1024
+      ]
+    },
+    {
+      "name": "Scout_Coating",
+      "mime": "image/ktx2",
+      "bytes": 199056,
+      "size": [
+        2048,
+        1024
+      ]
+    },
+    {
+      "name": "Scout_MetalRoughness",
+      "mime": "image/ktx2",
+      "bytes": 178459,
+      "size": [
+        2048,
+        1024
+      ]
+    }
+  ]
+}

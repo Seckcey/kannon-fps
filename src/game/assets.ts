@@ -1,8 +1,8 @@
 /** Versioned URLs keep a new art release from reusing the previous cached model. */
 export const ARENA_ASSETS = {
-  character: '/models/scout.glb?v=scout-grounded-v1',
-  environment: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
-  environmentPhone: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
+  character: '/models/scout-v2.glb?v=scout-v2',
+  environment: '/models/environment-v2.glb?v=kannon-town-v2',
+  environmentPhone: '/models/environment-v2-phone.glb?v=kannon-town-v2',
 } as const;
 export type TextureTier = 'phone' | 'full';
 /** Phones load a smaller-texture build of the same town. */
@@ -13,6 +13,8 @@ const knownUrls = new Set<string>(Object.values(ARENA_ASSETS));
 export const VEHICLE_TEST_ASSETS = {
   environment: '/models/environment-vehicle-test.glb', current: '/models/vehicles-current.glb', improved: '/models/vehicles-improved.glb',
   originalTown: '/models/environment.glb?v=kannon-town-v1',
+  refinedTown: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
+  townV2: '/models/environment-v2.glb', townV2Phone: '/models/environment-v2-phone.glb',
 } as const;
 for (const url of Object.values(VEHICLE_TEST_ASSETS)) knownUrls.add(url);
 const buffers = new Map<string, Promise<ArrayBuffer>>();
