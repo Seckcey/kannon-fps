@@ -1,5 +1,11 @@
 # Release verification
 
+## Share with friends — merged September 10, 2026, not yet deployed
+
+[PR #14](https://github.com/Seckcey/kannon-fps/pull/14) merged as `31827960539b952e3cc66eeb43e654f4e62b4a10` with [passing main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34433029618). The lobby invite panel gains **Share with friends**, which opens the phone's native share sheet with the invite poster, a short message carrying the room code, and the join link; browsers without native sharing copy the link, and a dismissed share sheet reads as cancelled. **Copy link** keeps the previous clipboard path. Open Graph and Twitter card tags on the page point at `/assets/invite-poster.jpg` (287,222 bytes, 887×1774 JPEG) so pasted invite links preview the poster. The generic poster replaces the personal "Ask Kannon" caption with "Tap the link to join." in Barlow Condensed; the full-size PNG, both earlier posters and their generation prompts are under `art/marketing/`. Server, rooms, join flow, gameplay and CSP are unchanged.
+
+Observed locally: 190 tests, asset checks, TypeScript and the production build passed; a loopback server returned the poster as `image/jpeg`, the page carried the tags, and Chromium rendered both buttons and completed the share flow. Unproven: the physical-phone share sheet, and messaging-app link previews against the public host. Coastline still runs `6fe25ce`; deploying this revision is a separate, user-authorized step per [deployment](DEPLOYMENT.md).
+
 ## Bots and Available Games — September 9, 2026
 
 **Play against bots** now leads directly to the existing three difficulty choices and a full solo match. **Create match** offers explicit Public/Private visibility and optional **Fill to 4 players with bots** for casual games. Human arrivals replace bots in the lobby, up to eight people. The host can start with one person plus AI rivals; existing bots let the last human keep playing after a friend leaves. Rematches preserve difficulty and refill the roster. Ranked crew matches stay private and human-only.
