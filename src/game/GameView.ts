@@ -10,6 +10,7 @@ import { createWorld, type ArenaWorld, type WorldArtwork } from './World';
 import { SUN_DIRECTION, SKY_LIGHT_INTENSITY } from './Atmosphere';
 import type { ArenaPresentation } from './Presentation';
 import { RenderQuality, scenePixelRatio } from './RenderQuality';
+import { buildSunVisibility, type SunVisibilityGrid } from './SunVisibility';
 import { CombatEffects } from './CombatEffects';
 import { DeferredRespawns } from './DeferredRespawns';
 import { MovementPrediction } from './MovementPrediction';
@@ -64,6 +65,8 @@ export class GameView {
   private renderedPreparationId = '';
   private readonly audio: GameAudio;
   private readonly sun: THREE.DirectionalLight;
+  /** Where the collision map shades the sun, so characters match the baked world. */
+  private readonly sunVisibility: SunVisibilityGrid = buildSunVisibility(raycastMap);
   private readonly players = new Map<string, RenderPlayer>();
   private readonly resizeObserver: ResizeObserver;
   private readonly labels = document.createElement('div');
@@ -433,6 +436,7 @@ export class GameView {
       const shadowFloor = supportHeight(rendered);
       entry.shadow.position.set(rendered.x, shadowFloor + 0.018, rendered.z);
       entry.shadow.scale.setScalar(Math.max(0.5, 1 - (rendered.y - shadowFloor) * 0.16));
+      entry.model.sunVisibility.value = this.sunVisibility.sample(rendered.x, rendered.z, rendered.y);
       if (local || state.health <= 0 || !state.connected) entry.label.style.display = 'none';
       else {
         const head = new THREE.Vector3(rendered.x, rendered.y + 2.2, rendered.z);
