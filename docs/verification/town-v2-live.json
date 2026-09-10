@@ -1,0 +1,36 @@
+{
+  "startedAt": "2026-09-10T07:19:33.673Z",
+  "url": "https://kpop.8westventures.com",
+  "status": "errors",
+  "errors": [
+    {
+      "message": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self' 'wasm-unsafe-eval'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+    }
+  ],
+  "warnings": [],
+  "models": [
+    {
+      "name": "/models/scout-v2.glb?v=scout-v2",
+      "transferSize": 2144076,
+      "encodedBodySize": 2143776,
+      "decodedBodySize": 2143776,
+      "durationMs": 351
+    },
+    {
+      "name": "/models/environment-v2.glb?v=kannon-town-v2",
+      "transferSize": 25469164,
+      "encodedBodySize": 25468864,
+      "decodedBodySize": 25468864,
+      "durationMs": 2053
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "game": "kannon-fps",
+    "version": "0.1.0",
+    "worldVersion": "kannon-town-v1",
+    "revision": "9b175c60c7f538be8713677aafdc620493acdf0f"
+  },
+  "readiness": [],
+  "finishedAt": "2026-09-10T07:19:43.388Z"
+}
