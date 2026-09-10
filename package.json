@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
     "start": "tsx server/index.ts",
-    "test": "tsx --test tests/server/*.test.ts tests/acceptance/*.test.ts tests/client/*.test.ts",
+    "test": "tsx --test tests/server/*.test.ts tests/acceptance/*.test.ts tests/client/*.test.ts tests/assets/*.test.ts",
     "test:assets": "node scripts/blender/validate_glb.mjs && node scripts/blender/validate_environment.mjs && npm run vehicle-test:assets && node scripts/blender/validate_town_graphics.mjs",
     "check": "npm run test && npm run test:assets && npm run build",
     "town-v2:map": "node --import tsx scripts/blender/export_map.ts > art/source/town-v2/map.json",
@@ -34,6 +34,10 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "^4.5.0",
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
     "@playwright/test": "^1.58.2",
     "@types/node": "^26.5.0",
     "@types/react": "^19.2.14",
@@ -42,6 +46,8 @@
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
+    "meshoptimizer": "^1.2.0",
+    "sharp": "^0.35.4",
     "typescript": "~5.9.3",
     "vite": "^8.2.2"
   }
