@@ -17,7 +17,7 @@ const ROOM_LIFETIME = 2 * 60 * 60 * 1000;
 const DISCONNECT_GRACE = 30_000;
 const PREPARATION_TIMEOUT = 45_000;
 const GAME_UPDATE_MESSAGE = 'A player is using an older game page. Everyone should refresh the page before starting.';
-const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.glb': 'model/gltf-binary', '.webmanifest': 'application/manifest+json' };
+const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm', '.webmanifest': 'application/manifest+json' };
 
 export function createGameServer(options: ServerOptions = {}) {
   const host = options.host ?? process.env.HOST ?? '127.0.0.1';
@@ -111,6 +111,10 @@ export function createGameServer(options: ServerOptions = {}) {
       if (!existsSync(file)) throw new HttpError(404, 'The game client has not been built yet. Run npm run build.');
       const realRoot = realpathSync(staticDir); const realFile = realpathSync(file);
       if (!realFile.startsWith(realRoot + sep)) throw new HttpError(403, 'Invalid path.');
+      // The texture transcoder worker is the one script allowed to build functions from source:
+      // the Emscripten bindings need it. A worker loaded from its own URL carries its own policy,
+      // so the page keeps the strict policy above. It can load nothing else and reach nowhere.
+      if (pathname === '/basis/ktx2-worker.js') res.setHeader('content-security-policy', "default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'");
       res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream', 'cache-control': file.includes(`${sep}assets${sep}`) ? 'public, max-age=31536000, immutable' : 'no-cache' });
       if (req.method === 'HEAD') res.end(); else { const stream = createReadStream(file); stream.on('error', () => res.destroy()); stream.pipe(res); }
     } catch (error) {
