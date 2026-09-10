@@ -12,6 +12,7 @@ test('static serving confines requests to the client directory and gives missing
   const directory = mkdtempSync(join(tmpdir(), 'kannon-static-')); const client = join(directory, 'dist'); mkdirSync(client);
   writeFileSync(join(client, 'index.html'), '<html>GAME SHELL</html>'); writeFileSync(join(directory, 'private.txt'), 'PRIVATE FILE');
   writeFileSync(join(client, '.env'), 'PRIVATE CONFIG'); mkdirSync(join(client, 'assets')); writeFileSync(join(client, 'assets', 'valid.js'), 'console.log("game")');
+  mkdirSync(join(client, 'basis')); writeFileSync(join(client, 'basis', 'ktx2-worker.js'), 'self.onmessage = () => {}'); writeFileSync(join(client, 'basis', 'basis_transcoder.wasm'), Buffer.from([0, 0x61, 0x73, 0x6d]));
   const app = createGameServer({ host: '127.0.0.1', port: 0, dbPath: ':memory:', staticDir: client }); const address = await app.listen(); const base = `http://127.0.0.1:${address.port}`;
   t.after(async () => { await app.close(); assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + '\\kannon-static-') || resolve(directory).startsWith(resolve(tmpdir()) + '/kannon-static-')); rmSync(directory, { recursive: true, force: true }); });
   assert.equal((await fetch(base + '/')).status, 200); assert.equal((await fetch(base + '/friends')).status, 200);
@@ -22,6 +23,12 @@ test('static serving confines requests to the client directory and gives missing
   const asset = await fetch(base + '/assets/valid.js'); assert.equal(asset.status, 200); assert.match(asset.headers.get('cache-control')!, /immutable/);
   const scriptPolicy = asset.headers.get('content-security-policy')!.split(';').find(d => d.trim().startsWith('script-src'))!.trim();
   assert.equal(scriptPolicy, "script-src 'self' 'wasm-unsafe-eval'", 'Bundled art decoder works without allowing JavaScript eval or external scripts');
+  // Only the texture transcoder worker may construct functions from source, and only when served from this origin.
+  const worker = await fetch(base + '/basis/ktx2-worker.js'); assert.equal(worker.status, 200);
+  assert.equal(worker.headers.get('content-security-policy'), "default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'");
+  assert.match(worker.headers.get('content-type')!, /javascript/);
+  const wasm = await fetch(base + '/basis/basis_transcoder.wasm'); assert.equal(wasm.status, 200); assert.equal(wasm.headers.get('content-type'), 'application/wasm');
+  assert.equal(wasm.headers.get('content-security-policy')!.split(';').find(d => d.trim().startsWith('script-src'))!.trim(), "script-src 'self' 'wasm-unsafe-eval'", 'Every other file keeps the page policy');
   const oversized = await fetch(base + '/api/profile', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'x'.repeat(9000) }) }); assert.equal(oversized.status, 413);
 });
 
