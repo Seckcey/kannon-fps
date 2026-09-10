@@ -4,7 +4,7 @@
 
 [Kannon Town v2](TOWN_V2.md) re-surfaces the town with CC0 Poly Haven texture sets, dresses it with decimated CC0 props inside the existing cover, bakes sun, sky, bounce and interior fill into lightmaps carried by the project `KANNON_lightmap` glTF extension, compresses every texture to KTX2, re-skins the scout at 2048 × 1024, and adds a desktop presentation stack (contact shading, thresholded bloom, colour grade, SMAA). A render-tier table selects the phone build with half-size textures, no grass cards and a 1024 player-following shadow on touch devices. Collision, spawns, weapons, rules, networking and storage are unchanged; the map version stays `kannon-town-v1` because the shared map did not change.
 
-DEPLOYSTATUS
+Source branch `visual/town-v2-design` through [PR #16](https://github.com/Seckcey/kannon-fps/pull/16); [candidate CI](https://github.com/Seckcey/kannon-fps/actions/runs/34447553940) passed the 202 tests, asset validation (both towns, both scouts, Kannon Town v2 full and phone builds), TypeScript, the production build, the unprivileged deployment image and the production HTTP/WebSocket smoke checks. Local evidence: matched Before/After captures and repeated 20-second GPU samples on the installed Edge with the AMD integrated GPU ([report](verification/town-v2-performance.json), [captures](verification/town-v2-captures.json)); a local bot match on the built development client rendered the new town and scout with no application errors (desktop mouse capture in the automated browser remains the known refusal). Not proven: physical iPhone rendering and feel, and two-household play. The merge commit and Coastline cutover are recorded once they happen.
 
 ## Share with friends — merged September 10, 2026, not yet deployed
 
