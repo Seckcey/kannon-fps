@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24.0.0" },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "graphics-test": "node scripts/vehicle-test/serve.mjs --town",
     "vehicle-test": "node scripts/vehicle-test/serve.mjs",
@@ -17,7 +19,10 @@
     "start": "tsx server/index.ts",
     "test": "tsx --test tests/server/*.test.ts tests/acceptance/*.test.ts tests/client/*.test.ts",
     "test:assets": "node scripts/blender/validate_glb.mjs && node scripts/blender/validate_environment.mjs && npm run vehicle-test:assets && node scripts/blender/validate_town_graphics.mjs",
-    "check": "npm run test && npm run test:assets && npm run build"
+    "check": "npm run test && npm run test:assets && npm run build",
+    "town-v2:map": "node --import tsx scripts/blender/export_map.ts > art/source/town-v2/map.json",
+    "town-v2:guides": "node scripts/blender/run_blender.mjs --python scripts/blender/import_collision_layout.py -- --map art/source/town-v2/map.json --save art/source/kannon-town-v2.blend",
+    "town-v2:guides:check": "node scripts/blender/run_blender.mjs --python scripts/blender/import_collision_layout.py -- --map art/source/town-v2/map.json --check"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.2.8",
