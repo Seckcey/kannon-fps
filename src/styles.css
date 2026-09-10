@@ -214,6 +214,7 @@
   .lobby-copy > p { color: var(--mint); font-size: 21px; max-width: 520px; }
   .invite-panel { margin-top: 28px; padding: 22px 25px; border: 1px solid var(--line); background: #061521e8; max-width: 540px; }
   .room-code { display: block; font: 600 clamp(23px, 2.7vw, 39px) var(--display); letter-spacing: 2px; margin: 12px 0 20px; overflow-wrap: anywhere; user-select: all; }
+  .invite-actions { display: flex; flex-wrap: wrap; gap: 10px; }
   .invite-panel .button { min-height: 48px; font-size: 22px; }
   .invite-panel p { color: var(--muted); font-size: 13px; margin-top: 14px; }
   .match-summary { display: grid; gap: 14px; margin: 28px 0; max-width: 530px; }

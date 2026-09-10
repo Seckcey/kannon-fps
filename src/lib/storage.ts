@@ -43,3 +43,28 @@ export function extractInvite(value: string, type: 'room' | 'crew' = 'room') {
   const trimmed = value.trim();
   try { const url = new URL(trimmed); return new URLSearchParams(url.hash.slice(1)).get(type) || trimmed; } catch { return trimmed; }
 }
+
+export const INVITE_POSTER = '/assets/invite-poster.jpg';
+export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | false;
+export interface ShareTarget { canShare?: (data: ShareData) => boolean; share?: (data: ShareData) => Promise<void> }
+export function invitationMessage(code: string): string {
+  return `Join my Kannon Arena match. Room code ${code}. ${invitation(code)}`;
+}
+/** Native share sheet with the invite poster, message and link; falls back to copying the invitation link. */
+export async function shareInvitation(code: string, target: ShareTarget = navigator, loadPoster: () => Promise<File | null> = fetchInvitePoster): Promise<ShareOutcome> {
+  const data: ShareData = { title: 'Kannon Arena', text: invitationMessage(code), url: invitation(code) };
+  if (typeof target.share === 'function') {
+    const poster = await loadPoster();
+    const withPoster: ShareData = poster ? { ...data, files: [poster] } : data;
+    const payload = poster && target.canShare?.(withPoster) ? withPoster : data;
+    try { await target.share(payload); return 'shared'; } catch (error) { if ((error as { name?: string })?.name === 'AbortError') return 'cancelled'; }
+  }
+  return await copyText(data.url!) ? 'copied' : false;
+}
+async function fetchInvitePoster(): Promise<File | null> {
+  try {
+    const response = await fetch(INVITE_POSTER);
+    if (!response.ok) return null;
+    return new File([await response.blob()], 'kannon-arena-invite.jpg', { type: 'image/jpeg' });
+  } catch { return null; }
+}
