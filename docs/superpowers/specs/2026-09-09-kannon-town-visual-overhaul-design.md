@@ -46,7 +46,7 @@ surfaces because they are toned and simplified in Blender before use.
 | Foliage (grass cards, hedges, shrubs, two or three tree types) | Purchased | Cards must work with alpha cutout, not blending |
 | Decals (cracks, dirt, leaks, road markings, oil stains) | Purchased or CC0 | Applied as thin geometry in Blender, not runtime projectors |
 | Surface textures (asphalt, concrete, siding, brick, roof shingle, grass, soil) | Poly Haven CC0 | Downscaled and toned to the stylised palette |
-| Sky HDRI, daytime with soft clouds | Poly Haven CC0 | Drives sky, reflections and the bake's sky light |
+| Sky | Blender's built-in Nishita sky matched to the runtime sun direction | Drives the bake's sky light; the runtime keeps its existing baked procedural sky. A Poly Haven HDRI is an optional later swap |
 | Bus, sedan and truck surfaces | Existing project geometry, new purchased or Poly Haven textures and decals | Existing vehicle geometry is kept |
 
 Budget expectation: a few hundred dollars total. Marketplace candidates are Fab, the Unity
@@ -94,18 +94,19 @@ The scene is built on top of the existing collision layout:
 Every static environment object gets a second UV set (`TEXCOORD_1`) unwrapped for lightmaps
 using Blender's lightmap pack, grouped into a small number of lightmap atlases (target four
 2048 atlases, phone build downscaled to 1024). Blender Cycles bakes combined diffuse
-lighting (sun plus HDRI sky plus bounce) to those atlases. Direct sunlight is included in the
+lighting (sun plus Nishita sky plus bounce) to those atlases. Direct sunlight is included in the
 bake, so the environment needs no real-time shadow map on phones.
 
-A second, tiny bake produces a **sun-visibility probe**: a 256×256 top-down texture over the
-play area at chest height storing how much direct sun reaches that point. The runtime samples
-it per character to scale the real-time sun on that character, so a player standing in baked
-shade is not lit as if in the open. This is cheap and keeps characters consistent with the
-baked world. Stairs and the upper floors are handled with a second layer at upper-floor
-height, selected by the character's support height.
+A **sun-visibility probe** keeps characters consistent with the baked world: a player standing
+in baked shade must not be lit as if in the open. The probe is not baked in Blender. The
+browser computes it once when the world loads by casting rays from a 64×64 grid over the play
+area, at chest height on two layers (ground level and upper floor), toward the sun using the
+existing `raycastMap` in `shared/physics.ts`. The runtime samples it per character to scale
+the real-time sun on that character. Collision boxes approximate the same buildings the bake
+sees, so the two agree closely, and there is no extra download.
 
-`scripts/blender/bake_town_v2.py` runs the unwrap, the bake and the probe render headlessly
-and is the reproducible source of the lightmaps.
+`scripts/blender/bake_town_v2.py` runs the unwrap and the bake headlessly and is the
+reproducible source of the lightmaps.
 
 ### Export and compression
 
