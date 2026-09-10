@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
-import { ARENA_ASSETS, getArenaAssetBuffer } from './assets';
+import { environmentAssetUrl, getArenaAssetBuffer, type TextureTier } from './assets';
 import { LightmapPlugin, applyLightmapShading } from './Lightmaps';
 import { createAtmosphere, SKY_LIGHT_INTENSITY } from './Atmosphere';
 
@@ -19,7 +19,7 @@ export interface ArenaWorld {
 export interface WorldArtwork { environmentUrl: string; environmentVisible?: boolean; vehicles?: Array<{ name: string; url: string; visible: boolean }> }
 
 /** Original Blender architecture shares coordinates with the authoritative map. */
-export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, onError: (message: string) => void, artwork?: WorldArtwork): ArenaWorld {
+export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureTier, onReady: () => void, onError: (message: string) => void, artwork?: WorldArtwork): ArenaWorld {
   const root = new THREE.Group();
   const atmosphere = createAtmosphere(renderer); root.add(atmosphere.root);
   const textures = new Set<THREE.Texture>();
@@ -35,7 +35,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
     return false;
   };
   const load = async () => {
-    if (!artwork) return loader().parseAsync(await getArenaAssetBuffer(ARENA_ASSETS.environment), '/models/');
+    if (!artwork) return loader().parseAsync(await getArenaAssetBuffer(environmentAssetUrl(textureTier)), '/models/');
     const assets = [{ name: 'VehicleTestTown', url: artwork.environmentUrl, visible: artwork.environmentVisible ?? true }, ...(artwork.vehicles ?? [])];
     const loaded = await Promise.all(assets.map(async asset => {
       const gltf = await loader().parseAsync(await getArenaAssetBuffer(asset.url), '/models/');

@@ -4,6 +4,8 @@ export interface PlayerSession { token: string; profile: Profile }
 export interface Settings { sensitivity: number; volume: number; quality: 'auto' | 'high' | 'low'; invertY: boolean; firingMode: 'simple' | 'advanced'; gyroscope: boolean; gyroSensitivity: number }
 const PLAYER_KEY = 'kannon.player.v1';
 const SETTINGS_KEY = 'kannon.settings.v1';
+/** Coarse pointer or touch points: the device plays with on-screen controls. */
+export const isTouchDevice = () => typeof matchMedia === 'function' && (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0);
 export const defaultSettings: Settings = { sensitivity: 1, volume: 0.45, quality: 'auto', invertY: false, firingMode: 'simple', gyroscope: false, gyroSensitivity: 1 };
 
 export function readPlayer(): PlayerSession | null {

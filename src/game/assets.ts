@@ -2,7 +2,11 @@
 export const ARENA_ASSETS = {
   character: '/models/scout.glb?v=scout-grounded-v1',
   environment: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
+  environmentPhone: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
 } as const;
+export type TextureTier = 'phone' | 'full';
+/** Phones load a smaller-texture build of the same town. */
+export const environmentAssetUrl = (tier: TextureTier) => tier === 'phone' ? ARENA_ASSETS.environmentPhone : ARENA_ASSETS.environment;
 
 const knownUrls = new Set<string>(Object.values(ARENA_ASSETS));
 // Explicit local experiment assets share the same validated, retryable buffers.
@@ -59,9 +63,9 @@ export function getArenaAssetBuffer(url: string): Promise<ArrayBuffer> {
 }
 
 /** Warm the same retained buffers that the GLTF parsers will consume. */
-export function warmArenaAssets(): Promise<void> {
+export function warmArenaAssets(tier: TextureTier = 'full'): Promise<void> {
   if (import.meta.env?.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('graphics') === 'current') {
     return Promise.all([ARENA_ASSETS.character, VEHICLE_TEST_ASSETS.originalTown].map(getArenaAssetBuffer)).then(() => {});
   }
-  return Promise.all(Object.values(ARENA_ASSETS).map(getArenaAssetBuffer)).then(() => {});
+  return Promise.all([ARENA_ASSETS.character, environmentAssetUrl(tier)].map(getArenaAssetBuffer)).then(() => {});
 }

@@ -10,10 +10,11 @@ import { AvailableGames } from './components/AvailableGames';
 import { CreateMatchDialog } from './components/CreateMatchDialog';
 import { Help } from './components/Help';
 import { warmArenaAssets } from './game/assets';
+import { renderTier } from './game/RenderTiers';
 import { PRACTICE_LEVELS } from './lib/practice';
 import { api } from './lib/api';
 import { ArenaConnection, type ConnectionState } from './lib/connection';
-import { extractInvite, readPlayer, readSettings, savePlayer, saveSettings, type PlayerSession, type Settings } from './lib/storage';
+import { extractInvite, isTouchDevice, readPlayer, readSettings, savePlayer, saveSettings, type PlayerSession, type Settings } from './lib/storage';
 
 const GameScreen = lazy(() => import('./components/GameScreen'));
 const noConnection: ConnectionState = { status: 'idle', playerId: '', room: null, snapshot: null, events: [], error: '', latency: 0 };
@@ -112,7 +113,7 @@ export function App() {
     setPreparingArt(true);
     let session: PlayerSession;
     try {
-      [session] = await Promise.all([ensurePlayer(), warmArenaAssets(), import('./components/GameScreen')]);
+      [session] = await Promise.all([ensurePlayer(), warmArenaAssets(renderTier(settings.quality, isTouchDevice(), true).textureTier), import('./components/GameScreen')]);
     } finally { if (generation === entryGeneration.current) setPreparingArt(false); }
     if (generation !== entryGeneration.current || playerRef.current?.token !== session.token) throw new Error('Your player changed while the arena was loading. Please start again.');
     let current = connectionRef.current;
