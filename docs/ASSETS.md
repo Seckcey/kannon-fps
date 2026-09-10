@@ -1,5 +1,12 @@
 # Assets
 
+## Third-party assets
+
+Third-party assets are permitted from the visual overhaul onward. Every purchased or CC0 item is
+recorded in [art/PURCHASED_ASSETS.md](../art/PURCHASED_ASSETS.md) with its licence, source and
+local archive location before use. Earlier releases used only original project artwork; their
+sections below still describe that work.
+
 ## Blender source and runtime
 
 - `art/source/scout.blend`: editable Blender 5.2 source.
