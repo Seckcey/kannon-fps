@@ -151,6 +151,8 @@ function Review() {
         resources: performance.getEntriesByType('resource').filter(e => e.name.includes('/models/')).map(e => { const r = e as PerformanceResourceTiming; return { name: new URL(r.name).pathname, transferSize: r.transferSize, encodedBodySize: r.encodedBodySize, decodedBodySize: r.decodedBodySize, durationMs: r.duration }; }),
       };
     };
+    // Development-only handle for probing draw composition from the browser console.
+    (window as unknown as { kannonScene?: () => THREE.Scene | undefined }).kannonScene = () => scene;
     const testApi: TestApi = { ready: false, selectView, info,
       setVariant(v) { requireIdle(); if (original && v !== 'current') throw new Error('Original scene has no candidate'); activeVariant = v; setVariant(v); },
       setQuality(q) { requireIdle(); activeQuality = q; setQuality(q); view.setSettings({ quality: q }); },

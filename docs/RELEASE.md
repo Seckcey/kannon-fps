@@ -1,5 +1,11 @@
 # Release verification
 
+## Kannon Town v2 — September 10, 2026
+
+[Kannon Town v2](TOWN_V2.md) re-surfaces the town with CC0 Poly Haven texture sets, dresses it with decimated CC0 props inside the existing cover, bakes sun, sky, bounce and interior fill into lightmaps carried by the project `KANNON_lightmap` glTF extension, compresses every texture to KTX2, re-skins the scout at 2048 × 1024, and adds a desktop presentation stack (contact shading, thresholded bloom, colour grade, SMAA). A render-tier table selects the phone build with half-size textures, no grass cards and a 1024 player-following shadow on touch devices. Collision, spawns, weapons, rules, networking and storage are unchanged; the map version stays `kannon-town-v1` because the shared map did not change.
+
+DEPLOYSTATUS
+
 ## Share with friends — merged September 10, 2026, not yet deployed
 
 [PR #14](https://github.com/Seckcey/kannon-fps/pull/14) merged as `31827960539b952e3cc66eeb43e654f4e62b4a10` with [passing main CI](https://github.com/Seckcey/kannon-fps/actions/runs/34433029618). The lobby invite panel gains **Share with friends**, which opens the phone's native share sheet with the invite poster, a short message carrying the room code, and the join link; browsers without native sharing copy the link, and a dismissed share sheet reads as cancelled. **Copy link** keeps the previous clipboard path. Open Graph and Twitter card tags on the page point at `/assets/invite-poster.jpg` (287,222 bytes, 887×1774 JPEG) so pasted invite links preview the poster. The generic poster replaces the personal "Ask Kannon" caption with "Tap the link to join." in Barlow Condensed; the full-size PNG, both earlier posters and their generation prompts are under `art/marketing/`. Server, rooms, join flow, gameplay and CSP are unchanged.

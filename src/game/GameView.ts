@@ -180,7 +180,7 @@ export class GameView {
       // rendering remains usable while this optional effect becomes ready.
       void import('./Presentation').then(({ ArenaPresentation: Presentation }) => {
         if (this.disposed || request !== this.presentationRequest) return;
-        this.presentation = new Presentation(this.renderer, this.scene, this.camera);
+        this.presentation = new Presentation(this.renderer, this.scene, this.camera, { bloom: this.tier.bloom });
         this.presentation.resize(this.width, this.height);
       }).catch(() => { /* A failed optional enhancement leaves direct rendering available. */ });
     } else { this.presentation?.dispose(); this.presentation = null; }
@@ -188,6 +188,7 @@ export class GameView {
       this.sun.shadow.map?.dispose(); this.sun.shadow.map = null;
       this.sun.shadow.mapSize.set(this.tier.shadowMapSize, this.tier.shadowMapSize); this.sun.shadow.needsUpdate = true;
     }
+    this.world.setGrassDensity(this.tier.grassDensity);
     const extent = this.tier.shadowHalfExtent;
     this.sun.shadow.camera.left = -extent; this.sun.shadow.camera.right = extent;
     this.sun.shadow.camera.top = extent; this.sun.shadow.camera.bottom = -extent;
@@ -198,7 +199,25 @@ export class GameView {
 
   /** Read-only evidence for the isolated comparison harness. */
   graphicsTestState() {
-    return { postprocessing: !!this.presentation?.enabled, shadowSize: this.sun.shadow.mapSize.toArray(), qualityScale: this.renderQuality.scale, tier: this.tier.name };
+    let meshes = 0, casting = 0, lightmapped = 0;
+    this.scene.traverse(object => {
+      if (!(object instanceof THREE.Mesh) || !object.visible) return;
+      meshes++;
+      if (object.castShadow) casting++;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      if (materials.some(material => (material as THREE.MeshStandardMaterial).lightMap)) lightmapped++;
+    });
+    const roots: Record<string, { visible: boolean; meshes: number; triangles: number; casting: number }> = {};
+    this.world.root.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return;
+      let named: THREE.Object3D | null = object, effective = true;
+      for (let current: THREE.Object3D | null = object; current; current = current.parent) { if (!current.visible) effective = false; if (current.name && current.parent && !current.parent.name) named = current; }
+      const key = named?.name || 'unnamed';
+      const entry = roots[key] ??= { visible: effective, meshes: 0, triangles: 0, casting: 0 };
+      entry.meshes++; entry.casting += object.castShadow ? 1 : 0;
+      const index = object.geometry.index; entry.triangles += (index ? index.count : object.geometry.attributes.position?.count ?? 0) / 3;
+    });
+    return { postprocessing: !!this.presentation?.enabled, shadowSize: this.sun.shadow.mapSize.toArray(), qualityScale: this.renderQuality.scale, tier: this.tier.name, meshes, casting, lightmapped, roots };
   }
 
   /** Called once for each input actually sent to the server, at 30 Hz. */

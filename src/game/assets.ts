@@ -50,7 +50,9 @@ export function getArenaAssetBuffer(url: string): Promise<ArrayBuffer> {
   const controller = new AbortController();
   const deadline = setTimeout(() => controller.abort(), 60_000);
   const pending = (async () => {
-    const response = await fetch(url, { cache: retries.has(url) ? 'reload' : 'force-cache', signal: controller.signal });
+    // Production URLs carry a version, so the cache is authoritative; development revalidates
+    // so a freshly exported model is never hidden behind yesterday's copy.
+    const response = await fetch(url, { cache: retries.has(url) ? 'reload' : import.meta.env?.DEV ? 'no-cache' : 'force-cache', signal: controller.signal });
     if (!response.ok) { await response.body?.cancel(); throw new Error('The arena artwork could not load. Please try again.'); }
     const buffer = await response.arrayBuffer(); validateGlb(buffer);
     retries.delete(url); return buffer;

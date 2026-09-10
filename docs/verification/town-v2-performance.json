@@ -1,0 +1,3181 @@
+{
+  "startedAt": "2026-09-10T06:49:52.603Z",
+  "status": "passed",
+  "url": "http://127.0.0.1:5184/graphics-test.html",
+  "purpose": "Kannon Town v2 (lightmapped, KTX2) versus the shipped refined town at identical camera, canvas and quality settings.",
+  "protocol": {
+    "sampleMs": 20000,
+    "warmupMs": 7000,
+    "view": "bus-gameplay",
+    "order": "refined, v2, refined per page",
+    "desktop": "1280x720 CSS, DPR 1, High fixed, desktop presentation stack",
+    "phone": "852x393 CSS, DPR 1, hasTouch/isMobile, Auto fixed = phone tier with environment-v2-phone.glb"
+  },
+  "limits": [
+    "Desktop browser touch emulation, not physical iPhone performance.",
+    "GPU timer values vary with driver scheduling and clocks; repeat brackets are retained, not averaged away.",
+    "Both towns are resident in the comparison page, so memory figures are not production memory."
+  ],
+  "pages": [
+    {
+      "label": "desktop-high",
+      "url": "http://127.0.0.1:5184/graphics-test.html?graphics=v2&quality=high",
+      "initial": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            3.5,
+            3.8,
+            19.5
+          ],
+          "quaternion": [
+            -0.032052660133614595,
+            0.1983257626218587,
+            0.0064893123491856905,
+            0.9795904285384028
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 96,
+        "triangles": 357707,
+        "memory": {
+          "geometries": 119,
+          "textures": 169
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 14
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ]
+      },
+      "models": [
+        {
+          "path": "/models/environment-v2.glb",
+          "contentLength": 25468864
+        },
+        {
+          "path": "/models/environment-refined.glb",
+          "contentLength": 7884316
+        },
+        {
+          "path": "/models/scout-v2.glb",
+          "contentLength": 2143776
+        }
+      ]
+    },
+    {
+      "label": "phone-emulated-auto",
+      "url": "http://127.0.0.1:5184/graphics-test.html?graphics=v2&quality=auto&tier=phone",
+      "initial": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            3.5,
+            3.8,
+            19.5
+          ],
+          "quaternion": [
+            -0.032052660133614595,
+            0.1983257626218587,
+            0.0064893123491856905,
+            0.9795904285384028
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 72,
+        "triangles": 343773,
+        "memory": {
+          "geometries": 117,
+          "textures": 145
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 9
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ]
+      },
+      "models": [
+        {
+          "path": "/models/environment-refined.glb",
+          "contentLength": 7884316
+        },
+        {
+          "path": "/models/environment-v2-phone.glb",
+          "contentLength": 12399132
+        },
+        {
+          "path": "/models/scout-v2.glb",
+          "contentLength": 2143776
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "label": "desktop-high-refined-1",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 98,
+        "triangles": 295980,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 210
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 98,
+        "triangles": 295980,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 818
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ],
+        "elapsedMs": 20122.10000000149,
+        "sampleFrames": 498,
+        "fps": 24.833074863243557,
+        "frameMs": {
+          "p50": 33.5,
+          "p95": 66.69999999999709,
+          "p99": 66.79999999999927,
+          "over33Percent": 72.28915662650603
+        },
+        "cpuSubmitMs": {
+          "p50": 0.7000000029802322,
+          "p95": 1.1000000014901161
+        },
+        "gpuMs": {
+          "samples": 492,
+          "disjointEvents": 0,
+          "p50": 27.88672,
+          "p95": 40.81595
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 98,
+        "triangles": 295980,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 819
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "desktop-high-v2-2",
+      "before": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 112,
+        "triangles": 395656,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1031
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 112,
+        "triangles": 395656,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1639
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ],
+        "elapsedMs": 20109.79999999702,
+        "sampleFrames": 455,
+        "fps": 22.726818644982117,
+        "frameMs": {
+          "p50": 50,
+          "p95": 66.79999999999563,
+          "p99": 66.90000000000146,
+          "over33Percent": 79.78021978021978
+        },
+        "cpuSubmitMs": {
+          "p50": 1.1000000014901161,
+          "p95": 1.7999999970197678
+        },
+        "gpuMs": {
+          "samples": 449,
+          "disjointEvents": 0,
+          "p50": 30.23809,
+          "p95": 44.6251
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 112,
+        "triangles": 395656,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1640
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "desktop-high-refined-3",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 98,
+        "triangles": 295980,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1854
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 98,
+        "triangles": 295980,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 2461
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ],
+        "elapsedMs": 20124.20000000298,
+        "sampleFrames": 438,
+        "fps": 21.895839790439823,
+        "frameMs": {
+          "p50": 50,
+          "p95": 66.80000000000291,
+          "p99": 100.10000000000582,
+          "over33Percent": 78.76712328767124
+        },
+        "cpuSubmitMs": {
+          "p50": 0.8999999985098839,
+          "p95": 1.3000000044703484
+        },
+        "gpuMs": {
+          "samples": 432,
+          "disjointEvents": 0,
+          "p50": 31.87627,
+          "p95": 58.02734
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 118,
+        "casting": 43,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 98,
+        "triangles": 295980,
+        "memory": {
+          "geometries": 159,
+          "textures": 212
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 2462
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 126.5
+          },
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 640.8999999985099
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 97.20000000298023
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-refined-1",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 290070,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 201
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 290070,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 807
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ],
+        "elapsedMs": 20003.19999999553,
+        "sampleFrames": 1199,
+        "fps": 59.93861166378388,
+        "frameMs": {
+          "p50": 16.700000000000728,
+          "p95": 16.799999999999272,
+          "p99": 16.80000000000291,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 0.6000000014901161,
+          "p95": 1
+        },
+        "gpuMs": {
+          "samples": 1197,
+          "disjointEvents": 0,
+          "p50": 4.07392,
+          "p95": 20.3544
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 290070,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 807
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-v2-2",
+      "before": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 89,
+        "triangles": 384722,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1020
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 89,
+        "triangles": 384722,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1626
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ],
+        "elapsedMs": 20015,
+        "sampleFrames": 1091,
+        "fps": 54.494415695990085,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 33.400000000001455,
+          "p99": 50,
+          "over33Percent": 5.866177818515124
+        },
+        "cpuSubmitMs": {
+          "p50": 0.8000000044703484,
+          "p95": 1.2000000029802322
+        },
+        "gpuMs": {
+          "samples": 1087,
+          "disjointEvents": 0,
+          "p50": 5.8904,
+          "p95": 32.80875
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 89,
+        "triangles": 384722,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1626
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-refined-3",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 290070,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 1839
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 290070,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 2445
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ],
+        "elapsedMs": 20005.10000000149,
+        "sampleFrames": 1199,
+        "fps": 59.93891130140925,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.80000000000291,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 0.6000000014901161,
+          "p95": 0.9000000059604645
+        },
+        "gpuMs": {
+          "samples": 1198,
+          "disjointEvents": 0,
+          "p50": 4.0812,
+          "p95": 19.17164
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 117,
+        "casting": 42,
+        "lightmapped": 69,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 33,
+            "triangles": 155724,
+            "casting": 28
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 4
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -9.191185570413975,
+            1.8212425783569302,
+            -15.058574820364477
+          ],
+          "quaternion": [
+            0.003041530718859936,
+            0.9698680874150403,
+            0.012123982556690584,
+            -0.2433097843321207
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 290070,
+        "memory": {
+          "geometries": 157,
+          "textures": 188
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7,
+          "y": 0,
+          "z": -13,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "shield": 50,
+          "slot": 1,
+          "ammoAR": 30,
+          "ammoShotgun": 6,
+          "heals": 2,
+          "kills": 0,
+          "deaths": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "healingUntil": 0,
+          "reloadingUntil": 0,
+          "lastInputSeq": 2445
+        },
+        "resources": [
+          {
+            "name": "/models/environment-refined.glb",
+            "transferSize": 7884616,
+            "encodedBodySize": 7884316,
+            "decodedBodySize": 7884316,
+            "durationMs": 59
+          },
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 97.79999999701977
+          },
+          {
+            "name": "/models/scout-v2.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 27.200000002980232
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "browserVersion": "152.0.4191.66",
+  "finishedAt": "2026-09-10T06:52:40.950Z"
+}

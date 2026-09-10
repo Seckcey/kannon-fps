@@ -10,6 +10,14 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-09-kannon-town-visual-overhaul-design.md`
 
+**Status (2026-09-10):** executed and extended in one pass at Frank's request ("do everything
+and push to the live server"). Tasks 1 to 6 landed as written. Task 7's purchased kit was
+replaced by CC0 Poly Haven textures and props because purchases need Frank's card; the style
+test became the full town build, and stages 3 to 6 of the spec (full town, scout re-skin,
+desktop presentation, release) were completed in the same branch. Results, captures and
+measurements are in `docs/TOWN_V2.md`; the runtime and pipeline are described in
+`docs/ARCHITECTURE.md`.
+
 Stages 3 to 6 of the spec (full town build, scout re-skin, desktop presentation stack, release) get their own plans after Frank approves the style test at the end of this plan.
 
 ## Global Constraints

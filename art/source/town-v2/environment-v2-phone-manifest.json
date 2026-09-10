@@ -1,8 +1,8 @@
 {
   "input": "art/source/town-v2/town-v2-raw.glb",
   "tier": "phone",
-  "bytes": 12417444,
-  "sha256": "45ca5784791575dc89e7f956a776b179b2a505f6a0d68b026070d96facc53494",
+  "bytes": 12399132,
+  "sha256": "7614ac6626de831cbba2cd6af58952c42d2ec59426026948c53445df2f42c263",
   "triangles": 367921,
   "materials": 70,
   "textures": [
@@ -199,15 +199,6 @@
       "name": "utility_box_01_arm_1k",
       "mime": "image/ktx2",
       "bytes": 18053,
-      "size": [
-        256,
-        256
-      ]
-    },
-    {
-      "name": "portable_generator_spec_1k",
-      "mime": "image/ktx2",
-      "bytes": 1892,
       "size": [
         256,
         256
@@ -586,15 +577,6 @@
       "name": "fire_hydrant_arm_1k",
       "mime": "image/ktx2",
       "bytes": 19481,
-      "size": [
-        256,
-        256
-      ]
-    },
-    {
-      "name": "compost_bags_sss_1k",
-      "mime": "image/ktx2",
-      "bytes": 13616,
       "size": [
         256,
         256
@@ -1078,9 +1060,9 @@
       ]
     },
     {
-      "name": "white_planks_clean_flat_55",
+      "name": "white_planks_clean_flat_70",
       "mime": "image/ktx2",
-      "bytes": 4527,
+      "bytes": 4298,
       "size": [
         256,
         256
@@ -1251,7 +1233,7 @@
     {
       "name": "LM_arch",
       "mime": "image/ktx2",
-      "bytes": 165158,
+      "bytes": 164640,
       "size": [
         1024,
         1024
@@ -1260,7 +1242,7 @@
     {
       "name": "LM_ground",
       "mime": "image/ktx2",
-      "bytes": 102266,
+      "bytes": 101876,
       "size": [
         1024,
         1024
@@ -1269,7 +1251,7 @@
     {
       "name": "LM_foliage",
       "mime": "image/ktx2",
-      "bytes": 83059,
+      "bytes": 82950,
       "size": [
         512,
         512
@@ -1278,7 +1260,7 @@
     {
       "name": "LM_props",
       "mime": "image/ktx2",
-      "bytes": 69336,
+      "bytes": 69347,
       "size": [
         1024,
         1024

@@ -56,6 +56,13 @@ for (const [materialName, entry] of Object.entries(lightmaps.materials ?? {})) {
   material.setExtension(LIGHTMAP_EXTENSION, lightmap);
 }
 if (missing.length) throw new Error(`Lightmap sidecar names materials not in the GLB: ${missing.join(', ')}`);
+// Transmission makes three.js render the whole opaque scene a second time per frame; the
+// Poly Haven glass and plastic-film materials do not need it. Physical extras (ior, specular,
+// volume) are dropped too so props stay on the cheaper standard shader. Clearcoat stays for the
+// vehicle paint.
+const droppedExtensions = ['KHR_materials_transmission', 'KHR_materials_volume', 'KHR_materials_ior', 'KHR_materials_specular', 'KHR_materials_sheen', 'KHR_materials_iridescence'];
+for (const material of document.getRoot().listMaterials()) for (const name of droppedExtensions) material.setExtension(name, null);
+for (const extension of document.getRoot().listExtensionsUsed()) if (droppedExtensions.includes(extension.extensionName)) extension.dispose();
 for (const name of lightmaps.alphaMask ?? []) materialsByName.get(name)?.setAlphaMode('MASK').setAlphaCutoff(0.5);
 for (const name of lightmaps.doubleSided ?? []) materialsByName.get(name)?.setDoubleSided(true);
 for (const mesh of document.getRoot().listMeshes()) for (const primitive of mesh.listPrimitives()) {

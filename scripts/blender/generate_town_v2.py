@@ -182,7 +182,7 @@ def build_materials():
         'concrete': pbr_material('V2_Concrete', 'concrete_floor_01', 3.0),
         'roof': pbr_material('V2_Roof', 'grey_roof_01', 2.4),
         'grass': pbr_material('V2_Grass', 'leafy_grass', 3.0),
-        'siding': pbr_material('V2_Siding', 'white_planks_clean', 2.0, rotation=90, flatten=0.55),
+        'siding': pbr_material('V2_Siding', 'white_planks_clean', 2.0, rotation=90, flatten=0.7),
         'trim': pbr_material('V2_Trim', 'white_planks_clean', 0.9),
         'fence': pbr_material('V2_Fence', 'white_planks_clean', 2.2),
         'plaster': pbr_material('V2_Plaster', 'painted_plaster_wall', 3.0),
