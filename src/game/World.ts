@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { ARENA_ASSETS, getArenaAssetBuffer } from './assets';
+import { LightmapPlugin, applyLightmapShading } from './Lightmaps';
 import { createAtmosphere, SKY_LIGHT_INTENSITY } from './Atmosphere';
 
 export interface ArenaWorld {
@@ -25,7 +27,9 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
   let disposed = false;
   let reflection: THREE.WebGLRenderTarget | null = null;
   const reflectiveMaterials = new Set<THREE.MeshStandardMaterial>();
-  const loader = () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  // KTX2 textures stay GPU-compressed; the Basis transcoder is bundled from this origin.
+  const ktx2 = new KTX2Loader().detectSupport(renderer);
+  const loader = () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2).register(parser => new LightmapPlugin(parser));
   const isHorizon = (object: THREE.Object3D) => {
     for (let current: THREE.Object3D | null = object; current; current = current.parent) if (/Horizon|Exterior/i.test(current.name)) return true;
     return false;
@@ -54,6 +58,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
     }
     const configured = new Set<THREE.Material>();
     gltf.scene.traverse(object => {
+      if (object.userData.kannonGuide) { object.visible = false; return; }
       if (!(object instanceof THREE.Mesh)) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       object.castShadow = !isHorizon(object) && !materials.every(material => /GroundGrass|GroundAsphalt|Cliff/i.test(material.name));
@@ -65,6 +70,13 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
           value.anisotropy = Math.min(key === 'map' ? 4 : key === 'normalMap' ? 2 : 1, renderer.capabilities.getMaxAnisotropy()); textures.add(value);
         }
         if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+        if (material.lightMap) {
+          // Baked sun and sky: no real-time sun, a little reflection, and no shadow casting.
+          applyLightmapShading(material);
+          material.envMapIntensity = 0.25;
+          object.castShadow = false;
+          continue;
+        }
         if (/Vehicle_.*(?:Metallic|Enamel|Aluminium|Steel|Glass)|RefinedArchitecturalGlass/.test(material.name)) reflectiveMaterials.add(material);
         material.envMapIntensity = /Petrol|Bronze/i.test(material.name) ? 1.05 : 0.75;
         if (/Leaves|Flower/i.test(material.name)) {
@@ -123,6 +135,6 @@ export function createWorld(renderer: THREE.WebGLRenderer, onReady: () => void, 
       } finally { generator.dispose(); target.dispose(); }
     },
     update(time) { windTime.value = time; atmosphere.update(time); },
-    dispose() { disposed = true; for (const texture of textures) texture.dispose(); reflection?.dispose(); atmosphere.dispose(); },
+    dispose() { disposed = true; for (const texture of textures) texture.dispose(); reflection?.dispose(); atmosphere.dispose(); ktx2.dispose(); },
   };
 }

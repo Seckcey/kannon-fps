@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Document, NodeIO } from '@gltf-transform/core';
-import { KannonLightmap, LIGHTMAP_EXTENSION } from '../../scripts/blender/lightmap-extension.mjs';
+import { KannonLightmap, LIGHTMAP_EXTENSION, type Lightmap } from '../../scripts/blender/lightmap-extension.mjs';
 
 // 1x1 opaque PNG
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
@@ -28,11 +28,11 @@ test('lightmap extension survives a GLB write and read', async () => {
   assert.ok(json.extensionsUsed.includes(LIGHTMAP_EXTENSION));
   assert.equal(json.textures.length, 1, 'the atlas is written even though no standard slot references it');
   const back = await io.readBinary(glb);
-  const readLightmap: any = back.getRoot().listMaterials()[0]!.getExtension(LIGHTMAP_EXTENSION);
+  const readLightmap = back.getRoot().listMaterials()[0]!.getExtension<Lightmap>(LIGHTMAP_EXTENSION);
   assert.ok(readLightmap);
-  assert.equal(readLightmap.getIntensity(), 0.9);
-  assert.equal(readLightmap.getTexture().getName(), 'LM_0');
-  assert.equal(readLightmap.getTextureInfo().getTexCoord(), 1);
+  assert.equal(readLightmap!.getIntensity(), 0.9);
+  assert.equal(readLightmap!.getTexture()!.getName(), 'LM_0');
+  assert.equal(readLightmap!.getTextureInfo()!.getTexCoord(), 1);
 });
 
 test('materials without a lightmap are written without the extension', async () => {
