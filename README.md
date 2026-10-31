@@ -1,33 +1,35 @@
 # Kannon Arena
 
-**Your crew. Your arena.** An original third-person, no-building browser shooter for a father, son, and invited friends to play on phones and desktops. The repository name remains `kannon-fps`; the approved camera is third-person.
+**Your crew. Your arena.** An original first-person browser shooter for a father, son and invited friends to play on phones and desktops. It plays like a modern military shooter: aim down the sights, sprint, slide, vault, pick a class and earn rewards. There is no building. The repository is still called `kannon-fps`.
 
-## Current game
+## The game
 
-- Public or private free-for-all rooms for up to eight people, optional bots, host-controlled start, and rematches. Each player selects **Ready to play** after their prepared arena renders; everyone's readiness starts the full three-second countdown.
-- Five-minute matches or first to 15 eliminations; three-second respawns.
-- Fixed loadout: **1 AR · 2 Shotgun · 3 Healing ×2**.
-- 100 health and 50 shield per life. Each heal restores up to 50 health after three seconds; damage or firing interrupts it.
-- Two seconds of spawn protection, ending immediately on weapon fire.
-- Keyboard/mouse and independent touch movement/aiming. Mobile Simple mode auto-fires at visible targets; Advanced supports holding and dragging Fire. Optional gyroscope aiming.
-- **Kannon Town**, one compact neighborhood arena with two accessible houses, four stair routes, upstairs sightlines, rear yards, and central bus/truck cover.
-- **Play against bots** for a solo match against Scout, Moxie, and Rook, with Relaxed, Balanced, or Challenging difficulty.
-- **Available Games** lists public lobbies with open seats. Join without an invitation; private rooms stay hidden.
-- Casual hosts can **Fill to 4 players with bots** and start alone. People replace bots as they join the lobby, up to eight human players.
-- Persistent profiles, private friend crews, monthly/all-time ratings, five-match placements, and match history.
-- An original Blender model with a skinned armature and eight animation clips.
+- **Free-for-all** (first to 15 eliminations) or **Team Deathmatch** (two teams, first team to 30). Rounds last five minutes. Up to eight people can play, and bots can fill a small room to four players.
+- Public or private rooms, a host who starts the match, and rematches. Each player selects **Ready to play** once the arena has loaded. When everyone is ready, a three-second countdown starts.
+- You have 100 health. It starts to refill 4 seconds after you were last hit (2.5 seconds with Second Wind). There is no shield and nothing to heal with.
+- You are back 3 seconds after an elimination, with 1.5 seconds of spawn protection. Firing, throwing a grenade or using your knife ends it early.
+- If someone's connection drops during a match, their soldier stays where it stopped and can still be hit.
+- Pick a class: **Assault** (KR-5 Carbine), **Close Quarters** (Hornet 9), **Marksman** (Heron 7 bolt-action rifle) or **Custom**. Custom lets you pick the primary (KR-5 Carbine, Hornet 9, Breaker 12 pump shotgun or Heron 7) and one perk from each slot. Every class also carries the Sentry 9 pistol, a frag grenade and a knife.
+- Perks, one from each pair: **Quick Hands** or **Deep Pockets**; **Quiet Step** or **No Trace**; **Second Wind** or **Cool Head**.
+- Rewards for eliminations in a row: **Recon Sweep** at 3, **Mortar Volley** at 5 and **Attack Drone** at 7. Your count goes back to zero when you are eliminated, but a reward you have not used yet stays with you.
+- Medals for good moments: First Strike, Double Up, Triple Up, Bullseye, Long Range, Evened Up, Quick Blade, Well Thrown, Drone Down, and Three, Five, Seven and Ten Straight.
+- Sprint, dash, crouch, slide, jump, and vault over low walls.
+- Keyboard and mouse, or touch controls on phones with optional gyroscope aiming. On phones, **Simple** firing shoots for you when your crosshair rests on a rival.
+- **Kannon Town**: one small street with two houses you can go inside, four sets of stairs, upstairs windows, back yards and cover in the middle of the street. It is now a military checkpoint in late-afternoon light.
+- **Play against bots** for a match against Scout, Moxie and Rook at Relaxed, Balanced or Challenging.
+- **Available Games** lists public lobbies with open seats. Join without an invitation. Private rooms stay hidden.
+- Casual hosts can **Fill to 4 players with bots** and start alone. People take the bots' places as they join, up to eight people.
+- Saved profiles, private friend crews, monthly and all-time ratings, five placement matches and match history. Ranked crew matches are always free-for-all.
 
-Play at **https://kpop.8westventures.com**. [/health](https://kpop.8westventures.com/health) identifies the running commit and `worldVersion`; this checkout uses `kannon-town-v1`. Coastline remains behind Cloudflare Tunnel at **HTTP `127.0.0.1:14350`**. The [Kannon Town record](docs/KANNON_TOWN.md) covers the map, mobile changes and current verification; [Release verification](docs/RELEASE.md) retains prior releases. Refresh both devices after the update, then use the [family playtest guide](docs/FAMILY_PLAYTEST.md).
+Play at **https://kpop.8westventures.com**. [/health](https://kpop.8westventures.com/health) shows the running commit and `worldVersion`; this checkout uses `kannon-town-v3`. Refresh every open game page after an update. This release changes the town, so a page left open from before it cannot start or play a match. Then try the [family playtest guide](docs/FAMILY_PLAYTEST.md). [Release verification](docs/RELEASE.md) records what was checked for each release.
 
-## Kannon Town and Scout
+## Kannon Town, the soldiers and the weapons
 
-The [original Blender arena](docs/KANNON_TOWN.md) follows the compact two-house arrangement requested from Nuketown. It replaces Sunbreak as the single playable map. Both houses have usable interiors, upstairs rooms and rear balconies; real shared collision matches the rendered architecture and vehicles. The [town graphics release](docs/TOWN_GRAPHICS.md) added detailed vehicles, siding, roof trim, paving, fences and foliage. [Kannon Town v2](docs/TOWN_V2.md) re-surfaces that geometry with CC0 photo textures, adds street and yard props, bakes sunlight, sky and bounce into lightmaps, and ships GPU-compressed textures in a full and a phone build.
+[Kannon Town v3](docs/TOWN_V3.md) keeps the same street, houses, stairs and collision as before and adds eight pieces of checkpoint cover: six sandbag walls and two concrete barriers. The old cover piles are now stacks of ammunition crates. The town has a military cargo truck, a faded evacuation bus, a burnt-out car, boarded windows, glass and pots that break when shot, and a low golden-hour sun. [Kannon Town](docs/KANNON_TOWN.md) describes the original layout, and [Kannon Town v2](docs/TOWN_V2.md) the textures and baked light it builds on. Phones load a lighter copy of the town.
 
-The existing [grounded Scout movement](docs/SCOUT_GROUNDED_GAIT.md) and [combat feedback](docs/COMBAT_FEEDBACK.md) remain. Historical Sunbreak artwork and its release evidence are retained as source history.
+Other players appear as [soldiers in dark gear](docs/OPERATOR_ART.md) with a team-coloured patch. Your own view shows [gloved hands and your weapon](docs/WEAPONS_ART.md). The soldier and the weapons are original designs, made in Blender from code. The town is our own Blender work too, dressed with free (CC0) photo textures and twenty free (CC0) props, such as trash cans, street lamps and a picnic table, all from Poly Haven. The look is grittier and more realistic than before, but it is not the scanned art of a large studio game.
 
-The scout's geometry, rig, surfaces, weapon poses and six actions remain original. Walk and Run lower-body motion now derive from the CMU Graphics Lab's selected `09_01` capture, retargeted and timed in Blender. [Source provenance and separate data terms](art/source/motion/cmu-09/CMU-USAGE-NOTICE.md) and a [public credit notice](public/models/scout-motion-NOTICE.txt) accompany the model. The motion is not CC0 and must not be sold directly as motion data or an animation pack. `.gitattributes` preserves the exact publisher bytes used by the provenance hashes.
-
-Movement animation follows actual speed, keeps the legs aligned with travel while preserving aim, and blends rapid input changes from the current pose. A grounded leg constraint corrects boot penetration during transitions without moving the actor or upper body. The implementation and its limits are described in [Architecture](docs/ARCHITECTURE.md) and [Assets](docs/ASSETS.md). The art remains stylized; these checks do not establish Fortnite-level quality or physical-phone performance.
+The soldiers' walk and run leg motion comes from the CMU Graphics Lab's `09_01` capture, retargeted in Blender. Everything else about the soldier and the weapons is original. The [source notice and separate data terms](art/source/motion/cmu-09/CMU-USAGE-NOTICE.md) and a [public credit notice](public/models/operator-motion-NOTICE.txt) go with the model. The motion is not CC0 and must not be sold as motion data or an animation pack. `.gitattributes` keeps the exact publisher bytes that the provenance hashes check.
 
 ## Run locally
 
@@ -38,15 +40,19 @@ npm ci
 npm run dev
 ```
 
-Open **http://localhost:5173**. Choose **Create match**, select **Public** or **Private**, and choose whether to **Fill to 4 players with bots**. Public lobbies appear in **Available Games**; private rooms use invitation links or codes. The host can start with one human plus AI rivals, or at least two humans with bots off. Each player then selects **Ready to play** after their prepared arena appears. For solo play, choose **Play against bots → choose difficulty → Create bot match → Enter bot match → Ready to play**. Balanced is the default. Model downloads finish before room entry and later rooms reuse their buffers; the countdown also waits for the current round to render and for deliberate control engagement.
+Open **http://localhost:5173**. Choose **Create match**, pick **Free-for-all** or **Team Deathmatch**, choose **Public** or **Private**, and decide whether to **Fill to 4 players with bots**. Public lobbies appear in **Available Games**; private rooms use invitation links or codes. The host can start with one person plus bots, or with at least two people when bots are off. Each player then selects **Ready to play** once the arena appears. Change your class with **Change** under **Your loadout** in the lobby, or during a match from the pause menu or while you wait to respawn (press **L** on a desktop). A change during a match starts with your next life.
 
-Desktop readiness captures the mouse with that click; phones use the same button without firing or moving. Leaving the page, releasing the mouse, opening a menu or reconnecting while preparing requires readiness again. Preparation expires to the lobby after 45 seconds with a retry explanation. Once countdown begins, menus and disconnects do not pause the round. If an older game page is detected, refresh the players' pages before starting.
+To play alone, choose **Play against bots → choose difficulty → Create bot match → Enter bot match → Ready to play**. Balanced is the default. The models download before you enter the room, and later rooms reuse them. The countdown waits until the round has drawn on your screen and you have selected Ready.
 
-Practice rivals fight each other and you, use the same loadout and health, and can win or draw. Difficulty changes reactions, aim accuracy, and combat behavior. They use ground routes, both houses, all four stair routes and the open truck, following visible opponents upstairs and returning through the stairs. They do not jump or perform general climbing. Rematches keep the chosen difficulty. Solo and casual bot matches create no bot profiles, saved match results, or crew-rating changes; your normal human profile remains persistent. Casual bot filling is applied in the lobby and before rematches. Bot rosters stay fixed during play, and a match continues against existing bots if a friend leaves. Public games accept new players only while waiting for the host to start; full, preparing, playing, finished, expired, and empty disconnected rooms are excluded from Available Games.
+On a desktop, Ready also captures the mouse. On a phone, the same button does not fire or move you. Leaving the page, releasing the mouse, opening a menu or reconnecting while the round is getting ready means you need to select Ready again. If a round is not ready within 45 seconds, everyone goes back to the lobby with an explanation. Once the countdown begins, menus and disconnects do not pause the round. If someone has an older game page open, everyone should refresh before starting.
 
-For two players on one computer, use separate browser profiles or an incognito window. The same saved player may have only one active connection; another tab with that player replaces the earlier session.
+The bots fight each other and you, with the same health and rules. They carry their class weapons, back off to let their health refill, reload when out of sight, use the knife up close, and use their rewards. On Balanced and Challenging they throw frag grenades and dash; on Challenging they also slide into fights. Difficulty changes how fast they react, how well they aim and how they fight; it never gives them extra health or damage. They use the street, both houses, all four stairs and the open truck. They do not jump or vault. Rematches keep the chosen difficulty.
 
-To test a phone on the same local network, use the Network URL Vite prints. Network/firewall policy may restrict access. This does not expose the game to the public internet. Clipboard features require HTTPS or localhost; room codes can be entered manually on a LAN HTTP preview.
+Bot matches and casual bot filling never create bot profiles, saved match results or rating changes; your own saved profile stays as it is. Bots are added in the lobby and before rematches. The bots stay in during play, so a match keeps going against them if a friend leaves. Public games accept new players only while waiting for the host to start. Full, starting, playing, finished, expired and empty rooms are not shown in Available Games.
+
+For two players on one computer, use separate browser profiles or a private window. A saved player can have only one connection at a time; opening the same player in another tab replaces the earlier one.
+
+To test a phone on the same home network, use the Network URL that Vite prints. A firewall or network policy may block it. This does not put the game on the public internet. Copying to the clipboard needs HTTPS or localhost; on a home-network HTTP preview, type room codes in by hand.
 
 ## Validate and run production
 
@@ -55,54 +61,58 @@ npm run check
 npm start
 ```
 
-`check` runs client, simulation, storage, HTTP/WebSocket, and asset checks, TypeScript checks, and the production build. `npm start` serves the built client and server together at **http://127.0.0.1:3001**. Rebuild after changing source before using production mode.
+`check` runs the client, simulation, storage, HTTP/WebSocket and asset tests, the TypeScript check and the production build. `npm start` serves the built client and server together at **http://127.0.0.1:3001**. Build again after changing the source before using production mode.
 
-Defaults: `HOST=127.0.0.1`, `PORT=3001`, `DATA_DIR=data`. `DB_PATH` overrides the SQLite path. `ALLOWED_ORIGINS` optionally lists exact trusted browser origins; same-origin hosting needs no override. Databases and environment files are ignored by Git.
+Defaults: `HOST=127.0.0.1`, `PORT=3001`, `DATA_DIR=data`. `DB_PATH` overrides the SQLite path. `ALLOWED_ORIGINS` optionally lists exact trusted browser origins; same-origin hosting needs no override. `WS_COMPRESSION=1` (exactly `1`) turns on WebSocket compression; it is off by default. `TRUSTED_CLIENT_IP_HEADER` names a request header that carries each player's real address, so rate limits apply per player behind a proxy that sets it (`cf-connecting-ip` behind Cloudflare Tunnel); leave it unset when players connect to the server directly. Databases and environment files are ignored by Git.
 
-See [Deployment](docs/DEPLOYMENT.md) for containers, HTTPS, persistent storage, and remote acceptance.
+See [Deployment](docs/DEPLOYMENT.md) for containers, HTTPS, storage, settings and remote acceptance.
 
 ## Controls
 
 | Action | Desktop | Phone |
 | --- | --- | --- |
-| Move | WASD / arrow keys | Left joystick |
-| Look | Mouse; click to capture | Drag right side |
-| Fire / heal | Left click | Simple: aim at a rival to auto-fire. Advanced: hold/drag Fire. Tap Heal in slot 3. |
-| Aim | Hold right click | Toggle Aim; Advanced Fire aims the AR and hip-fires the shotgun |
-| Sprint | Shift | Toggle Sprint |
-| Jump | Space | Jump button |
+| Move | WASD or arrow keys | Left stick |
+| Look | Mouse (click the game to capture it) | Drag the right side |
+| Fire | Left click | Either Fire button. **Simple** firing also fires when your crosshair rests on a rival. |
+| Aim down sights | Right click | Aim button |
+| Sprint / dash | Shift; tap twice and hold to dash | Push the stick all the way forward to sprint, and again quickly to dash |
+| Crouch / slide | C; press it while sprinting to slide | Crouch button; press it while sprinting to slide |
+| Jump / vault | Space; jump into a low wall to climb over | Jump button |
 | Reload | R | Reload button |
-| Select slot | 1, 2, 3 | Press the weapon icon, including while moving, aiming, firing or jumping |
-| Scores | Hold Tab | Roster / results screen |
-| Release mouse | Escape | Pause button |
+| Swap weapons | Q, mouse wheel, 1 or 2 | Swap button |
+| Grenade | Hold G to cook, let go to throw | Hold the Grenade button, let go to throw |
+| Knife | V | Knife button |
+| Use a reward | 4 (Mortar Volley then asks you to pick a spot on the map; Esc cancels) | Tap the reward button when it appears |
+| Scores | Hold Tab | Standings button (list icon) |
+| Release mouse | Esc | Pause button |
 
-Settings include sensitivity, volume, graphics, inverted vertical look, **Mobile firing**, and optional **gyroscope aiming** with its own sensitivity. Gyroscope access requires a deliberate permission gesture and HTTPS/localhost on supported devices. Landscape is recommended on phones. Releasing the joystick stops movement even while a second finger continues aiming.
+Settings include look and aim sensitivity, field of view, **Invert vertical look**, hold or toggle for aim and crouch, how sprint works (hold, toggle or automatic), **Reduce camera motion** (on at first if your device is set to reduce motion), graphics, game volume, **Mobile firing** (Simple or Advanced) and optional **gyroscope aiming** with its own sensitivity. Gyroscope aiming asks for permission when you turn it on and needs HTTPS or localhost. Turn your phone sideways for the best view. Letting go of the stick stops you even while another finger keeps aiming.
 
-Weapon selection responds on contact and interrupts healing or reloading when you switch away. Effects include separate AR/shotgun shots, hit markers, shield breaks, damage, eliminations, healing, respawning, reloading and weapon changes. There is no background music. Audio starts from a deliberate tap or key and retries after interruptions. Supported iPhone browsers use media playback volume. During a match, open **Pause → Settings → Test sound effects** to hear the hit-marker sound; **Game volume** at zero mutes all effects. See the [touch and audio verification](docs/TOUCH_AUDIO.md).
+All sound is made in the browser: guns that sound different indoors and outdoors, footsteps that change with the ground, reloads, hits, explosions, and a quiet background of wind and far-off gunfire. There is no music. Sound starts after your first tap or key press and comes back after interruptions. On supported iPhone browsers it follows the media volume. During a match, open **Pause → Settings → Test sound effects** to check it; **Game volume** at zero mutes everything.
 
 ## Your player and crew
 
-Choose a nickname; no real name, email, or age is required. A private player key is generated and saved in this browser. **Settings → Copy player key** lets you restore the same profile on another device using **Use existing player**. Keep the key private: anyone with it can use that player. Clearing browser storage without backing it up loses profile access.
+Choose a nickname; no real name, email or age is needed. A private player key is made and saved in this browser. **Settings → Copy player key** lets you bring the same profile to another device with **Use existing player**. Keep the key private: anyone with it can use that player. If you clear the browser's storage without a copy of the key, you lose the profile.
 
-Create or join a crew on **Leaderboard**, then select it when creating a ranked match. Every ranked participant must belong to the crew. Crew and match invitations serve different purposes. Scores always come from the server.
+Create or join a crew on **Leaderboard**, then select it when creating a ranked match. Everyone in a ranked match must belong to the crew. Crew invitations and match invitations are different things. Scores always come from the server.
 
-Ratings start at 1,000 and reflect results and opponent strength. Five eligible matches place a player. Ranked games need two people and one minute of play; incomplete matches are excluded. A daily opponent-pair cap limits farming. See [Architecture](docs/ARCHITECTURE.md) for the formula and limits.
+Ratings start at 1,000 and move with results and how strong your opponents are. Five eligible matches place a player. Ranked games need two people and one minute of play; unfinished matches do not count. Only the first five results against the same opponent each day count. See [Architecture](docs/ARCHITECTURE.md) for the formula and limits.
 
 ## Project map
 
 | Directory | Purpose |
 | --- | --- |
-| `src/components` | Menus, lobby, leaderboard, HUD, touch controls |
-| `src/game` | Three.js, Blender animations, input, audio |
-| `src/lib` | Profile/settings, HTTP, WebSocket connection |
-| `shared` | Wire contract, rules, map, collision/camera math |
-| `server` | HTTP/WebSocket service, simulation, SQLite |
-| `tests` | Simulation, persistence and multiplayer acceptance |
-| `scripts/blender` | Reproducible Blender generator and validator |
-| `art/source` | Editable `.blend`, previews, export manifest |
-| `public/models` | Rigged character and arena GLBs |
-| `deploy` | Compose and production smoke check |
+| `src/components` | Menus, lobby, loadouts, leaderboard, HUD, touch controls |
+| `src/game` | Three.js view, first-person camera and weapon, prediction, input, effects, audio |
+| `src/lib` | Profile and settings, HTTP, WebSocket connection |
+| `shared` | Wire contract, rules, weapon table, map, movement and hit-box physics |
+| `server` | HTTP/WebSocket service, match engine, bots, SQLite |
+| `tests` | Rules, physics, client, persistence, asset and multiplayer acceptance tests |
+| `scripts/blender` | Reproducible Blender generators and validators |
+| `art/source` | Editable sources, previews, build manifests |
+| `public/models` | Soldier, weapon and town GLBs |
+| `deploy` | Compose files and the production smoke check |
 
-See [Product brief](docs/PRODUCT_BRIEF.md), [Delivery plan](docs/DELIVERY_PLAN.md), [Visual direction](docs/DESIGN.md), and [Assets](docs/ASSETS.md).
+See the [Product brief](docs/PRODUCT_BRIEF.md), [Delivery plan](docs/DELIVERY_PLAN.md), [Visual direction](docs/DESIGN.md) and [Assets](docs/ASSETS.md). The overhaul's [design](docs/superpowers/specs/2026-10-30-first-person-combat-overhaul-design.md) and [plan](docs/superpowers/plans/2026-10-30-first-person-overhaul.md) explain why the game changed to first person.
 
-Public lobby discovery is available; automatic matchmaking, purchases, voice/chat, and paid services have not been added. This public repository must never contain player keys, database contents, or private invitations. Server validation protects a small invited community; it does not claim tournament-grade anti-cheat or latency compensation.
+Public lobby discovery is available; automatic matchmaking, purchases, voice or text chat and paid services are not. This public repository must never contain player keys, database contents or private invitations. The server checks every input and decides every hit, and it rewinds opponents up to 400 ms so that shots land where you saw the target. This protects a small invited community; it is not tournament-grade anti-cheat.

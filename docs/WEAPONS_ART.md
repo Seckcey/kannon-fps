@@ -7,7 +7,7 @@ The first-person overhaul ([design](superpowers/specs/2026-10-30-first-person-co
 | KR-5 Carbine | Monolithic-upper carbine, free-float slotted handguard, closed reflex sight with a see-through window, weapon light, slotted muzzle brake, curved 30-round magazine | Black hard-anodised metal, tan polymer furniture |
 | Hornet 9 | Compact 9 mm carbine with a folding skeleton stock and an open reflex sight | Black metal, ranger-green polymer |
 | Breaker 12 | Pump shotgun with a vented heat shield, tall ghost-ring sights, side shell carrier and a moulded skeleton stock | Black metal, walnut pump, black polymer stock |
-| Longbow | Bolt rifle in a chassis with a folding skeleton stock (slotted spine, angled strut, cheek riser on posts), fluted heavy barrel, three-port brake, 4x-class scope | Tungsten-grey chassis, black scope |
+| Heron 7 | Bolt rifle in a chassis with a folding skeleton stock (slotted spine, angled strut, cheek riser on posts), fluted heavy barrel, three-port brake, 4x-class scope | Tungsten-grey chassis, black scope |
 | Sentry 9 | Polymer-frame service pistol, serrated slide, three-dot night sights with a deep rear notch | Black frame and slide |
 | Knife | Fixed blade, coated drop point with a bright edge, chunky stippled grip | Black blade, tan grip |
 | Frag | Ovoid fragmentation grenade with spoon and pull ring | Olive drab with a faded yellow band |
@@ -25,7 +25,7 @@ These are Blender Cycles renders of the shipped textures from the first-person c
 | ![Hornet 9](../art/source/weapons/fp-hornet9-hip.jpg) | ![Hornet 9 aimed](../art/source/weapons/fp-hornet9-ads.jpg) |
 | ![Breaker 12](../art/source/weapons/fp-breaker12-hip.jpg) | ![Breaker 12 aimed through the ghost ring](../art/source/weapons/fp-breaker12-ads.jpg) |
 | ![Sentry 9](../art/source/weapons/fp-sentry9-hip.jpg) | ![Sentry 9 aimed: front post and dot inside the rear notch, between the two rear dots](../art/source/weapons/fp-sentry9-ads.jpg) |
-| ![Longbow](../art/source/weapons/fp-longbow-hip.jpg) | ![Hands on the KR-5](../art/source/weapons/over-kr5.jpg) |
+| ![Heron 7](../art/source/weapons/fp-longbow-hip.jpg) | ![Hands on the KR-5](../art/source/weapons/over-kr5.jpg) |
 | ![Sentry 9 firing hand: the slide rides clear above the web of the hand](../art/source/weapons/hands-r-sentry9.jpg) | ![Knife on the left arm's hold node](../art/source/weapons/hold-knife-0.jpg) |
 
 Three.js lighting differs from these renders. Metals need an environment map (`scene.environment`) to read as metal; check the final look in the game.
@@ -38,7 +38,7 @@ Everything here is what the viewmodel (`src/game/WeaponModels.ts`, `src/game/Vie
 
 **Loading.** The file requires `EXT_meshopt_compression`, `KHR_mesh_quantization` and `KHR_texture_basisu`: use `GLTFLoader` with `setMeshoptDecoder(MeshoptDecoder)` and `setKTX2Loader(...)`, like the town.
 
-**Roots.** The scene has exactly nine root nodes, all at the origin and unrotated: `weapon_kr5`, `weapon_hornet9`, `weapon_breaker12`, `weapon_longbow`, `weapon_sentry9`, `knife`, `frag`, `arm_left`, `arm_right`. Root extras carry `model` (the id) and, for firearms, `boreHeight` and `sightHeight` (metres above the palm grip point) and `trigger` (where the index finger meets the trigger, in the weapon's own glTF space); the arms carry `heldAxis` (glTF axes of the arm's own space). `art/source/weapons/weapons-build.json` lists every anchor's translation and rotation in glTF axes.
+**Roots.** The scene has exactly nine root nodes, all at the origin and unrotated: `weapon_kr5`, `weapon_hornet9`, `weapon_breaker12`, `weapon_longbow`, `weapon_sentry9`, `knife`, `frag`, `arm_left`, `arm_right`. Root extras carry `model` (the id) and, for firearms, `boreHeight` and `sightHeight` (metres above the palm grip point) and `trigger` (where the index finger meets the trigger, in the weapon's own glTF space); the arms carry `heldAxis` (glTF axes of the arm's own space). `art/source/weapons/weapons-build.json` lists every anchor's translation and rotation in glTF axes. Node names, file names and view names use the internal weapon ids, which never change: the bolt rifle players see as the **Heron 7** (called Longbow before release) is `longbow`, so its root is `weapon_longbow` and its previews are `fp-longbow-*`.
 
 **Names in three.js.** `GLTFLoader` makes node names unique across the whole file, so the second weapon's `mag` arrives as `mag_1`. Match nodes by `userData.name` (the original glTF name, which `GLTFLoader` keeps), by the extras below, or by a base-name match that accepts `_1`, `_2` suffixes; never by exact `object.name`.
 
@@ -50,13 +50,13 @@ Everything here is what the viewmodel (`src/game/WeaponModels.ts`, `src/game/Vie
 
 | Node | Kind | Meaning |
 | --- | --- | --- |
-| `body` | mesh | Everything that does not move. Primitives: the weapon's baked material (`W_weapon_<id>`), plus `WeaponReflexGlass` (KR-5, Hornet 9: see-through sight window, blended, alpha 0.16), `WeaponLens` (Longbow only: opaque scope glass) and `WeaponGlowRed` / `WeaponGlowGreen` (emissive reticle dot, tritium sights) where the weapon has them. |
+| `body` | mesh | Everything that does not move. Primitives: the weapon's baked material (`W_weapon_<id>`), plus `WeaponReflexGlass` (KR-5, Hornet 9: see-through sight window, blended, alpha 0.16), `WeaponLens` (Heron 7 only: opaque scope glass) and `WeaponGlowRed` / `WeaponGlowGreen` (emissive reticle dot, tritium sights) where the weapon has them. |
 | `mag` | pivot empty (`extras.part = "mag"`) with mesh child `mag_mesh` | Origin at the top centre of the magazine where it seats in the well. Animate the pivot: pull it out along the pivot's local −Y (the pistol's pivot is tilted to its grip angle). **Breaker 12:** one shell sitting just inside the loading port, pivot at its brass head, nose toward −Z — the per-shell reload pushes it in along −Z. |
-| `action` | pivot empty (`extras.part = "action"`) with mesh child `action_mesh` | Pivot on the bore axis. KR-5: left-side charging handle, pulls back along +Z about 0.06 m. Hornet 9: top-rear T-handle, +Z about 0.05 m. Breaker 12: walnut pump, +Z about 0.09 m. Longbow: bolt and handle — rotate about local Z by about +60° (handle up), then slide +Z about 0.09 m (the stock and cheek riser stay below and behind its path). Sentry 9: the slide, +Z 0.022 m per shot and locked back on empty; the slide clears both seated hands over that travel. |
+| `action` | pivot empty (`extras.part = "action"`) with mesh child `action_mesh` | Pivot on the bore axis. KR-5: left-side charging handle, pulls back along +Z about 0.06 m. Hornet 9: top-rear T-handle, +Z about 0.05 m. Breaker 12: walnut pump, +Z about 0.09 m. Heron 7: bolt and handle — rotate about local Z by about +60° (handle up), then slide +Z about 0.09 m (the stock and cheek riser stay below and behind its path). Sentry 9: the slide, +Z 0.022 m per shot and locked back on empty; the slide clears both seated hands over that travel. |
 | `grip_r` | empty | Right palm grip point, always the origin. Its **rotation seats `arm_right`**. |
 | `grip_l` | empty | Support-hand palm point on the handguard, pump or fore-end (on the Sentry 9: wrapped round the firing hand). Its **rotation seats `arm_left`**. **Breaker 12:** `grip_l` marks the pump at rest; when the pump (`action`) slides back, move the left hand by the same travel so it stays on the walnut. |
 | `muzzle` | empty | Bore exit, for flash, smoke and tracers. |
-| `sight` | empty | A point on the optical axis; aiming puts the eye on the line through it along −Z. KR-5 and Hornet 9: the red dot, just in front of the see-through window. Breaker 12: the rear ghost-ring centre (front post tip on the line). Longbow: the ocular lens. Sentry 9: the top of the rear blade at the notch; the front post's top is level with it, so the front post and its dot sit in the 3 mm notch between the two rear dots. |
+| `sight` | empty | A point on the optical axis; aiming puts the eye on the line through it along −Z. KR-5 and Hornet 9: the red dot, just in front of the see-through window. Breaker 12: the rear ghost-ring centre (front post tip on the line). Heron 7: the ocular lens. Sentry 9: the top of the rear blade at the notch; the front post's top is level with it, so the front post and its dot sit in the 3 mm notch between the two rear dots. |
 | `eject` | empty | Case exit at the right-side ejection port. |
 
 The plan's one-line contract describes `mag` and `action` as "meshes"; in the file they are pivot empties with a mesh child each (see the table). The pivot keeps a clean rest frame for animation, while the mesh child carries the Meshopt dequantization transform.
@@ -82,7 +82,7 @@ Meshes are triangulated before unwrapping and exported with tangents, so the bak
 Three small untextured materials remain:
 
 - `WeaponReflexGlass` — the reflex-sight windows. One-sided, blended (`alphaMode: BLEND`, base colour alpha 0.16, a faint blue-green tint). `GLTFLoader` turns it into a transparent material without depth writes, so it draws after the weapon and the target stays fully visible through it. The red dot sits just in front of it.
-- `WeaponLens` — opaque dark glass, only on the Longbow's scope (the view model is hidden while scoped).
+- `WeaponLens` — opaque dark glass, only on the Heron 7's scope (the view model is hidden while scoped).
 - `WeaponGlowRed` / `WeaponGlowGreen` — the reticle dot and tritium sights. The finish step sets their glow strengths for three.js tone mapping (red dot 2.2, night sights 1.6) so the dot stays red instead of clipping to white.
 
 ## Budgets and measured cost
@@ -92,7 +92,7 @@ Three small untextured materials remain:
 | KR-5 | 11,168 | 12,000 | 2048 / 2048 / 1024 | 1,089,666 |
 | Hornet 9 | 7,164 | 12,000 | 1024 / 1024 / 512 | 365,660 |
 | Breaker 12 | 8,944 | 12,000 | 1024 / 1024 / 512 | 361,645 |
-| Longbow | 10,708 | 12,000 | 1024 / 1024 / 512 | 378,728 |
+| Heron 7 | 10,708 | 12,000 | 1024 / 1024 / 512 | 378,728 |
 | Sentry 9 | 2,672 | 12,000 | 1024 / 1024 / 512 | 326,705 |
 | Knife | 1,030 | 3,000 | 512 / 512 / 256 | 86,786 |
 | Frag | 1,426 | 3,000 | 512 / 512 / 256 | 85,889 |
@@ -101,7 +101,7 @@ Three small untextured materials remain:
 
 The file is **3,980,700 bytes** against the 6,000,000-byte budget: 3.20 MB of KTX2 (ETC1S) textures and 0.78 MB of Meshopt geometry and scene data. SHA-256 `784123593bd676fe7655d017172a21ce2b13760738cbb1814eb698e6bbc72643` (also in `art/source/weapons/weapons-v1-manifest.json`).
 
-In first person a weapon with both arms is 18,100–26,600 triangles. Draw calls with both arms (one per primitive): KR-5 and Hornet 9 **7** (body: baked, glass, red dot; magazine; action; two arms), Breaker 12 **6** (body: baked, green dot), Longbow **6** (body: baked, scope glass), Sentry 9 **6** (the slide carries the baked material and the night sights). Remote players use the same models (`weapon(id, 'world')` clones them): a remote KR-5 is about 11,000 triangles in 5 draw calls, so on phones keep remote weapons out of shadow casting.
+In first person a weapon with both arms is 18,100–26,600 triangles. Draw calls with both arms (one per primitive): KR-5 and Hornet 9 **7** (body: baked, glass, red dot; magazine; action; two arms), Breaker 12 **6** (body: baked, green dot), Heron 7 **6** (body: baked, scope glass), Sentry 9 **6** (the slide carries the baked material and the night sights). Remote players use the same models (`weapon(id, 'world')` clones them): a remote KR-5 is about 11,000 triangles in 5 draw calls, so on phones keep remote weapons out of shadow casting.
 
 ## Regenerate
 
@@ -136,7 +136,7 @@ Views: `fp-<id>-hip`, `fp-<id>-ads`, `over-<id>`, `under-<id>`, `hands-r-<id>`, 
 - each firearm has `body` and the five anchors as direct children of the root; the origin is the right palm grip point; the muzzle is on the bore at the front; the weapon points along −Z; the sight is above the bore on the centre line; ejection is on the right; the support hand is forward on the fore-end (or wrapped round the firing hand on the pistol);
 - with both arms seated on their anchors, the forearms point back toward the shooter, the firing fist holds an upright grip that fills it (11 of 12 rays across the seated held axis meet the grip within 32 mm), the support fist holds a fore-end along the bore that fills it (10 of 12 within 40 mm; on the pistol, the grip and firing hand within 50 mm), and the gloves close round both points;
 - on the Sentry 9, no vertex of either seated glove lies inside the slide anywhere along its 22 mm travel;
-- the sight picture works from the eye: on reflex sights, rays parallel to the bore 2–6 mm off the axis cross nothing but see-through glass, the window holds glass, and the red dot is the first thing on the axis; on iron sights, the line just above the front sight is clear, rays 0.5–2 mm under it pass the rear notch or ring and stop on the front post, light shows on both sides of the post, and every glowing dot is visible from the eye; on the Longbow the eye looks straight into the ocular lens;
+- the sight picture works from the eye: on reflex sights, rays parallel to the bore 2–6 mm off the axis cross nothing but see-through glass, the window holds glass, and the red dot is the first thing on the axis; on iron sights, the line just above the front sight is clear, rays 0.5–2 mm under it pass the rear notch or ring and stop on the front post, light shows on both sides of the post, and every glowing dot is visible from the eye; on the Heron 7 the eye looks straight into the ocular lens;
 - lengths, widths and triangle counts stay within limits (12,000 per firearm, 8,000 per arm, 3,000 for the knife and frag);
 - each arm's forearm runs toward +Z and its hand closes round the palm grip point (at least 8 of 12 rays across the held axis meet the glove within 6 cm for the firing hand; 7 for the support hand, which leaves the top of the handguard open); the knife's handle fills the right fist on its `grip_r` anchor and the left fist on `hold`, blade along the held axis;
 - the manifest's SHA-256 matches the file.

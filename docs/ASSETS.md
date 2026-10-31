@@ -7,6 +7,22 @@ recorded in [art/PURCHASED_ASSETS.md](../art/PURCHASED_ASSETS.md) with its licen
 local archive location before use. Earlier releases used only original project artwork; their
 sections below still describe that work.
 
+## Current game assets
+
+The first-person game loads three models, each with its own generator, validator and record of
+sizes, hashes and budgets:
+
+| Model | URL | Record |
+| --- | --- | --- |
+| Operator (other players) | `/models/operator-v1.glb?v=operator-v1` | [Operator character art](OPERATOR_ART.md) |
+| Weapons and arms | `/models/weapons-v1.glb?v=weapons-v1` | [Weapon and arm art](WEAPONS_ART.md) |
+| Kannon Town v3 | `/models/environment-v3.glb?v=kannon-town-v3` (phones: `environment-v3-phone.glb`) | [Kannon Town v3](TOWN_V3.md) |
+
+The operator is built from the scout below: it keeps the scout's 18-bone rig, and its Walk and Run
+hips and legs are the scout's credited CMU capture sample for sample, with the public notice
+`public/models/operator-motion-NOTICE.txt`. `npm run test:assets` validates the scout, the town,
+the weapons and the operator. The sections below describe the scout and the earlier towns.
+
 ## Blender source and runtime
 
 - `art/source/scout.blend`: editable Blender 5.2 source.
@@ -17,9 +33,9 @@ sections below still describe that work.
 - `public/models/scout.glb`: browser model.
 - `art/source/`: front/back and action previews plus manifest.
 
-The current grounded-gait scout export contains **21,658 vertices and 20,114 triangles in 2,679,764 bytes**. Its SHA-256 is `9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9`, served at `/models/scout.glb?v=scout-grounded-v1`. It retains the fitted shoulder geometry, 18-bone rig and equipment while refining Walk/Run pelvis and leg animation. The other six clips preserve their prior Float32 tracks exactly. Four body material batches and three active AR batches use shared geometry/materials with separate player skeletons. Eight visible AR scouts therefore use 56 character draws, excluding arena geometry, shadows and postprocessing. See the [current locomotion report](../art/source/scout-locomotion-export-review.json), [six-clip comparison](../art/source/scout-locomotion-migration-review.json), [historical shoulder release](SCOUT_MOTION_POLISH.md), and [source notes](../art/source/README.md). The [release record](RELEASE.md) identifies deployed versions separately from this source checkout.
+The grounded-gait scout export, the source of the operator's rig and leg motion, contains **21,658 vertices and 20,114 triangles in 2,679,764 bytes**. Its SHA-256 is `9b668768f6b47569f31a8f32c606a9a79e465c16cdcbe55b1e1d3ffa9e0108c9`, served at `/models/scout.glb?v=scout-grounded-v1`. It retains the fitted shoulder geometry, 18-bone rig and equipment while refining Walk/Run pelvis and leg animation. The other six clips preserve their prior Float32 tracks exactly. Four body material batches and three active AR batches use shared geometry/materials with separate player skeletons. Eight visible AR scouts therefore use 56 character draws, excluding arena geometry, shadows and postprocessing. See the [current locomotion report](../art/source/scout-locomotion-export-review.json), [six-clip comparison](../art/source/scout-locomotion-migration-review.json), [historical shoulder release](SCOUT_MOTION_POLISH.md), and [source notes](../art/source/README.md). The [release record](RELEASE.md) identifies deployed versions separately from this source checkout.
 
-The current environment is [Kannon Town v2](TOWN_V2.md): the refined town's geometry re-surfaced with CC0 Poly Haven texture sets, dressed with decimated CC0 props, lit by baked lightmaps, compressed to KTX2 and served as `environment-v2.glb` (full) and `environment-v2-phone.glb` (half-size textures). The character is `scout-v2.glb`, the same rig, geometry and clips with a regenerated 2048 × 1024 surface atlas. Sources, generators, validators and measurements are recorded in that release; provenance for every third-party file is in [art/PURCHASED_ASSETS.md](../art/PURCHASED_ASSETS.md) and `art/source/town-v2/cc0-manifest.json`.
+Before the first-person overhaul, the environment was [Kannon Town v2](TOWN_V2.md), which v3 re-dresses: the refined town's geometry re-surfaced with CC0 Poly Haven texture sets, dressed with decimated CC0 props, lit by baked lightmaps, compressed to KTX2 and served as `environment-v2.glb` (full) and `environment-v2-phone.glb` (half-size textures). Its character was `scout-v2.glb`, the same rig, geometry and clips with a regenerated 2048 × 1024 surface atlas. Sources, generators, validators and measurements are recorded in that release; provenance for every third-party file is in [art/PURCHASED_ASSETS.md](../art/PURCHASED_ASSETS.md) and `art/source/town-v2/cc0-manifest.json`.
 
 The previous environment was the [September 9 town graphics release](TOWN_GRAPHICS.md), with editable `art/source/kannon-town-graphics.blend`, generator `scripts/blender/generate_town_graphics.py` and runtime `environment-refined.glb`. Its decoded geometry, protected vehicles/truck and collision references are checked by `validate_town_graphics.mjs`; the source recipe and licensing are documented in that release.
 

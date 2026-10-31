@@ -1,15 +1,15 @@
 # First-person combat overhaul — design
 
 Requested by Frank on 2026-10-30: make Kannon Arena's one map and game look and play like a
-modern military multiplayer shooter in the style of *Call of Duty: Modern Warfare 4*
-(released 2026-10-23), "the same or better". Frank granted build, commit, merge and deploy
-permission and offered Unreal Engine as an option. This document is waiting for his go-ahead
-before any code changes (his global rule: no coding until scope is approved).
+current big-studio modern military multiplayer shooter, "the same or better". Frank granted
+build, commit, merge and deploy permission and offered Unreal Engine as an option. This
+document is waiting for his go-ahead before any code changes (his global rule: no coding until
+scope is approved).
 
 ## Intent
 
 Today Kannon Arena is a bright, third-person family arena: armoured "scout" characters, an
-assault rifle, a shotgun and two heal charges, a shield bar, and a sunny Nuketown-style street.
+assault rifle, a shotgun and two heal charges, a shield bar, and a sunny two-house street.
 Frank wants it to feel like the current big military shooter: you see your hands and gun,
 aim down the sights, sprint, slide and vault, guns that kick and sound heavy, hit markers,
 a minimap, team play, and a grittier, more realistic look.
@@ -33,21 +33,23 @@ how the game plays and looks, not who it is for.
    *Call of Duty* names, logos, maps, modes with signature names, or interface copies.
 4. **Health works like the genre.** 100 health that refills after a short pause out of combat.
    Shield and heal charges are removed.
-5. **Honest ceiling.** Activision's art comes from scanned real objects and motion capture by a
-   very large team. Ours is generated in Blender from code plus free (CC0) textures. It can look
-   clearly grittier and more realistic than today; it will not match MW4 frame for frame.
-   Purchased asset packs (Frank's card) remain the upgrade path, recorded in
+5. **Honest ceiling.** A big studio's art comes from scanned real objects and motion capture by
+   a very large team. Ours is original geometry generated in Blender from code, dressed with free
+   (CC0) Poly Haven textures and town props, plus the credited CMU walk and run capture. It can
+   look clearly grittier and more realistic than today; it will not match a big-studio game frame
+   for frame. Purchased asset packs (Frank's card) remain the upgrade path, recorded in
    `art/PURCHASED_ASSETS.md`.
 
 ## Research summary (what the genre does in 2026)
 
-Sources: Activision's MW4 multiplayer systems post (2026-08-21) and PC Gamer's review
-(2026-10). Used to choose mechanics, not to copy content.
+Sources: a publisher's multiplayer systems post for a current big-studio military shooter
+(2026-08-21) and a PC Gamer review of that game (2026-10). Used to choose genre mechanics, not
+to copy content.
 
 - Movement: grounded "boots on the ground"; sprint plus a stamina-limited faster sprint whose
   stride changes as stamina runs out; slide from sprint; a longer, lower slide; vaulting
   (mantling) that keeps momentum, can be steered or cancelled, allows aiming, and can chain into
-  a slide; ledge hang and pipe climb. Omnidirectional diving is not in MW4.
+  a slide; ledge hang and pipe climb. There is no omnidirectional diving.
 - Gunplay: no random hip-fire bloom — shots go where the gun points; sway, recoil and movement
   still matter. Recoil moves the weapon and the bullets together. Weapon and world share one
   field of view. Muzzle smoke is kept clear of the aim point. Aim-down-sights depth of field
@@ -138,15 +140,19 @@ collision height follows posture (1.8 / 1.25 / 1.0 m). Prediction replays the sa
 
 - Weapon table in `shared/weapons.ts` (single source for server, client, bots and HUD).
 
-| Weapon (working names) | Rate | Damage near → far | Head × | Mag | Reload | Notes |
+| Weapon | Rate | Damage near → far | Head × | Mag | Reload | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | KR-5 carbine (AR) | 750 rpm | 28 → 22 (20–40 m) | 1.4 | 30 | 2.1 / 2.6 s | default primary |
-| Vespa 9 (SMG) | 900 rpm | 25 → 17 (10–25 m) | 1.25 | 32 | 1.9 s | faster sprint-to-fire |
+| Hornet 9 (SMG) | 900 rpm | 25 → 17 (10–25 m) | 1.25 | 32 | 1.9 s | faster sprint-to-fire |
 | Breaker 12 (pump) | 70 rpm | 8 × 14 → 8 × 4 (7–20 m) | 1.0 | 6 | 0.45 s per shell | fixed pellet pattern |
-| Longbow (bolt rifle) | 48 rpm | 120 head/torso, 80 legs | — | 5 | 2.8 s | 4.2× scope, sway, hold breath |
+| Heron 7 (bolt rifle) | 48 rpm | 120 head/torso, 80 legs | — | 5 | 2.8 s | 4.2× scope, sway, hold breath |
 | Sentry 9 (pistol) | semi, 150 ms cap | 34 → 22 (12–30 m) | 1.4 | 12 | 1.5 s | secondary |
 | Knife | 0.6 s | one-hit within 1.6 m, short lunge | — | — | — | quick melee |
 | Frag grenade | 1 per life | 100 within 3 m → 20 at 6 m | — | — | — | cook up to 3.4 s, bounces |
+
+Names in this table are the shipped display names. The first draft used the working names Vespa 9
+(now Hornet 9) and Longbow (now Heron 7); Longbow was dropped because another shooter already uses it
+for the same kind of rifle. Internal ids (`hornet9`, `longbow`) did not change.
 
 - No hip-fire bloom: hip and aimed shots go to the crosshair centre. Accuracy comes from
   recoil (per-weapon repeatable climb and drift applied to the view and partly recovered),
@@ -159,11 +165,17 @@ collision height follows posture (1.8 / 1.25 / 1.0 m). Prediction replays the sa
   them.
 - Lag compensation: each input frame carries `viewTime`, the server time of what the client was
   drawing. The server keeps one second of position history and traces targets rewound to that
-  time, clamped to at most 200 ms back. Map collision is static.
+  time, clamped to at most 400 ms back. Map collision is static. (The first cap, 200 ms, was
+  raised in review: the client draws opponents 100 ms behind the newest snapshot, and with tick
+  and frame waits that left only about 50–100 ms for the network, so shots at moving targets
+  stopped counting above about 100 ms round trip. 400 ms covers about 100 ms each way even on
+  30 Hz phone frames; the cost is that a slow client can hit someone up to 400 ms after they
+  reached cover.)
 - Local fire prediction: muzzle flash, recoil, sound, tracer and ammo count happen instantly on
   the shooter's screen; the server's shot event confirms impacts and hit markers.
 - Health 100; regeneration starts 4 s after the last damage at 50 health per second.
-  Spawn protection 1.5 s, ending on fire. Respawn 3 s.
+  Spawn protection 1.5 s, ending when the player fires, throws a grenade or uses the knife.
+  Respawn 3 s.
 - Ammo: magazine plus reserve (4 spare magazines); each elimination returns one magazine.
 
 ### 4. Feedback and HUD (own design language)
@@ -219,11 +231,14 @@ collision height follows posture (1.8 / 1.25 / 1.0 m). Prediction replays the sa
   capture mode.
 - Classes: three starters (Assault: carbine + pistol + frag; Close Quarters: SMG + pistol + frag;
   Marksman: bolt rifle + pistol + frag) and one custom class: primary, secondary, lethal and
-  three perks (one per slot, original names such as Quick Hands, Quiet Step, Second Wind, Low
-  Profile, Cool Head, Deep Pockets). Chosen before spawning and between lives.
+  three perks (one per slot, original names such as Quick Hands, Quiet Step, Second Wind, No
+  Trace, Cool Head, Deep Pockets). Chosen before spawning and between lives.
 - Streak rewards (kills, reset on death): 3 Recon Sweep (enemies on minimap 20 s), 5 Mortar
-  Strike (pick a spot on the map; three shells after a warning whistle), 7 Attack Drone (circles
+  Volley (pick a spot on the map; three shells after a warning whistle), 7 Attack Drone (circles
   for 25 s and fires at visible enemies; can be shot down).
+- Earlier names, changed before release because other shooters already use them: Low Profile is
+  now No Trace, Steady Aim is now Cool Head, and Mortar Strike is now Mortar Volley. Internal ids
+  (`low-profile`, `steady-aim`, `mortar`) did not change.
 - Ranked crew matches remain free-for-all and keep their rating rules. Team Deathmatch is casual.
 
 ### 8. Bots
