@@ -1,15 +1,15 @@
 # First-person combat overhaul — design
 
 Requested by Frank on 2026-10-30: make Kannon Arena's one map and game look and play like a
-modern military multiplayer shooter in the style of *Call of Duty: Modern Warfare 4*
-(released 2026-10-23), "the same or better". Frank granted build, commit, merge and deploy
-permission and offered Unreal Engine as an option. This document is waiting for his go-ahead
-before any code changes (his global rule: no coding until scope is approved).
+current big-studio modern military multiplayer shooter, "the same or better". Frank granted
+build, commit, merge and deploy permission and offered Unreal Engine as an option. This
+document is waiting for his go-ahead before any code changes (his global rule: no coding until
+scope is approved).
 
 ## Intent
 
 Today Kannon Arena is a bright, third-person family arena: armoured "scout" characters, an
-assault rifle, a shotgun and two heal charges, a shield bar, and a sunny Nuketown-style street.
+assault rifle, a shotgun and two heal charges, a shield bar, and a sunny two-house street.
 Frank wants it to feel like the current big military shooter: you see your hands and gun,
 aim down the sights, sprint, slide and vault, guns that kick and sound heavy, hit markers,
 a minimap, team play, and a grittier, more realistic look.
@@ -33,21 +33,23 @@ how the game plays and looks, not who it is for.
    *Call of Duty* names, logos, maps, modes with signature names, or interface copies.
 4. **Health works like the genre.** 100 health that refills after a short pause out of combat.
    Shield and heal charges are removed.
-5. **Honest ceiling.** Activision's art comes from scanned real objects and motion capture by a
-   very large team. Ours is generated in Blender from code plus free (CC0) textures. It can look
-   clearly grittier and more realistic than today; it will not match MW4 frame for frame.
-   Purchased asset packs (Frank's card) remain the upgrade path, recorded in
+5. **Honest ceiling.** A big studio's art comes from scanned real objects and motion capture by
+   a very large team. Ours is original geometry generated in Blender from code, dressed with free
+   (CC0) Poly Haven textures and town props, plus the credited CMU walk and run capture. It can
+   look clearly grittier and more realistic than today; it will not match a big-studio game frame
+   for frame. Purchased asset packs (Frank's card) remain the upgrade path, recorded in
    `art/PURCHASED_ASSETS.md`.
 
 ## Research summary (what the genre does in 2026)
 
-Sources: Activision's MW4 multiplayer systems post (2026-08-21) and PC Gamer's review
-(2026-10). Used to choose mechanics, not to copy content.
+Sources: a publisher's multiplayer systems post for a current big-studio military shooter
+(2026-08-21) and a PC Gamer review of that game (2026-10). Used to choose genre mechanics, not
+to copy content.
 
 - Movement: grounded "boots on the ground"; sprint plus a stamina-limited faster sprint whose
   stride changes as stamina runs out; slide from sprint; a longer, lower slide; vaulting
   (mantling) that keeps momentum, can be steered or cancelled, allows aiming, and can chain into
-  a slide; ledge hang and pipe climb. Omnidirectional diving is not in MW4.
+  a slide; ledge hang and pipe climb. There is no omnidirectional diving.
 - Gunplay: no random hip-fire bloom — shots go where the gun points; sway, recoil and movement
   still matter. Recoil moves the weapon and the bullets together. Weapon and world share one
   field of view. Muzzle smoke is kept clear of the aim point. Aim-down-sights depth of field
@@ -172,7 +174,8 @@ for the same kind of rifle. Internal ids (`hornet9`, `longbow`) did not change.
 - Local fire prediction: muzzle flash, recoil, sound, tracer and ammo count happen instantly on
   the shooter's screen; the server's shot event confirms impacts and hit markers.
 - Health 100; regeneration starts 4 s after the last damage at 50 health per second.
-  Spawn protection 1.5 s, ending on fire. Respawn 3 s.
+  Spawn protection 1.5 s, ending when the player fires, throws a grenade or uses the knife.
+  Respawn 3 s.
 - Ammo: magazine plus reserve (4 spare magazines); each elimination returns one magazine.
 
 ### 4. Feedback and HUD (own design language)

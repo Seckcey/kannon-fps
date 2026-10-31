@@ -1,6 +1,6 @@
 # Kannon Town
 
-The [September 9 graphics release](TOWN_GRAPHICS.md) supersedes the asset counts and visual baseline below. The layout, collision and gameplay described here remain unchanged. and mobile controls
+This page records the September 9, 2026 release that made Kannon Town the only map and rebuilt the phone controls. Later releases changed much of it: the [September 9 graphics release](TOWN_GRAPHICS.md) replaced the asset counts and visual baseline below, [Kannon Town v3](TOWN_V3.md) added eight pieces of checkpoint cover to the collision, and the [first-person overhaul](superpowers/specs/2026-10-30-first-person-combat-overhaul-design.md) replaced the third-person camera, the assault rifle and shotgun, healing and slot 3. The street, the two houses and their stairs are unchanged.
 
 Kannon's first playtest exposed movement that could remain held after an iPhone finger ended. Separate Fire and aiming gestures were also difficult. This release replaces touch ownership, adds Simple and Advanced firing, and makes Kannon Town the only playable map.
 
@@ -10,13 +10,13 @@ The left side moves and the right side aims. **Simple**, the default, fires afte
 
 **Advanced** allows holding and dragging Fire to aim with that thumb. AR aims in; shotgun hip-fires. If a separate aiming finger is down, it owns camera rotation. The existing Aim toggle remains available. Optional **Gyroscope aiming** starts off, requests motion permission through its enable button, and has independent sensitivity. It requires a supported secure browser and physical-phone tuning.
 
-This follows Activision's [Call of Duty: Mobile controls guide](https://blog.activision.com/call-of-duty/2019-10/Getting-a-Grip-on-the-Call-of-Duty-Mobile-Controls), using original UI and input code.
+This follows the usual phone-shooter layout (move on the left, aim on the right, separate Fire buttons), using original UI and input code.
 
 `TouchGestures` owns native touch identifiers and reconciles the document's complete live-contact list. It does not rely on the joystick receiving pointer release. Each finger releases its own action and stationary holds never expire on a timer. Cancellation, backgrounding, orientation changes, menus, death and mode changes clear held actions. Pointer-only devices retain document/capture fallbacks. [TouchEvent.touches](https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent/touches) and [motion permission](https://developer.mozilla.org/en-US/docs/Web/API/DeviceMotionEvent/requestPermission_static) document these browser primitives.
 
 ## One neighborhood map
 
-The requested Nuketown arrangement informs two opposing two-story homes, garages, upstairs sightlines, rear balconies/yards and central yellow-bus/open-truck cover. Activision's [Nuketown map guide](https://www.callofduty.com/blog/2020/11/Black-Ops-Cold-War-Tactical-Map-Intel-Nuketown-84) supplied the reference. Geometry, materials, colors, props and dimensions are original Kannon Blender work; no extracted game assets are included.
+Frank asked for a compact two-house street: two facing two-story homes with garages, upstairs sightlines, rear balconies and yards, and a yellow bus and an open truck as cover in the middle. Geometry, materials, colors, props and dimensions are original Kannon Blender work; no extracted game assets are included.
 
 Both homes have playable ground and upper floors. Four stair routes connect the floors/balconies and a fifth access route enters the truck. Eight spawns occupy the rear yards. Shared bounds keep airborne players inside the fence. Sunbreak is retired from gameplay; its historical sources remain. Additional maps are deferred until this one is refined through family matches.
 

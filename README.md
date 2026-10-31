@@ -7,7 +7,8 @@
 - **Free-for-all** (first to 15 eliminations) or **Team Deathmatch** (two teams, first team to 30). Rounds last five minutes. Up to eight people can play, and bots can fill a small room to four players.
 - Public or private rooms, a host who starts the match, and rematches. Each player selects **Ready to play** once the arena has loaded. When everyone is ready, a three-second countdown starts.
 - You have 100 health. It starts to refill 4 seconds after you were last hit (2.5 seconds with Second Wind). There is no shield and nothing to heal with.
-- You are back 3 seconds after an elimination, with 1.5 seconds of spawn protection. Firing ends the protection early.
+- You are back 3 seconds after an elimination, with 1.5 seconds of spawn protection. Firing, throwing a grenade or using your knife ends it early.
+- If someone's connection drops during a match, their soldier stays where it stopped and can still be hit.
 - Pick a class: **Assault** (KR-5 Carbine), **Close Quarters** (Hornet 9), **Marksman** (Heron 7 bolt-action rifle) or **Custom**. Custom lets you pick the primary (KR-5 Carbine, Hornet 9, Breaker 12 pump shotgun or Heron 7) and one perk from each slot. Every class also carries the Sentry 9 pistol, a frag grenade and a knife.
 - Perks, one from each pair: **Quick Hands** or **Deep Pockets**; **Quiet Step** or **No Trace**; **Second Wind** or **Cool Head**.
 - Rewards for eliminations in a row: **Recon Sweep** at 3, **Mortar Volley** at 5 and **Attack Drone** at 7. Your count goes back to zero when you are eliminated, but a reward you have not used yet stays with you.
@@ -20,13 +21,13 @@
 - Casual hosts can **Fill to 4 players with bots** and start alone. People take the bots' places as they join, up to eight people.
 - Saved profiles, private friend crews, monthly and all-time ratings, five placement matches and match history. Ranked crew matches are always free-for-all.
 
-Play at **https://kpop.8westventures.com**. [/health](https://kpop.8westventures.com/health) shows the running commit and `worldVersion`; this checkout uses `kannon-town-v3`. Refresh every open game page after an update: a page from an older release cannot start or play a match. Then try the [family playtest guide](docs/FAMILY_PLAYTEST.md). [Release verification](docs/RELEASE.md) records what was checked for each release.
+Play at **https://kpop.8westventures.com**. [/health](https://kpop.8westventures.com/health) shows the running commit and `worldVersion`; this checkout uses `kannon-town-v3`. Refresh every open game page after an update. This release changes the town, so a page left open from before it cannot start or play a match. Then try the [family playtest guide](docs/FAMILY_PLAYTEST.md). [Release verification](docs/RELEASE.md) records what was checked for each release.
 
 ## Kannon Town, the soldiers and the weapons
 
 [Kannon Town v3](docs/TOWN_V3.md) keeps the same street, houses, stairs and collision as before and adds eight pieces of checkpoint cover: six sandbag walls and two concrete barriers. The old cover piles are now stacks of ammunition crates. The town has a military cargo truck, a faded evacuation bus, a burnt-out car, boarded windows, glass and pots that break when shot, and a low golden-hour sun. [Kannon Town](docs/KANNON_TOWN.md) describes the original layout, and [Kannon Town v2](docs/TOWN_V2.md) the textures and baked light it builds on. Phones load a lighter copy of the town.
 
-Other players appear as [soldiers in dark gear](docs/OPERATOR_ART.md) with a team-coloured patch. Your own view shows [gloved hands and your weapon](docs/WEAPONS_ART.md). Every model is an original design made in Blender from code; the town also uses free (CC0) photo textures. The look is grittier and more realistic than before, but it is not the scanned art of a large studio game.
+Other players appear as [soldiers in dark gear](docs/OPERATOR_ART.md) with a team-coloured patch. Your own view shows [gloved hands and your weapon](docs/WEAPONS_ART.md). The soldier and the weapons are original designs, made in Blender from code. The town is our own Blender work too, dressed with free (CC0) photo textures and twenty free (CC0) props, such as trash cans, street lamps and a picnic table, all from Poly Haven. The look is grittier and more realistic than before, but it is not the scanned art of a large studio game.
 
 The soldiers' walk and run leg motion comes from the CMU Graphics Lab's `09_01` capture, retargeted in Blender. Everything else about the soldier and the weapons is original. The [source notice and separate data terms](art/source/motion/cmu-09/CMU-USAGE-NOTICE.md) and a [public credit notice](public/models/operator-motion-NOTICE.txt) go with the model. The motion is not CC0 and must not be sold as motion data or an animation pack. `.gitattributes` keeps the exact publisher bytes that the provenance hashes check.
 
@@ -85,7 +86,7 @@ See [Deployment](docs/DEPLOYMENT.md) for containers, HTTPS, storage, settings an
 | Scores | Hold Tab | Standings button (list icon) |
 | Release mouse | Esc | Pause button |
 
-Settings include look and aim sensitivity, field of view, **Invert vertical look**, hold or toggle for aim and crouch, how sprint works (hold, toggle or automatic), **Reduce camera motion**, graphics, game volume, **Mobile firing** (Simple or Advanced) and optional **gyroscope aiming** with its own sensitivity. Gyroscope aiming asks for permission when you turn it on and needs HTTPS or localhost. Turn your phone sideways for the best view. Letting go of the stick stops you even while another finger keeps aiming.
+Settings include look and aim sensitivity, field of view, **Invert vertical look**, hold or toggle for aim and crouch, how sprint works (hold, toggle or automatic), **Reduce camera motion** (on at first if your device is set to reduce motion), graphics, game volume, **Mobile firing** (Simple or Advanced) and optional **gyroscope aiming** with its own sensitivity. Gyroscope aiming asks for permission when you turn it on and needs HTTPS or localhost. Turn your phone sideways for the best view. Letting go of the stick stops you even while another finger keeps aiming.
 
 All sound is made in the browser: guns that sound different indoors and outdoors, footsteps that change with the ground, reloads, hits, explosions, and a quiet background of wind and far-off gunfire. There is no music. Sound starts after your first tap or key press and comes back after interruptions. On supported iPhone browsers it follows the media volume. During a match, open **Pause → Settings → Test sound effects** to check it; **Game volume** at zero mutes everything.
 
