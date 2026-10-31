@@ -4,10 +4,13 @@
  *    [--baseline public/models/scout.glb] [--allow-png] [--no-report]
  *
  *  Checks the container, rig names, clip list, weapon socket, budgets and embedded textures; proves
- *  the rig and the seven inherited clips are the scout's (same rest pose, inverse binds and
- *  animation samples); then plays every clip through Three's AnimationMixer on the CPU and samples
- *  the actual skinned vertices for floor contact, foot slip, loop seams and head heights that must
- *  line up with the shared posture hitboxes. Writes art/source/operator-export-review.json. */
+ *  the rig, the five unchanged clips and the Walk/Run hips and legs are the scout's (same rest pose,
+ *  inverse binds and animation samples); then plays every clip through Three's AnimationMixer on
+ *  the CPU and samples the actual skinned vertices. The body must fit the shared posture rules read
+ *  from shared/physics.ts (POSTURE_HEIGHT, EYE_HEIGHT, hitboxes): nothing visible above the hit
+ *  boxes, glasses near the camera height, the head inside the head box, the support hand on the
+ *  weapon, nothing through the floor, the same foot phase as Walk/Run for CrouchWalk, and compact
+ *  low poses. Writes art/source/operator-export-review.json. */
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -15,6 +18,10 @@ import { isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AnimationMixer, LoopOnce, LoopRepeat, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { tsImport } from 'tsx/esm/api';
+
+/** The live shared rules, so the art is held to whatever the physics workstream ships. */
+const { POSTURE_HEIGHT, EYE_HEIGHT, PLAYER_RADIUS, hitboxes } = await tsImport('../../shared/physics.ts', import.meta.url);
 
 const argument = (name, fallback) => { const i = process.argv.indexOf(`--${name}`); return i >= 0 ? process.argv[i + 1] : fallback; };
 const flag = name => process.argv.includes(`--${name}`);
@@ -28,13 +35,50 @@ export const BONES = ['root', 'pelvis', 'spine', 'chest', 'neck', 'head', 'upper
   'upper_arm_r', 'forearm_r', 'hand_r', 'thigh_l', 'shin_l', 'foot_l', 'thigh_r', 'shin_r', 'foot_r'];
 export const INHERITED_CLIPS = ['Idle', 'Walk', 'Run', 'Jump', 'Aim', 'Fire', 'Reload'];
 export const AUTHORED_CLIPS = ['Crouch', 'CrouchWalk', 'Slide'];
+/** Clips whose every sample equals the scout export. Walk and Run keep the scout's hips and legs
+ *  (the CMU-derived motion) sample for sample; their upper body is re-posed upright over the
+ *  hit boxes. */
+export const UNCHANGED_CLIPS = ['Idle', 'Jump', 'Aim', 'Fire', 'Reload'];
+export const UPRIGHT_GAITS = ['Walk', 'Run'];
+export const LOWER_BODY = ['root', 'pelvis', 'thigh_l', 'shin_l', 'foot_l', 'thigh_r', 'shin_r', 'foot_r'];
 /** Reference travel speeds (m/s) at playback rate 1 for the in-place loops. */
 export const REFERENCE_SPEEDS = { Walk: 6.5, Run: 9, CrouchWalk: 2.6 };
 /** Right palm on the pistol grip at rest, in glTF metres (Y up, -Z forward). */
 export const SOCKET_REST = [0.14, 1.39, -0.336];
+/** The shared posture each clip is drawn in. */
+export const CLIP_POSTURE = { Idle: 'stand', Walk: 'stand', Run: 'stand', Jump: 'stand', Aim: 'stand', Fire: 'stand', Reload: 'stand', Crouch: 'crouch', CrouchWalk: 'crouch', Slide: 'slide' };
 const LIMITS = { bytes: 4_000_000, triangles: 25_000, bodyDraws: 4 };
-/** Shared posture hitboxes (shared/physics.ts): head box [bottom, top] in metres. */
-const HEAD_BOX = { stand: [1.45, 1.8], crouch: [0.95, 1.25], slide: [0.72, 1.0] };
+/** How closely the drawn body follows the shared posture rules (metres unless noted).
+ *  - top: nothing visible may rise above the posture's hit boxes (sampling slack only). Walk and
+ *    Run keep the scout's captured running bob, which lifts the hips 6 cm above Idle's at the top of
+ *    each stride, so with an upright upper body the helmet may rise up to 6 cm over the stand box
+ *    for that moment (the old forward lean hid the bob by carrying the whole head 30 cm ahead).
+ *  - eye: the glasses may sit at most 3 cm above the camera height (a head must never show before
+ *    its owner can see) and at most 6 cm below it (the slide keeps its helmet under its 1.0 m top,
+ *    only 8 cm over the 0.92 m slide eye). Walk and Run are judged on their cycle average.
+ *  - head: the skull centre stays inside the posture's head box in every clip, so a shot at the
+ *    middle of a visible head always counts. Of the helmet and head gear, at least 85% is inside a
+ *    hit box at every moment of the low clips, and in Walk/Run at least as much on average over the
+ *    stride as in the inherited Idle (65%; its head leans 10 cm forward of the player's position).
+ *  - support: the left hand keeps its rest grip on the weapon in every clip but Reload, with the
+ *    elbow bent like Idle's, never locked straight.
+ *  - coverage: share of all vertices inside the posture's hit boxes (1 cm slack). The low poses
+ *    keep at least 70% on average over the clip and never less than two thirds at any moment
+ *    (the static Crouch and Slide have one value). They spread the legs along the floor and hold
+ *    the weapon out, so they cannot match Idle's 81%; the reviewed low poses kept only 53-58%.
+ *  - reach: horizontal distance of any vertex from the player's position in the low poses, so boots
+ *    cannot poke through a 0.28 m wall beside the collision radius.
+ *  - phase: CrouchWalk's feet run in step with Walk and Run (fraction of a cycle), because the
+ *    client fades between gait clips at one shared normalized phase. */
+const FIT = {
+  top: 0.005, gaitBob: 0.06, eyeAbove: 0.03, eyeBelow: 0.06, headGear: { low: 0.85, gait: 0.65 },
+  support: { distance: 0.01, elbowDegrees: 160, exempt: ['Reload'] },
+  coverage: { mean: 0.70, least: 2 / 3 }, boxSlack: 0.01, reach: PLAYER_RADIUS + 0.28, phase: 0.05,
+};
+/** The moving and low clips are held to the full posture fit. The static inherited clips get the
+ *  top, floor, head-box and support checks, and Idle and Aim the eye check as well. */
+const FITTED_CLIPS = ['Walk', 'Run', 'Crouch', 'CrouchWalk', 'Slide'];
+assert.deepEqual([...UNCHANGED_CLIPS, ...UPRIGHT_GAITS].sort(), [...INHERITED_CLIPS].sort(), 'every inherited clip is either unchanged or an upright gait');
 
 function parseGlb(bytes, label) {
   assert.ok(bytes.length >= 28, `${label}: too small to be a GLB`);
@@ -193,17 +237,22 @@ const inherited = [];
 for (const clip of INHERITED_CLIPS) {
   const a = operator.json.animations.find(item => item.name === clip), b = baseline.json.animations.find(item => item.name === clip);
   assert.ok(b, `${baselinePath} has ${clip}`);
-  let worst = 0, channels = 0;
+  let worst = 0, channels = 0, upperWorst = 0, upperChannels = 0;
   for (const channel of b.channels) {
     const node = baseline.json.nodes[channel.target.node].name;
     if (!BONES.includes(node)) continue;
     const other = a.channels.find(item => operator.json.nodes[item.target.node].name === node && item.target.path === channel.target.path);
     assert.ok(other, `${clip} keeps ${node}.${channel.target.path}`);
-    for (const field of ['input', 'output']) worst = Math.max(worst, maxDifference(floats(operator, a.samplers[other.sampler][field]), floats(baseline, b.samplers[channel.sampler][field])));
-    channels++;
+    const input = maxDifference(floats(operator, a.samplers[other.sampler].input), floats(baseline, b.samplers[channel.sampler].input));
+    assert.ok(input < 1e-6, `${clip} ${node}.${channel.target.path} keeps the scout's sample times: ${input}`);
+    const output = maxDifference(floats(operator, a.samplers[other.sampler].output), floats(baseline, b.samplers[channel.sampler].output));
+    if (UPRIGHT_GAITS.includes(clip) && !LOWER_BODY.includes(node)) { upperWorst = Math.max(upperWorst, output); upperChannels++; continue; }
+    worst = Math.max(worst, output); channels++;
   }
-  assert.ok(worst < 1e-6, `${clip} samples match the scout export: ${worst}`);
-  inherited.push({ clip, channels, maxDifference: worst });
+  const scope = UPRIGHT_GAITS.includes(clip) ? 'hip and leg' : 'all';
+  assert.ok(worst < 1e-6, `${clip} ${scope} samples match the scout export: ${worst}`);
+  if (UPRIGHT_GAITS.includes(clip)) assert.equal(channels, LOWER_BODY.length * 3, `${clip} compares every hip and leg channel`);
+  inherited.push({ clip, identical: scope, channels, maxDifference: worst, ...(UPRIGHT_GAITS.includes(clip) ? { reposedUpperChannels: upperChannels, upperMaxDifference: upperWorst } : {}) });
 }
 
 // Runtime turns Fire/Reload into additive deltas from their first frame; it must equal Idle's.
@@ -230,18 +279,25 @@ const mixer = new AnimationMixer(model);
 const skinned = [];
 model.traverse(object => { if (object.isSkinnedMesh) skinned.push(object); });
 assert.ok(skinned.length >= 1, 'the skinned body loads');
-const soles = { l: [], r: [] }, everything = [];
+/** Every vertex; the rigid boot vertices (LegContact); the glasses, which mark the eyes; and the
+ *  helmet and head gear (at least half weighted to the head bone). */
+const soles = { l: [], r: [] }, everything = [], lens = [], headGear = [];
 for (const mesh of skinned) {
   const { skinIndex, skinWeight, position } = mesh.geometry.attributes;
+  const joint = name => mesh.skeleton.bones.findIndex(bone => bone.name === name);
+  const weight = (index, target) => { let total = 0; for (let lane = 0; lane < 4; lane++) if (skinIndex.getComponent(index, lane) === target) total += skinWeight.getComponent(index, lane); return total; };
+  const feet = { l: joint('foot_l'), r: joint('foot_r') }, head = joint('head');
   for (let index = 0; index < position.count; index++) {
-    everything.push({ mesh, index });
-    for (const side of ['l', 'r']) {
-      const joint = mesh.skeleton.bones.findIndex(bone => bone.name === `foot_${side}`);
-      for (let lane = 0; lane < 4; lane++) if (skinIndex.getComponent(index, lane) === joint && skinWeight.getComponent(index, lane) >= 1 - 1e-6) { soles[side].push({ mesh, index }); break; }
-    }
+    const item = { mesh, index };
+    everything.push(item);
+    if (mesh.material?.name === 'Visor') lens.push(item);
+    if (weight(index, head) >= 0.5) headGear.push(item);
+    for (const side of ['l', 'r']) if (weight(index, feet[side]) >= 1 - 1e-6) soles[side].push(item);
   }
 }
 assert.ok(soles.l.length > 10 && soles.r.length > 10, 'rigid boot vertices exist for runtime leg contact');
+assert.ok(lens.length > 10, 'the Visor glasses mark the eyes');
+assert.ok(headGear.length > 100, 'the helmet and head gear ride on the head bone');
 const point = new Vector3();
 const place = ({ mesh, index }) => {
   point.fromBufferAttribute(mesh.geometry.attributes.position, index);
@@ -250,6 +306,7 @@ const place = ({ mesh, index }) => {
   return point.clone();
 };
 const bone = name => model.getObjectByName(name);
+const positionOf = object => new Vector3().setFromMatrixPosition(object.matrixWorld);
 /** The head bone starts at the top of the neck and points up its local Y; the skull centre is 11 cm along it. */
 const headCentre = () => new Vector3(0, 0.11, 0).applyMatrix4(bone('head').matrixWorld);
 const clip = name => gltf.animations.find(item => item.name === name);
@@ -258,6 +315,58 @@ function play(name, loop = LoopOnce) {
   const action = mixer.clipAction(clip(name)).reset().setLoop(loop, Infinity);
   action.clampWhenFinished = true; action.play();
   return clip(name);
+}
+function at(animation, fraction) { mixer.setTime(animation.duration * fraction); model.updateMatrixWorld(true); }
+
+// The support hand's grip on the weapon, measured in the bind pose before any clip plays.
+model.updateMatrixWorld(true);
+const socket = model.getObjectByName('weapon_socket');
+const supportOffset = () => positionOf(bone('hand_l')).applyMatrix4(socket.matrixWorld.clone().invert());
+const SUPPORT_REST = supportOffset();
+const elbowDegrees = side => {
+  const shoulder = positionOf(bone(`upper_arm_${side}`)), elbow = positionOf(bone(`forearm_${side}`)), wrist = positionOf(bone(`hand_${side}`));
+  return shoulder.sub(elbow).angleTo(wrist.sub(elbow)) * 180 / Math.PI;
+};
+const BOXES = Object.fromEntries(['stand', 'crouch', 'slide'].map(posture => [posture, hitboxes({ x: 0, y: 0, z: 0, posture })]));
+const headBox = posture => BOXES[posture].find(box => box.zone === 'head');
+const inBoxes = (p, posture, slack = FIT.boxSlack) => BOXES[posture].some(box =>
+  p.x >= box.min.x - slack && p.x <= box.max.x + slack && p.y >= box.min.y - slack && p.y <= box.max.y + slack && p.z >= box.min.z - slack && p.z <= box.max.z + slack);
+
+/** Posture fit of one clip from the real skin: silhouette top and floor, glasses (eye) height, head
+ *  centre against the head box, share of the body and of the head gear inside the hit boxes,
+ *  horizontal reach, and the support hand's grip and elbow bend. Worst values over the clip, plus
+ *  clip averages for the eye height and the head gear and body coverage. */
+function fit(name) {
+  const animation = play(name), posture = CLIP_POSTURE[name];
+  const samples = Math.min(120, Math.max(64, Math.ceil(animation.duration * 60))), full = animation.duration < 1.2 ? 1 : 3;
+  const out = { clip: name, posture, duration: animation.duration, samples: samples + 1, top: -Infinity, topOverShare: 0, bodyMin: Infinity, reach: 0, coverage: 1, coverageMean: 0, headGearCoverage: 1, headGearMean: 0,
+    eye: [Infinity, -Infinity], eyeMean: 0, headCentre: [Infinity, -Infinity], headOffset: 0, support: 0, elbowLeft: [Infinity, -Infinity], elbowRight: [Infinity, -Infinity] };
+  const range = (pair, value) => [Math.min(pair[0], value), Math.max(pair[1], value)];
+  let passes = 0, over = 0;
+  for (let index = 0; index <= samples; index++) {
+    at(animation, index / samples);
+    const head = headCentre();
+    out.headCentre = range(out.headCentre, head.y);
+    out.headOffset = Math.max(out.headOffset, Math.abs(head.x), Math.abs(head.z));
+    let eye = 0; for (const item of lens) eye += place(item).y;
+    out.eye = range(out.eye, eye / lens.length); out.eyeMean += eye / lens.length / (samples + 1);
+    out.support = Math.max(out.support, supportOffset().distanceTo(SUPPORT_REST));
+    out.elbowLeft = range(out.elbowLeft, elbowDegrees('l')); out.elbowRight = range(out.elbowRight, elbowDegrees('r'));
+    if (index % full && index !== samples) continue;
+    let covered = 0, gear = 0, top = -Infinity;
+    for (const item of everything) {
+      const p = place(item);
+      top = Math.max(top, p.y); out.bodyMin = Math.min(out.bodyMin, p.y); out.reach = Math.max(out.reach, Math.hypot(p.x, p.z));
+      if (inBoxes(p, posture)) covered++;
+    }
+    for (const item of headGear) if (inBoxes(place(item), posture)) gear++;
+    out.top = Math.max(out.top, top); passes++; if (top > POSTURE_HEIGHT[posture] + FIT.top) over++;
+    out.coverage = Math.min(out.coverage, covered / everything.length);
+    out.headGearCoverage = Math.min(out.headGearCoverage, gear / headGear.length);
+    out.headGearMean += gear / headGear.length; out.coverageMean += covered / everything.length;
+  }
+  out.topOverShare = over / passes; out.headGearMean /= passes; out.coverageMean /= passes;
+  return out;
 }
 
 function gait(name, reference, limits) {
@@ -291,11 +400,27 @@ function gait(name, reference, limits) {
     seamPosition = Math.max(seamPosition, first.distanceTo(last));
     seamVelocity = Math.max(seamVelocity, second.clone().sub(first).sub(last.clone().sub(prior)).length() / dt);
   }
-  const result = { clip: name, referenceSpeed: reference, duration, samples: samples.length, minFloor: Math.min(...floor), maxFloor: Math.max(...floor), seamPosition, seamVelocity, contactBands: bands };
+  // Rotations interpolate between the 120 Hz keys, so the boot velocity jumps a little at every key,
+  // most in a fast swing. A real loop seam stands out above those; the seam must be no rougher than
+  // the clip's own keys (their 90th percentile), measured the same way.
+  const keys = animation.tracks.reduce((best, track) => (track.times.length > best.length ? track.times : best), []);
+  play(name, LoopRepeat);
+  const solesAt = time => { mixer.setTime(time); model.updateMatrixWorld(true); return [...soles.l, ...soles.r].map(place); };
+  const keyJumps = [];
+  for (let k = 1; k < keys.length - 1; k++) {
+    const [before, at, after] = [solesAt(keys[k] - dt), solesAt(keys[k]), solesAt(keys[k] + dt)];
+    let worst = 0;
+    for (let v = 0; v < at.length; v++) worst = Math.max(worst, after[v].clone().sub(at[v]).sub(at[v].clone().sub(before[v])).length() / dt);
+    keyJumps.push(worst);
+  }
+  const keyJumpP90 = percentile(keyJumps, 0.9);
+  const result = { clip: name, referenceSpeed: reference, duration, samples: samples.length, minFloor: Math.min(...floor), maxFloor: Math.max(...floor), seamPosition, seamVelocity,
+    keyVelocityJump: { median: percentile(keyJumps, 0.5), p90: keyJumpP90, max: Math.max(...keyJumps) }, contactBands: bands };
   assert.ok(result.minFloor >= -0.001, `${name} soles penetrate the floor: ${result.minFloor}`);
   assert.ok(result.maxFloor < limits.maxFloor, `${name} keeps a bounded step height: ${result.maxFloor}`);
   assert.ok(seamPosition < 1e-4, `${name} loops without a position seam: ${seamPosition}`);
   assert.ok(seamVelocity < limits.seamVelocity, `${name} loop velocity seam: ${seamVelocity}`);
+  assert.ok(seamVelocity <= keyJumpP90, `${name} loop velocity seam ${seamVelocity.toFixed(3)} m/s is no rougher than its own keys (90th percentile ${keyJumpP90.toFixed(3)} m/s)`);
   bands.forEach((band, index) => {
     assert.ok(band.contactDuty >= limits.minimumDuty[index], `${name} near-floor coverage in the ${band.heightMetres} m band: ${band.contactDuty}`);
     assert.ok(band.horizontalSlipP95 !== null && band.horizontalSlipP95 < limits.slipP95[index], `${name} foot slip in the ${band.heightMetres} m band: ${band.horizontalSlipP95}`);
@@ -303,11 +428,11 @@ function gait(name, reference, limits) {
   return result;
 }
 
-/** Hold poses: soles on or above the floor, head inside the posture's hitbox, nothing sinks. */
-function hold(name, posture, options = {}) {
+/** Hold poses: soles on or above the floor and planted feet that do not slide. */
+function hold(name, options = {}) {
   const animation = play(name, LoopRepeat);
   const samples = Math.max(8, Math.ceil(animation.duration * 60));
-  let soleMin = Infinity, bodyMin = Infinity, bodyMax = -Infinity, headMin = Infinity, headMax = -Infinity, headReach = 0, footTravel = 0;
+  let soleMin = Infinity, footTravel = 0;
   let previousFeet = null;
   for (let index = 0; index <= samples; index++) {
     mixer.setTime(animation.duration * index / samples); model.updateMatrixWorld(true);
@@ -315,40 +440,97 @@ function hold(name, posture, options = {}) {
     soleMin = Math.min(soleMin, ...feet.map(p => p.y));
     if (previousFeet && options.planted) footTravel = Math.max(footTravel, ...feet.map((p, i) => (p.y < 0.03 && previousFeet[i].y < 0.03 ? Math.hypot(p.x - previousFeet[i].x, p.z - previousFeet[i].z) : 0)));
     previousFeet = feet;
-    if (index % 4 === 0) for (const item of everything) { const p = place(item); bodyMin = Math.min(bodyMin, p.y); bodyMax = Math.max(bodyMax, p.y); }
-    const head = headCentre();
-    headMin = Math.min(headMin, head.y); headMax = Math.max(headMax, head.y); headReach = Math.max(headReach, Math.hypot(head.x, head.z));
   }
-  const [bottom, top] = HEAD_BOX[posture];
-  const result = { clip: name, posture, duration: animation.duration, soleMin, bodyMin, bodyTop: bodyMax, headCentre: [headMin, headMax], headHorizontalReach: headReach, plantedFootTravel: footTravel };
+  const result = { clip: name, duration: animation.duration, soleMin, plantedFootTravel: footTravel };
   assert.ok(soleMin >= -0.002, `${name} boots stay out of the floor: ${soleMin}`);
-  assert.ok(bodyMin >= (options.bodyFloor ?? -0.002), `${name} body stays out of the floor: ${bodyMin}`);
-  assert.ok(headMin >= bottom - 0.03 && headMax <= top + 0.03, `${name} head centre ${headMin.toFixed(3)}..${headMax.toFixed(3)} sits in the ${posture} head box ${bottom}..${top}`);
-  assert.ok(headReach < 0.35, `${name} head stays over the player's collision column: ${headReach}`);
-  if (options.top) assert.ok(bodyMax <= options.top, `${name} silhouette top ${bodyMax} fits the ${posture} height`);
   if (options.planted) assert.ok(footTravel < 0.004, `${name} planted feet do not slide between samples: ${footTravel}`);
   return result;
+}
+
+/** Best circular shift (fraction of a cycle) that lines up track b with track a, by correlation. */
+function phaseShift(a, b) {
+  const normalise = values => { const mean = values.reduce((s, v) => s + v, 0) / values.length; const deviation = Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length); return values.map(v => (v - mean) / deviation); };
+  const x = normalise(a), y = normalise(b), n = x.length;
+  let best = 0, score = -Infinity;
+  for (let shift = 0; shift < n; shift++) {
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += x[i] * y[(i + shift) % n];
+    if (sum > score) { score = sum; best = shift; }
+  }
+  return { shift: (best > n / 2 ? best - n : best) / n, correlation: score / n };
+}
+/** Fore-and-aft foot travel over one normalized cycle. */
+function footTracks(name, count = 240) {
+  const animation = play(name), tracks = { l: [], r: [] };
+  for (let index = 0; index < count; index++) { at(animation, index / count); for (const side of ['l', 'r']) tracks[side].push(positionOf(bone(`foot_${side}`)).z); }
+  return tracks;
 }
 
 const gaitLimits = {
   // Same regression limits as validate_locomotion.mjs for the inherited CMU-derived gait.
   Walk: { maxFloor: 0.12, seamVelocity: 1.3, slipP95: [0.6, 1.2], minimumDuty: [0.28, 0.48] },
   Run: { maxFloor: 0.12, seamVelocity: 1.8, slipP95: [1, 2.5], minimumDuty: [0.24, 0.40] },
-  CrouchWalk: { maxFloor: 0.14, seamVelocity: 1.0, slipP95: [0.35, 0.6], minimumDuty: [0.45, 0.55] },
+  // CrouchWalk is phased like Walk/Run, so its loop starts mid-swing, where its own keys jump up to
+  // about 2 m/s; the relative seam check above is the strict one, this is a backstop.
+  CrouchWalk: { maxFloor: 0.14, seamVelocity: 2.0, slipP95: [0.35, 0.6], minimumDuty: [0.45, 0.55] },
 };
 const locomotion = Object.entries(REFERENCE_SPEEDS).map(([name, speed]) => gait(name, speed, gaitLimits[name]));
-const holds = [
-  hold('Idle', 'stand', { planted: true }),
-  hold('Aim', 'stand', { planted: true }),
-  hold('Crouch', 'crouch', { planted: true, top: 1.34 }),
-  hold('Slide', 'slide', { bodyFloor: -0.03, top: 1.08 }),
-];
-const crouchWalkTop = (() => {
-  const animation = play('CrouchWalk'); let top = -Infinity;
-  for (let index = 0; index <= 16; index++) { mixer.setTime(animation.duration * index / 16); model.updateMatrixWorld(true); for (const item of everything) top = Math.max(top, place(item).y); }
-  return top;
-})();
-assert.ok(crouchWalkTop <= 1.38, `CrouchWalk stays low: ${crouchWalkTop}`);
+const holds = [hold('Idle', { planted: true }), hold('Aim', { planted: true }), hold('Crouch', { planted: true }), hold('Slide')];
+
+// Posture fit against the shared rules for every clip. Failures are collected so one run shows them all.
+const failures = [];
+const check = (ok, message) => { if (!ok) failures.push(message); };
+const fits = [...INHERITED_CLIPS, ...AUTHORED_CLIPS].map(fit);
+for (const result of fits) {
+  const { clip: name, posture } = result, box = headBox(posture), eye = EYE_HEIGHT[posture];
+  const show = values => values.map(value => value.toFixed(3)).join('..');
+  const gaitBob = UPRIGHT_GAITS.includes(name);
+  check(result.top <= POSTURE_HEIGHT[posture] + (gaitBob ? FIT.gaitBob : FIT.top),
+    `${name} silhouette top ${result.top.toFixed(3)} m stays under the ${posture} height ${POSTURE_HEIGHT[posture]} m${gaitBob ? ` plus the ${FIT.gaitBob} m running bob` : ''}`);
+  // Jump plays in the air, where y = 0 is the player's feet rather than the floor; its tuck is checked below.
+  if (name !== 'Jump') check(result.bodyMin >= -0.002, `${name} body stays out of the floor: ${result.bodyMin.toFixed(4)} m`);
+  check(result.headCentre[0] >= box.min.y && result.headCentre[1] <= box.max.y && result.headOffset <= box.max.x,
+    `${name} head centre (height ${show(result.headCentre)} m, ${result.headOffset.toFixed(3)} m off centre) stays inside the ${posture} head box ${box.min.y}..${box.max.y} m, half width ${box.max.x} m`);
+  if (!FIT.support.exempt.includes(name)) {
+    check(result.support <= FIT.support.distance, `${name} support hand stays on the weapon: ${(result.support * 100).toFixed(1)} cm from its grip`);
+    check(result.elbowLeft[1] <= FIT.support.elbowDegrees, `${name} left elbow stays bent: up to ${result.elbowLeft[1].toFixed(0)} degrees`);
+  }
+  if (gaitBob) {
+    check(result.eyeMean >= eye - FIT.eyeBelow && result.eyeMean <= eye + FIT.eyeAbove, `${name} glasses average ${result.eyeMean.toFixed(3)} m near the ${posture} camera height ${eye} m`);
+  } else if (FITTED_CLIPS.includes(name) || name === 'Idle' || name === 'Aim') {
+    check(result.eye[0] >= eye - FIT.eyeBelow && result.eye[1] <= eye + FIT.eyeAbove, `${name} glasses ${show(result.eye)} m sit near the ${posture} camera height ${eye} m`);
+  }
+  if (AUTHORED_CLIPS.includes(name)) {
+    check(result.headGearCoverage >= FIT.headGear.low, `${name} head gear inside the hit boxes: ${(result.headGearCoverage * 100).toFixed(0)}% at worst (needs ${FIT.headGear.low * 100}%)`);
+  } else if (gaitBob) {
+    check(result.headGearMean >= FIT.headGear.gait, `${name} head gear inside the hit boxes: ${(result.headGearMean * 100).toFixed(0)}% over the stride (needs ${FIT.headGear.gait * 100}%)`);
+  }
+  if (AUTHORED_CLIPS.includes(name)) {
+    check(result.coverageMean >= FIT.coverage.mean && result.coverage >= FIT.coverage.least,
+      `${name} body inside the ${posture} hit boxes: ${(result.coverageMean * 100).toFixed(1)}% on average, ${(result.coverage * 100).toFixed(1)}% at worst (needs ${FIT.coverage.mean * 100}% and two thirds)`);
+    check(result.reach <= FIT.reach, `${name} stays within ${FIT.reach.toFixed(2)} m of the player: ${result.reach.toFixed(3)} m`);
+  }
+}
+
+// CrouchWalk must step in time with Walk and Run, because CharacterBlend fades gaits at one phase.
+const feet = { Walk: footTracks('Walk'), Run: footTracks('Run'), CrouchWalk: footTracks('CrouchWalk') };
+const phase = {};
+for (const reference of ['Walk', 'Run']) {
+  for (const side of ['l', 'r']) {
+    const { shift, correlation } = phaseShift(feet[reference][side], feet.CrouchWalk[side]);
+    phase[`${reference}_${side}`] = { shift, correlation };
+    check(Math.abs(shift) <= FIT.phase, `CrouchWalk ${side === 'l' ? 'left' : 'right'} foot steps in phase with ${reference}: off by ${shift.toFixed(3)} of a cycle`);
+  }
+}
+const round = value => Math.round(value * 1000) / 1000;
+console.log('posture fit (metres; eye = glasses centre; offset = head centre from the player position; gear/coverage = share inside hit boxes):');
+console.table(Object.fromEntries(fits.map(f => [f.clip, { top: round(f.top), 'top over': round(f.topOverShare), eye: f.eye.map(round).join('..'), 'eye avg': round(f.eyeMean), head: f.headCentre.map(round).join('..'), offset: round(f.headOffset),
+  gear: `${round(f.headGearCoverage)} (${round(f.headGearMean)})`, coverage: `${round(f.coverage)} (${round(f.coverageMean)})`, reach: round(f.reach), floor: round(f.bodyMin), 'grip cm': round(f.support * 100), 'elbow L': f.elbowLeft.map(Math.round).join('..') }])));
+console.log('CrouchWalk phase offset (cycles):', Object.fromEntries(Object.entries(phase).map(([key, value]) => [key, round(value.shift)])));
+if (failures.length) {
+  console.error(`\nPosture fit failures (${failures.length}):\n- ${failures.join('\n- ')}`);
+  process.exit(1);
+}
 const jump = play('Jump');
 mixer.setTime(jump.duration * 0.3); model.updateMatrixWorld(true);
 assert.ok(Math.min(...[...soles.l, ...soles.r].map(place).map(p => p.y)) > -0.05, 'Jump tucks the feet up, not through the floor');
@@ -371,8 +553,15 @@ const report = {
   textures: (json.images ?? []).map(image => ({ name: image.name, mimeType: image.mimeType, bytes: json.bufferViews[image.bufferView].byteLength })),
   weaponSocket: { parent: 'hand_r', restPosition: socketPosition.toArray(), restRotationErrorRadians: socketAngle, convention: 'metres; Y up; -Z forward along the barrel' },
   sameRigAsScout: { baseline: baselinePath, restPoseMaxDifference: restDifference, inverseBindMaxDifference: bindDifference, inheritedClips: inherited },
-  referenceSpeeds: REFERENCE_SPEEDS, locomotion, holds, crouchWalkTop,
+  referenceSpeeds: REFERENCE_SPEEDS, locomotion, holds,
+  postureRules: { source: 'shared/physics.ts', postureHeight: POSTURE_HEIGHT, eyeHeight: EYE_HEIGHT, playerRadius: PLAYER_RADIUS, hitboxes: BOXES, limits: FIT },
+  supportGrip: { restOffsetInSocket: SUPPORT_REST.toArray() },
+  postureFit: fits, crouchWalkPhase: phase,
   coordinateSystem: 'metres; Y up; -Z forward',
 };
 if (!flag('no-report')) writeFileSync(file('art/source/operator-export-review.json'), `${JSON.stringify(report, null, 2)}\n`);
-console.log(JSON.stringify({ status: report.status, bytes: report.bytes, triangles, vertices, clips: clipNames, locomotion: locomotion.map(l => ({ clip: l.clip, minFloor: l.minFloor, slipP95: l.contactBands.map(b => b.horizontalSlipP95) })), holds: holds.map(h => ({ clip: h.clip, head: h.headCentre, top: h.bodyTop, bodyMin: h.bodyMin })) }, null, 2));
+console.log(JSON.stringify({
+  status: report.status, bytes: report.bytes, sha256: report.sha256, triangles, vertices, clips: clipNames,
+  inherited: inherited.map(item => ({ clip: item.clip, identical: item.identical, maxDifference: item.maxDifference })),
+  locomotion: locomotion.map(l => ({ clip: l.clip, minFloor: round(l.minFloor), slipP95: l.contactBands.map(b => round(b.horizontalSlipP95)), seamVelocity: round(l.seamVelocity) })),
+}, null, 1));

@@ -1,9 +1,9 @@
 {
   "input": "<work>/operator-raw.glb",
   "out": "public/models/operator-v1.glb",
-  "bytes": 2859948,
-  "sha256": "d419c5f6710a19a0ce38ddf9f532eeb3614a101047805d79c8d3d35674612154",
-  "rawBytes": 8341408,
+  "bytes": 2859208,
+  "sha256": "42206928f6e37561cef18e82ce6ab09c286fc91467c3470c1f171bfdfb8b10f0",
+  "rawBytes": 8340436,
   "normalMode": "uastc",
   "textures": [
     {

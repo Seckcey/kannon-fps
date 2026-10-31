@@ -1,7 +1,10 @@
 """Kannon operator: the scout's rig and clips re-dressed as an original modern military operator.
 
     node scripts/blender/run_blender.mjs --python scripts/blender/generate_operator.py -- [options]
-      --stage all|preview   preview renders the procedural look only (no bake, no export)
+      --stage all|preview|poses
+                            preview renders the procedural look only (no bake, no export); poses
+                            authors the clips, prints the posture-fit audit and renders the side
+                            pose sheets with the hit boxes drawn in (seconds; for tuning poses)
       --work DIR            baked atlas PNGs and the raw GLB (default: <system temp>/kannon-operator)
       --size 2048           atlas edge in pixels (square)
       --bake-samples 16     Cycles samples for the colour, metal/roughness and normal bakes
@@ -10,16 +13,18 @@
       --previews DIR        where review renders go (default: art/source)
 
 Reads art/source/scout.blend: the 18-bone ScoutRig, its seven gameplay clips and their NLA tracks.
-Walk/Run lower-body motion derives from the CMU 09_01 capture (art/source/motion/cmu-09, separate
+Walk/Run hip and leg motion derives from the CMU 09_01 capture (art/source/motion/cmu-09, separate
 terms; credited in public/models/operator-motion-NOTICE.txt). Everything else here is original:
 the scout body, weapons, muzzles and retired Heal clip are removed; operator gear is modelled on the
-same rest pose and skinned to the same bones; Crouch, CrouchWalk and Slide are authored; an empty
-weapon_socket is added under hand_r; one gear atlas is baked from procedural materials; and the
-model is exported with Walk, Run and CrouchWalk sampled at 120 Hz (the scout's own merge step in
-scout_export.py). finish_operator.mjs compresses the raw export to public/models/operator-v1.glb
-and validate_operator.mjs checks it. Saves art/source/operator.blend (before baking) and writes
-art/source/operator-{front,back,head}.png, operator-poses.jpg, operator-low-poses.jpg and
-operator-manifest.json.
+same rest pose and skinned to the same bones; Walk/Run keep the scout's hips and legs exactly but
+their upper body is re-posed upright so the head stays over the player's hit boxes; Crouch,
+CrouchWalk and Slide are authored to fit the shared posture heights and hit boxes read from
+shared/physics.ts; an empty weapon_socket is added under hand_r; one gear atlas is baked from
+procedural materials; and the model is exported with Walk, Run and CrouchWalk sampled at 120 Hz
+(the scout's own merge step in scout_export.py). finish_operator.mjs compresses the raw export to
+public/models/operator-v1.glb and validate_operator.mjs checks it. Saves art/source/operator.blend
+(before baking) and writes art/source/operator-{front,back,head}.png, operator-poses.jpg,
+operator-low-poses.jpg, operator-gait-poses.jpg and operator-manifest.json.
 Units: metres. Blender +Y is forward and +Z up; the glTF export is -Z forward and +Y up.
 """
 import bpy
@@ -27,6 +32,7 @@ import bmesh
 import json
 import math
 import os
+import re
 import sys
 import tempfile
 import time
@@ -1034,6 +1040,120 @@ for side in ('l', 'r'):
             foot_points[side].extend(v.co.copy() for v in obj.data.vertices)
 
 
+def shared_rule(name, fallback):
+    """A posture table from shared/physics.ts, so the low poses follow the shared rules
+    (validate_operator.mjs imports the live module and checks the export against it)."""
+    try:
+        text = (ROOT / 'shared' / 'physics.ts').read_text(encoding='utf-8')
+        body = re.search(r'\b' + name + r'\b[^=]*=\s*\{([^}]*)\}', text).group(1)
+        values = {key: float(value) for key, value in re.findall(r'(\w+)\s*:\s*([0-9.]+)', body)}
+        assert {'stand', 'crouch', 'slide'} <= set(values), values
+        return values
+    except Exception as error:  # noqa: BLE001  (fall back to the contract numbers)
+        log(f'{name} not read from shared/physics.ts ({error}); using {fallback}')
+        return fallback
+
+
+def shared_zones():
+    """Hit boxes per posture as (zone, bottom, top, half width), for the review renders only."""
+    fallback = {'stand': [('head', 1.45, 1.8, 0.15), ('torso', 0.85, 1.45, 0.3), ('legs', 0.0, 0.85, 0.25)],
+                'crouch': [('head', 0.95, 1.25, 0.15), ('torso', 0.5, 0.95, 0.3), ('legs', 0.0, 0.5, 0.28)],
+                'slide': [('head', 0.72, 1.0, 0.15), ('torso', 0.35, 0.72, 0.3), ('legs', 0.0, 0.35, 0.3)]}
+    try:
+        text = (ROOT / 'shared' / 'physics.ts').read_text(encoding='utf-8')
+        block = re.search(r'const ZONES\b.*?=\s*\{(.*?)\n\};', text, re.S).group(1)
+        zones = {}
+        for posture, body in re.findall(r'(\w+):\s*\[(.*?)\],?\s*$', block, re.M):
+            zones[posture] = [(zone, float(b), float(t), float(h)) for zone, b, t, h in
+                              re.findall(r"\['(\w+)',\s*([0-9.]+),\s*([0-9.]+),\s*([0-9.]+)\]", body)]
+        assert all(len(zones.get(posture, [])) == 3 for posture in fallback), zones
+        return zones
+    except Exception as error:  # noqa: BLE001
+        log(f'ZONES not read from shared/physics.ts ({error}); drawing the contract boxes')
+        return fallback
+
+
+POSTURE_HEIGHT = shared_rule('POSTURE_HEIGHT', {'stand': 1.8, 'crouch': 1.25, 'slide': 1.0})
+EYE_HEIGHT = shared_rule('EYE_HEIGHT', {'stand': 1.62, 'crouch': 1.12, 'slide': 0.92})
+ZONES = shared_zones()
+CLIP_POSTURE = {'Idle': 'stand', 'Walk': 'stand', 'Run': 'stand', 'Jump': 'stand', 'Aim': 'stand', 'Fire': 'stand',
+                'Reload': 'stand', 'Crouch': 'crouch', 'CrouchWalk': 'crouch', 'Slide': 'slide'}
+log(f'posture heights {POSTURE_HEIGHT}, eye heights {EYE_HEIGHT}')
+
+
+def rigid_on(bone_name):
+    """Rest-pose vertices of every part skinned wholly to one bone (fast posed extents)."""
+    points = []
+    for obj in PARTS['atlas'] + PARTS['accent'] + PARTS['lens']:
+        if [group.name for group in obj.vertex_groups] == [bone_name]:
+            points.extend(v.co.copy() for v in obj.data.vertices)
+    return points
+
+
+HEAD_POINTS = rigid_on('head')
+LENS_POINTS = [v.co.copy() for obj in PARTS['lens'] for v in obj.data.vertices]
+KNEE_POINTS = {side: rigid_on('shin_' + side) for side in ('l', 'r')}
+ARM = {side: rig.data.bones['upper_arm_' + side].length + rig.data.bones['forearm_' + side].length for side in ('l', 'r')}
+SUPPORT_REST = REST['hand_l'][0] - Vector((0.14, 0.336, 1.39))   # left wrist in the weapon socket's frame at rest
+
+
+def deform(bone_name):
+    """Rest-to-posed transform of a bone (the rig object sits at the origin)."""
+    return rig.pose.bones[bone_name].matrix @ rig.data.bones[bone_name].matrix_local.inverted()
+
+
+def head_centre():
+    """Skull centre: 11 cm up the head bone from the top of the neck (validate_operator.mjs agrees)."""
+    head = rig.pose.bones['head']
+    return head.head + (head.tail - head.head).normalized() * 0.11
+
+
+def head_extent():
+    """Posed helmet top, glasses (eye) height and skull centre."""
+    bpy.context.view_layer.update()
+    matrix = deform('head')
+    top = max((matrix @ p).z for p in HEAD_POINTS)
+    eye = sum((matrix @ p).z for p in LENS_POINTS) / len(LENS_POINTS)
+    return top, eye, head_centre()
+
+
+def knee_minimum():
+    bpy.context.view_layer.update()
+    return min(min((deform('shin_' + side) @ p).z for p in KNEE_POINTS[side]) for side in ('l', 'r'))
+
+
+def fcurves(action):
+    for layer in action.layers:
+        for strip in layer.strips:
+            for bag in strip.channelbags:
+                yield from bag.fcurves
+
+
+def set_pose(name, frame):
+    action = clips[name][0]
+    rig.animation_data.action = action
+    if action.slots:
+        rig.animation_data.action_slot = action.slots[0]
+    scene.frame_set(int(frame), subframe=frame % 1)
+    bpy.context.view_layer.update()
+
+
+rig.animation_data.action = None
+for pose_bone in rig.pose.bones:
+    pose_bone.rotation_euler = (0, 0, 0); pose_bone.location = (0, 0, 0)
+REST_TOP, REST_EYE, REST_CENTRE = head_extent()
+TOP_ABOVE_CENTRE, EYE_ABOVE_CENTRE = REST_TOP - REST_CENTRE.z, REST_EYE - REST_CENTRE.z
+# Idle holds the weapon level at this offset from the middle of the shoulders; the left arm is then
+# about 96% straight, its elbow bent 144-149 degrees.
+set_pose('Idle', 1)
+IDLE_SHOULDERS = (rig.pose.bones['upper_arm_l'].head + rig.pose.bones['upper_arm_r'].head) / 2
+IDLE_HOLD = rig.pose.bones['hand_r'].head - IDLE_SHOULDERS
+IDLE_REACH = {side: (rig.pose.bones['hand_' + side].head - rig.pose.bones['upper_arm_' + side].head).length / ARM[side] for side in ('l', 'r')}
+rig.animation_data.action = None
+log(f'helmet top {TOP_ABOVE_CENTRE:.3f} m and glasses {EYE_ABOVE_CENTRE:.3f} m above the skull centre; '
+    f'Idle reach l {IDLE_REACH["l"]:.3f} r {IDLE_REACH["r"]:.3f}')
+
+
 def begin(name, frames):
     action = bpy.data.actions.new(name)
     rig.animation_data.action = action
@@ -1079,21 +1199,51 @@ def pose_chain(frame, upper_name, lower_name, end_name, target, bend, orientatio
     return joint
 
 
-def grip_weapon(frame, target, kick=0.0, roll=0.0):
-    """Trigger hand at `target` with the weapon level; the support hand keeps its rest grip on it."""
-    rest_rotation = rig.data.bones['hand_r'].matrix_local.to_quaternion()
-    rotation = Matrix.Rotation(math.radians(kick * 2.8), 4, 'X').to_quaternion() @ Matrix.Rotation(math.radians(roll), 4, 'Y').to_quaternion() @ rest_rotation
-    pose_chain(frame, 'upper_arm_r', 'forearm_r', 'hand_r', target, (0.7, -0.2, -1), rotation)
+def grip_weapon(frame, target, kick=0.0, roll=0.0, rotation=None, bends=((0.7, -0.2, -1), (-0.65, 0.1, -1))):
+    """Trigger hand at `target` (level weapon, or the given world rotation); the support hand keeps
+    its rest grip on the weapon. `bends` are the right and left elbow directions."""
+    if rotation is None:
+        rest_rotation = rig.data.bones['hand_r'].matrix_local.to_quaternion()
+        rotation = Matrix.Rotation(math.radians(kick * 2.8), 4, 'X').to_quaternion() @ Matrix.Rotation(math.radians(roll), 4, 'Y').to_quaternion() @ rest_rotation
+    pose_chain(frame, 'upper_arm_r', 'forearm_r', 'hand_r', target, bends[0], rotation)
     transform = rig.pose.bones['hand_r'].matrix @ rig.data.bones['hand_r'].matrix_local.inverted()
     left_target = transform @ REST['hand_l'][0]
     left_rotation = transform.to_quaternion() @ rig.data.bones['hand_l'].matrix_local.to_quaternion()
-    pose_chain(frame, 'upper_arm_l', 'forearm_l', 'hand_l', left_target, (-0.65, 0.1, -1), left_rotation)
+    pose_chain(frame, 'upper_arm_l', 'forearm_l', 'hand_l', left_target, bends[1], left_rotation)
 
 
-def chest_shift():
-    """How far the posed chest has moved from rest; the weapon travels with it, level."""
+SUPPORT_REACH = 0.95   # the left arm at most 95% straight: an elbow bent about 144 degrees, like Idle
+GRIP = REST['hand_l'][0] - REST['hand_r'][0]   # support wrist from the trigger wrist, weapon level
+
+
+def hold_weapon(frame, offset=(0.0, 0.0, 0.0)):
+    """Hold the weapon level where Idle holds it relative to the shoulders, drawn back toward the
+    body if the support arm would have to reach further than in Idle. Both hands keep their grip."""
     bpy.context.view_layer.update()
-    return rig.pose.bones['chest'].head - REST['chest'][0]
+    bones = rig.pose.bones
+    shoulder = {side: bones['upper_arm_' + side].head.copy() for side in ('l', 'r')}
+    target = (shoulder['l'] + shoulder['r']) / 2 + IDLE_HOLD + Vector(offset)
+    for _ in range(3):
+        for side, grip, limit in (('l', GRIP, SUPPORT_REACH), ('r', Vector(), max(SUPPORT_REACH, IDLE_REACH['r']))):
+            arm = target + grip - shoulder[side]
+            excess = arm.length - limit * ARM[side]
+            if excess > 0:
+                target = target - arm.normalized() * excess
+    grip_weapon(frame, target)
+    return target
+
+
+def fit_trunk(frame, rotations, locations, head_xy, top):
+    """Key the trunk, then move the pelvis so the skull centre sits over head_xy (Blender metres)
+    and the helmet top at `top`. Moving the pelvis carries everything above it rigidly, so one
+    correction is exact. Returns the pelvis location (bone space: x, up, back)."""
+    location = Vector(locations.get('pelvis', (0.0, 0.0, 0.0)))
+    key(frame, rotations, {**locations, 'pelvis': tuple(location)})
+    current, _, centre = head_extent()
+    error = Vector((head_xy[0] - centre.x, head_xy[1] - centre.y, top - current))
+    location += Vector((error.x, error.z, -error.y))
+    key(frame, rotations, {**locations, 'pelvis': tuple(location)})
+    return location
 
 
 def foot_frame(side, ankle, pitch=0.0, yaw=0.0, roll=0.0, pivot=None):
@@ -1128,31 +1278,134 @@ def grounded_leg(frame, side, ankle, orientation, bend, clearance=0.0065, lift=0
     return ankle
 
 
-REST_HAND = REST['hand_r'][0].copy()
+# Walk and Run: the scout's hips and legs (CMU-derived) stay sample for sample. Their upper body
+# leaned about 23 degrees forward with the head tipped 15 degrees down, carrying the head 27-33 cm
+# ahead of the player, outside the shared head hit box. The upper body is leaned back about the
+# spine joint until the skull centre rides over the player like Idle's, and the head is tipped up
+# to Idle's angle (its stride motion kept); both hands keep their grip, so the weapon moves with
+# the shoulders. Every 120 Hz export sample (quarter frame) is keyed with linear interpolation.
+UPPER_BODY = ('spine', 'chest', 'neck', 'head', 'upper_arm_l', 'forearm_l', 'hand_l', 'upper_arm_r', 'forearm_r', 'hand_r')
+GAIT_HEAD_AHEAD = 0.06   # cycle-average skull centre this far ahead of the player (Idle: 0.10)
 
 
-def crouch_pose(frame, breath):
-    # Hips back and low, torso leaning in, head level: the head stays over the player's position
-    # so it lines up with the crouched head hitbox (shared/physics.ts: 0.95-1.25 m).
-    key(frame, {'pelvis': (-5, 2, 0), 'spine': (-8 - breath * 0.6, 2, 0), 'chest': (-6, 0, 0), 'neck': (12, 0, 0), 'head': (11 + breath * 0.4, -6, 0)},
-        {'pelvis': (0, -0.425 + breath * 0.004, 0.132)})
-    ankle, orientation = foot_frame('l', (-0.165, 0.17, 0.125))
-    grounded_leg(frame, 'l', ankle, orientation, (-0.25, 1, 0.6))
-    ankle, orientation = foot_frame('r', (0.17, -0.40, 0.125), pitch=-55)
-    grounded_leg(frame, 'r', ankle, orientation, (0.25, 1, 0.1))
-    grip_weapon(frame, REST_HAND + chest_shift() + Vector((0.0, 0.035, 0.03 + breath * 0.003)))
+def head_pitch():
+    """Forward tip of the head bone from vertical, in degrees."""
+    head = rig.pose.bones['head']
+    direction = head.tail - head.head
+    return math.degrees(math.atan2(direction.y, direction.z))
+
+
+set_pose('Idle', 1)
+IDLE_HEAD_PITCH = head_pitch()
+rig.animation_data.action = None
+
+
+def upright_gait(name):
+    action, frames = clips[name]
+    source = action.copy(); source.name = name + 'ScoutSource'
+    times = [1 + step / 4 for step in range(frames * 4 + 1)]
+    recorded = []
+    rig.animation_data.action = source
+    if source.slots:
+        rig.animation_data.action_slot = source.slots[0]
+    for time in times:
+        scene.frame_set(int(time), subframe=time % 1); bpy.context.view_layer.update()
+        bones = rig.pose.bones
+        recorded.append({'basis': {bone: bones[bone].matrix_basis.copy() for bone in UPPER_BODY}, 'pivot': bones['spine'].head.copy(),
+                         'joint': bones['head'].head.copy(), 'centre': head_centre(), 'head': bones['head'].matrix.copy(), 'pitch': head_pitch(),
+                         'hand': bones['hand_r'].matrix.copy(), 'shoulders': (bones['upper_arm_l'].head + bones['upper_arm_r'].head) / 2,
+                         'bends': tuple(bones['forearm_' + s].head - (bones['upper_arm_' + s].head + bones['hand_' + s].head) / 2 for s in ('r', 'l'))})
+    level = Matrix.Rotation(math.radians(sum(r['pitch'] for r in recorded) / len(recorded) - IDLE_HEAD_PITCH), 3, 'X')
+
+    def ahead(angle):
+        """Cycle-average skull centre after leaning the upper body back `angle` degrees."""
+        turn = Matrix.Rotation(math.radians(angle), 3, 'X')
+        return sum((r['pivot'] + turn @ (r['joint'] - r['pivot']) + level @ (r['centre'] - r['joint'])).y for r in recorded) / len(recorded)
+    low, high = 0.0, 45.0
+    for _ in range(40):
+        low, high = ((low + high) / 2, high) if ahead((low + high) / 2) > GAIT_HEAD_AHEAD else (low, (low + high) / 2)
+    angle = (low + high) / 2
+
+    rig.animation_data.action = action
+    if action.slots:
+        rig.animation_data.action_slot = action.slots[0]
+    for curve in fcurves(action):
+        if curve.data_path.split('"')[1] in UPPER_BODY:
+            for point in reversed(list(curve.keyframe_points)):
+                curve.keyframe_points.remove(point, fast=True)
+            curve.update()
+    lean = Matrix.Rotation(math.radians(angle), 4, 'X')
+    for time, r in zip(times, recorded):
+        scene.frame_set(int(time), subframe=time % 1)
+        bones = rig.pose.bones
+        for bone in UPPER_BODY:
+            bones[bone].matrix_basis = r['basis'][bone]
+        bpy.context.view_layer.update()
+        bones['spine'].matrix = Matrix.Translation(r['pivot']) @ lean @ Matrix.Translation(-r['pivot']) @ bones['spine'].matrix
+        bpy.context.view_layer.update()
+        bones['head'].matrix = Matrix.Translation(bones['head'].head) @ (level @ r['head'].to_3x3()).to_4x4()
+        bpy.context.view_layer.update()
+        shoulders = (bones['upper_arm_l'].head + bones['upper_arm_r'].head) / 2
+        grip_weapon(time, r['hand'].translation + (shoulders - r['shoulders']), rotation=r['hand'].to_quaternion(), bends=r['bends'])
+        for bone in ('spine', 'chest', 'neck', 'head'):
+            bones[bone].keyframe_insert('rotation_euler', frame=time, group=bone)
+            bones[bone].keyframe_insert('location', frame=time, group=bone)
+    for curve in fcurves(action):
+        if curve.data_path.split('"')[1] in UPPER_BODY:
+            for point in curve.keyframe_points:
+                point.interpolation = 'LINEAR'
+    bpy.data.actions.remove(source)
+    rig.animation_data.action = None
+    log(f'{name}: upper body leaned back {angle:.1f} degrees; skull centre averages {ahead(angle):.3f} m ahead')
+    return angle
+
+
+GAIT_LEAN = {name: upright_gait(name) for name in ('Walk', 'Run')}
+
+# Low poses are fitted to the shared posture rules: the helmet top just under the posture height
+# (nothing visible above the hit boxes), the skull centre over the player's position, and the
+# weapon held where Idle holds it relative to the shoulders.
+FIT_MARGIN = 0.006   # helmet top this far under the posture height (breathing and sampling slack)
+# Skull centre targets (Blender x, y: right, forward of the player's position), all well inside
+# the 0.15 m head box; the slide's sits a little behind because it leans back.
+CROUCH_HEAD, CROUCH_WALK_HEAD, SLIDE_HEAD = (0.0, 0.0), (0.0, 0.0), (0.0, -0.05)
+# The low poses carry the weapon a little closer to the chest than Idle (a compact ready), which
+# keeps the hands and forearms inside the torso hit box.
+COMPACT_READY = (0.0, -0.07, 0.0)
+
+
+def crouch_trunk(breath):
+    # Kneeling on the right knee with the hips sat back, the torso leaning in over the left knee
+    # and the head level, looking along the weapon.
+    return {'pelvis': (-6, 2, 0), 'spine': (-15 - breath * 0.6, 2, 0), 'chest': (-8, 0, 0), 'neck': (14, 0, 0), 'head': (13 + breath * 0.4, -6, 0)}
 
 
 log('authoring Crouch')
 begin('Crouch', 60)
+CROUCH_PELVIS = fit_trunk(1, crouch_trunk(0), {'pelvis': (0.0, -0.43, 0.13)}, CROUCH_HEAD, POSTURE_HEIGHT['crouch'] - FIT_MARGIN)
+hips = rig.pose.bones['pelvis'].head.copy()
+# Sat back toward the right heel: the right knee comes down ahead of the hips and the tucked right
+# boot stays close behind them instead of trailing out of the hit boxes.
+CROUCH_FEET = {'l': (hips.x - 0.165, hips.y + 0.29, 0.125), 'r': (hips.x + 0.17, hips.y - 0.16, 0.125)}
 for frame, breath in [(1, 0), (31, 1), (61, 0)]:
-    crouch_pose(frame, breath)
+    key(frame, crouch_trunk(breath), {'pelvis': tuple(CROUCH_PELVIS + Vector((0.0, breath * 0.004, 0.0)))})
+    ankle, orientation = foot_frame('l', CROUCH_FEET['l'])
+    grounded_leg(frame, 'l', ankle, orientation, (-0.25, 1, 0.6))
+    ankle, orientation = foot_frame('r', CROUCH_FEET['r'], pitch=-55)
+    grounded_leg(frame, 'r', ankle, orientation, (0.25, 1, 0.1))
+    hold_weapon(frame, (COMPACT_READY[0], COMPACT_READY[1], COMPACT_READY[2] + breath * 0.003))
 
 # CrouchWalk: in place at a 2.6 m/s reference. Stance feet travel back at exactly that speed, a
 # heel roll pivots over the ball of the foot, and swing uses a Hermite path matching stance speed.
-CROUCH_SPEED, CROUCH_FRAMES, DUTY = 2.6, 16, 0.62
+# The cycle is phased like Walk/Run, because CharacterBlend fades gait clips at one shared
+# normalized phase; out of step, the legs would scissor during a walk-to-crouch fade.
+CROUCH_SPEED, CROUCH_FRAMES, DUTY = 2.6, 16, 0.54
 CYCLE = CROUCH_FRAMES / 30
 STROKE = CROUCH_SPEED * DUTY * CYCLE
+SWING_LIFT = 0.10   # peak swing height of the lowest boot point
+FEET_AHEAD = 0.28   # the feet's stroke centre sits this far ahead of the hips (which lean back
+                    # about 37 cm behind the player), so the trailing foot never falls far behind
+                    # them and drags its knee down, and the boots stay within reach of the player
 
 
 def smootherstep(edge0, edge1, value):
@@ -1160,73 +1413,129 @@ def smootherstep(edge0, edge1, value):
     return t * t * t * (t * (t * 6 - 15) + 10)
 
 
-def crouch_foot(side, phase):
+def crouch_foot(side, phase, centre=(0.0, 0.0)):
     """Planted feet travel back at exactly CROUCH_SPEED; the swing is a quintic with the stance
-    velocity and zero acceleration at lift-off and touchdown, so the loop has no velocity seam."""
+    velocity and zero acceleration at lift-off and touchdown, so the loop has no velocity seam.
+    The swing foot rises early (a warped lift curve) so the trailing knee clears the floor."""
     sign = 1 if side == 'r' else -1
     p = (phase + (0.0 if side == 'l' else 0.5)) % 1.0
-    centre = -0.04
+    x, middle = centre[0] + sign * 0.155, centre[1]
     ball = (0.0, 0.135, -0.118)
     if p < DUTY:
         u = p / DUTY
-        y = centre + STROKE / 2 - STROKE * u
+        y = middle + STROKE / 2 - STROKE * u
         pitch = -24 * smootherstep(0.72, 1.0, u)
-        return foot_frame(side, (sign * 0.155, y, 0.125), pitch=pitch, pivot=ball if pitch else None), 0.0
+        return foot_frame(side, (x, y, 0.125), pitch=pitch, pivot=ball if pitch else None), 0.0
     u = (p - DUTY) / (1 - DUTY)
     swing_time = (1 - DUTY) * CYCLE
     m = -CROUCH_SPEED * swing_time
     h0, h1 = 1 - 10 * u ** 3 + 15 * u ** 4 - 6 * u ** 5, u - 6 * u ** 3 + 8 * u ** 4 - 3 * u ** 5
     h4, h5 = -4 * u ** 3 + 7 * u ** 4 - 3 * u ** 5, 10 * u ** 3 - 15 * u ** 4 + 6 * u ** 5
-    y = h0 * (centre - STROKE / 2) + h1 * m + h4 * m + h5 * (centre + STROKE / 2)
-    lift = 0.085 * 64 * (u * (1 - u)) ** 3
+    y = h0 * (middle - STROKE / 2) + h1 * m + h4 * m + h5 * (middle + STROKE / 2)
+    w = u ** 0.7
+    lift = SWING_LIFT * 64 * (w * (1 - w)) ** 3
     pitch = -24 * (1 - smootherstep(0.0, 0.4, u)) + 8 * smootherstep(0.45, 0.75, u) * (1 - smootherstep(0.8, 1.0, u))
-    return foot_frame(side, (sign * 0.155, y, 0.125), pitch=pitch, pivot=ball if pitch < 0 else None), lift
+    return foot_frame(side, (x, y, 0.125), pitch=pitch, pivot=ball if pitch < 0 else None), lift
+
+
+def foot_phase_shift(count=64):
+    """Phase offset that puts CrouchWalk's feet in step with Walk: the circular shift that best
+    correlates each foot's fore-and-aft travel (validate_operator.mjs repeats this on the export)."""
+    action, frames = clips['Walk']
+    walk = {side: [] for side in ('l', 'r')}
+    for index in range(count):
+        set_pose('Walk', 1 + frames * index / count)
+        for side in ('l', 'r'):
+            walk[side].append(rig.pose.bones['foot_' + side].head.y)
+    rig.animation_data.action = None
+    crouch = {side: [crouch_foot(side, index / count)[0][0].y for index in range(count)] for side in ('l', 'r')}
+
+    def normalise(values):
+        mean = sum(values) / len(values)
+        deviation = math.sqrt(sum((v - mean) ** 2 for v in values) / len(values))
+        return [(v - mean) / deviation for v in values]
+    pairs = [(normalise(walk[side]), normalise(crouch[side])) for side in ('l', 'r')]
+    scores = [sum(sum(a[i] * b[(i + shift) % count] for i in range(count)) for a, b in pairs) for shift in range(count)]
+    return scores.index(max(scores)) / count
+
+
+def crouch_walk_trunk(phase):
+    """Torso leaning in over the knees, head level; hips sway over the stance foot, twist with the
+    stride and bob twice a cycle (bone-space pelvis offset: x, up, back)."""
+    sway = 0.012 * math.sin(2 * math.pi * phase)
+    twist = 3.0 * math.sin(2 * math.pi * phase)
+    bob = -0.010 * math.cos(4 * math.pi * phase)
+    rotations = {'pelvis': (-12, 2 - twist, 0), 'spine': (-22, 2 + twist * 0.6, 0), 'chest': (-10, twist * 0.4, 0), 'neck': (21, 0, 0), 'head': (23, -6, 0)}
+    return rotations, Vector((sway, bob, 0.0))
+
+
+def author_crouch_walk(base, centre):
+    """Key every quarter frame (120 Hz); export_operator() writes them densely like Walk/Run, so
+    linear interpolation between solved poses cannot dip a planted boot into the floor. Returns the
+    highest helmet top and the lowest knee point."""
+    top, knee = -1.0, 1.0
+    for step in range(CROUCH_FRAMES * 4 + 1):
+        frame = 1 + step / 4
+        phase = ((step % (CROUCH_FRAMES * 4)) / (CROUCH_FRAMES * 4) + PHASE_SHIFT) % 1.0
+        rotations, offset = crouch_walk_trunk(phase)
+        key(frame, rotations, {'pelvis': tuple(base + offset)})
+        for side in ('l', 'r'):
+            (ankle, orientation), lift = crouch_foot(side, phase, centre)
+            # Knees point forward with a slight lift; a strongly upward hint would turn
+            # antiparallel to a trailing foot and flip the knee. The lowest boot point sits at the
+            # stance clearance plus the swing lift, so a toe still pitched down from push-off
+            # cannot pass through the floor.
+            bend = (-0.15, 1, 0.22) if side == 'l' else (0.15, 1, 0.22)
+            grounded_leg(frame, side, ankle, orientation, bend, lift=lift)
+        hold_weapon(frame, COMPACT_READY)
+        top = max(top, head_extent()[0]); knee = min(knee, knee_minimum())
+    return top, knee
 
 
 log('authoring CrouchWalk')
+PHASE_SHIFT = foot_phase_shift()
 begin('CrouchWalk', CROUCH_FRAMES)
-# Keys every quarter frame (120 Hz); export_operator() writes them densely like Walk/Run, so
-# linear interpolation between solved poses cannot dip the planted boot into the floor.
-for step in range(CROUCH_FRAMES * 4 + 1):
-    frame = 1 + step / 4
-    phase = (step % (CROUCH_FRAMES * 4)) / (CROUCH_FRAMES * 4)
-    bob = -0.012 * math.cos(4 * math.pi * phase)
-    sway = 0.014 * math.sin(2 * math.pi * phase)
-    twist = 3.0 * math.sin(2 * math.pi * phase)
-    key(frame, {'pelvis': (-4, 2 - twist, 0), 'spine': (-9, 2 + twist * 0.6, 0), 'chest': (-4, twist * 0.4, 0), 'neck': (11, 0, 0), 'head': (10, -6, 0)},
-        {'pelvis': (sway, -0.40 + bob, 0.112)})
-    for side in ('l', 'r'):
-        (ankle, orientation), lift = crouch_foot(side, phase)
-        # Knees point forward with a slight lift so the trailing knee pad clears the floor; a
-        # strongly upward hint would turn antiparallel to a trailing foot and flip the knee.
-        bend = (-0.15, 1, 0.22) if side == 'l' else (0.15, 1, 0.22)
-        # The lowest boot point sits at the stance clearance plus the swing lift, so a toe still
-        # pitched down from push-off cannot pass through the floor.
-        grounded_leg(frame, side, ankle, orientation, bend, lift=lift)
-    grip_weapon(frame, REST_HAND + chest_shift() + Vector((0.0, 0.04, 0.03)))
-for layer in clips['CrouchWalk'][0].layers:
-    for strip in layer.strips:
-        for bag in strip.channelbags:
-            for curve in bag.fcurves:
-                for keyframe in curve.keyframe_points:
-                    keyframe.interpolation = 'LINEAR'
+rotations, offset = crouch_walk_trunk(0.25)   # the top of the bob
+base = fit_trunk(1, rotations, {'pelvis': (0.0, -0.45, 0.17)}, CROUCH_WALK_HEAD, POSTURE_HEIGHT['crouch'] - FIT_MARGIN) - offset
+key(1, rotations, {'pelvis': tuple(base)})
+hips = rig.pose.bones['pelvis'].head.copy()
+CROUCH_CENTRE = (hips.x, hips.y + FEET_AHEAD)
+top, knee = author_crouch_walk(base, CROUCH_CENTRE)
+if top > POSTURE_HEIGHT['crouch'] - FIT_MARGIN + 1e-4:   # twist and sway can add a little height
+    base -= Vector((0.0, top - (POSTURE_HEIGHT['crouch'] - FIT_MARGIN), 0.0))
+    top, knee = author_crouch_walk(base, CROUCH_CENTRE)
+log(f'CrouchWalk: phase shift {PHASE_SHIFT:.3f} to match Walk; hips at {hips.y:.3f} m, feet centred at {CROUCH_CENTRE[1]:.3f} m; '
+    f'helmet top {top:.3f} m; lowest knee point {knee:.4f} m')
+for curve in fcurves(clips['CrouchWalk'][0]):
+    for keyframe in curve.keyframe_points:
+        keyframe.interpolation = 'LINEAR'
 
-# Slide: feet first, reclined, the left leg out straight on its heel and the right leg folded,
-# weapon held level at the chest. A low shudder keeps the held pose alive.
+# Slide: feet first and leaning back, the left leg reaching forward on its heel with the knee bent
+# and the right leg folded, weapon held level. Compact, so the body stays inside the slide hit
+# boxes and the boots cannot show through a wall. A low shudder keeps the held pose alive.
+SLIDE_TOP = POSTURE_HEIGHT['slide'] - FIT_MARGIN - 0.004   # room for the shudder
+SLIDE_FEET = {'l': (-0.15, 0.54, 0.125), 'r': (0.22, 0.10, 0.125)}
+
+
+def slide_trunk(shudder):
+    # Leaning well back on the hips with a straight back, so the seat rides on the floor; the head
+    # tips back a little to look over the weapon, which lifts the eyes toward the slide camera
+    # height without raising the helmet.
+    return {'pelvis': (45, 6, 0), 'spine': (-6, 3, 0), 'chest': (-8, 0, 0), 'neck': (-4 + shudder * 200, 0, 0), 'head': (-7, -6, 0)}
+
+
 log('authoring Slide')
 begin('Slide', 30)
+SLIDE_PELVIS = fit_trunk(1, slide_trunk(0.0), {'pelvis': (0.0, -0.715, -0.15)}, SLIDE_HEAD, SLIDE_TOP)
 for frame in range(1, 32, 3):
     t = (frame - 1) / 30
     shudder = 0.0035 * math.sin(2 * math.pi * 4 * t) + 0.0015 * math.sin(2 * math.pi * 7 * t)
-    # Hips forward and low, torso reclined: the head ends over the player's position, inside the
-    # slide head hitbox (0.72-1.0 m), with the legs out in front.
-    key(frame, {'pelvis': (27, 6, 0), 'spine': (-1, 3, 0), 'chest': (-7, 0, 0), 'neck': (-12 + shudder * 200, 0, 0), 'head': (-10, -6, 0)},
-        {'pelvis': (0.0, -0.715 + shudder, -0.15)})
-    ankle, orientation = foot_frame('l', (-0.12, 0.93, 0.125), pitch=66, pivot=(0.0, -0.035, -0.11))
-    grounded_leg(frame, 'l', ankle, orientation, (-0.1, 0.3, 1))
-    ankle, orientation = foot_frame('r', (0.31, 0.40, 0.125), pitch=10, roll=-12)
-    grounded_leg(frame, 'r', ankle, orientation, (0.9, 0.25, 0.7))
-    grip_weapon(frame, REST_HAND + chest_shift() + Vector((0.0, 0.08, 0.05)))
+    key(frame, slide_trunk(shudder), {'pelvis': tuple(SLIDE_PELVIS + Vector((0.0, shudder, 0.0)))})
+    ankle, orientation = foot_frame('l', SLIDE_FEET['l'], pitch=62, pivot=(0.0, -0.035, -0.11))
+    grounded_leg(frame, 'l', ankle, orientation, (-0.5, 0.3, 1))
+    ankle, orientation = foot_frame('r', SLIDE_FEET['r'], pitch=10, roll=-12)
+    grounded_leg(frame, 'r', ankle, orientation, (0.8, 0.3, 0.6))
+    hold_weapon(frame, COMPACT_READY)
 
 # NLA tracks: one per exported clip, matching the scout's layout.
 rig.animation_data.action = None
@@ -1240,39 +1549,70 @@ for pose_bone in rig.pose.bones:
 bpy.context.view_layer.update()
 
 
-def set_pose(name, frame):
-    action = clips[name][0]
-    rig.animation_data.action = action
-    if action.slots:
-        rig.animation_data.action_slot = action.slots[0]
-    scene.frame_set(int(frame), subframe=frame % 1)
-    bpy.context.view_layer.update()
-
-
 def audit(name, frame):
     """Deformed extents of every part in a pose, plus the head centre (validate_operator.mjs repeats
     this on the exported skin)."""
     set_pose(name, frame)
     depsgraph = bpy.context.evaluated_depsgraph_get()
-    low, high, lowest = 1e9, -1e9, ''
+    low, high, lowest, reach, inside, total = 1e9, -1e9, '', 0.0, 0, 0
     for obj in PARTS['atlas'] + PARTS['accent'] + PARTS['lens']:
         evaluated = obj.evaluated_get(depsgraph)
         mesh = evaluated.to_mesh()
         co = np.empty(len(mesh.vertices) * 3, np.float32); mesh.vertices.foreach_get('co', co)
         evaluated.to_mesh_clear()
-        z = co[2::3]
+        x, y, z = co[0::3], co[1::3], co[2::3]
         if z.min() < low:
             low, lowest = float(z.min()), obj.name
         high = max(high, float(z.max()))
-    head = rig.pose.bones['head']
-    centre = head.head + (head.tail - head.head).normalized() * 0.11
-    log(f'{name}@{frame}: head ({centre.x:.3f}, {centre.y:.3f}, {centre.z:.3f}) top {high:.3f} lowest {low:.4f} ({lowest}); '
-        f'pelvis z {rig.pose.bones["pelvis"].head.z:.3f}; soles l {sole_minimum("l"):.4f} r {sole_minimum("r"):.4f}')
-    return {'clip': name, 'frame': frame, 'head': list(centre), 'top': high, 'lowest': low, 'lowestPart': lowest}
+        reach = max(reach, float(np.sqrt(x ** 2 + y ** 2).max()))
+        boxed = np.zeros(len(z), bool)
+        for _, bottom, top, half in ZONES[CLIP_POSTURE[name]]:
+            boxed |= (np.abs(x) <= half + 0.01) & (np.abs(y) <= half + 0.01) & (z >= bottom - 0.01) & (z <= top + 0.01)
+        inside += int(boxed.sum()); total += len(z)
+    centre = head_centre()
+    log(f'{name}@{frame}: head ({centre.x:.3f}, {centre.y:.3f}, {centre.z:.3f}) top {high:.3f} lowest {low:.4f} ({lowest}) reach {reach:.3f} '
+        f'in boxes {inside / total:.3f}; pelvis z {rig.pose.bones["pelvis"].head.z:.3f}; soles l {sole_minimum("l"):.4f} r {sole_minimum("r"):.4f}')
+    return {'clip': name, 'frame': frame, 'head': list(centre), 'top': high, 'lowest': low, 'lowestPart': lowest, 'reach': reach, 'inBoxes': inside / total}
 
 
-POSE_AUDIT = [audit(name, frame) for name, frame in [('Idle', 1), ('Aim', 1), ('Crouch', 1), ('Crouch', 31), ('CrouchWalk', 1), ('CrouchWalk', 5),
-                                                      ('CrouchWalk', 9), ('CrouchWalk', 13), ('Slide', 1), ('Slide', 16)]]
+def fit_audit(name, samples=32):
+    """The validator's posture checks, measured in Blender over a clip: helmet top against the
+    posture height, glasses against the camera height, skull centre against the head box, support
+    hand grip and elbow bend, and the lowest knee point."""
+    action, frames = clips[name]
+    posture = CLIP_POSTURE[name]
+    worst = {'top': -1e9, 'eye': [1e9, -1e9], 'centre': [1e9, -1e9], 'offset': 0.0, 'grip': 0.0, 'elbow': 0.0, 'knee': 1e9, 'helmet': [1.0, 0.0]}
+
+    def boxed(p, slack=0.01):
+        return any(abs(p.x) <= half + slack and abs(p.y) <= half + slack and bottom - slack <= p.z <= top + slack
+                   for _, bottom, top, half in ZONES[posture])
+    for index in range(samples + 1):
+        set_pose(name, 1 + frames * index / samples)
+        top, eye, centre = head_extent()
+        matrix = deform('head')
+        helmet = sum(boxed(matrix @ p) for p in HEAD_POINTS) / len(HEAD_POINTS)
+        worst['helmet'] = [min(worst['helmet'][0], helmet), worst['helmet'][1] + helmet / (samples + 1)]
+        worst['boots'] = max(worst.get('boots', 0.0), max((deform('foot_' + side) @ p).xy.length for side in ('l', 'r') for p in foot_points[side]))
+        bones = rig.pose.bones
+        grip = (socket.matrix_world.inverted() @ bones['hand_l'].head - SUPPORT_REST).length
+        shoulder, elbow, wrist = bones['upper_arm_l'].head, bones['forearm_l'].head, bones['hand_l'].head
+        worst['top'] = max(worst['top'], top)
+        worst['eye'] = [min(worst['eye'][0], eye), max(worst['eye'][1], eye)]
+        worst['centre'] = [min(worst['centre'][0], centre.z), max(worst['centre'][1], centre.z)]
+        worst['offset'] = max(worst['offset'], abs(centre.x), abs(centre.y))
+        worst['grip'] = max(worst['grip'], grip)
+        worst['elbow'] = max(worst['elbow'], math.degrees((shoulder - elbow).angle(wrist - elbow)))
+        worst['knee'] = min(worst['knee'], knee_minimum())
+    log(f'fit {name:10s} top {worst["top"]:.3f} (under {POSTURE_HEIGHT[posture]}) eye {worst["eye"][0]:.3f}..{worst["eye"][1]:.3f} '
+        f'(camera {EYE_HEIGHT[posture]}) skull {worst["centre"][0]:.3f}..{worst["centre"][1]:.3f} off centre {worst["offset"]:.3f} '
+        f'grip {worst["grip"] * 100:.1f} cm left elbow {worst["elbow"]:.0f} deg knee {worst["knee"]:.4f} '
+        f'head gear in boxes {worst["helmet"][0]:.2f} (mean {worst["helmet"][1]:.2f}) boots reach {worst["boots"]:.3f}')
+    return {'clip': name, 'posture': posture, **worst}
+
+
+POSE_AUDIT = [audit(name, frame) for name, frame in [('Idle', 1), ('Aim', 1), ('Walk', 1), ('Walk', 5), ('Run', 1), ('Crouch', 1), ('Crouch', 31),
+                                                      ('CrouchWalk', 1), ('CrouchWalk', 5), ('CrouchWalk', 9), ('CrouchWalk', 13), ('Slide', 1), ('Slide', 16)]]
+FIT_AUDIT = [fit_audit(name) for name in ('Idle', 'Aim', 'Walk', 'Run', 'Fire', 'Crouch', 'CrouchWalk', 'Slide')]
 rig.animation_data.action = None
 for pose_bone in rig.pose.bones:
     pose_bone.rotation_euler = (0, 0, 0); pose_bone.location = (0, 0, 0)
@@ -1340,14 +1680,43 @@ def render(path, camera_location, target, ortho=None, resolution=(1000, 1200), l
     log(f'rendered {path}')
 
 
-def pose_sheet(path, poses, accent_hex, turn=-35, rows_count=2):
-    """Real deformed-geometry snapshots of authored poses side by side."""
+def review_material(name, colour, emission=0.0):
+    material = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    material.use_nodes = True
+    shader = material.node_tree.nodes.get('Principled BSDF')
+    shader.inputs['Base Color'].default_value = (*colour, 1)
+    if emission:
+        shader.inputs['Emission Color'].default_value = (*colour, 1)
+        shader.inputs['Emission Strength'].default_value = emission
+    return material
+
+
+def hitbox_frames(index, offset, turn, posture):
+    """Thin wire outlines of the shared hit boxes for a posture, centred on the player's position."""
+    material = review_material('Review hit boxes', (1.0, 0.78, 0.25), emission=1.5)
+    boxes = []
+    for zone, bottom, top, half in ZONES[posture]:
+        mesh = bpy.data.meshes.new(f'Review_box_{index}_{zone}')
+        bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0)
+        for vertex in bm.verts:
+            vertex.co = Vector((vertex.co.x * 2 * half, vertex.co.y * 2 * half, bottom + (vertex.co.z + 0.5) * (top - bottom)))
+        bm.to_mesh(mesh); bm.free()
+        obj = bpy.data.objects.new(mesh.name, mesh); COLLECTION.objects.link(obj)
+        obj.location = offset; obj.rotation_euler.z = math.radians(turn)
+        wire = obj.modifiers.new('Wire', 'WIREFRAME'); wire.thickness = 0.007; wire.use_replace = True
+        mesh.materials.append(material)
+        boxes.append(obj)
+    return boxes
+
+
+def pose_sheet(path, poses, accent_hex, turn=-35, rows_count=2, boxes=False):
+    """Real deformed-geometry snapshots of authored poses side by side, optionally inside wire
+    outlines of the shared hit boxes for each clip's posture."""
     studio(accent_hex)
+    setup_stage()
     body = PARTS_JOINED
     snapshots = []
-    label_material = bpy.data.materials.new('Review lettering'); label_material.diffuse_color = (0.85, 0.85, 0.82, 1)
-    label_material.use_nodes = True
-    label_material.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value = (0.8, 0.8, 0.77, 1)
+    label_material = review_material('Review lettering', (0.8, 0.8, 0.77))
     columns = (len(poses) + rows_count - 1) // rows_count
     for index, (name, frame) in enumerate(poses):
         set_pose(name, frame)
@@ -1359,6 +1728,8 @@ def pose_sheet(path, poses, accent_hex, turn=-35, rows_count=2):
             mesh = bpy.data.meshes.new_from_object(source.evaluated_get(depsgraph), depsgraph=depsgraph)
             obj = bpy.data.objects.new(f'Review_{index}_{source.name}', mesh); COLLECTION.objects.link(obj)
             obj.location = offset; obj.rotation_euler.z = math.radians(turn); snapshots.append(obj)
+        if boxes:
+            snapshots.extend(hitbox_frames(index, offset, turn, CLIP_POSTURE[name]))
         bpy.ops.object.text_add(location=offset + Vector((0, 0.5, -0.12)), rotation=(math.pi / 2, 0, math.pi))
         label = bpy.context.object; label.data.body = name.upper(); label.data.align_x = 'CENTER'; label.data.size = 0.09
         label.data.materials.append(label_material); snapshots.append(label)
@@ -1394,12 +1765,28 @@ def review(prefix, final):
     if final:
         pose_sheet(PREVIEWS / f'{prefix}-poses.jpg', [('Idle', 1), ('Aim', 1), ('Walk', 5), ('Run', 4), ('Jump', 6),
                                                       ('Crouch', 1), ('CrouchWalk', 5), ('Slide', 1), ('Reload', 25), ('Fire', 2)], '#ff5a4f')
-        pose_sheet(PREVIEWS / f'{prefix}-low-poses.jpg', [('Crouch', 1), ('CrouchWalk', 1), ('CrouchWalk', 5), ('CrouchWalk', 9), ('Slide', 1)],
-                   '#4aa3ff', turn=-90, rows_count=1)
+        side_sheets(prefix)
     rig.animation_data.action = None
 
 
+LOW_SHEET = [('Crouch', 1), ('CrouchWalk', 1), ('CrouchWalk', 5), ('CrouchWalk', 9), ('Slide', 1)]
+GAIT_SHEET = [('Idle', 1), ('Walk', 1), ('Walk', 5), ('Walk', 9), ('Run', 4)]
+
+
+def side_sheets(prefix):
+    """Side views inside the shared hit boxes: the low poses and the upright Walk/Run."""
+    pose_sheet(PREVIEWS / f'{prefix}-low-poses.jpg', LOW_SHEET, '#4aa3ff', turn=-90, rows_count=1, boxes=True)
+    pose_sheet(PREVIEWS / f'{prefix}-gait-poses.jpg', GAIT_SHEET, '#ff5a4f', turn=-90, rows_count=1, boxes=True)
+
+
 PARTS_JOINED = PARTS['atlas'] + PARTS['accent'] + PARTS['lens']
+if STAGE == 'poses':
+    side_sheets('operator-check')
+    pose_sheet(PREVIEWS / 'operator-check-front.jpg', [('Crouch', 1), ('CrouchWalk', 5), ('Slide', 1), ('Walk', 5), ('Run', 4)], '#4aa3ff',
+               turn=0, rows_count=1, boxes=True)
+    pose_sheet(PREVIEWS / 'operator-check-three-quarter.jpg', [('Crouch', 1), ('CrouchWalk', 5), ('Slide', 1)], '#ff5a4f', turn=-50, rows_count=1)
+    print('KANNON_OPERATOR_POSES_COMPLETE')
+    sys.exit(0)
 if STAGE == 'preview':
     review('operator-preview', final=False)
     print('KANNON_OPERATOR_PREVIEW_COMPLETE')
@@ -1680,17 +2067,26 @@ manifest = {
     'materials': [m.name for m in body.data.materials], 'bones': [b.name for b in rig.data.bones],
     'clips': {name: {'frames': frames, 'fps': 30} for name, (action, frames) in clips.items()},
     'inheritedClips': ['Idle', 'Walk', 'Run', 'Jump', 'Aim', 'Fire', 'Reload'],
+    'unchangedClips': ['Idle', 'Jump', 'Aim', 'Fire', 'Reload'],
     'authoredClips': ['Crouch', 'CrouchWalk', 'Slide'], 'retiredClips': ['Heal'],
     'referenceSpeeds': {'Walk': 6.5, 'Run': 9.0, 'CrouchWalk': CROUCH_SPEED},
+    'uprightGait': {'clips': ['Walk', 'Run'], 'leanBackDegrees': GAIT_LEAN, 'skullAheadMetres': GAIT_HEAD_AHEAD,
+                    'kept': 'root, pelvis and leg tracks sample for sample (CMU-derived)',
+                    'changed': 'spine lean, head tip and both arm chains, keyed at every 120 Hz sample'},
+    'crouchWalk': {'referenceSpeed': CROUCH_SPEED, 'frames': CROUCH_FRAMES, 'duty': DUTY, 'strokeMetres': STROKE,
+                   'feetAheadOfHipsMetres': FEET_AHEAD, 'swingLiftMetres': SWING_LIFT, 'phaseShiftToMatchWalk': PHASE_SHIFT},
+    'postureRules': {'source': 'shared/physics.ts', 'postureHeight': POSTURE_HEIGHT, 'eyeHeight': EYE_HEIGHT,
+                     'helmetTopAboveSkullCentre': TOP_ABOVE_CENTRE, 'supportArmReach': SUPPORT_REACH},
     'weaponSocket': {'parent': 'hand_r', 'restBlender': list(SOCKET_REST), 'restGltf': [SOCKET_REST.x, SOCKET_REST.z, -SOCKET_REST.y],
                      'axes': 'glTF -Z forward along the barrel, +Y up (identity rotation at rest)'},
     'atlas': {'size': SIZE, 'bakeSamples': BAKE_SAMPLES, 'aoSamples': AO_SAMPLES, 'aoDistanceMetres': 0.08,
               'textures': list(atlas_images)},
-    'poseAudit': POSE_AUDIT, 'animationExport': export_review,
+    'poseAudit': POSE_AUDIT, 'fitAudit': FIT_AUDIT, 'animationExport': export_review,
     'units': 'metres', 'forward': 'glTF -Z', 'up': 'glTF +Y',
-    'source': ('Rig and seven clips from art/source/scout.blend (Walk/Run lower body derived from CMU 09_01, frames 15-103; '
-               'see art/source/motion/cmu-09/CMU-USAGE-NOTICE.md). Operator geometry, materials and the Crouch, CrouchWalk '
-               'and Slide clips are original Kannon work; no third-party textures or models.'),
+    'source': ('Rig and clips from art/source/scout.blend: Idle, Jump, Aim, Fire and Reload unchanged; Walk and Run keep the '
+               'hips and legs derived from CMU 09_01, frames 15-103 (see art/source/motion/cmu-09/CMU-USAGE-NOTICE.md), with '
+               'an original upright upper body. Operator geometry, materials and the Crouch, CrouchWalk and Slide clips are '
+               'original Kannon work; no third-party textures or models.'),
     'seconds': round(time.time() - STARTED, 1),
 }
 (SOURCE / 'operator-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', newline='\n')
