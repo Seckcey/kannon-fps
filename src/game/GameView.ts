@@ -20,7 +20,7 @@ import { AutomaticFire, reticleTarget } from './AutomaticFire';
 import { ViewModel } from './ViewModel';
 import { loadWeaponModels, type WeaponLibrary } from './WeaponModels';
 import type { HudStore } from './hud';
-import { blastFeedback, FirstPersonCamera, FirstPersonMotion, flinchKick, verticalFov } from './FirstPersonCamera';
+import { blastFeedback, FirstPersonCamera, FirstPersonMotion, flinchKick, LandingFilter, verticalFov } from './FirstPersonCamera';
 import { LocalWeapon, RecoilRecovery, shotDirections, type WeaponEvent } from './LocalWeapon';
 import { isFriend, RemotePlayers, renderTime, type Buffered, type RemoteSounds } from './RemotePlayers';
 import { crosshairGap, displayedHealth, dueWhistles, GrenadeTracker, HudFeed, nearMiss, shotMarker } from './HudFeed';
@@ -91,6 +91,9 @@ export class GameView {
   private readonly fpCamera = new FirstPersonCamera();
   private readonly motion = new FirstPersonMotion();
   private readonly prediction = new LocalPrediction();
+  private readonly landings = new LandingFilter();
+  /** Strongest landing predicted since the last frame (0..1), shown on the next frame. */
+  private landing = 0;
   private readonly weapon = new LocalWeapon();
   private readonly recoil = new RecoilRecovery();
   private readonly hudFeed: HudFeed;
@@ -262,11 +265,17 @@ export class GameView {
     return { postprocessing: !!this.presentation?.enabled, shadowSize: this.sun.shadow.mapSize.toArray(), qualityScale: this.renderQuality.scale, tier: this.tier.name, meshes, casting, lightmapped, roots };
   }
 
-  /** Called once for each input actually sent to the server, at 30 Hz. Predicts its shots. */
+  /** Called once for each input actually sent to the server, at 30 Hz. The local body moves one
+   * server tick per sent input, exactly as the server will move it (frames only draw between
+   * ticks), and the weapon predicts its shots on the same tick. */
   recordInput(frame: InputFrame) {
     if (this.disposed) return;
-    this.prediction.record(frame);
-    const now = this.serverTime(performance.now()) + this.prediction.clockLead, state = this.prediction.movement.state;
+    const wall = performance.now();
+    const latest = this.snapshotBuffer[this.snapshotBuffer.length - 1];
+    const moved = this.prediction.record(frame, wall, !!latest && wall - latest.received < 500 && this.localPlaying());
+    const state = this.prediction.movement.state;
+    if (moved) this.landing = Math.max(this.landing, this.landings.tick(moved, isPlayerGrounded(state), state.posture));
+    const now = moved ? this.prediction.movement.time : this.serverTime(wall) + this.prediction.clockLead;
     const events = this.weapon.step(frame, {
       now, alive: this.localPlaying(), sprinting: !!state.sprinting, dashing: !!state.dashing,
       vaultProgress: vaultProgress(state.vault, now), ads: this.motion.ads,
@@ -275,6 +284,7 @@ export class GameView {
     if (!frame.fire) this.recoil.release(this.weapon.spec.recoil.recovery);
   }
 
+  /** The server simulates this player's inputs: alive in live play with the predictor running. */
   private localPlaying() {
     const local = this.localState();
     return !!local && this.prediction.active && this.snapshot?.phase === 'playing' && local.health > 0 && local.connected;
@@ -410,24 +420,29 @@ export class GameView {
     this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix();
   };
 
-  /** Simple touch fire: shoot while the crosshair rests on a visible enemy's hitboxes. */
+  /** Simple touch fire: shoot while the crosshair rests on a visible enemy's hitboxes. Returns true
+   * while it is firing at a target. */
   prepareAutomaticFire(): boolean {
     const input = this.options.input, now = performance.now();
     const localId = this.options.getPlayerId(), local = this.localState(), snapshot = this.snapshot;
     const fresh = !!this.snapshotBuffer.length && now - this.snapshotBuffer[this.snapshotBuffer.length - 1]!.received < 500;
     const time = this.serverTime(now), predicted = time + this.prediction.clockLead, spec = this.weapon.spec, state = this.prediction.movement.state;
-    const eligible = this.assetsAnnounced && fresh && input.acceptsInput && input.isTouch && input.firingMode === 'simple'
-      && snapshot?.phase === 'playing' && !!local && local.health > 0 && !this.motion.fireBlocked && !input.peek().reload
-      && this.weapon.fireReady({ now: predicted, sprinting: false, vaultProgress: vaultProgress(state.vault, predicted) });
+    const tracking = this.assetsAnnounced && fresh && input.acceptsInput && input.isTouch && input.firingMode === 'simple'
+      && snapshot?.phase === 'playing' && !!local && local.health > 0;
     let target: string | null = null;
-    if (eligible) {
+    if (tracking) {
       const eye = eyePosition(state), direction = directionFromAngles(input.yaw, input.pitch);
       const targets = [...this.remotes.entries.values()].map(entry => entry.state);
       target = reticleTarget(eye, direction, weaponMuzzle(eye, input.yaw, input.pitch), targets, localId, time,
         spec.kind === 'shotgun' ? 22 : spec.maxRange, { mode: snapshot!.mode, team: local!.team });
     }
-    input.setAutomaticFire(this.automaticFire.update(target, now, !spec.auto));
-    return !!target;
+    // The reticle keeps its target through a reload, raise or wall block, so fire resumes the moment
+    // a pull would shoot (a pump reload counts as ready once a shell is in).
+    const ready = !this.motion.fireBlocked && !input.peek().reload
+      && this.weapon.fireReady({ now: predicted, sprinting: false, vaultProgress: vaultProgress(state.vault, predicted) });
+    const firing = this.automaticFire.update(target, now, !spec.auto) && ready;
+    input.setAutomaticFire(firing);
+    return !!target && ready;
   }
 
   private checkAssetsReady() {
@@ -502,10 +517,10 @@ export class GameView {
     } else if (self) this.weapon.reconcile(self, local.lastInputSeq, snapshot.serverTime);
     this.lastAlive = alive;
     const snapped = this.prediction.receive(self ? { ...local, ...self } : local, snapshot.serverTime, local.lastInputSeq,
-      { playing: snapshot.phase === 'playing', alive, spawned });
+      { playing: snapshot.phase === 'playing', alive, spawned }, now);
     // Teleports and respawns should never drag a camera through the arena.
     const state = this.prediction.movement.state;
-    if (snapped) { this.fpCamera.snap(state, state.posture); this.motion.reset(state.posture); }
+    if (snapped) { this.fpCamera.snap(state, state.posture); this.motion.reset(state.posture); this.landings.reset(); this.landing = 0; }
   }
 
   private droneSound(snapshot: WorldSnapshot) {
@@ -560,26 +575,24 @@ export class GameView {
     const controller = this.options.input, input = controller.peek(), snapshot = this.snapshot;
     const local = this.localState(), self = this.self(), motion = this.motion, prediction = this.prediction;
     const serverNow = this.serverTime(now), predictedNow = serverNow + prediction.clockLead;
-    const fresh = this.snapshotBuffer.length > 0 && now - this.snapshotBuffer[this.snapshotBuffer.length - 1]!.received < 500;
     const alive = !!local && local.health > 0 && local.connected;
     const firstPerson = !!snapshot && prediction.active && alive && snapshot.phase !== 'finished';
-    if (firstPerson && snapshot.phase === 'playing' && fresh) prediction.movement.step(input, dt);
+    // The body only moves with sent inputs (recordInput); a frame draws it between the last two ticks.
     prediction.settle(dt);
-    const state = prediction.movement.state, spec = this.weapon.spec, feet = prediction.feet();
+    const state = prediction.movement.state, spec = this.weapon.spec, feet = prediction.feet(now);
     const speed = Math.hypot(state.vx, state.vz), grounded = isPlayerGrounded(state);
     const progress = this.weapon.reloadProgress(predictedNow);
+    const landed = firstPerson ? this.landing : 0;
+    this.landing = 0;
     let focus = 200;
     if (firstPerson) {
       focus = raycastMap({ x: feet.x, y: feet.y + this.fpCamera.eyeOffset, z: feet.z }, directionFromAngles(input.yaw, input.pitch), 200);
       const moved = motion.update({
-        dt, grounded, vy: state.vy, posture: state.posture, sprinting: !!state.sprinting, wallDistance: focus,
+        dt, posture: state.posture, sprinting: !!state.sprinting, wallDistance: focus,
         aimWanted: input.aim && !this.weapon.cooking && predictedNow >= this.weapon.state.meleeUntil,
         adsMs: spec.adsMs, steadyAim: !!self && hasPerk(self.loadout, 'steady-aim'),
       });
-      if (moved.landed) {
-        const intensity = Math.min(1, moved.landed / 12);
-        this.fpCamera.land(moved.landed, this.settings.reduceMotion); this.viewModel.land(intensity); this.audio.land(feet, true, intensity);
-      }
+      if (landed > 0) { this.fpCamera.land(landed, this.settings.reduceMotion); this.viewModel.land(landed); this.audio.land(feet, true, landed); }
       if (moved.slide) this.audio.slide(feet, true);
       if (moved.vault) { this.audio.vault(true); this.viewModel.vault(); }
       if (moved.aim !== null) this.audio.aim(moved.aim);

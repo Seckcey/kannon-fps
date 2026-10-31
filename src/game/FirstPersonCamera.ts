@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { EYE_HEIGHT, clamp } from '../../shared/physics';
+import { EYE_HEIGHT, clamp, type MoveEvents } from '../../shared/physics';
 import type { Posture, Vec3 } from '../../shared/protocol';
 import { STEADY_AIM_ADS_FACTOR, STEADY_AIM_FLINCH_FACTOR } from '../../shared/weapons';
 
-/** View kick when hit: up to about one degree upward and a little sideways; Steady Aim flinches 40% less. */
+/** View kick when hit: up to about one degree upward and a little sideways; the steady-aim perk flinches 40% less. */
 export function flinchKick(amount: number, steadyAim: boolean, random: () => number = Math.random): { yaw: number; pitch: number } {
   const strength = Math.min(1, Math.max(0, Number.isFinite(amount) ? amount : 0) / 40) * (steadyAim ? STEADY_AIM_FLINCH_FACTOR : 1);
   return { yaw: (random() - 0.5) * 0.024 * strength, pitch: 0.018 * strength };
@@ -21,42 +21,88 @@ export const WALL_BLOCK_NEAR = 0.55, WALL_BLOCK_CLEAR = 0.65;
 const approach = (value: number, target: number, step: number) => value < target ? Math.min(target, value + step) : Math.max(target, value - step);
 const damp = (value: number, target: number, rate: number, dt: number) => value + (target - value) * (1 - Math.exp(-rate * dt));
 
+/** A landing this fast counts as a full-strength landing (camera dip, arms spring and thump). */
+const FULL_LANDING_SPEED = 12;
+/** Walking or running off an edge without jumping lands up to about this fast on the house stairs
+ * (a dash skips three or four steps); only faster falls (higher drops) count as landings. */
+export const STEP_DOWN_SPEED = 6.9;
+const STEP_DOWN_BLEND = 0.8;
+
+/** Landing strength 0..1 from the fall speed (m/s). A landing that ends a jump or a vault counts
+ * from any speed; a fall that just walked off an edge fades in above STEP_DOWN_SPEED. */
+export function landingStrength(speed: number, deliberate: boolean): number {
+  if (!(speed > 0)) return 0;
+  const strength = clamp(speed / FULL_LANDING_SPEED, 0, 1);
+  if (deliberate) return strength;
+  const t = clamp((speed - STEP_DOWN_SPEED) / STEP_DOWN_BLEND, 0, 1);
+  return strength * t * t * (3 - 2 * t);
+}
+
+/** Decides which landings the player should feel, so stairs, curbs and the truck bed stay smooth
+ * while jumps, vault drops and real falls still dip the view. */
+export class LandingFilter {
+  private deliberate = false;
+  private airborne = false;
+  private fall = 0;
+
+  /** One predicted tick of the local player, using the physics' own landing speed. */
+  tick(events: Pick<MoveEvents, 'jumped' | 'vaultEnded' | 'landedSpeed'>, grounded: boolean, posture: Posture): number {
+    if (events.jumped || events.vaultEnded) this.deliberate = true;
+    if (events.landedSpeed > 0) {
+      const strength = landingStrength(events.landedSpeed, this.deliberate);
+      this.deliberate = false;
+      return strength;
+    }
+    // Back on the ground without a landing (a gentle hop onto a step) ends the jump too.
+    if (grounded && posture !== 'vault' && !events.jumped && !events.vaultEnded) this.deliberate = false;
+    return 0;
+  }
+
+  /** Another player's drawn pose: the fall speed comes from the reported vertical velocity, and a
+   * rise or a vault marks the fall as deliberate. Falls slower than `minimum` are never heard. */
+  observe(grounded: boolean, vy: number, posture: Posture, minimum = 3): number {
+    const speed = Number.isFinite(vy) ? vy : 0;
+    if (posture === 'vault' || speed > 0.5) this.deliberate = true;
+    if (!grounded || posture === 'vault') { this.airborne = true; this.fall = Math.max(this.fall, -speed); return 0; }
+    const strength = this.airborne && this.fall >= minimum ? landingStrength(this.fall, this.deliberate) : 0;
+    this.airborne = false; this.fall = 0; this.deliberate = false;
+    return strength;
+  }
+
+  reset() { this.deliberate = false; this.airborne = false; this.fall = 0; }
+}
+
 export interface MotionFrame {
-  dt: number; grounded: boolean; vy: number; posture: Posture; sprinting: boolean;
+  dt: number; posture: Posture; sprinting: boolean;
   /** The player holds aim and the hands are free (not cooking or knifing). */
   aimWanted: boolean;
   /** Map distance along the view from the eye (metres). */
   wallDistance: number;
   adsMs: number; steadyAim: boolean;
 }
-/** `landed` is the fall speed of a hard landing (0 otherwise); `aim` is the new aim state when it changed. */
-export interface MotionEvents { landed: number; slide: boolean; vault: boolean; aim: boolean | null }
+/** `aim` is the new aim state when it changed. */
+export interface MotionEvents { slide: boolean; vault: boolean; aim: boolean | null }
 
 /** First-person presentation state that changes frame to frame: aim-down-sights and sprint blends,
- * the wall retract (with hysteresis so the weapon does not flicker), and landing, slide and vault
+ * the wall retract (with hysteresis so the weapon does not flicker), and slide and vault
  * transitions read from the predicted body rather than replayed physics events. */
 export class FirstPersonMotion {
   ads = 0;
   sprint = 0;
   wallBlock = 0;
   fireBlocked = false;
-  private airborne = false;
-  private fall = 0;
   private posture: Posture = 'stand';
   private aimed = false;
 
   reset(posture: Posture) {
     this.ads = 0; this.sprint = 0; this.wallBlock = 0; this.fireBlocked = false;
-    this.airborne = false; this.fall = 0; this.posture = posture; this.aimed = false;
+    this.posture = posture; this.aimed = false;
   }
   /** Not in first person (dead, results): nothing is aimed, lowered or blocked. */
   leave() { this.ads = 0; this.sprint = 0; this.fireBlocked = false; this.aimed = false; }
 
   update(frame: MotionFrame): MotionEvents {
     const dt = Number.isFinite(frame.dt) ? clamp(frame.dt, 0, 0.1) : 0;
-    let landed = 0;
-    if (!frame.grounded) { this.airborne = true; this.fall = Math.max(this.fall, -frame.vy); }
-    else if (this.airborne) { if (this.fall >= 2) landed = this.fall; this.airborne = false; this.fall = 0; }
     const slide = frame.posture === 'slide' && this.posture !== 'slide', vault = frame.posture === 'vault' && this.posture !== 'vault';
     this.posture = frame.posture;
     const distance = Number.isFinite(frame.wallDistance) ? frame.wallDistance : 200;
@@ -67,11 +113,13 @@ export class FirstPersonMotion {
     const aim = aiming !== this.aimed ? aiming : null;
     this.aimed = aiming;
     this.sprint = damp(this.sprint, frame.sprinting ? 1 : 0, 8, dt);
-    return { landed, slide, vault, aim };
+    return { slide, vault, aim };
   }
 }
 /** Camera roll while sliding. */
 export const SLIDE_ROLL = THREE.MathUtils.degToRad(4);
+/** Downward eye speed (m/s) a full-strength landing starts the dip spring with. */
+const LANDING_DIP = 4.2;
 const EYE_RATE = 14, ROLL_RATE = 10, DIP_SPRING = 14;
 
 /** Vertical field of view (degrees) for a horizontal field of view at an aspect ratio. */
@@ -150,10 +198,10 @@ export class FirstPersonCamera {
     this.feetY = feet.y; this.eyeHeight = EYE_HEIGHT[posture]; this.initialized = true;
     this.dip = 0; this.dipVelocity = 0; this.roll = 0; this.death = null;
   }
-  /** Landing impulse from the fall speed (m/s). */
-  land(speed: number, reduceMotion = false) {
-    if (!(speed > 0)) return;
-    this.dipVelocity -= Math.min(4.5, speed * 0.35) * (reduceMotion ? 0.3 : 1);
+  /** Landing impulse from its strength 0..1 (see landingStrength). */
+  land(strength: number, reduceMotion = false) {
+    if (!(strength > 0)) return;
+    this.dipVelocity -= LANDING_DIP * Math.min(1, strength) * (reduceMotion ? 0.3 : 1);
   }
   /** Explosion shake 0..1 (position only, so aim is not disturbed). */
   shake(intensity: number) { if (intensity > 0) this.shakeAmount = Math.min(1, Math.max(this.shakeAmount, intensity)); }

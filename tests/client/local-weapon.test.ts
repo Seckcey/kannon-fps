@@ -126,6 +126,30 @@ test('the pump shotgun loads shell by shell and a trigger pull interrupts the re
   assert.equal(interrupted.state.reloadSlot, 0); assert.equal(interrupted.state.mag[0], 3);
 });
 
+test('once a shell is in, a pump reload no longer blocks the trigger, so Simple fire can interrupt it like a manual pull', () => {
+  const loadout: Loadout = { ...plain, primary: 'breaker12' }, spec = WEAPONS.breaker12, start = 30_000;
+  const weapon = armed(loadout, { mag: [0, 12] });
+  const ready = (now: number) => weapon.fireReady({ now, sprinting: false, vaultProgress: 1 });
+  assert.deepEqual(weapon.step(frame(1, { reload: true }), context(start)), [{ type: 'reload', weapon: 'breaker12', empty: true }]);
+  const firstShell = start + spec.shellStartMs! + spec.perShellMs!;
+  assert.equal(weapon.state.reloadingUntil, start + spec.shellStartMs! + spec.perShellMs! * 6, 'An empty pump takes 3 s to fill');
+  assert.equal(ready(start + 400), false, 'No shell yet: the reload holds the trigger');
+  assert.equal(ready(firstShell - 1), false);
+  assert.equal(ready(firstShell), true, 'A shell due now goes in before the tick reads the trigger');
+  let seq = 2, now = start;
+  while (weapon.state.mag[0] === 0) { now += TICK; weapon.step(frame(seq++), context(now)); }
+  assert.ok(now < start + 900 && weapon.state.reloadSlot === 1, 'The first shell is in about 0.8 s into the reload');
+  assert.equal(ready(now), true, 'Only the interruptible reload stands in the way, so the trigger is ready');
+  assert.ok(weapon.step(frame(seq++, { fire: true }), context(now + TICK)).some(event => event.type === 'shot'), 'and a pull fires');
+  assert.equal(weapon.state.reloadSlot, 0);
+  const stillBlocked = armed(loadout, { mag: [2, 12], readyAt: start + 5_000 });
+  stillBlocked.step(frame(1, { reload: true }), context(start));
+  assert.equal(stillBlocked.fireReady({ now: start + 100, sprinting: false, vaultProgress: 1 }), false, 'Other blocks still apply');
+  const carbine = armed(plain, { mag: [10, 12] });
+  carbine.step(frame(1, { reload: true }), context(start));
+  assert.equal(carbine.fireReady({ now: start + 100, sprinting: false, vaultProgress: 1 }), false, 'A magazine reload is never interrupted');
+});
+
 test('a swap waits for the new weapon to raise (25% faster with Quick Hands) and cancels a reload', () => {
   for (const [loadout, factor] of [[plain, 1], [quick, QUICK_HANDS_FACTOR]] as const) {
     const weapon = armed(loadout, { mag: [20, 12] }), start = 40_000, raise = WEAPONS.sentry9.raiseMs * factor;

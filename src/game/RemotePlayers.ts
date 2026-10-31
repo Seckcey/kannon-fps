@@ -8,7 +8,7 @@ import { createBlenderCharacter } from './BlenderCharacter';
 import type { CharacterModel } from './Character';
 import type { CharacterImpactKind } from './CharacterImpact';
 import { LocomotionVelocity } from './LocomotionVelocity';
-import { Stride, stepLength } from './FirstPersonCamera';
+import { LandingFilter, Stride, stepLength } from './FirstPersonCamera';
 import type { SunVisibilityGrid } from './SunVisibility';
 import type { WeaponInstance, WeaponLibrary } from './WeaponModels';
 
@@ -94,7 +94,7 @@ interface RemoteEntry {
   model: CharacterModel; label: HTMLDivElement; shadow: THREE.Mesh;
   position: THREE.Vector3; locomotion: LocomotionVelocity; stride: Stride;
   weapon: WeaponInstance | null; weaponId: WeaponId | null;
-  state: PublicPlayerState; posture: Posture; airborne: boolean; fall: number; shots: number;
+  state: PublicPlayerState; posture: Posture; landing: LandingFilter; shots: number;
 }
 
 /** Other players as full operator bodies: interpolated, team-coloured, armed and labelled.
@@ -138,7 +138,7 @@ export class RemotePlayers {
     if (!entry) return true;
     return pellets || entry.shots++ % 3 === 0;
   }
-  resetMotion() { for (const entry of this.entries.values()) { entry.locomotion.reset(); entry.shots = 0; entry.airborne = false; entry.fall = 0; } }
+  resetMotion() { for (const entry of this.entries.values()) { entry.locomotion.reset(); entry.shots = 0; entry.landing.reset(); } }
   /** Another player's confirmed shot from their drawn weapon: body recoil, muzzle-side effects with a
    * tracer on the first and every third round (every pellet for shotguns), and a shell when close.
    * Returns the muzzle used, for positioned sound. */
@@ -196,7 +196,7 @@ export class RemotePlayers {
     const shadow = new THREE.Mesh(this.shadowGeometry, this.shadowMaterial); shadow.rotation.x = -Math.PI / 2; shadow.renderOrder = 1; this.scene.add(shadow);
     const entry: RemoteEntry = {
       model, label, shadow, position: new THREE.Vector3(player.x, player.y, player.z), locomotion: new LocomotionVelocity(), stride: new Stride(),
-      weapon: null, weaponId: null, state: player, posture: player.posture ?? 'stand', airborne: false, fall: 0, shots: 0,
+      weapon: null, weaponId: null, state: player, posture: player.posture ?? 'stand', landing: new LandingFilter(), shots: 0,
     };
     this.entries.set(player.id, entry);
     return entry;
@@ -225,11 +225,9 @@ export class RemotePlayers {
       if (posture === 'vault') frame.sounds!.vault(rendered);
     }
     entry.posture = posture;
-    if (!grounded) { entry.airborne = true; entry.fall = Math.max(entry.fall, -rendered.vy); }
-    else if (entry.airborne) {
-      if (near && entry.fall >= 3) frame.sounds!.land(rendered, Math.min(1, entry.fall / 12));
-      entry.airborne = false; entry.fall = 0;
-    }
+    // Jumps, vault drops and real falls thump; running down stairs does not.
+    const landed = entry.landing.observe(grounded, rendered.vy, posture);
+    if (landed > 0 && near) frame.sounds!.land(rendered, landed);
     const speed = Math.hypot(velocity.vx, velocity.vz);
     const step = entry.stride.update(speed, Math.min(0.1, frame.elapsed), stepLength(posture, !!rendered.sprinting, !!rendered.dashing), grounded && posture !== 'slide' && posture !== 'vault');
     if (step && near) frame.sounds!.footstep(surfaceAt(rendered), { x: rendered.x, y: rendered.y, z: rendered.z }, footstepLoudness(rendered));

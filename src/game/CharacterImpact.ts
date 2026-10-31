@@ -85,6 +85,15 @@ export function createAccentImpact(material: THREE.MeshStandardMaterial, now = (
   return materialPulse([material], now, () => {});
 }
 
+/** `Material.clone` drops shader hooks. The pulse copy keeps its source's, such as the
+ * per-character sun shading, or the body would draw fully sunlit while standing in baked shade. */
+function cloneWithShaderHooks(material: THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+  const copy = material.clone();
+  if (Object.hasOwn(material, 'onBeforeCompile')) copy.onBeforeCompile = material.onBeforeCompile;
+  if (Object.hasOwn(material, 'customProgramCacheKey')) copy.customProgramCacheKey = material.customProgramCacheKey;
+  return copy;
+}
+
 /** Clone only the skinned body's packed PBR surface, never the cached weapon or accent materials.
  * The scout names it `ScoutSurface` on `scout_body`; an operator export without those names pulses
  * every non-accent standard material on its skinned meshes instead. */
@@ -109,7 +118,7 @@ export function createCharacterImpact(model: THREE.Object3D, now = () => perform
       if (!eligible(material)) return material;
       let copy = copies.get(material);
       if (!copy) {
-        copy = material.clone();
+        copy = cloneWithShaderHooks(material);
         // Keep dark fabric and armor details in the pulse. The exported body's
         // zero emission makes this invisible at rest; bind once before first render
         // so accepted hits never change shader defines or texture/UV transforms.

@@ -169,11 +169,19 @@ export class LocalWeapon {
     return events;
   }
 
-  /** True when a trigger pull now would fire (HUD dims the crosshair otherwise). */
+  /** True when a trigger pull now would fire (HUD dims the crosshair otherwise; Simple fire waits
+   * for it). A shell-by-shell reload stops for a pull once a shell is in, so it does not block then. */
   fireReady(ctx: Pick<WeaponStepContext, 'now' | 'sprinting' | 'vaultProgress'>): boolean {
     const s = this.state, spec = this.spec;
-    return !s.reloadSlot && !ctx.sprinting && ctx.now >= s.readyAt && ctx.now >= s.meleeUntil && !s.cookingSince
+    return (!s.reloadSlot || this.interruptible(ctx.now)) && !ctx.sprinting && ctx.now >= s.readyAt && ctx.now >= s.meleeUntil && !s.cookingSince
       && ctx.vaultProgress >= VAULT_FIRE_PROGRESS && ctx.now >= s.sprintEndedAt + sprintToFireMs(spec, s.sprintWasDash);
+  }
+  /** A shell-by-shell reload of the weapon in hand with a shell already in, or one due by `now`
+   * (the tick inserts it before the trigger is read). */
+  private interruptible(now: number): boolean {
+    const s = this.state, spec = this.spec, index = s.slot - 1;
+    return !!spec.perShellMs && s.reloadSlot === s.slot
+      && (s.mag[index] > 0 || (s.shellsLeft > 0 && s.reserve[index] > 0 && s.mag[index] < spec.magazine && now >= s.nextShellAt));
   }
   /** Reload progress 0..1, or -1 when not reloading. */
   reloadProgress(now: number): number {

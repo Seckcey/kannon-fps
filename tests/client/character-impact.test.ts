@@ -6,6 +6,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { createAccentImpact, createCharacterImpact, type CharacterImpactKind } from '../../src/game/CharacterImpact';
 import { createCharacter } from '../../src/game/Character';
+import { applySunVisibility } from '../../src/game/SunVisibility';
 import type { PublicPlayerState } from '../../shared/protocol';
 import { DEFAULT_LOADOUT } from '../../shared/weapons';
 
@@ -254,4 +255,40 @@ test('an operator export without scout names pulses only its non-accent skinned 
   effect.dispose();
   assert.deepEqual(mesh.material, [gear, accent, visor], 'Disposal restores the shared materials');
   geometry.dispose(); gear.dispose(); accent.dispose(); visor.dispose();
+});
+
+test('the pulse copy keeps the per-character sun shading, so a hit body still darkens in baked shade', async () => {
+  const shaded = (material: THREE.Material, sun: { value: number }) => {
+    const shader = { uniforms: {} as Record<string, unknown>, vertexShader: '', fragmentShader: '#include <common>\nvoid main() {\n#include <lights_fragment_begin>\n}' };
+    material.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms, {} as THREE.WebGLRenderer);
+    assert.equal(shader.uniforms.uSunVisibility, sun, 'The copy reads this character\'s sun uniform');
+    assert.match(shader.fragmentShader, /directLight\.color \*= uSunVisibility/);
+  };
+  const geometry = new THREE.BoxGeometry(0.4, 1.8, 0.3), count = geometry.getAttribute('position').count;
+  geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(new Array(count * 4).fill(0), 4));
+  geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Array.from({ length: count * 4 }, (_, index) => index % 4 === 0 ? 1 : 0), 4));
+  const gear = new THREE.MeshStandardMaterial({ name: 'OperatorGear' }), sun = { value: 0.2 };
+  applySunVisibility(gear, sun);
+  const mesh = new THREE.SkinnedMesh(geometry, gear), bone = new THREE.Bone();
+  mesh.add(bone); mesh.bind(new THREE.Skeleton([bone]));
+  const operator = new THREE.Group(); operator.add(mesh);
+  const effect = createCharacterImpact(operator, () => 0);
+  const copy = mesh.material as THREE.MeshStandardMaterial;
+  assert.notEqual(copy, gear, 'The pulse draws through a private copy');
+  assert.match(copy.customProgramCacheKey(), /kannon-sun-visibility/, 'The copy compiles the sun-shading variant');
+  assert.equal(copy.customProgramCacheKey(), gear.customProgramCacheKey(), 'Hit bodies share the program of unhit ones');
+  shaded(copy, sun);
+  effect.dispose(); geometry.dispose(); gear.dispose();
+  // The exported Scout body keeps its hook the same way.
+  const scout = clone((await loadScout()).scene), scoutSun = { value: 0.6 };
+  const cache = new Map<THREE.Material, THREE.Material>();
+  scout.traverse(object => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const own = (material: THREE.Material) => { let copy = cache.get(material); if (!copy) { copy = material.clone(); applySunVisibility(copy, scoutSun); cache.set(material, copy); } return copy; };
+    object.material = Array.isArray(object.material) ? object.material.map(own) : own(object.material);
+  });
+  const scoutEffect = createCharacterImpact(scout, () => 0);
+  shaded(bodySurface(scout), scoutSun);
+  scoutEffect.dispose();
+  for (const material of cache.values()) material.dispose();
 });

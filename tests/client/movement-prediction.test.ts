@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isPlayerGrounded, moveDefaults, movePlayer, PLAYER_RADIUS, type MoveEvents, type MoveState } from '../../shared/physics';
+import { isPlayerGrounded, MOVE, moveDefaults, movePlayer, PLAYER_RADIUS, supportHeight, type MoveEvents, type MoveState } from '../../shared/physics';
 import { OBSTACLES } from '../../shared/map';
-import { RULES, type InputFrame, type Loadout } from '../../shared/protocol';
+import { RULES, type InputFrame, type Loadout, type Vec3 } from '../../shared/protocol';
 import { LOADOUT_PRESETS, WEAPONS } from '../../shared/weapons';
 import { LocalPrediction, MovementPrediction, SNAP_DISTANCE, vaultProgress, type PredictionSource } from '../../src/game/MovementPrediction';
 
@@ -169,43 +169,240 @@ const live = { playing: true, alive: true, spawned: false };
 
 test('local prediction keeps only unacknowledged inputs, and none outside live play or after a new life', () => {
   const local = new LocalPrediction();
-  for (let seq = 1; seq <= 5; seq++) local.record(frame(seq, { yaw: Math.PI / 2 }));
-  local.receive(source(standing(-6)), 1_000, 2, live);
+  for (let seq = 1; seq <= 5; seq++) local.record(frame(seq, { yaw: Math.PI / 2 }), seq * TICK, false);
+  local.receive(source(standing(-6)), 1_000, 2, live, 200);
   assert.deepEqual(local.pending.map(input => input.seq), [3, 4, 5]);
-  local.receive(source(standing(-6)), 1_033, 3, { ...live, playing: false });
+  local.receive(source(standing(-6)), 1_033, 3, { ...live, playing: false }, 233);
   assert.deepEqual(local.pending, [], 'Countdown inputs are never simulated by the server');
-  for (let seq = 6; seq <= 8; seq++) local.record(frame(seq));
-  local.receive(source(standing(-6)), 1_066, 5, { ...live, spawned: true });
+  for (let seq = 6; seq <= 8; seq++) local.record(frame(seq), 233 + seq, false);
+  local.receive(source(standing(-6)), 1_066, 5, { ...live, spawned: true }, 266);
   assert.deepEqual(local.pending, []);
-  for (let seq = 1; seq <= 200; seq++) local.record(frame(seq));
+  for (let seq = 1; seq <= 200; seq++) local.record(frame(seq), 300, false);
   assert.equal(local.pending.length, 120, 'The in-flight list is bounded');
 });
 
 test('corrections glide the drawn body onto the server path, while spawns and teleports jump', () => {
   const local = new LocalPrediction();
-  assert.equal(local.receive(source(standing(-6)), 1_000, 0, live), true, 'The first snapshot places the view');
-  const drawn = local.feet();
-  assert.equal(local.receive(source(standing(-6.3)), 1_033, 0, live), false);
-  assert.ok(Math.abs(local.feet().x - drawn.x) < 1e-12, 'No visible jump on reconciliation');
+  assert.equal(local.receive(source(standing(-6)), 1_000, 0, live, 0), true, 'The first snapshot places the view');
+  const drawn = local.feet(0);
+  assert.equal(local.receive(source(standing(-6.3)), 1_033, 0, live, 33), false);
+  assert.ok(Math.abs(local.feet(33).x - drawn.x) < 1e-12, 'No visible jump on reconciliation');
   for (let i = 0; i < 60; i++) local.settle(1 / 60);
-  assert.ok(Math.abs(local.feet().x + 6.3) < 1e-3, 'The correction has glided away');
-  assert.equal(local.receive(source(standing(-6.3 + SNAP_DISTANCE + 0.5)), 1_066, 0, live), true, 'A teleport jumps');
+  assert.ok(Math.abs(local.feet(1_033).x + 6.3) < 1e-3, 'The correction has glided away');
+  assert.equal(local.receive(source(standing(-6.3 + SNAP_DISTANCE + 0.5)), 1_066, 0, live, 1_066), true, 'A teleport jumps');
   assert.deepEqual(local.correction, { x: 0, y: 0, z: 0 });
-  assert.equal(local.receive(source(standing(-6)), 1_100, 0, { ...live, spawned: true }), true, 'A new life jumps');
+  assert.equal(local.receive(source(standing(-6)), 1_100, 0, { ...live, spawned: true }, 1_100), true, 'A new life jumps');
 });
 
 test('the predicted clock leads the snapshot by the inputs in flight, smoothed and kept across lives', () => {
   const local = new LocalPrediction();
-  for (let seq = 1; seq <= 3; seq++) local.record(frame(seq));
-  local.receive(source(standing(-6)), 1_000, 0, live);
+  for (let seq = 1; seq <= 3; seq++) local.record(frame(seq), seq * TICK, false);
+  local.receive(source(standing(-6)), 1_000, 0, live, 100);
   assert.ok(Math.abs(local.clockLead - 3 * TICK) < 1e-6, 'The first measurement is taken directly');
-  for (let seq = 4; seq <= 6; seq++) local.record(frame(seq));
-  local.receive(source(standing(-6)), 1_033, 0, live);
+  for (let seq = 4; seq <= 6; seq++) local.record(frame(seq), seq * TICK, false);
+  local.receive(source(standing(-6)), 1_033, 0, live, 200);
   assert.ok(Math.abs(local.clockLead - (0.8 * 3 * TICK + 0.2 * 6 * TICK)) < 1e-6, 'Later measurements are smoothed');
   const lead = local.clockLead;
-  local.receive(source(standing(-6)), 1_066, 6, { ...live, spawned: true });
-  local.receive(source(standing(-6)), 1_100, 6, { ...live, playing: false });
+  local.receive(source(standing(-6)), 1_066, 6, { ...live, spawned: true }, 233);
+  local.receive(source(standing(-6)), 1_100, 6, { ...live, playing: false }, 266);
   assert.equal(local.clockLead, lead, 'Respawns and countdowns keep the round-trip estimate');
+});
+
+test('each sent input in live play moves the body one server tick, and frames draw it between the last two ticks', () => {
+  const local = new LocalPrediction(), east = { moveZ: 1, yaw: Math.PI / 2 };
+  assert.equal(local.record(frame(1, east), 0, true), null, 'Nothing moves before the first snapshot supplies the body');
+  local.receive(source(standing(-6)), 1_000, 1, live, 10);
+  const reference = standing(-6);
+  reference.previous = frame(1, east);
+  const start = local.feet(10), walk = frame(2, east);
+  const events = local.record(walk, 100, true);
+  serverTick(reference, walk, 1_000 + TICK);
+  assert.ok(events && !events.jumped, 'A live input returns its tick events');
+  same(local.movement.state, reference.state, 'one tick');
+  assert.ok(Math.abs(local.movement.time - (1_000 + TICK)) < 1e-9, 'The tick runs on the predicted server clock');
+  const moved = reference.state.x - start.x;
+  assert.ok(moved > 0.01, 'The tick moved east');
+  assert.ok(Math.abs(local.feet(100).x - start.x) < 1e-12, 'Just after the tick the body is still drawn where it was');
+  assert.ok(Math.abs(local.feet(100 + TICK / 2).x - (start.x + moved / 2)) < 1e-9, 'Halfway to the next send it is drawn halfway');
+  assert.ok(Math.abs(local.feet(100 + TICK * 3).x - reference.state.x) < 1e-12, 'It never runs ahead of the latest tick');
+  assert.equal(local.record(frame(3, east), 100 + TICK, false), null, 'Inputs the server will not simulate do not move the body');
+  same(local.movement.state, reference.state, 'unmoved');
+  assert.deepEqual(local.pending.map(input => input.seq), [2, 3]);
+});
+
+test('a send timer that fires early or late moves the drawn body smoothly and never backwards', () => {
+  const local = new LocalPrediction(), east = { moveZ: 1, yaw: Math.PI / 2 };
+  local.receive(source(standing(-6)), 1_000, 0, live, 0);
+  const jitter = [0, 9, -7, 4, -9, 8, 0, -5, 7, -3, 9, -8, 2, -6, 5, 0, 0, 0];
+  const sends = jitter.map((offset, index) => (index + 1) * TICK + offset);
+  let next = 0, previous = local.feet(0), fastest = 0, now = 0;
+  for (; now <= 30 * TICK; now += 1000 / 60) {
+    while (next < sends.length && sends[next]! <= now) { local.record(frame(next + 1, east), sends[next]!, true); next++; }
+    local.settle(1 / 60);
+    const drawn = local.feet(now);
+    assert.ok(drawn.x >= previous.x - 1e-9, `The body never steps back (${now.toFixed(1)} ms)`);
+    fastest = Math.max(fastest, drawn.x - previous.x);
+    previous = drawn;
+  }
+  assert.ok(fastest < 2 * MOVE.walk / 60, `No frame jumps ahead: at most ${fastest.toFixed(3)} m in one frame`);
+  assert.ok(Math.abs(local.feet(now).x - local.movement.state.x) < 1e-3, 'Once the inputs stop it rests on the predicted path');
+});
+
+/** A client driven the way GameView drives LocalPrediction: each sent input is recorded (in live
+ * play it moves the body one tick), each render frame settles the correction and draws the body,
+ * and the newest snapshot is adopted on the next render frame. The reference server above runs one
+ * input per 30 Hz tick behind a fixed one-way delay and sends a snapshot every other tick (15 Hz). */
+interface Link { latency: number; sendPhase: number; renderHz: number; renderPhase: number; round: boolean }
+interface View { now: number; drawn: Vec3; state: MoveState }
+interface Player { input(index: number, now: number): Partial<InputFrame>; look(view: View): void }
+interface Session { server: Map<number, MoveEvents>; client: Map<number, MoveEvents>; snapBack: number; final: MoveState }
+type Snapshot = { source: PredictionSource; serverTime: number; ack: number };
+const EPOCH = 50_000;
+function session(link: Link, start: MoveState, player: Player, sends = 70): Session {
+  const queue: Array<{ time: number; order: number; run: () => void }> = [];
+  // At one instant: arrivals, then the server tick, then the client's send, then its render frame.
+  const at = (time: number, order: number, run: () => void) => {
+    let index = queue.length;
+    while (index > 0 && (queue[index - 1]!.time > time || (queue[index - 1]!.time === time && queue[index - 1]!.order > order))) index--;
+    queue.splice(index, 0, { time, order, run });
+  };
+  const server: ServerPlayer = { state: structuredClone(start), previous: null, loadout: LOADOUT_PRESETS.assault, cookingSince: 0, meleeUntil: 0, frags: 1 };
+  const inbox: InputFrame[] = [], result: Session = { server: new Map(), client: new Map(), snapBack: 0, final: server.state };
+  const end = EPOCH + sends * TICK + 2 * link.latency + 200;
+  let acknowledged = 0, newest: Snapshot | null = null, adopted: Snapshot | null = null;
+  for (let tick = 1; EPOCH + tick * TICK <= end; tick++) {
+    const time = EPOCH + tick * TICK;
+    at(time, 1, () => {
+      const input = inbox.shift();
+      if (input) { result.server.set(input.seq, serverTick(server, input, time)); acknowledged = input.seq; }
+      if (tick % 2) return;
+      const snapshot: Snapshot = { source: source(server, link.round), serverTime: link.round ? Math.round(time) : time, ack: acknowledged };
+      at(time + link.latency, 0, () => { newest = snapshot; });
+    });
+  }
+  const prediction = new LocalPrediction();
+  let received = -Infinity, firstLife = true, lastFrame = EPOCH;
+  for (let index = 0; index < sends; index++) {
+    const time = EPOCH + link.sendPhase + index * TICK;
+    at(time, 2, () => {
+      const input = frame(index + 1, player.input(index, time));
+      const events = prediction.record(input, time, prediction.active && time - received < 500);
+      if (events) result.client.set(input.seq, events);
+      at(time + link.latency, 0, () => { inbox.push(input); });
+    });
+  }
+  for (let index = 0; EPOCH + link.renderPhase + index * 1000 / link.renderHz <= end; index++) {
+    const time = EPOCH + link.renderPhase + index * 1000 / link.renderHz;
+    at(time, 3, () => {
+      const snapshot: Snapshot | null = newest;
+      if (snapshot && snapshot !== adopted) {
+        adopted = snapshot; received = time;
+        const before = { ...prediction.correction };
+        const snapped = prediction.receive(snapshot.source, snapshot.serverTime, snapshot.ack, { playing: true, alive: true, spawned: firstLife }, time);
+        firstLife = false;
+        const after = prediction.correction;
+        if (!snapped) result.snapBack = Math.max(result.snapBack, Math.hypot(after.x - before.x, after.y - before.y, after.z - before.z));
+      }
+      prediction.settle((time - lastFrame) / 1000); lastFrame = time;
+      player.look({ now: time, drawn: prediction.feet(time), state: prediction.movement.state });
+    });
+  }
+  while (queue.length) queue.shift()!.run();
+  return result;
+}
+function* links(round = false): Generator<Link> {
+  for (const latency of [30, 40, 50, 60, 70, 80, 90, 100]) for (const sendPhase of [0.3, 8.6, 17.1, 25.4])
+    for (const renderHz of [60, 120]) for (const renderPhase of [0.1, 5.3, 11.7]) yield { latency, sendPhase, renderHz, renderPhase, round };
+}
+const linkLabel = (link: Link) => `${link.latency} ms each way, sends +${link.sendPhase} ms, ${link.renderHz} Hz frames +${link.renderPhase} ms`;
+/** Jumps at send `jumpAt` (unless `jumpFirst` is false: then it only starts watching there), then presses
+ * jump on the first render frame (plus `delay` ms) at which the view shows the body back on the ground:
+ * the latest predicted tick ('tick') or the drawn feet ('drawn'). */
+function jumpOnLanding(script: (index: number) => Partial<InputFrame>, jumpAt: number, trigger: 'tick' | 'drawn', delay: number, jumpFirst = true): Player {
+  let watching = false, airborne = false, landed = -Infinity, pressed = false;
+  return {
+    input(index, now) {
+      if (index === jumpAt) { watching = true; return jumpFirst ? { ...script(index), jump: true } : script(index); }
+      if (!pressed && landed > -Infinity && now >= landed + delay) { pressed = true; return { ...script(index), jump: true }; }
+      return script(index);
+    },
+    look({ now, drawn, state }) {
+      if (!watching || landed > -Infinity) return;
+      if (!isPlayerGrounded(state)) { airborne = true; return; }
+      if (airborne && (trigger === 'tick' || drawn.y - supportHeight(drawn) < 0.005)) landed = now;
+    },
+  };
+}
+/** Stand while the first snapshots arrive, sprint, slide, then jump out of the slide (send 22). */
+const slideJump = (index: number): Partial<InputFrame> =>
+  index < 10 ? {} : index < 18 ? { moveZ: 1, sprint: true } : index < 22 ? { moveZ: 1, sprint: true, crouch: true } : { moveZ: 1, sprint: true };
+const walkEast = (index: number): Partial<InputFrame> => ({ moveZ: index < 10 ? 0 : 1, yaw: Math.PI / 2 });
+const moves = (events: MoveEvents) => ({
+  jumped: events.jumped, slideStarted: events.slideStarted, slideEnded: events.slideEnded,
+  vaultStarted: events.vaultStarted, vaultEnded: events.vaultEnded, landed: events.landedSpeed > 0,
+});
+function agree(result: Session, label: string) {
+  assert.ok(result.client.size >= 50, `${label}: the client predicted the run`);
+  for (const [seq, events] of result.client) {
+    const server = result.server.get(seq);
+    assert.ok(server, `${label}: input ${seq} reached the server`);
+    assert.deepEqual(moves(events), moves(server), `${label}: input ${seq} moved the same on the screen and on the server`);
+  }
+}
+
+test('a jump pressed on the frame the view lands from a slide jump vaults the barrier on the screen and on the server alike', () => {
+  let vaults = 0, runs = 0;
+  for (const link of links()) {
+    const result = session(link, startState(barrier.x, 1.8), jumpOnLanding(slideJump, 22, 'drawn', 0));
+    agree(result, linkLabel(link));
+    assert.ok(result.snapBack < 1e-9, `${linkLabel(link)}: snapped back ${result.snapBack} m`);
+    runs++;
+    if ([...result.server.values()].some(events => events.vaultStarted)) vaults++;
+  }
+  // Scenario check: the slide jump lands beside the barrier, so the landing press is a vault.
+  assert.ok(vaults > runs / 2, `${vaults} of ${runs} timings vaulted`);
+});
+
+test('a hop pressed 0 to 10 ms after the view lands is accepted on both sides, with no snap-back', () => {
+  for (const link of links()) {
+    if (link.renderPhase !== 5.3 || ![30, 60, 100].includes(link.latency)) continue;
+    for (const trigger of ['tick', 'drawn'] as const) for (const delay of [0, 5, 10]) {
+      const label = `${linkLabel(link)}, ${trigger} landing +${delay} ms`;
+      const result = session(link, startState(-6, 20, Math.PI / 2), jumpOnLanding(walkEast, 12, trigger, delay));
+      agree(result, label);
+      assert.ok(result.snapBack < 1e-9, `${label}: snapped back ${result.snapBack} m`);
+      assert.equal([...result.server.values()].filter(events => events.jumped).length, 2, `${label}: both hops happen`);
+    }
+  }
+});
+
+test('running down the house stairs and vaulting in through a window match the server with no snap-back', () => {
+  const downstairs = (index: number): Partial<InputFrame> => (index < 10 ? { yaw: 0 } : { moveZ: 1, sprint: true, yaw: 0 });
+  const indoors = (index: number): Partial<InputFrame> => ({ moveZ: index < 10 ? 0 : 1, yaw: -Math.PI / 2 });
+  for (const link of links()) {
+    if (link.renderPhase !== 5.3 || ![30, 60, 100].includes(link.latency)) continue;
+    // A press on the first landing of the run down the stairs, then a vault through the front window
+    // (over the 0.95 m sill) followed by a press on the landing inside.
+    const stairs = session(link, { ...startState(-19, 3.6, 0), y: 3.2 }, jumpOnLanding(downstairs, 10, 'drawn', 0, false));
+    agree(stairs, `stairs, ${linkLabel(link)}`);
+    assert.ok(stairs.snapBack < 1e-9, `stairs, ${linkLabel(link)}: snapped back ${stairs.snapBack} m`);
+    assert.ok(stairs.final.y < 0.05 && [...stairs.server.values()].some(events => events.jumped), 'The run reaches the bottom with a jump on the way');
+    const sill = session(link, startState(-8.9, 1.6, -Math.PI / 2), jumpOnLanding(indoors, 12, 'drawn', 0));
+    agree(sill, `window, ${linkLabel(link)}`);
+    assert.ok(sill.snapBack < 1e-9, `window, ${linkLabel(link)}: snapped back ${sill.snapBack} m`);
+    assert.ok([...sill.server.values()].some(events => events.vaultStarted) && sill.final.x < -11, 'The press vaults in through the window');
+  }
+});
+
+test('snapshots rounded like the wire format keep the landing press in agreement and corrections under a centimetre', () => {
+  for (const link of links(true)) {
+    if (link.renderPhase !== 11.7) continue;
+    for (const trigger of ['tick', 'drawn'] as const) {
+      const result = session(link, startState(barrier.x, 1.8), jumpOnLanding(slideJump, 22, trigger, 0));
+      agree(result, `${linkLabel(link)}, rounded, ${trigger}`);
+      assert.ok(result.snapBack < 0.01, `${linkLabel(link)}: corrected ${result.snapBack} m`);
+    }
+  }
 });
 
 test('vault progress follows the vault timing and is 1 when not vaulting', () => {
