@@ -1,4 +1,4 @@
-import type { HitZone, Loadout, LoadoutPreset, PerkId, PrimaryWeaponId, SecondaryWeaponId, Slot, StreakId, WeaponId } from './protocol.js';
+import type { HitZone, Loadout, LoadoutPreset, PerkId, PracticeDifficulty, PrimaryWeaponId, SecondaryWeaponId, Slot, StreakId, WeaponId } from './protocol.js';
 
 /** One weapon table for the server, client prediction, bots, viewmodel and HUD. Angles are radians,
  * times are milliseconds, distances metres. Numbers are playtest starting points. */
@@ -147,6 +147,12 @@ export const LOADOUT_PRESETS: Record<Exclude<LoadoutPreset, 'custom'>, Loadout> 
   marksman: { primary: 'longbow', secondary: 'sentry9', lethal: 'frag', perks: ['quick-hands', 'low-profile', 'steady-aim'] },
 };
 export const DEFAULT_LOADOUT: Loadout = LOADOUT_PRESETS.assault;
+/** AI rival loadouts: Scout assault, Moxie close quarters, Rook assault (marksman on Challenging). */
+export function botLoadout(id: string, difficulty: PracticeDifficulty): Loadout {
+  if (id === 'bot-moxie') return LOADOUT_PRESETS.close;
+  if (id === 'bot-rook' && difficulty === 'hard') return LOADOUT_PRESETS.marksman;
+  return LOADOUT_PRESETS.assault;
+}
 
 /** Accepts only a complete loadout with one perk from each perk slot. */
 export function sanitizeLoadout(value: unknown): Loadout | null {

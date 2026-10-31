@@ -404,3 +404,9 @@ export class GrenadeTrajectory {
 export function grenadePosition(from: Vec3, velocity: Vec3, elapsedMs: number): Vec3 {
   const trajectory = new GrenadeTrajectory(from, velocity); trajectory.advanceTo(elapsedMs); return trajectory.position;
 }
+
+/** @deprecated The shoulder camera is gone (first person). Kept only so pre-v3 modules still link while
+ * the parallel workstreams replace them; removed at integration. */
+export function muzzlePosition(player: Vec3): Vec3 { return { x: player.x, y: player.y + EYE_HEIGHT.stand, z: player.z }; }
+/** @deprecated See muzzlePosition. */
+export function cameraPosition(player: Vec3, _yaw: number, _pitch: number, _aim = false): Vec3 { return muzzlePosition(player); }

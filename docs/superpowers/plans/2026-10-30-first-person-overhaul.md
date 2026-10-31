@@ -60,7 +60,7 @@ ws, SQLite; Blender 5.2.1 (Python), glTF-Transform 4.5, KTX-Software 4.4.2.
 
 Cross-workstream interfaces not in a file yet:
 
-- **Bots (B → A):** `PracticeBots.input(player: PlayerState, others: readonly PlayerState[], now: number, dt: number, seq: number, mode: GameMode): InputFrame` and `botLoadout(id: string, difficulty: PracticeDifficulty): Loadout`.
+- **Bots (B → A):** `PracticeBots.input(player: PlayerState, others: readonly PlayerState[], now: number, dt: number, seq: number, mode: GameMode): InputFrame`; bot loadouts come from `botLoadout(id, difficulty)` in `shared/weapons.ts`.
 - **Engine (A → tests/clients):** `MatchEngine` options gain `mode?: GameMode`; `engine.setLoadout(id, loadout)`; `engine.snapshot(now?, viewerId?)` returns public players plus `self` for the viewer; `addPlayer(profile, now?, bot?, team?)` assigns a balanced team in `tdm` when `team` is omitted.
 - **InputController (C → E):** `InputSettings { sensitivity; adsSensitivity; invertY; firingMode; gyroscope; gyroSensitivity; aimMode: 'hold'|'toggle'; crouchMode: 'hold'|'toggle'; sprintMode: 'hold'|'toggle'|'auto' }`; `InputAction = 'fire'|'aim'|'jump'|'sprint'|'reload'|'crouch'|'melee'|'grenade'`; methods `setAction`, `cancelAction`, `toggle(action: 'aim'|'crouch'|'sprint'): boolean`, `swapWeapon()`, `setSlot(slot)`, `useStreak(reward)`, `setStreakTarget(target | null)`, getter `mortarTargeting`, `setViewTime(ms)`, `addViewKick(yaw, pitch)`, plus every existing public member. `TouchRole = 'move'|'look'|'fire'|'fire-left'|'jump'|'reload'|'grenade'|'melee'` (elements carry `data-touch`).
 - **GameView (C → E):** `new GameView(container, { input, hud: HudStore, getSnapshot, getPlayerId, onStats?, onAssetsReady?, getPreparationId?, onPreparationRendered?, onError?, settings? })`; methods `handleEvent`, `recordInput`, `prepareAutomaticFire(): boolean`, `setSettings(Partial<GameSettings>)`, `testSound()`, `dispose()`, `canvas`. `GameSettings = { sensitivity; adsSensitivity; volume; quality; invertY; fov; reduceMotion }`.
@@ -131,7 +131,7 @@ Tests owned by nobody above (`tests/client/{assets,game-readiness,preparation-re
 **Files:** `server/bots.ts`, `server/navigation.ts`, `tests/server/{bots,bot-platform}.test.ts`
 
 - [ ] New signature (above). Perceive from `eyePosition`; ignore teammates; aim at torso (Challenging: 35% head); v3 frame fields with `viewTime = now`.
-- [ ] Loadouts via `botLoadout`: Scout assault, Moxie close, Rook assault (Challenging: marksman); switch to secondary when the primary is empty and an enemy is within 10 m; reload when hidden.
+- [ ] Loadouts via `botLoadout` (shared/weapons.ts): Scout assault, Moxie close, Rook assault (Challenging: marksman); switch to secondary when the primary is empty and an enemy is within 10 m; reload when hidden.
 - [ ] Retreat to regenerate below 45 health (replaces healing); dash on long unengaged routes (Balanced/Challenging); occasional slide into engagements (Challenging); knife within 1.6 m; frag at a last-seen enemy behind cover 8–25 m away (Balanced 15% / Challenging 30% per opportunity, 8 s cooldown); use rewards (recon now, mortar at last-seen enemy, drone now).
 - [ ] Navigation still covers both houses, all stair routes and the truck with the 8 new cover boxes.
 - [ ] Tests: no teammate targeting; eye-height aim convergence; retreat; bounded grenade use; difficulty ordering; full practice rounds at all difficulties without exceptions.
