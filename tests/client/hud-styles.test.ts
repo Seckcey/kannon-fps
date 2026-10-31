@@ -44,6 +44,25 @@ test('with reduced motion, score pop-ups, medals and reward notices stay visible
   for (const selector of needs) assert.ok(turnedOff.has(selector), `${selector} must use animation: none under reduced motion`);
 });
 
+/** The z-index of the last rule for exactly this selector that sets one. */
+function zIndex(selector: string): number | undefined {
+  let value: number | undefined;
+  for (const [selectors, body] of rules(css)) {
+    const match = /z-index:\s*(-?\d+)/.exec(body);
+    if (match && selectors.includes(selector)) value = Number(match[1]);
+  }
+  return value;
+}
+
+test('a scope darkens the arena under the touch controls, while the HUD stays on top', () => {
+  // GameScreen draws the scope as its own layer just before the HUD layer, never inside it.
+  const scope = zIndex('.scope-overlay'), controls = zIndex('.touch-controls'), hud = zIndex('.game-hud'), touchHud = zIndex('.touch-game .game-hud');
+  assert.ok(scope !== undefined && controls !== undefined && hud !== undefined && touchHud !== undefined, `${scope} ${controls} ${hud} ${touchHud}`);
+  assert.ok(scope < controls, 'the stick and every button draw over the dark scope surround');
+  assert.ok(controls < touchHud, 'on phones the HUD text and the mortar map stay above the controls');
+  assert.ok(scope <= hud, 'on desktop the HUD still draws over the scope (it comes later in the page)');
+});
+
 test('live standings never blur the game behind them', () => {
   const live = rules(css).filter(([selectors]) => selectors.some(selector => selector.includes('.scoreboard-overlay.live') || selector.includes('.scoreboard-overlay.placed')));
   assert.ok(live.some(([, body]) => /backdrop-filter:\s*none/.test(body)));

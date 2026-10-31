@@ -66,7 +66,7 @@ export const WEAPONS: Record<WeaponId, WeaponSpec> = {
     recoil: { vertical: [0.045, 0.045], ramp: 1, horizontal: 0.008, pattern: [0.5, -0.5], recovery: 0.85, adsFactor: 0.8, visual: 1 },
   },
   longbow: {
-    id: 'longbow', name: 'Longbow', kind: 'sniper', slot: 1, rpm: 48, auto: false, pellets: 1,
+    id: 'longbow', name: 'Heron 7', kind: 'sniper', slot: 1, rpm: 48, auto: false, pellets: 1,
     damage: { near: 120, far: 120, nearRange: 0, farRange: 1 }, headMultiplier: 1, legMultiplier: 0.67, maxRange: 200,
     magazine: 5, reserveMags: 4, reloadMs: 2800, emptyReloadMs: 3200, adsMs: 420, adsZoom: 4.2, scoped: true,
     moveFactor: 0.88, adsMoveFactor: 0.42, hipSpread: 0.12, adsSpread: 0, sprintToFireMs: 350, raiseMs: 600,
@@ -102,7 +102,7 @@ export const PERKS: Record<PerkId, PerkSpec> = {
   'quick-hands': { id: 'quick-hands', name: 'Quick Hands', slot: 1, description: 'Reload and swap weapons 25% faster.' },
   'deep-pockets': { id: 'deep-pockets', name: 'Deep Pockets', slot: 1, description: 'Two extra spare magazines and one extra frag.' },
   'quiet-step': { id: 'quiet-step', name: 'Quiet Step', slot: 2, description: 'Your footsteps are much harder to hear.' },
-  'low-profile': { id: 'low-profile', name: 'Low Profile', slot: 2, description: 'Hidden from Recon Sweeps; firing does not ping the minimap.' },
+  'low-profile': { id: 'low-profile', name: 'No Trace', slot: 2, description: 'Hidden from Recon Sweeps; firing does not ping the minimap.' },
   'second-wind': { id: 'second-wind', name: 'Second Wind', slot: 3, description: 'Health starts refilling after 2.5 seconds instead of 4.' },
   'steady-aim': { id: 'steady-aim', name: 'Cool Head', slot: 3, description: 'Aim down sights 20% faster and flinch 40% less when hit.' },
 };

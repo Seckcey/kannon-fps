@@ -27,7 +27,8 @@ export interface FeedName { id: string; name: string; relation: Relation }
 export type FeedEntry =
   | { kind: 'elimination'; key: string; at: number; attacker: FeedName | null; victim: FeedName; icon: IconName; headshot: boolean; weapon: string }
   | { kind: 'message'; key: string; at: number; text: string; tone: Relation | 'info'; icon?: IconName };
-/** Recent eliminations, reward calls and notices, oldest first. */
+/** Recent eliminations, reward calls and notices, oldest first: the newest `limit` of them, none when
+ * no row fits. */
 export function killFeed(feed: readonly GameEvent[], lookup: (id: string) => Person, viewer: Viewer, mode: GameMode, now: number, windowMs = 6000, limit = 5): FeedEntry[] {
   const named = (id: string): FeedName => { const person = lookup(id); return { id, name: person.name, relation: relationOf(viewer, mode, person) }; };
   const entries: FeedEntry[] = [];
@@ -46,7 +47,8 @@ export function killFeed(feed: readonly GameEvent[], lookup: (id: string) => Per
       entries.push({ kind: 'message', key: `n-${event.at}-${event.message}`, at: event.at, tone: 'info', text: event.message });
     }
   }
-  return entries.slice(-limit);
+  // slice(-0) would return the whole list.
+  return limit > 0 ? entries.slice(-limit) : [];
 }
 const rewardIcon = (reward: StreakId): IconName => ({ recon: 'radar', mortar: 'mortar', drone: 'drone' } as const)[reward];
 

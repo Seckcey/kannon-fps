@@ -2,13 +2,16 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { HudFrame, HudStore } from '../../game/hud';
 import type { Insets } from './touchLayout';
 
+// The third argument of useSyncExternalStore only serves rendering to markup (the Node tests); the game
+// itself always renders in the browser.
 /** The latest frame; re-renders the caller at the HUD feed rate (about 30 Hz). */
 export function useHudFrame(hud: HudStore): HudFrame | null {
-  return useSyncExternalStore(hud.subscribe, hud.getSnapshot);
+  return useSyncExternalStore(hud.subscribe, hud.getSnapshot, hud.getSnapshot);
 }
 /** One primitive value from the frame; the caller only re-renders when that value changes. */
 export function useHudValue<T extends string | number | boolean | null>(hud: HudStore, select: (frame: HudFrame | null) => T): T {
-  return useSyncExternalStore(hud.subscribe, () => select(hud.getSnapshot()));
+  const read = () => select(hud.getSnapshot());
+  return useSyncExternalStore(hud.subscribe, read, read);
 }
 
 const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });

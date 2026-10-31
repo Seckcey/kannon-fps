@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { MedalId, ScoreReason } from '../../shared/protocol.js';
-import { DEFAULT_LOADOUT, LOADOUT_PRESETS, PERK_SLOTS, PRIMARY_WEAPONS, WEAPONS, sanitizeLoadout } from '../../shared/weapons.js';
+import { DEFAULT_LOADOUT, LOADOUT_PRESET_NAMES, LOADOUT_PRESETS, PERKS, PERK_SLOTS, PRIMARY_WEAPONS, STREAKS, WEAPONS, sanitizeLoadout } from '../../shared/weapons.js';
 import { PRESET_INFO, PRESET_ORDER, STAT_LABELS, effectiveRange, loadoutFor, sameLoadout, weaponStats, withPerk, withPrimary } from '../../src/components/loadoutInfo.js';
 import { MEDAL_NAMES, MODE_INFO, SCORE_LABELS, TEAM_NAMES, causeIcon, causeName, modeRule, otherTeam } from '../../src/components/labels.js';
 
@@ -52,4 +52,15 @@ test('player-facing labels cover every mode, team, medal and score reason', () =
   assert.equal(TEAM_NAMES.teal, 'Teal'); assert.equal(otherTeam('teal'), 'gold'); assert.equal(otherTeam('gold'), 'teal');
   assert.equal(causeName('bullet', 'hornet9'), 'Hornet 9'); assert.equal(causeName('bullet'), 'Gunfire'); assert.equal(causeName('melee'), 'Knife');
   assert.equal(causeIcon('bullet', 'longbow'), 'sniper'); assert.equal(causeIcon('drone'), 'drone'); assert.equal(causeIcon('mortar'), 'mortar');
+});
+
+test('weapon, perk and reward names are our own; names ruled out in review never come back', () => {
+  // Only the names players see changed: the ids stay, because saved classes and the network use them.
+  assert.equal(WEAPONS.longbow.name, 'Heron 7'); assert.equal(causeName('bullet', 'longbow'), 'Heron 7');
+  assert.equal(PERKS['low-profile'].name, 'No Trace'); assert.equal(PERKS['steady-aim'].name, 'Cool Head');
+  assert.equal(STREAKS.mortar.name, 'Mortar Volley');
+  const shown = [...Object.values(WEAPONS), ...Object.values(PERKS), ...Object.values(STREAKS)].map(item => item.name)
+    .concat(Object.values(LOADOUT_PRESET_NAMES), Object.values(MEDAL_NAMES));
+  // Each of these is another shooter's name for the same kind of weapon, perk or reward.
+  for (const taken of ['Longbow', 'Low Profile', 'Steady Aim', 'Mortar Strike']) assert.ok(!shown.includes(taken), `${taken} is not one of our names`);
 });

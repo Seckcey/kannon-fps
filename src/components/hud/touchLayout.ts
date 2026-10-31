@@ -141,6 +141,12 @@ export function touchHudLayout({ width, height, safe = {}, controls, minimapSize
   return { edges, minimap, scoreBar, topActions, feed, callouts, standings, hint };
 }
 
+/** Inline placement for the touch kill feed. Its height is capped at the rows that fit (none on a short
+ * screen), so the feed can never spill over the buttons under it. */
+export function feedStyle(feed: TouchHud['feed']): Record<string, string | number> {
+  return { left: feed.x, top: feed.y, maxWidth: feed.w, maxHeight: feed.h, overflow: 'hidden', '--feed-row': `${FEED_ROW}px`, '--feed-gap': `${FEED_GAP}px` };
+}
+
 export function overlaps(a: Rect, b: Rect, clearance = 0): boolean {
   return a.x < b.x + b.w + clearance && b.x < a.x + a.w + clearance && a.y < b.y + b.h + clearance && b.y < a.y + a.h + clearance;
 }

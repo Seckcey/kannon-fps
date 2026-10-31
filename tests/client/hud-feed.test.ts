@@ -84,7 +84,7 @@ test('grenade warnings point at live grenades within ten metres', () => {
   assert.deepEqual(frame.blips.filter(blip => blip.kind === 'grenade').length, 2);
 });
 
-test('the minimap shows teammates, swept enemies without Low Profile, two-second firing pings, drones and mortar targets', () => {
+test('the minimap shows teammates, swept enemies without No Trace, two-second firing pings, drones and mortar targets', () => {
   const team = { localId: 'me', localTeam: 'teal' as const, mode: 'tdm' as const, now: 10_000, recon: [], drones: [], mortars: [], grenades: [], pings: new Map() };
   const players = [
     person('me', { team: 'teal' }), person('friend', { team: 'teal' }), person('enemy', { team: 'gold', x: 5 }),
@@ -95,7 +95,7 @@ test('the minimap shows teammates, swept enemies without Low Profile, two-second
   const sweep = [{ ownerId: 'friend', team: 'teal' as const, until: 15_000 }];
   assert.equal(reconActive(sweep, 'me', 'teal', 'tdm', 10_000), true);
   blips = minimapBlips({ ...team, players, recon: sweep });
-  assert.deepEqual(blips.map(blip => blip.kind).sort(), ['enemy', 'friend'], 'Low Profile hides from the sweep');
+  assert.deepEqual(blips.map(blip => blip.kind).sort(), ['enemy', 'friend'], 'No Trace hides from the sweep');
   assert.equal(reconActive([{ ownerId: 'enemy', team: 'gold', until: 15_000 }], 'me', 'teal', 'tdm', 10_000), false, 'An enemy sweep shows me nothing');
   assert.equal(reconActive(sweep, 'me', 'teal', 'tdm', 15_000), false, 'Sweeps expire');
   const pings = new Map([['enemy', { x: 5, z: 2, at: 9_000 }], ['old', { x: 1, z: 1, at: 10_000 - PING_MS }]]);

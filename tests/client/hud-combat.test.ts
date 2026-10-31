@@ -1,7 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WEAPONS } from '../../shared/weapons.js';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { DEFAULT_LOADOUT, WEAPONS } from '../../shared/weapons.js';
+import { HudStore, type HudFrame } from '../../src/game/hud.js';
+import { CombatHud, ScopeLayer } from '../../src/components/hud/CombatHud.js';
 import { ARC_MS, CLOCK_SKEW_MS, MARKER_MS, ammoLevel, arcOpacity, cookState, crosshairReach, crosshairRing, crosshairStyle, crosshairTicks, fadeOut, grenadeAlert, healthBarVisible, lowHealthLevel, staminaVisible, streakProgress } from '../../src/components/hud/combat.js';
+
+const scopedFrame: HudFrame = {
+  time: 1000, weapon: 'longbow', slot: 1, mag: 5, reserve: 20, frags: 1, reload: -1, ads: 1, scoped: true,
+  sprinting: false, dashing: false, stamina: 1, posture: 'stand', health: 100, crosshair: 0, cook: -1, blocked: false,
+  hitMarkers: [], damageArcs: [], grenades: [], view: { x: 0, z: 0, yaw: 0 }, blips: [], reconActive: false, rewards: [], mortarTargeting: false,
+};
+
+test('the scope is its own layer under the touch controls, not part of the HUD layer above them', () => {
+  const hud = new HudStore();
+  hud.publish(scopedFrame);
+  // CombatHud renders inside the HUD layer, which sits above the touch controls on phones.
+  const combat = renderToStaticMarkup(createElement(CombatHud, { hud, input: null, touch: true, live: true, status: true, autoTarget: false, streak: 0,
+    loadout: DEFAULT_LOADOUT, minimap: { size: 96, range: 20 } }));
+  assert.ok(combat.includes('ammo-panel'), 'the HUD itself still draws');
+  assert.ok(!combat.includes('scope-overlay'), 'a scope inside the HUD layer would black out every button');
+  assert.ok(renderToStaticMarkup(createElement(ScopeLayer, { hud, live: true })).includes('scope-overlay'), 'a fully aimed scope draws');
+  assert.equal(renderToStaticMarkup(createElement(ScopeLayer, { hud, live: false })), '', 'not while dead or in a menu');
+  hud.publish({ ...scopedFrame, scoped: false });
+  assert.equal(renderToStaticMarkup(createElement(ScopeLayer, { hud, live: true })), '', 'not before the scope is up');
+});
 
 test('every weapon class has its own crosshair and a zero gap hides it', () => {
   assert.equal(crosshairStyle(WEAPONS.kr5.kind), 'cross');

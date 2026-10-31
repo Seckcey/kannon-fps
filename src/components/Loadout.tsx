@@ -64,8 +64,13 @@ export function LoadoutSummary({ value, onEdit, compact = false }: { value: Load
   </div>;
 }
 
-export function LoadoutDialog({ value, onChange, onClose, inGame = false }: { value: LoadoutChoice; onChange: (value: LoadoutChoice) => void; onClose: () => void; inGame?: boolean }) {
+export function LoadoutDialog({ value, onChange, onClose, inGame = false, respawn }: {
+  value: LoadoutChoice; onChange: (value: LoadoutChoice) => void; onClose: () => void; inGame?: boolean;
+  /** While the player waits to respawn: seconds until they are back in, and whether the picker closes then. */
+  respawn?: { seconds: number; closes: boolean };
+}) {
   return <Modal title="Choose your loadout." onClose={onClose} wide>
+    {respawn && <p className="loadout-respawn" role="status"><Icon name="clock" size={20}/><span>Back in <strong>{respawn.seconds}</strong></span>{respawn.closes && <small>This closes when you spawn.</small>}</p>}
     <p className="modal-intro">{inGame ? 'Your new loadout is ready the next time you spawn.' : 'You can change it again in the lobby, from the pause menu or while you wait to respawn.'}</p>
     <LoadoutPicker value={value} onChange={onChange}/>
     <button className="button primary full-width" onClick={onClose}>{inGame ? 'Back to game' : 'Done'}</button>

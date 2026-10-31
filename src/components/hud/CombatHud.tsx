@@ -6,7 +6,7 @@ import type { InputController } from '../../game/InputController';
 import { Icon } from '../Icon';
 import { STREAK_ICONS, WEAPON_ICONS } from '../labels';
 import { MARKER_MS, ammoLevel, arcOpacity, cookState, crosshairRing, crosshairStyle, crosshairTicks, fadeOut, grenadeAlert, healthBarVisible, lowHealthLevel, staminaVisible, streakProgress } from './combat';
-import { useHudFrame } from './hooks';
+import { useHudFrame, useHudValue } from './hooks';
 import { Minimap, MortarTargetMap } from './Minimap';
 import { rectStyle, type Rect } from './touchLayout';
 
@@ -41,7 +41,6 @@ export function CombatHud({ hud, input, touch, live, status, autoTarget, streak,
   };
   const vignette = live ? lowHealthLevel(frame.health) : 0;
   return <>
-    {live && frame.scoped && <ScopeOverlay/>}
     {vignette > 0 && <div className="health-vignette" style={{ opacity: vignette }} aria-hidden="true"/>}
     {live && <Reticle frame={frame} autoTarget={autoTarget}/>}
     {status && <Minimap frame={frame} size={minimap.size} range={minimap.range}/>}
@@ -49,6 +48,14 @@ export function CombatHud({ hud, input, touch, live, status, autoTarget, streak,
     {status && !touch && frame.rewards.length > 0 && <RewardTray rewards={frame.rewards}/>}
     {targeting && <MortarTargetMap frame={frame} touch={touch} onTarget={target => finishTargeting(target)} onCancel={() => finishTargeting(null)}/>}
   </>;
+}
+
+/** The scope's dark surround, drawn by GameScreen as its own layer just before the HUD layer. On phones the
+ * HUD layer sits above the touch controls, so a scope inside it would black out every button (including
+ * Aim, the way out); here the controls draw over it. `live`: alive, playing and no menu open. */
+export function ScopeLayer({ hud, live }: { hud: HudStore; live: boolean }) {
+  const scoped = useHudValue(hud, frame => !!frame?.scoped);
+  return live && scoped ? <ScopeOverlay/> : null;
 }
 
 function ScopeOverlay() {
