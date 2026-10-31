@@ -3,8 +3,9 @@ import type { SurfaceKind, WeaponId } from '../../../shared/protocol';
 import { EFFECT_KIND } from './QuadBatch';
 import { FACING } from './particles';
 
-/** The three particle pools: additive light, short-lived alpha dust, and long-lived smoke. */
-export type PoolName = 'glow' | 'dust' | 'smoke';
+/** The particle pools: additive light, short-lived alpha dust, muzzle smoke, and long-lived plumes
+ * (explosion smoke and dust, damaged-drone smoke) that gunfire must never recycle early. */
+export type PoolName = 'glow' | 'dust' | 'smoke' | 'plume';
 
 /** One group of particles in a burst. Directions start along the surface normal and stray by `spread`. */
 export interface BurstSpec {
@@ -117,16 +118,22 @@ export interface ExplosionRecipe {
   light: { intensity: number; distance: number; duration: number };
 }
 export const EXPLOSION_RECIPES: Readonly<Record<'frag' | 'mortar' | 'drone', ExplosionRecipe>> = {
-  frag: { scale: 1, flash: 1, fire: 10, sparks: 14, smoke: 12, debris: 16, ring: 12, column: 0, scorch: 1.35, light: { intensity: 220, distance: 16, duration: 0.35 } },
-  mortar: { scale: 1.35, flash: 1, fire: 14, sparks: 18, smoke: 16, debris: 22, ring: 16, column: 8, scorch: 2.1, light: { intensity: 320, distance: 20, duration: 0.45 } },
-  drone: { scale: 0.9, flash: 1, fire: 8, sparks: 20, smoke: 10, debris: 14, ring: 10, column: 0, scorch: 1, light: { intensity: 160, distance: 14, duration: 0.3 } },
+  frag: { scale: 1, flash: 1, fire: 14, sparks: 14, smoke: 18, debris: 16, ring: 12, column: 0, scorch: 1.35, light: { intensity: 220, distance: 16, duration: 0.35 } },
+  mortar: { scale: 1.35, flash: 1, fire: 18, sparks: 18, smoke: 24, debris: 22, ring: 16, column: 8, scorch: 2.1, light: { intensity: 320, distance: 20, duration: 0.45 } },
+  drone: { scale: 0.9, flash: 1, fire: 10, sparks: 20, smoke: 12, debris: 14, ring: 10, column: 0, scorch: 1, light: { intensity: 160, distance: 14, duration: 0.3 } },
 };
 export const explosionRecipe = (kind: unknown): ExplosionRecipe => (has(EXPLOSION_RECIPES, kind) ? EXPLOSION_RECIPES[kind] : EXPLOSION_RECIPES.frag);
 /** A blast this far (times its scale) above the surface below still marks and dusts the ground. */
 export const GROUND_REACH = 2.2;
+/** Sizes are metres before the recipe scale, `growth` is the size at death as a multiple, life in seconds. */
+export interface PlumeLook { size: readonly [number, number]; growth: number; opacity: number; life: readonly [number, number] }
+/** The cloud: dark and dense, it billows up and out and hangs for several seconds before it thins away. */
+export const EXPLOSION_SMOKE: PlumeLook = { size: [0.9, 1.3], growth: 2.9, opacity: 0.78, life: [3.4, 5.6] };
+/** The dust ring a grounded blast throws along the ground; it settles more slowly than the debris. */
+export const EXPLOSION_DUST: PlumeLook = { size: [0.45, 0.65], growth: 3.4, opacity: 0.5, life: [1.6, 2.8] };
 export const EXPLOSION_COLORS = {
   flash: tone('#ffe2b0'), fireHot: tone('#ffd7a0'), fireCool: tone('#a8380e'), spark: tone('#ffc070'),
-  smoke: tone('#3d3a37'), smokeEnd: tone('#7a766f'), debris: tone('#2f2b27'), earth: tone('#5a4a3a'),
+  smoke: tone('#3d3a37'), smokeLight: tone('#5b5650'), smokeEnd: tone('#7a766f'), debris: tone('#2f2b27'), earth: tone('#5a4a3a'),
   ring: tone('#8f8370'), ringEnd: tone('#a99e8a'), column: tone('#4b3f33'), columnEnd: tone('#7a6c5c'), light: tone('#ff9d52'),
 } as const;
 

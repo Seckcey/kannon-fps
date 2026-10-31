@@ -8,12 +8,12 @@ import { DroneFleet, type DroneHooks, type DroneViewer } from './effects/Drones'
 import { Emitter } from './effects/Emitter';
 import { FlashLights } from './effects/FlashLights';
 import { GrenadeMarkers } from './effects/Grenades';
-import { groundBelow, rayDistance } from './effects/mapQuery';
+import { createGroundMark, fitGroundMark, groundBelow, rayDistance } from './effects/mapQuery';
 import { advanceParticles, advanceTracers, FACING, ParticlePool, TracerPool, ViewBasis, type Particle } from './effects/particles';
 import { EFFECT_KIND, QuadBatch } from './effects/QuadBatch';
 import { EffectRandom } from './effects/random';
 import {
-  DAMAGED_DRONE_SMOKE, ELIMINATION, EXPLOSION_COLORS, GROUND_REACH, MUZZLE_COLORS, RESPAWN, SHATTER_COLORS,
+  DAMAGED_DRONE_SMOKE, ELIMINATION, EXPLOSION_COLORS, EXPLOSION_DUST, EXPLOSION_SMOKE, GROUND_REACH, MUZZLE_COLORS, RESPAWN, SHATTER_COLORS,
   explosionRecipe, impactRecipe, isSurfaceKind, muzzleStyle, type MuzzleStyle, type PoolName,
 } from './effects/recipes';
 import { ShellCasings } from './effects/Shells';
@@ -23,13 +23,33 @@ export type { DroneViewer } from './effects/Drones';
 
 type Shot = Extract<GameEvent, { type: 'shot' }>;
 const TAU = Math.PI * 2;
+/** A hit on a player this close to the camera is on the watcher's own head or chest: drawing it would
+ * cover their screen. Tracers aimed at the watcher stop this far short of the hit. */
+const VIEWER_CLEARANCE = 0.6, VIEWER_TRACER_GAP = 1;
+/** Explosion smoke, dust and fire drift until this close to a wall, so a blast beside a house never
+ * fills the room behind it. */
+const WALL_MARGIN = 0.35;
 const isFinite3 = (value: Vec3 | null | undefined): value is Vec3 =>
   !!value && Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z);
 
+/** How `shot()` presents one authoritative shot event. */
+export interface ShotOptions {
+  /** The local player's own shot: the viewmodel draws its muzzle flash. */
+  local: boolean;
+  /** Draw a tracer streak for each trace. */
+  tracer: boolean;
+  /** The watching player. Hits on them make no puff or shimmer, which would sit right in front of their
+   * camera, and tracers aimed at them stop a metre short. (Their screen effects show the hit.) */
+  viewerId?: string | null;
+}
+
 /** Live counts, for tests and debug overlays. */
 export interface CombatEffectsStats {
-  /** Live additive particles, and live dust plus smoke particles. */
-  glow: number; dust: number; tracers: number;
+  /** Live additive particles, and all live alpha particles (dust, muzzle smoke and plumes). */
+  glow: number; dust: number;
+  /** Live muzzle smoke, and live explosion and drone smoke and dust (a pool gunfire never touches). */
+  smoke: number; plume: number;
+  tracers: number;
   /** Bullet holes and scorch marks currently stored. */
   decals: number; scorches: number;
   shells: number; grenades: number; drones: number;
@@ -61,6 +81,12 @@ export function resolveVisualMuzzle(authoritative: Vec3, visual: Vec3): THREE.Ve
   return resolveInto(authoritative, visual, new THREE.Vector3());
 }
 
+/** Whether `node` is `ancestor` or sits somewhere below it. */
+function within(ancestor: THREE.Object3D, node: THREE.Object3D | null): boolean {
+  for (let current = node; current; current = current.parent) if (current === ancestor) return true;
+  return false;
+}
+
 /** World-space combat presentation: muzzle flashes and smoke, tracers, surface impacts, bullet holes,
  * shells, explosions, grenades in flight, attack drones and breakable glass and pots.
  *
@@ -82,8 +108,11 @@ export class CombatEffects {
   private readonly droneHooks: DroneHooks;
   private readonly breakHandler = (item: Breakable, point: THREE.Vector3, travel: THREE.Vector3) => this.shatter(item, point, travel);
   private time = 0;
-  private smokeTick = 0;
+  /** Fractions of a puff owed on phones, so single-puff smoke alternates instead of rounding up to one. */
+  private muzzleSmokeCarry = 0;
+  private droneSmokeCarry = 0;
   private disposed = false;
+  private readonly mark = createGroundMark();
   private readonly muzzle = new THREE.Vector3();
   private readonly target = new THREE.Vector3();
   private readonly axis = new THREE.Vector3();
@@ -116,18 +145,39 @@ export class CombatEffects {
 
   /** Compiles every effect shader ahead of time (behind the loading screen), so the first shot, hole,
    * shell, explosion or drone never stalls a frame. `scene` supplies the lights the shaders are built
-   * for. Call again after `configure` changes the budget. */
+   * for; the effects may already be in it or not. Call again after `configure` changes the budget. */
   precompile(renderer: Pick<THREE.WebGLRenderer, 'compileAsync'>, scene: THREE.Scene, camera: THREE.Camera): Promise<unknown> {
     if (this.disposed) return Promise.resolve();
     this.drones.prepare();
-    return renderer.compileAsync(this.root, camera, scene);
+    // three.js gathers lights from `scene` and then again from the object it compiles, so effects already
+    // inside `scene` would count their flash lights twice: every shader would be built for the wrong light
+    // count and built again on the first real frame. They are compiled detached instead. WebGLRenderer
+    // builds its programs before compileAsync returns (the promise only waits for them to finish), so the
+    // effects go straight back to the same place.
+    const parent = this.root.parent, index = parent && within(scene, parent) ? parent.children.indexOf(this.root) : -1;
+    if (parent && index >= 0) parent.remove(this.root);
+    try {
+      return Promise.resolve(renderer.compileAsync(this.root, camera, scene));
+    } catch (error) {
+      return Promise.reject(error);
+    } finally {
+      if (parent && index >= 0) {
+        parent.add(this.root);
+        const siblings = parent.children;
+        siblings.splice(siblings.length - 1, 1);
+        siblings.splice(Math.min(index, siblings.length), 0, this.root);
+      }
+    }
   }
 
   private build(budget: EffectBudget): Layers {
     const layers: Layers = {
       glow: new QuadBatch(budget.glowParticles + budget.tracers + budget.markers, true, 'combat-glow-batch', 5),
-      dust: new QuadBatch(budget.dustParticles + budget.smokeParticles, false, 'combat-dust-batch', 4),
-      pools: { glow: new ParticlePool(budget.glowParticles), dust: new ParticlePool(budget.dustParticles), smoke: new ParticlePool(budget.smokeParticles) },
+      dust: new QuadBatch(budget.dustParticles + budget.smokeParticles + budget.plumeParticles, false, 'combat-dust-batch', 4),
+      pools: {
+        glow: new ParticlePool(budget.glowParticles), dust: new ParticlePool(budget.dustParticles),
+        smoke: new ParticlePool(budget.smokeParticles), plume: new ParticlePool(budget.plumeParticles),
+      },
       tracers: new TracerPool(budget.tracers),
       decals: new DecalLayer(budget.decals, budget.scorches),
       shells: new ShellCasings(budget.shells, budget.quality === 'phone' ? 1.6 : 2.4, this.random),
@@ -153,40 +203,52 @@ export class CombatEffects {
     this.layers = this.build(next);
     this.emitter.pools = this.layers.pools;
     this.emitter.scale = next.scale;
+    this.muzzleSmokeCarry = this.droneSmokeCarry = 0;
   }
 
-  /** World presentation of one authoritative shot. `from` is the visual muzzle. Local shots skip the
-   * muzzle flash (the viewmodel draws it); `tracer` false skips the streak but keeps impacts. */
-  shot(event: Shot, visualMuzzle: Vec3, options: { local: boolean; tracer: boolean } = { local: false, tracer: true }) {
+  /** World presentation of one authoritative shot. `visualMuzzle` is the drawn barrel. Local shots skip
+   * the muzzle flash (the viewmodel draws it); `tracer` false skips the streak but keeps impacts. Pass
+   * `viewerId` (the watching player) so hits on them stay off their own screen. */
+  shot(event: Shot, visualMuzzle: Vec3, options: ShotOptions = { local: false, tracer: true }) {
     if (this.disposed || !event || !Array.isArray(event.traces) || !isFinite3(event.from)) return;
     const style = muzzleStyle(event.weapon), traces = event.traces;
     const visual = event.weapon === 'drone' && this.drones.muzzleNear(event.from, this.target) ? this.target : visualMuzzle;
     const from = resolveInto(event.from, visual, this.muzzle);
     const local = options?.local === true, tracer = options?.tracer !== false;
+    const viewer = typeof options?.viewerId === 'string' && options.viewerId ? options.viewerId : null;
     const count = Math.min(traces.length, style.pellets);
     if (!local) this.muzzleFlash(from, traces, count, style);
     for (let index = 0; index < count; index++) {
       const trace = traces[index];
       if (!trace || !isFinite3(trace.to)) continue;
-      if (tracer) this.addTracer(from, trace.to, event.from, style);
+      // A hit on the watcher lands on their own head or chest, right at the camera. Without a viewer id,
+      // a hit that close to the camera is treated the same way.
+      const atViewer = trace.kind === 'player'
+        && ((viewer !== null && trace.targetId === viewer) || this.view.near(trace.to.x, trace.to.y, trace.to.z, VIEWER_CLEARANCE));
+      if (tracer) this.addTracer(from, trace.to, event.from, style, atViewer ? VIEWER_TRACER_GAP : 0);
       // Glass and pots are not in the collision map: the authoritative path decides what breaks.
       this.breakables.cross(event.from, trace.to, this.breakHandler);
-      this.traceImpact(event.from, trace, style);
+      if (!atViewer) this.traceImpact(event.from, trace, style);
     }
   }
 
   /** The local player's predicted shot: the muzzle light and (if asked) the tracer, at once. The
-   * viewmodel draws the flash; impacts wait for the server's shot event (pass `tracer: false` there). */
-  localShot(muzzle: Vec3, contact: Vec3, weapon: WeaponId, tracer: boolean) {
+   * viewmodel draws the flash; impacts wait for the server's shot event (pass `tracer: false` there).
+   * Pass `eye`, the shot's true origin, so a barrel poking through cover is pulled back to the near side
+   * of it, as `shot()` does for everyone. */
+  localShot(muzzle: Vec3, contact: Vec3, weapon: WeaponId, tracer: boolean, eye?: Vec3) {
     if (this.disposed || !isFinite3(muzzle)) return;
-    const style = muzzleStyle(weapon);
-    this.layers.lights.flash(muzzle.x, muzzle.y, muzzle.z, MUZZLE_COLORS.light, style.light, style.lightRange, style.lightLife, true);
-    if (tracer === true && isFinite3(contact)) this.addTracer(this.muzzle.set(muzzle.x, muzzle.y, muzzle.z), contact, muzzle, style);
+    const style = muzzleStyle(weapon), seen = isFinite3(eye);
+    const from = seen ? resolveInto(eye, muzzle, this.muzzle) : this.muzzle.set(muzzle.x, muzzle.y, muzzle.z);
+    this.layers.lights.flash(from.x, from.y, from.z, MUZZLE_COLORS.light, style.light, style.lightRange, style.lightLife, true);
+    if (tracer === true && isFinite3(contact)) this.addTracer(from, contact, seen ? eye : muzzle, style);
   }
 
-  /** Contract surface: a surface impact on its own (shots already make their impacts). */
+  /** Contract surface: a surface impact on its own (shots already make their impacts). A player impact
+   * right at the camera (the watcher's own body) is skipped. */
   impact(position: Vec3, normal: Vec3, surface: SurfaceKind | 'player', protectedTarget = false) {
     if (this.disposed || !isFinite3(position)) return;
+    if (surface === 'player' && this.view.near(position.x, position.y, position.z, VIEWER_CLEARANCE)) return;
     this.spray(position, this.unit(normal), surface, protectedTarget === true, 1);
   }
 
@@ -206,19 +268,23 @@ export class CombatEffects {
   explosion(position: Vec3, kind: 'frag' | 'mortar' | 'drone') {
     if (this.disposed || !isFinite3(position)) return;
     const recipe = explosionRecipe(kind), scale = recipe.scale, random = this.random, emitter = this.emitter, colors = EXPLOSION_COLORS;
-    const { x, y, z } = position, ground = groundBelow(x, y + 0.1, z), grounded = y - ground <= GROUND_REACH * scale;
+    // The surface under the blast itself: a ray from just above it, so a grenade that rolled under the
+    // bus finds the street, not the inside of the bus body overhead.
+    const { x, y, z } = position, ground = groundBelow(x, y, z), grounded = y - ground <= GROUND_REACH * scale;
     for (let index = 0, count = emitter.count(recipe.flash); index < count; index++) {
       const flash = emitter.particle('glow');
       flash.position.set(x, y + 0.3 * scale, z);
-      this.look(flash, EFFECT_KIND.glow, colors.flash, colors.flash, 3, 3.2 * scale, 4.2 * scale, 1, 0.1);
+      this.look(flash, EFFECT_KIND.glow, colors.flash, colors.flash, 2.6, 3 * scale, 4 * scale, 1, 0.09);
     }
     for (let index = 0, count = emitter.count(recipe.fire); index < count; index++) {
       const fire = emitter.particle('glow'), dir = this.randomDirection(this.direction, false);
-      fire.position.set(x + dir.x * 0.3 * scale, y + 0.2 * scale + Math.abs(dir.y) * 0.3 * scale, z + dir.z * 0.3 * scale);
+      const room = this.room(x, y + 0.2 * scale, z, dir.x, dir.z, 2 * scale), out = Math.min(0.3 * scale, room);
+      fire.position.set(x + dir.x * out, y + 0.2 * scale + Math.abs(dir.y) * 0.3 * scale, z + dir.z * out);
       fire.velocity.copy(dir).multiplyScalar(random.range(1.5, 4) * scale); fire.velocity.y += 1.2;
       fire.drag = 3.5; fire.gravity = -1.5; fire.spin = random.signed(2);
-      const size = random.range(0.6, 1) * scale;
-      this.look(fire, EFFECT_KIND.fire, colors.fireHot, colors.fireCool, 2.2, size, size * 2.2, 0.95, random.range(0.35, 0.6), 0.8);
+      this.hold(fire, room - out);
+      const size = random.range(0.65, 1.05) * scale;
+      this.look(fire, EFFECT_KIND.fire, colors.fireHot, colors.fireCool, 2.2, size, size * 2.3, 0.95, random.range(0.45, 0.8), 0.8);
     }
     for (let index = 0, count = emitter.count(recipe.sparks); index < count; index++) {
       const spark = emitter.particle('glow');
@@ -227,13 +293,20 @@ export class CombatEffects {
       spark.gravity = 9.8; spark.drag = 0.6; spark.floor = ground; spark.bounce = 0.3; spark.facing = FACING.velocity; spark.aspect = 5;
       this.look(spark, EFFECT_KIND.streak, colors.spark, colors.spark, 2, 0.03, 0.015, 1, random.range(0.45, 0.95));
     }
+    // The cloud lives in its own pool (gunfire never recycles it): dense and dark, billowing up and out,
+    // hanging for several seconds before it thins away.
+    const cloud = EXPLOSION_SMOKE;
     for (let index = 0, count = emitter.count(recipe.smoke); index < count; index++) {
-      const smoke = emitter.particle('smoke'), dir = this.randomDirection(this.direction, false);
-      smoke.position.set(x + dir.x * 0.5 * scale, y + 0.3 * scale + Math.abs(dir.y) * 0.4 * scale, z + dir.z * 0.5 * scale);
-      smoke.velocity.copy(dir).multiplyScalar(random.range(0.6, 1.6) * scale); smoke.velocity.y += random.range(0.8, 1.6);
-      smoke.drag = 1.1; smoke.gravity = -0.35; smoke.spin = random.signed(0.4);
-      const size = random.range(0.9, 1.3) * scale;
-      this.look(smoke, EFFECT_KIND.smoke, colors.smoke, colors.smokeEnd, 1, size, size * 3, 0.55, random.range(2.6, 4.2));
+      const smoke = emitter.particle('plume'), dir = this.randomDirection(this.direction, false);
+      const height = y + 0.3 * scale + Math.abs(dir.y) * 0.45 * scale;
+      const room = this.room(x, height, z, dir.x, dir.z, 3 * scale), out = Math.min(0.45 * scale, room);
+      smoke.position.set(x + dir.x * out, height, z + dir.z * out);
+      smoke.velocity.copy(dir).multiplyScalar(random.range(0.8, 2) * scale);
+      smoke.velocity.y = Math.abs(smoke.velocity.y) * 0.5 + random.range(0.7, 1.5);
+      smoke.drag = 1.25; smoke.gravity = -0.3; smoke.spin = random.signed(0.35);
+      this.hold(smoke, room - out);
+      const size = random.range(cloud.size[0], cloud.size[1]) * scale, shade = index % 3 === 0 ? colors.smokeLight : colors.smoke;
+      this.look(smoke, EFFECT_KIND.smoke, shade, colors.smokeEnd, 1, size, size * cloud.growth, cloud.opacity, random.range(cloud.life[0], cloud.life[1]));
     }
     for (let index = 0, count = emitter.count(recipe.debris); index < count; index++) {
       const debris = emitter.particle('dust');
@@ -244,14 +317,16 @@ export class CombatEffects {
       this.look(debris, EFFECT_KIND.chip, tint, tint, 1, size, size * 0.8, 0.95, random.range(1.2, 2));
     }
     if (grounded) {
+      const dust = EXPLOSION_DUST;
       for (let index = 0, count = emitter.count(recipe.ring); index < count; index++) {
         const angle = index / count * TAU + random.signed(0.2), cos = Math.cos(angle), sin = Math.sin(angle);
-        const dust = emitter.particle('dust');
-        dust.position.set(x + cos * 0.4 * scale, ground + 0.15, z + sin * 0.4 * scale);
-        dust.velocity.set(cos, 0.05, sin).multiplyScalar(random.range(4, 6) * scale);
-        dust.drag = 2.6; dust.spin = random.signed(0.5);
-        const size = random.range(0.4, 0.6) * scale;
-        this.look(dust, EFFECT_KIND.puff, colors.ring, colors.ringEnd, 1, size, size * 3.4, 0.42, random.range(1, 1.5));
+        const puff = emitter.particle('plume'), room = this.room(x, ground + 0.15, z, cos, sin, 3 * scale), out = Math.min(0.4 * scale, room);
+        puff.position.set(x + cos * out, ground + 0.15, z + sin * out);
+        puff.velocity.set(cos, 0.05, sin).multiplyScalar(random.range(4, 6) * scale);
+        puff.drag = 2.6; puff.gravity = -0.08; puff.spin = random.signed(0.5);
+        this.hold(puff, room - out);
+        const size = random.range(dust.size[0], dust.size[1]) * scale;
+        this.look(puff, EFFECT_KIND.puff, colors.ring, colors.ringEnd, 1, size, size * dust.growth, dust.opacity, random.range(dust.life[0], dust.life[1]));
       }
       for (let index = 0, count = emitter.count(recipe.column); index < count; index++) {
         const earth = emitter.particle('dust');
@@ -320,6 +395,8 @@ export class CombatEffects {
     if (camera) view.set(camera);
     layers.glow.reset(); layers.dust.reset();
     this.drones.update(dt, this.droneHooks);
+    // Big soft plumes first, so the smaller smoke and dust in the same batch draw over them.
+    advanceParticles(layers.pools.plume, layers.dust, view, dt, step);
     advanceParticles(layers.pools.smoke, layers.dust, view, dt, step);
     advanceParticles(layers.pools.dust, layers.dust, view, dt, step);
     advanceParticles(layers.pools.glow, layers.glow, view, dt, step);
@@ -333,8 +410,9 @@ export class CombatEffects {
 
   stats(): CombatEffectsStats {
     const { pools, tracers, decals, shells } = this.layers;
+    const smoke = pools.smoke.alive, plume = pools.plume.alive;
     return {
-      glow: pools.glow.alive, dust: pools.dust.alive + pools.smoke.alive, tracers: tracers.alive,
+      glow: pools.glow.alive, dust: pools.dust.alive + smoke + plume, smoke, plume, tracers: tracers.alive,
       decals: decals.holes, scorches: decals.scorches, shells: shells.active,
       grenades: this.grenades.active, drones: this.drones.active, broken: this.breakables.broken,
     };
@@ -345,8 +423,8 @@ export class CombatEffects {
   clearTransient() {
     if (this.disposed) return;
     const layers = this.layers;
-    layers.pools.glow.clear(); layers.pools.dust.clear(); layers.pools.smoke.clear(); layers.tracers.clear();
-    layers.shells.clear(); layers.lights.clear(); this.grenades.clear();
+    for (const pool of Object.values(layers.pools)) pool.clear();
+    layers.tracers.clear(); layers.shells.clear(); layers.lights.clear(); this.grenades.clear();
     layers.glow.reset(); layers.dust.reset(); layers.glow.finish(); layers.dust.finish();
   }
 
@@ -392,7 +470,10 @@ export class CombatEffects {
       side.axis.copy(this.axis); side.facing = FACING.axis; side.aspect = style.streak / style.streakWidth;
       this.look(side, EFFECT_KIND.streak, MUZZLE_COLORS.side, MUZZLE_COLORS.side, 1.2, style.streakWidth, style.streakWidth, 0.55, style.flashLife);
     }
-    for (let index = 0, smoke = emitter.count(style.smoke); index < smoke; index++) {
+    // Phones get half the puffs: a one-puff gun smokes on every other shot rather than rounding up to one.
+    const owed = style.smoke * emitter.scale + this.muzzleSmokeCarry, puffs = Math.floor(owed + 1e-9);
+    this.muzzleSmokeCarry = Math.max(0, owed - puffs);
+    for (let index = 0; index < puffs; index++) {
       const puff = emitter.particle('smoke');
       puff.position.copy(from);
       puff.velocity.set(random.signed(0.15), random.range(0.25, 0.4), random.signed(0.15));
@@ -405,13 +486,15 @@ export class CombatEffects {
   }
 
   /** Never draws a tracer backwards into a barrel that pokes past the contact, and stops it at any
-   * wall between the cosmetic barrel and the accepted end point. */
-  private addTracer(from: THREE.Vector3, to: Vec3, origin: Vec3, style: MuzzleStyle) {
+   * wall between the cosmetic barrel and the accepted end point, or `shortfall` metres before the end. */
+  private addTracer(from: THREE.Vector3, to: Vec3, origin: Vec3, style: MuzzleStyle, shortfall = 0) {
     const dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z, length = Math.sqrt(dx * dx + dy * dy + dz * dz);
     if (!(length >= 0.005) || !Number.isFinite(length)) return;
     if (!(dx * (to.x - origin.x) + dy * (to.y - origin.y) + dz * (to.z - origin.z) > 0)) return;
+    const end = length - shortfall;
+    if (!(end >= 0.005)) return;
     const ux = dx / length, uy = dy / length, uz = dz / length;
-    const reach = Math.max(0, Math.min(length, rayDistance(from.x, from.y, from.z, ux, uy, uz, length)));
+    const reach = Math.max(0, Math.min(end, rayDistance(from.x, from.y, from.z, ux, uy, uz, end)));
     this.target.set(from.x + ux * reach, from.y + uy * reach, from.z + uz * reach);
     this.layers.tracers.add(from, this.target, style.tracerWidth, style.tracerLife, style.tracerColor, style.tracerIntensity);
   }
@@ -443,20 +526,23 @@ export class CombatEffects {
     for (let index = 0; index < recipe.length; index++) this.emitter.burst(recipe[index], at.x, at.y, at.z, normal, countScale, floor);
   }
 
-  /** A scorch mark on the surface under a blast. Walls stand on the ground, so a mark next to a house
-   * would carry on under the wall and show on the floor inside: it is moved clear of nearby walls,
-   * and shrunk when it is boxed in. */
+  /** Ground distance (less a margin) a puff starting at a point can drift along (dx, dz) before a wall. */
+  private room(x: number, y: number, z: number, dx: number, dz: number, limit: number): number {
+    const flat = Math.hypot(dx, dz);
+    if (!(flat > 1e-6)) return limit;
+    return Math.max(0, Math.min(limit, rayDistance(x, y, z, dx / flat, 0, dz / flat, limit + WALL_MARGIN) - WALL_MARGIN));
+  }
+
+  /** Slows a dragged particle's ground drift so it comes to rest within `room` metres (drift = speed / drag). */
+  private hold(particle: Particle, room: number) {
+    const velocity = particle.velocity, flat = Math.hypot(velocity.x, velocity.z), allowed = Math.max(0, room) * particle.drag;
+    if (flat > allowed && flat > 0) { const keep = allowed / flat; velocity.x *= keep; velocity.z *= keep; }
+  }
+
+  /** A scorch mark on the surface under a blast, fitted so it never reaches under a wall, fence or cover
+   * into the room or yard behind it, and never hangs over the edge of a raised floor. */
   private scorch(x: number, ground: number, z: number, radius: number) {
-    const height = ground + 0.05;
-    let cx = x, cz = z, r = radius;
-    for (let axis = 0; axis < 2; axis++) {
-      const dx = axis === 0 ? 1 : 0, dz = axis === 0 ? 0 : 1;
-      const ahead = rayDistance(cx, height, cz, dx, 0, dz, 2 * r), behind = rayDistance(cx, height, cz, -dx, 0, -dz, 2 * r);
-      if (ahead + behind < 2 * r) r = (ahead + behind) / 2;
-      const offset = Math.min(ahead - r, Math.max(r - behind, 0));
-      if (axis === 0) cx += offset; else cz += offset;
-    }
-    if (r > 0.25) this.layers.decals.addScorch(cx, ground, cz, this.up, r, this.random.range(0, TAU));
+    if (fitGroundMark(x, ground, z, radius, this.mark)) this.layers.decals.addScorch(this.mark.x, ground, this.mark.z, this.up, this.mark.radius, this.random.range(0, TAU));
   }
 
   private hole(at: Vec3, normal: THREE.Vector3, surface: SurfaceKind, size: number) {
@@ -518,8 +604,10 @@ export class CombatEffects {
 
   private droneSmoke(position: THREE.Vector3) {
     // Phones draw every other puff, like every other budget.
-    if (this.currentBudget.scale < 1 && (this.smokeTick++ & 1)) return;
-    const random = this.random, puff = this.emitter.particle('smoke');
+    this.droneSmokeCarry += this.emitter.scale;
+    if (this.droneSmokeCarry < 1 - 1e-9) return;
+    this.droneSmokeCarry = Math.max(0, this.droneSmokeCarry - 1);
+    const random = this.random, puff = this.emitter.particle('plume');
     puff.position.set(position.x + random.signed(0.15), position.y + random.signed(0.08), position.z + random.signed(0.15));
     puff.velocity.set(random.signed(0.3), random.range(0.3, 0.6), random.signed(0.3));
     puff.drag = 0.8; puff.gravity = -0.2; puff.spin = random.signed(0.6);

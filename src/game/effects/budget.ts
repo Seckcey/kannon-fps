@@ -20,8 +20,11 @@ export interface EffectBudget {
   glowParticles: number;
   /** Short-lived alpha particles: dust, chips, splinters, shards, debris, dark puffs. */
   dustParticles: number;
-  /** Long-lived alpha particles: muzzle, explosion and damaged-drone smoke. */
+  /** Muzzle smoke. Gunfire churns through this pool quickly, so nothing long-lived shares it. */
   smokeParticles: number;
+  /** Long-lived alpha particles: explosion smoke and dust, and damaged-drone smoke. Their own pool, so a
+   * firefight never recycles a grenade's smoke before it has faded. */
+  plumeParticles: number;
   tracers: number;
   /** Glow quads redrawn every frame for drone beacons. */
   markers: number;
@@ -35,7 +38,9 @@ export interface EffectBudget {
 }
 
 export const MAX_DECALS = 512;
-const DESKTOP = { glowParticles: 512, dustParticles: 384, smokeParticles: 160, tracers: 96, shells: 96, scorches: 12, lights: 3 } as const;
+/** Desktop pool sizes. Plumes: a three-shell mortar strike, two frags and a damaged drone at once (about
+ * 200 particles living 2 to 6 s); phones emit half per event into half the pool. */
+const DESKTOP = { glowParticles: 512, dustParticles: 384, smokeParticles: 128, plumeParticles: 256, tracers: 96, shells: 96, scorches: 12, lights: 3 } as const;
 
 export function effectBudget(options?: Partial<CombatEffectsOptions> | null): EffectBudget {
   const quality: EffectsQuality = options?.quality === 'phone' ? 'phone' : 'desktop';
@@ -46,7 +51,8 @@ export function effectBudget(options?: Partial<CombatEffectsOptions> | null): Ef
   const muzzleLight = typeof options?.muzzleLight === 'boolean' ? options.muzzleLight : !phone;
   return {
     quality, scale: phone ? 0.5 : 1,
-    glowParticles: half(DESKTOP.glowParticles), dustParticles: half(DESKTOP.dustParticles), smokeParticles: half(DESKTOP.smokeParticles),
+    glowParticles: half(DESKTOP.glowParticles), dustParticles: half(DESKTOP.dustParticles),
+    smokeParticles: half(DESKTOP.smokeParticles), plumeParticles: half(DESKTOP.plumeParticles),
     tracers: half(DESKTOP.tracers), markers: 16, shells: half(DESKTOP.shells),
     lights: muzzleLight ? DESKTOP.lights : 0, decals, scorches: half(DESKTOP.scorches),
     // Grenades and drones are gameplay information, so phones see every one of them.

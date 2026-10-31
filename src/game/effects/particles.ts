@@ -63,6 +63,8 @@ export class ViewBasis {
   readonly right = new THREE.Vector3(1, 0, 0);
   readonly up = new THREE.Vector3(0, 1, 0);
   readonly eye = new THREE.Vector3();
+  /** Whether `eye` is a real camera position (a frame has been drawn with a sound camera). */
+  known = false;
 
   set(camera: THREE.Camera) {
     camera.updateMatrixWorld();
@@ -70,7 +72,15 @@ export class ViewBasis {
     this.right.setFromMatrixColumn(matrix, 0); this.up.setFromMatrixColumn(matrix, 1); this.eye.setFromMatrixPosition(matrix);
     if (!finite(this.right) || this.right.lengthSq() < 1e-12) this.right.set(1, 0, 0); else this.right.normalize();
     if (!finite(this.up) || this.up.lengthSq() < 1e-12) this.up.set(0, 1, 0); else this.up.normalize();
-    if (!finite(this.eye)) this.eye.set(0, 0, 0);
+    this.known = finite(this.eye);
+    if (!this.known) this.eye.set(0, 0, 0);
+  }
+
+  /** Whether a point lies within `radius` of the last camera position. */
+  near(x: number, y: number, z: number, radius: number) {
+    if (!this.known) return false;
+    const dx = x - this.eye.x, dy = y - this.eye.y, dz = z - this.eye.z;
+    return dx * dx + dy * dy + dz * dz < radius * radius;
   }
 }
 const finite = (vector: THREE.Vector3) => Number.isFinite(vector.x) && Number.isFinite(vector.y) && Number.isFinite(vector.z);

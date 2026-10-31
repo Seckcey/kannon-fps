@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import type { DroneState, GameEvent, ShotTrace, SurfaceKind, Vec3 } from '../../shared/protocol';
+import { OBSTACLES, type MapObstacle } from '../../shared/map';
 import { raycastMap } from '../../shared/physics';
 import { renderTier } from '../../src/game/RenderTiers';
 import { CombatEffects, resolveVisualMuzzle } from '../../src/game/CombatEffects';
 import { effectBudget, effectsOptionsFor, scaledCount } from '../../src/game/effects/budget';
 import { EFFECT_KIND } from '../../src/game/effects/QuadBatch';
 import { rayDistance } from '../../src/game/effects/mapQuery';
-import { DECAL_ATLAS, buildDecalAtlas } from '../../src/game/effects/decalAtlas';
+import { DECAL_ATLAS, DECAL_CELLS, buildDecalAtlas } from '../../src/game/effects/decalAtlas';
 import { EXPLOSION_RECIPES } from '../../src/game/effects/recipes';
 import { EffectRandom } from '../../src/game/effects/random';
 
@@ -101,7 +102,7 @@ function pane(name: string, x: number, y: number, z: number, turn = 0) {
 
 test('every effect budget halves on phones, and flash lights exist only where the tier allows them', () => {
   const desktop = effectBudget({ quality: 'desktop' }), phone = effectBudget({ quality: 'phone' });
-  for (const key of ['glowParticles', 'dustParticles', 'smokeParticles', 'tracers', 'shells', 'scorches'] as const) {
+  for (const key of ['glowParticles', 'dustParticles', 'smokeParticles', 'plumeParticles', 'tracers', 'shells', 'scorches'] as const) {
     assert.ok(desktop[key] > 0, key);
     assert.equal(phone[key], Math.ceil(desktop[key] / 2), `${key} is halved on phones`);
   }
@@ -121,7 +122,7 @@ test('every effect budget halves on phones, and flash lights exist only where th
     const effects = new CombatEffects(options), budget = effects.budget;
     assert.deepEqual(budget, effectBudget(options));
     assert.equal(capacityOf(glowOf(effects)), budget.glowParticles + budget.tracers + budget.markers);
-    assert.equal(capacityOf(dustOf(effects)), budget.dustParticles + budget.smokeParticles);
+    assert.equal(capacityOf(dustOf(effects)), budget.dustParticles + budget.smokeParticles + budget.plumeParticles);
     assert.equal(part<THREE.InstancedMesh>(effects, 'combat-shells').instanceMatrix.count, budget.shells);
     assert.equal(capacityOf(part<THREE.Mesh>(effects, 'combat-decals')), budget.decals + budget.scorches);
     assert.equal(lightsOf(effects).length, budget.lights);
@@ -169,7 +170,8 @@ test('a long burst with no frames keeps one fixed set of scene objects and buffe
     assert.equal(mesh.material.depthWrite, false); assert.equal(mesh.material.depthTest, true);
   }
   const stats = effects.stats();
-  assert.ok(stats.glow <= budget.glowParticles && stats.dust <= budget.dustParticles + budget.smokeParticles && stats.tracers <= budget.tracers);
+  assert.ok(stats.glow <= budget.glowParticles && stats.dust <= budget.dustParticles + budget.smokeParticles + budget.plumeParticles && stats.tracers <= budget.tracers);
+  assert.ok(stats.smoke <= budget.smokeParticles && stats.plume <= budget.plumeParticles);
   assert.equal(stats.decals, budget.decals, 'The hole ring is full and never larger');
   assert.ok(stats.shells > 0 && stats.shells <= budget.shells);
   effects.update(30, view);
@@ -280,6 +282,40 @@ test('only real contacts make impacts and holes; range ends and traces without a
   effects.dispose();
 });
 
+test("the watching player's own hits put no puff or shimmer in front of their eyes", () => {
+  const effects = new CombatEffects();
+  // The viewer stands 10 m north of a shooter at `origin` and looks back at them. A head hit lands on the
+  // front of their own head box, 0.15 m in front of the eye.
+  const eye = new THREE.Vector3(-27, 1.62, -10), view = new THREE.PerspectiveCamera(70, 1, 0.05, 200);
+  view.position.copy(eye); view.lookAt(v3(origin));
+  const head: Vec3 = { x: -27, y: 1.62, z: -9.85 }, other: Vec3 = { x: -26, y: 1.3, z: -6 };
+  const near = (point: THREE.Vector3, radius: number) =>
+    [...quads(glowOf(effects)), ...quads(dustOf(effects))].filter(quad => quad.kind !== EFFECT_KIND.tracer && quad.center.distanceTo(point) < radius);
+  const tracers = () => quads(glowOf(effects)).filter(quad => quad.kind === EFFECT_KIND.tracer);
+  const watching = { local: false, tracer: true, viewerId: 'dad' } as const;
+  for (const protectedTarget of [false, true]) {
+    effects.clear(); effects.update(0, view);
+    effects.shot(shot([{ to: head, kind: 'player', targetId: 'dad', zone: 'head', protected: protectedTarget }]), origin, watching);
+    effects.update(0.08, view);
+    assert.equal(near(eye, 1).length, 0, `${protectedTarget ? 'A shimmer' : 'A dark puff'} never covers the viewer's own screen`);
+    assert.equal(tracers().length, 1, 'The incoming tracer still shows where the shot came from');
+    assert.ok(tracers()[0].vertices.every(vertex => vertex.distanceTo(eye) > 0.9), 'but stops short of the viewer');
+    assert.ok(near(v3(origin), 0.6).length > 0, "and the shooter's muzzle still flashes");
+  }
+  effects.clear(); effects.update(0, view);
+  effects.shot(shot([{ to: other, kind: 'player', targetId: 'mum', zone: 'torso' }]), origin, watching); effects.update(0, view);
+  assert.ok(near(v3(other), 0.3).some(quad => quad.kind === EFFECT_KIND.puff), 'Hits on other players still puff');
+  // Without a viewer id, hits landing right at the camera are still kept off the screen.
+  effects.clear(); effects.update(0, view);
+  effects.shot(shot([{ to: head, kind: 'player', targetId: 'dad', protected: true }]), origin, remote);
+  effects.shot(shot([{ to: other, kind: 'player', targetId: 'mum' }]), origin, remote);
+  effects.impact(head, facingShooter, 'player'); effects.update(0.08, view);
+  assert.equal(near(eye, 1).length, 0, 'Hits at the camera are skipped even when the caller gives no viewer');
+  assert.ok(tracers().every(quad => quad.vertices.every(vertex => vertex.distanceTo(eye) > 0.9)), 'and tracers into the camera stop short');
+  assert.ok(near(v3(other), 0.3).length > 0, 'Hits elsewhere still show');
+  effects.dispose();
+});
+
 test('bullet holes form a ring buffer of the tier size that reuses the oldest first', () => {
   const effects = new CombatEffects({ quality: 'desktop', decals: 16 }), view = camera();
   for (let index = 0; index < 20; index++) effects.bulletHole({ x: -5 + index * 0.5, y: 0, z: -12 }, up, 'asphalt');
@@ -343,6 +379,20 @@ test('the procedural decal atlas has neutral borders, dark centres and its own l
     looks.add(bytes.join());
   }
   assert.equal(looks.size, columns * rows, 'Every surface has its own mark');
+});
+
+test('wood bullet holes read as torn grain: a dark hole in a pale splintered halo, with no long dark cracks', () => {
+  const atlas = buildDecalAtlas(), { width, cell, columns } = DECAL_ATLAS;
+  const x0 = (DECAL_CELLS.wood % columns) * cell, y0 = Math.floor(DECAL_CELLS.wood / columns) * cell;
+  let farDark = 0, halo = 0, pale = 0;
+  for (let y = 0; y < cell; y++) for (let x = 0; x < cell; x++) {
+    const u = (x + 0.5) / cell * 2 - 1, v = (y + 0.5) / cell * 2 - 1, r = Math.hypot(u, v);
+    const offset = ((y0 + y) * width + x0 + x) * 4, value = (atlas[offset] + atlas[offset + 1] + atlas[offset + 2]) / 3;
+    if (r > 0.5 && value < 112) farDark++;
+    if (r > 0.16 && r < 0.3) { halo++; if (value > 134) pale++; }
+  }
+  assert.equal(farDark, 0, 'No dark crack legs reach out from the hole');
+  assert.ok(pale > halo * 0.3, `Freshly torn fibres around the hole are paler than the wood (${pale} of ${halo})`);
 });
 
 test('glass and pots shatter when a shot path crosses them, and come back for the next round', () => {
@@ -418,6 +468,88 @@ test('explosions emit flash, fireball, sparks, smoke, debris, a dust ring and a 
   const before = effects.stats().glow, frag = EXPLOSION_RECIPES.frag;
   effects.explosion({ x: NaN, y: 0, z: 0 }, 'frag'); effects.explosion(street, 'nuke' as 'frag');
   assert.equal(effects.stats().glow, before + frag.flash + frag.fire + frag.sparks, 'Bad positions are ignored; unknown kinds fall back to a frag');
+  effects.dispose();
+  // A grenade that rolled under the bus (its body starts 0.16 m up) scorches the street, not the air under the bus.
+  const under = new CombatEffects();
+  under.explosion({ x: -2.4, y: 0.07, z: -4 }, 'frag'); under.update(0, view);
+  const [shadowed] = decalQuads(under);
+  assert.ok(shadowed && Math.abs(shadowed.center.y) < 0.03, 'A blast under the bus marks the street');
+  under.dispose();
+});
+
+test('explosion smoke hangs for seconds, and steady gunfire never eats it early, even on phones', () => {
+  const view = camera();
+  const clouds = (effects: CombatEffects) => quads(dustOf(effects)).filter(quad => quad.kind === EFFECT_KIND.smoke && quad.vertices[0].distanceTo(quad.vertices[1]) > 1);
+  for (const quality of ['desktop', 'phone'] as const) {
+    const quiet = new CombatEffects({ quality }), busy = new CombatEffects({ quality });
+    for (const effects of [quiet, busy]) { effects.explosion(street, 'frag'); effects.update(0, view); }
+    assert.ok(quiet.stats().plume > 0, 'Explosion smoke has a pool of its own');
+    let fired = 0;
+    for (let frame = 1; frame <= 240; frame++) {
+      // Three remote rifles at 750 rounds a minute, all hitting concrete.
+      for (const due = Math.floor(frame * 37.5 / 60); fired < due; fired++) busy.shot(shot([worldTrace()]), origin, remote);
+      quiet.update(1 / 60, view); busy.update(1 / 60, view);
+      assert.equal(busy.stats().plume, quiet.stats().plume, `${quality}: gunfire leaves the explosion smoke alone (frame ${frame})`);
+      if (frame === 72) assert.ok(clouds(busy).filter(quad => quad.opacity >= 0.5).length >= (quality === 'phone' ? 6 : 12), `${quality}: a thick cloud at 1.2 s`);
+    }
+    assert.ok(clouds(busy).length >= (quality === 'phone' ? 3 : 6), `${quality}: smoke still hangs at 4 s`);
+    quiet.dispose(); busy.dispose();
+  }
+});
+
+test('scorch marks never reach under walls or cover, at house corners or on balconies', () => {
+  const view = camera(), effects = new CombatEffects();
+  const standing = OBSTACLES.filter(box => box.y - box.h / 2 <= 0.05 && box.y + box.h / 2 >= 0.05);
+  const gap = (box: MapObstacle, x: number, z: number) =>
+    Math.hypot(Math.max(box.x - box.w / 2 - x, 0, x - box.x - box.w / 2), Math.max(box.z - box.d / 2 - z, 0, z - box.z - box.d / 2));
+  /** Whether the ground path from a to b runs through a footprint: a mark must never jump through a wall. */
+  const crosses = (box: MapObstacle, ax: number, az: number, bx: number, bz: number) => {
+    let near = 0, far = 1;
+    for (const [start, delta, min, max] of [[ax, bx - ax, box.x - box.w / 2, box.x + box.w / 2], [az, bz - az, box.z - box.d / 2, box.z + box.d / 2]]) {
+      if (Math.abs(delta) < 1e-12) { if (start < min || start > max) return false; continue; }
+      const t1 = (min - start) / delta, t2 = (max - start) / delta;
+      near = Math.max(near, Math.min(t1, t2)); far = Math.min(far, Math.max(t1, t2));
+      if (near > far) return false;
+    }
+    return true;
+  };
+  const markOf = (position: Vec3) => {
+    effects.clear(); effects.explosion(position, 'frag'); effects.update(0, view);
+    return decalQuads(effects)[0];
+  };
+  // Just outside the south-east corner of the yellow house: no wall lies due east, west, north or south.
+  const corner = markOf({ x: 22.39, y: 0.07, z: 6.46 });
+  assert.ok(corner && corner.radius > 0.9, 'A blast at a corner keeps a full-size mark by sliding away from the corner');
+  for (const box of standing) assert.ok(gap(box, corner.center.x, corner.center.z) >= corner.radius - 1e-6, `and the mark stays out from under ${box.id}`);
+  assert.ok(Math.hypot(corner.center.x - 22.39, corner.center.z - 6.46) <= corner.radius, 'while still covering the blast');
+
+  // Blasts all over the town, within 1.5 m of the walls, fences and cover.
+  const random = new EffectRandom(11);
+  let blasts = 0, marked = 0;
+  while (blasts < 400) {
+    const box = standing[Math.floor(random.next() * standing.length)];
+    const x = box.x + random.signed(box.w / 2 + 1.5), z = box.z + random.signed(box.d / 2 + 1.5);
+    if (Math.abs(x) > 30.8 || Math.abs(z) > 22.8 || standing.some(other => gap(other, x, z) === 0)) continue;
+    blasts++;
+    const mark = markOf({ x, y: 0.07, z });
+    if (!mark) continue;
+    marked++;
+    const at = `A blast at (${x.toFixed(2)}, ${z.toFixed(2)})`;
+    assert.ok(Math.abs(mark.center.y) < 0.03, `${at} marks the ground`);
+    for (const other of standing) {
+      assert.ok(gap(other, mark.center.x, mark.center.z) >= mark.radius - 1e-3, `${at} keeps its mark out from under ${other.id}`);
+      assert.ok(!crosses(other, x, z, mark.center.x, mark.center.z), `${at} never moves its mark through ${other.id}`);
+    }
+    assert.ok(Math.hypot(mark.center.x - x, mark.center.z - z) <= mark.radius * 1.45 + 1e-6, `${at} keeps its mark on the blast`);
+  }
+  assert.ok(marked >= blasts * 0.9, `Nearly every blast still leaves a mark (${marked} of ${blasts})`);
+
+  // On the yellow balcony, beside the open door into the upstairs room.
+  const balcony = markOf({ x: 22.35, y: 3.27, z: 4.2 });
+  assert.ok(balcony && Math.abs(balcony.center.y - 3.2) < 0.03, 'A balcony blast marks the balcony floor');
+  assert.ok(balcony.center.x - balcony.radius >= 22 - 1e-6, 'without reaching through the door into the room');
+  assert.ok(balcony.center.x + balcony.radius <= 26.04 + 1e-6 && balcony.center.z + balcony.radius <= 5.88 + 1e-6, 'or under the rails');
+  assert.ok(balcony.center.z - balcony.radius >= 2.8 - 1e-6, 'or out over the open edge');
   effects.dispose();
 });
 
@@ -595,6 +727,21 @@ test('a cosmetic tracer stops at a nearby wall instead of drawing through it', (
   effects.dispose();
 });
 
+test('a predicted shot keeps its light and tracer on the near side of cover', () => {
+  const effects = new CombatEffects(), view = camera();
+  // The player stands in the street outside the teal house front (x = -9.86) and aims through its door
+  // (z -3.4 to -1.1); the animated barrel pokes through the wall beside the door, into the room.
+  const eye: Vec3 = { x: -9.3, y: 1.62, z: -3 }, barrel: Vec3 = { x: -10.4, y: 1.5, z: -4 }, contact: Vec3 = { x: -15.86, y: 1.5, z: -2.2 };
+  effects.localShot(barrel, contact, 'kr5', true, eye); effects.update(0.05, view);
+  const [light] = lightsOf(effects);
+  assert.ok(light.intensity > 0 && light.position.x > -9.86, 'The muzzle light stays on the street side of the wall');
+  const tracers = quads(glowOf(effects)).filter(quad => quad.kind === EFFECT_KIND.tracer);
+  assert.ok(tracers.every(quad => quad.vertices.every(vertex => vertex.x > -9.9)), 'and no tracer is drawn inside the room');
+  effects.clear(); effects.localShot(barrel, contact, 'kr5', true); effects.update(0, view);
+  assert.ok(lightsOf(effects)[0].position.distanceTo(v3(barrel)) < 1e-6, 'Without the eye the barrel point is used as given');
+  effects.dispose();
+});
+
 test('broken or hostile input never throws or creates NaN vertices', () => {
   const effects = new CombatEffects(), view = camera();
   for (const value of [NaN, Infinity, -Infinity]) {
@@ -706,6 +853,44 @@ test('precompiling covers every effect shader, including the drone parts, agains
   effects.dispose();
   await effects.precompile(renderer as unknown as THREE.WebGLRenderer, scene, view);
   assert.equal(calls.length, 1, 'Nothing is compiled after disposal');
+});
+
+test('precompiling counts every light once, whether or not the effects are already in the scene', async () => {
+  // Mirrors three r185 WebGLRenderer.compile: lights come from the target scene, and again from the compiled
+  // object when that object is not the target scene itself.
+  const lightsSeen = (object: THREE.Object3D, target: THREE.Object3D) => {
+    let count = 0;
+    const visit = (child: THREE.Object3D) => { if ((child as THREE.Light).isLight) count++; };
+    target.traverseVisible(visit);
+    if (object !== target) object.traverseVisible(visit);
+    return count;
+  };
+  for (const placement of ['outside', 'child', 'nested'] as const) {
+    const effects = new CombatEffects(), scene = new THREE.Scene(), world = new THREE.Group();
+    scene.add(new THREE.HemisphereLight(), new THREE.DirectionalLight(), world);
+    if (placement === 'child') scene.add(effects.root);
+    if (placement === 'nested') world.add(new THREE.Group(), effects.root, new THREE.Group());
+    scene.add(new THREE.Group());
+    const parent = effects.root.parent, siblings = parent ? [...parent.children] : [];
+    const seen: number[] = [];
+    const renderer = {
+      compileAsync: (object: THREE.Object3D, _camera: THREE.Camera, target?: THREE.Scene | null) => {
+        seen.push(lightsSeen(object, target ?? object));
+        return Promise.resolve(object);
+      },
+    };
+    await effects.precompile(renderer as unknown as THREE.WebGLRenderer, scene, camera());
+    assert.deepEqual(seen, [2 + effects.budget.lights], `${placement}: the two world lights and the ${effects.budget.lights} flash lights, each counted once`);
+    assert.equal(effects.root.parent, parent, `${placement}: the effects stay where the caller put them`);
+    if (parent) assert.deepEqual(parent.children, siblings, 'in the same place among their siblings');
+    effects.dispose();
+  }
+  const effects = new CombatEffects(), scene = new THREE.Scene();
+  scene.add(effects.root);
+  const failing = { compileAsync: () => { throw new Error('context lost'); } };
+  await assert.rejects(effects.precompile(failing as unknown as THREE.WebGLRenderer, scene, camera()), /context lost/);
+  assert.equal(effects.root.parent, scene, 'A failed compile still leaves the effects in the scene');
+  effects.dispose();
 });
 
 test('disposal releases every owned GPU resource once, restores breakables and ignores late events', () => {

@@ -58,6 +58,21 @@ function cracks(r: number, theta: number, count: number, reach: number, width: n
   return strongest;
 }
 
+/** Two short, straight splits along the wood grain (the u axis), a long one on one side of the hole and a
+ * stub on the other: 1 on a split. */
+function splits(u: number, v: number, hole: number, seed: number) {
+  let strongest = 0;
+  for (let side = -1; side <= 1; side += 2) {
+    const along = u * side, key = side + 2;
+    const length = side > 0 ? 0.3 + 0.12 * hash(key, 11, seed) : 0.14 + 0.06 * hash(key, 11, seed);
+    const slope = (hash(key, 13, seed) - 0.5) * 0.24, offset = (hash(key, 17, seed) - 0.5) * 0.06;
+    if (along < hole * 0.7 || along > length) continue;
+    const across = Math.abs(v - offset - slope * along), width = 0.014 * (1 - along / length) + 0.005;
+    strongest = Math.max(strongest, (1 - smooth(width * 0.5, width, across)) * smooth(hole * 0.7, hole, along));
+  }
+  return strongest;
+}
+
 const shade = [0, 0, 0];
 /** Deviation from neutral (-0.5 black … +0.5 twice as bright) for one texel of one cell. */
 function mark(cell: number, u: number, v: number, seed: number) {
@@ -73,9 +88,19 @@ function mark(cell: number, u: number, v: number, seed: number) {
       break;
     }
     case DECAL_CELLS.wood: {
-      const hole = 0.11 + 0.03 * (ragged - 0.5);
-      d = -0.45 * (1 - smooth(hole * 0.6, hole, r)) - 0.24 * cracks(r, theta, 6, 0.78, 0.05, seed + 1);
-      warm = smooth(hole * 0.9, hole * 1.2, r) * (1 - smooth(0.24, 0.34 + 0.08 * ragged, r)) * (0.6 + 0.4 * rough);
+      // Wood tears along its grain (the u axis): a black hole in an uneven, off-centre patch of chipped
+      // paint and pale, streaky torn fibres, a shadowed torn rim, and two short straight splits. Long dark
+      // cracks read as a spider; a smooth, even patch reads as an eye.
+      const hole = 0.1 + 0.03 * (ragged - 0.5);
+      const lean = 0.06 * (hash(1, 5, seed) - 0.5), lumps = fbm(u * 4.5 + 1, v * 4.5 + 9, seed + 21) - 0.5;
+      const patch = Math.hypot((u - lean) * 0.6, v * 1.2) + 0.2 * lumps + 0.06 * (around(theta, 5, seed + 7) - 0.5);
+      const streaks = smooth(0.4, 0.62, fbm(u * 2 + 7, v * 19 + 3, seed + 5));
+      const torn = smooth(hole * 0.85, hole * 1.2, r) * (1 - smooth(0.15, 0.27, patch));
+      d = -0.5 * (1 - smooth(hole * 0.6, hole, r));
+      d += torn * (0.03 + 0.13 * streaks);
+      d -= 0.08 * smooth(hole * 0.8, hole, r) * (1 - smooth(hole, hole * 1.5, r)) * (0.6 + 0.4 * rough);
+      d -= 0.14 * splits(u, v, hole, seed + 1);
+      warm = 0.8 * torn * (0.35 + 0.65 * streaks);
       break;
     }
     case DECAL_CELLS.metal: {
