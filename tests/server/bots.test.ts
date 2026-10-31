@@ -528,7 +528,7 @@ test('rewards: Recon Sweep and Attack Drone at once, Mortar Volley on a recently
   assert.ok(mortar?.target && Math.hypot(mortar.target.x + 9, mortar.target.z - 7) < 1, JSON.stringify(mortar));
 });
 
-test('a Recon Sweep steers the search toward opponents the minimap shows, but not Low Profile ones', t => {
+test('a Recon Sweep steers the search toward opponents the minimap shows, but not No Trace ones', t => {
   for (const [perks, expected] of [[LOADOUT_PRESETS.close.perks, true], [LOADOUT_PRESETS.marksman.perks, false]] as const) {
     const goals: Vec3[] = [], original = BotNavigation.prototype.findPath;
     const mock = t.mock.method(BotNavigation.prototype, 'findPath', function (this: BotNavigation, start: Vec3, goal: Vec3) { goals.push({ ...goal }); return original.call(this, start, goal); });

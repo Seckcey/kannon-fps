@@ -42,10 +42,13 @@ export interface AvailableGame {
   id: string; hostName: string; humanCount: number; botCount: number; maxPlayers: number; mode: GameMode;
   fillBots: boolean; botDifficulty?: PracticeDifficulty;
 }
-export function hasMatchOpponents(players: Iterable<{ connected: boolean; bot?: boolean }>): boolean {
+/** A round can go on: a connected person and someone connected to play against. In team deathmatch
+ * (pass the mode) both teams also need someone connected, or nobody is left to fight. */
+export function hasMatchOpponents(players: Iterable<{ connected: boolean; bot?: boolean; team?: Team }>, mode: GameMode = 'ffa'): boolean {
   let humans = 0, participants = 0;
-  for (const player of players) if (player.connected) { participants++; if (!player.bot) humans++; }
-  return humans >= 1 && participants >= 2;
+  const sides = new Set<Team | undefined>();
+  for (const player of players) if (player.connected) { participants++; if (!player.bot) humans++; sides.add(player.team); }
+  return humans >= 1 && participants >= 2 && (mode !== 'tdm' || sides.size >= 2);
 }
 export interface InputFrame {
   seq: number; moveX: number; moveZ: number; yaw: number; pitch: number;
@@ -163,8 +166,10 @@ export const RULES = {
   maxPlayers: 8, matchSeconds: 300, ffaScoreLimit: 15, tdmScoreLimit: 30,
   respawnMs: 3000, protectionMs: 1500, countdownMs: 3000,
   health: 100, regenDelayMs: 4000, secondWindRegenDelayMs: 2500, regenPerSecond: 50,
-  /** Hit checks rewind opponents at most this far, and the server keeps this much history. */
-  lagCompensationMs: 200, positionHistoryMs: 1000,
+  /** Hit checks rewind opponents at most this far, and the server keeps this much history. The rewind a shot needs
+   * is the round trip plus the client's 100 ms draw delay plus up to about 70 ms of send, tick and queue waits, so
+   * 400 ms covers 100 ms each way even on a phone's 30 Hz frames. */
+  lagCompensationMs: 400, positionHistoryMs: 1000,
   fragsPerLife: 1, fragFuseMs: 3400,
   meleeRange: 1.6, meleeLungeRange: 2.6, meleeDamage: 135, meleeMs: 600,
   assistMinDamage: 20, longShotMeters: 30, multiKillWindowMs: 4000,

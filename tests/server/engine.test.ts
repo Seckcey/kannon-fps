@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { highestSurface, idleInput, mainZone, MatchEngine, MAX_PITCH, sanitizeInput, torsoCenter, type EngineOptions } from '../../server/engine.js';
-import { PRACTICE_RIVALS } from '../../server/bots.js';
+import { highestSurface, idleInput, INPUT_QUEUE_LIMIT, mainZone, MatchEngine, MAX_PITCH, sanitizeInput, torsoCenter, type EngineOptions } from '../../server/engine.js';
+import { PRACTICE_RIVALS, PracticeBots } from '../../server/bots.js';
 import { ARENA_LIMITS, SPAWNS } from '../../shared/map.js';
 import { eyePosition, grenadeLaunch, grenadePosition, magnitude, normalize, raycastMap, subtract } from '../../shared/physics.js';
 import { RULES, type GameEvent, type InputFrame, type Loadout, type PlayerState, type Team, type Vec3 } from '../../shared/protocol.js';
@@ -177,9 +177,10 @@ test('damage falls off with range and depends on the zone hit', () => {
   }
 });
 
-test('shots rewind a strafing target to what the shooter saw: 150 ms behind hits, 300 ms behind is clamped and misses', () => {
+test('shots rewind a strafing target to what the shooter saw: 150 to 380 ms behind hits, 500 ms behind is clamped and misses', () => {
   const zAt = (t: number) => -21 + 5 * (t - 3100) / 1000;
-  for (const [aimLag, viewLag, hits] of [[150, 150, true], [150, 0, false], [300, 300, false]] as const) {
+  // 380 ms is a 100 ms round trip each way on top of the 100 ms draw delay and the send, tick and queue waits.
+  for (const [aimLag, viewLag, hits] of [[150, 150, true], [150, 0, false], [300, 300, true], [380, 380, true], [500, 500, false]] as const) {
     const { engine, a, b, events } = playing();
     place(a, -28, -20);
     let now = 3100;
@@ -781,7 +782,7 @@ test('simultaneous contributions grant one elimination without join order breaki
   assert.equal(credited[0], credited[1]);
 });
 
-test('batched press and release frames keep one fire, jump, reload, crouch and knife action between ticks', () => {
+test('a press and its release batched between ticks are both simulated, one step apart, so no fire, jump, reload, crouch or knife action is lost', () => {
   const { engine, a, b, events } = playing();
   place(a, -28, 12); place(b, -28, -2);
   const aim = aimAt(a, torsoCenter(b));
@@ -792,7 +793,8 @@ test('batched press and release frames keep one fire, jump, reload, crouch and k
   send(engine, 'a', 3400, { jump: true }); send(engine, 'a', 3401, {});
   engine.step(3430, 1 / 30); assert.ok(a.vy > 0);
   send(engine, 'a', 3500, { reload: true }); send(engine, 'a', 3501, {});
-  engine.step(3530, 0); assert.equal(a.reloadingUntil, 3530 + WEAPONS.kr5.reloadMs);
+  engine.step(3530, 0);
+  assert.ok(Math.abs(a.reloadingUntil - (3530 - TICK + WEAPONS.kr5.reloadMs)) < 1e-6, 'The press frame runs one step before the release frame, which ends on the tick.');
   send(engine, 'a', 6000, { melee: true }); send(engine, 'a', 6001, {});
   engine.step(6030, 0); assert.equal(of(events, 'melee').length, 1);
   send(engine, 'a', 7000, { grenade: true }); send(engine, 'a', 7001, {});
@@ -817,20 +819,28 @@ test('a queued shot keeps its weapon and view while a later swap still applies',
   engine.step(3230, 0); assert.equal(of(events, 'shot').length, 1, 'A press made after a swap waits for the new weapon.');
 });
 
-test('queued presses stay bounded by the fire rate, duplicate sequences, input expiry and disconnects', () => {
+test('queued presses stay bounded by the fire rate, the queue limit, duplicate sequences, kept-press expiry and disconnects', () => {
   const { engine, a, events } = playing();
   place(a, -28, -20);
-  const tap = (now: number) => { send(engine, 'a', now, { fire: true, yaw: Math.PI / 2 }); send(engine, 'a', now + 1, { yaw: Math.PI / 2 }); };
+  const yaw = Math.PI / 2, queue = () => engine.runtime.get('a')!.queue;
+  const tap = (now: number) => { send(engine, 'a', now, { fire: true, yaw }); send(engine, 'a', now + 1, { yaw }); };
+  const drain = (from: number) => { let now = from; for (; queue().length; now += TICK) engine.step(now, 0); return now; };
+  // Eight taps in 15 ms: only the newest six frames wait, and the dropped taps leave one kept press.
   for (let i = 0; i < 8; i++) tap(3100 + i * 2);
-  engine.step(3130, 0); assert.equal(of(events, 'shot').length, 1);
-  tap(3150); engine.step(3160, 0); assert.equal(of(events, 'shot').length, 1, 'Press edges cannot beat the fire rate.');
+  assert.equal(queue().length, INPUT_QUEUE_LIMIT);
+  let now = drain(3130);
+  assert.equal(of(events, 'shot').length, 2, 'Press edges cannot beat the fire rate: six frames are 200 ms of the shooter\'s clock.');
+  assert.equal(a.mag[0], 28);
   const seq = engine.runtime.get('a')!.input.seq;
-  assert.equal(engine.acceptInput('a', { ...idleInput(seq), fire: true, viewTime: 3300 }, 3300), false);
-  engine.step(3330, 0); assert.equal(of(events, 'shot').length, 1, 'A refused duplicate cannot queue an action.');
-  tap(3400); engine.step(3800, 0); assert.equal(of(events, 'shot').length, 1, 'Old queued actions expire.');
-  tap(3900); engine.setConnected('a', false); engine.step(3930, 0); assert.equal(of(events, 'shot').length, 1);
-  engine.addPlayer({ id: 'a', name: 'a', color: '#fff' }, 4000); engine.step(4030, 0);
-  assert.equal(of(events, 'shot').length, 1, 'Recovery cannot replay a tap from before the disconnect.');
+  assert.equal(engine.acceptInput('a', { ...idleInput(seq), fire: true, viewTime: now }, now), false);
+  engine.step(now, 0); now += TICK; assert.equal(of(events, 'shot').length, 2, 'A refused duplicate cannot queue an action.');
+  // A tap in a frame dropped from a full queue is kept only briefly.
+  now += 500; send(engine, 'a', now, { fire: true, yaw });
+  for (let i = 1; i <= INPUT_QUEUE_LIMIT; i++) send(engine, 'a', now + i, { yaw });
+  now = drain(now + 400); assert.equal(of(events, 'shot').length, 2, 'An old kept press expires.');
+  tap(now); engine.setConnected('a', false); engine.step(now + 30, 0); assert.equal(of(events, 'shot').length, 2);
+  engine.addPlayer({ id: 'a', name: 'a', color: '#fff' }, now + 100); engine.step(now + 130, 0);
+  assert.equal(of(events, 'shot').length, 2, 'Recovery cannot replay a tap from before the disconnect.');
 });
 
 test('a disconnect clears published velocity and actions, and reconnecting waits for fresh input', () => {
@@ -847,6 +857,108 @@ test('a disconnect clears published velocity and actions, and reconnecting waits
   assert.deepEqual([a.vx, a.vz, a.lastInputSeq], [0, 0, 0]);
   assert.equal(engine.acceptInput('a', { ...idleInput(1), moveX: -1, viewTime: 3600 }, 3600), true);
   engine.step(3600, 1 / 30); assert.ok(a.vx < 0);
+});
+
+test('a dropped player stays a frozen body that bullets, the knife, a frag and the drone can down, and heals only like an idle player', () => {
+  {
+    const { engine, a, b, events } = playing({ loadouts: { a: STEADY } });
+    place(a, -28, -20); place(b, -18, -20); wound(a, 10, 3000); a.streak = 6;
+    engine.setConnected('a', false);
+    send(engine, 'b', 3100, { fire: true, ...aimAt(b, torsoCenter(a)) }); engine.step(3100, 0);
+    const [down] = of(events, 'elimination');
+    assert.deepEqual([down?.playerId, down?.attackerId, down?.cause, b.kills, a.deaths, a.streak], ['a', 'b', 'bullet', 1, 1, 0], 'Leaving mid-fight does not dodge the kill.');
+    engine.step(3100 + RULES.respawnMs + 500, 0); assert.equal(a.health, 0, 'A dropped player is not respawned while away.');
+    engine.addPlayer({ id: 'a', name: 'a', color: '#fff' }, 7000); engine.step(7000, 0); assert.equal(a.health, 100, 'They respawn on return.');
+  }
+  {
+    const { engine, a } = playing({ loadouts: { a: STEADY } });
+    wound(a, 10, 3000); engine.setConnected('a', false);
+    engine.step(6999, 0); assert.equal(a.health, 10);
+    engine.step(7500, 0); assert.equal(a.health, 35, 'Healing goes on while away, at the idle rate.');
+    engine.addPlayer({ id: 'a', name: 'a', color: '#fff' }, 7500); engine.step(7500 + TICK, 0);
+    assert.ok(a.health < 40, `Coming back is not a fresh start (${a.health}).`);
+  }
+  {
+    const { engine, a, b, events } = playing();
+    place(a, -28, -20); place(b, -25.6, -20); engine.setConnected('a', false);
+    send(engine, 'b', 3100, { melee: true, yaw: -Math.PI / 2 }); engine.step(3100, 0);
+    assert.deepEqual(of(events, 'melee').map(e => e.targetId), ['a']); assert.equal(a.health, 0, 'The knife finds the frozen body.');
+  }
+  {
+    const { engine, a, b, events } = playing();
+    place(a, -28, -20); place(b, -26.5, -20); engine.setConnected('a', false);
+    send(engine, 'b', 3100, { grenade: true }); engine.step(3100, 0);
+    for (let now = 3200; now <= 6500; now += 100) { send(engine, 'b', now, { grenade: true }); engine.step(now, 0); }
+    assert.ok(of(events, 'damage').some(d => d.playerId === 'a' && d.cause === 'frag'), 'A frag hurts the frozen body.');
+  }
+  {
+    const { engine, a, b, events } = playing();
+    place(b, -28, -20); place(a, 0, -19); b.rewards = ['drone']; engine.setConnected('a', false);
+    send(engine, 'b', 3100, { streak: 'drone' }); engine.step(3100, 0);
+    for (let now = 3150; now < 3100 + RULES.droneMs; now += 50) { a.health = 100; engine.step(now, 0); }
+    assert.ok(of(events, 'damage').some(d => d.playerId === 'a' && d.cause === 'drone'), 'The drone fires on the frozen body.');
+  }
+});
+
+test('team results keep everyone on their side while players leave the results screen, and the rematch reseats', () => {
+  const { engine, get } = playing({ ids: ['a', 'b', 'c', 'd'], options: { mode: 'tdm' } });
+  const teams = () => Object.fromEntries([...engine.players.values()].map(p => [p.id, p.team]));
+  const before = teams();
+  assert.deepEqual(before, { a: 'teal', b: 'gold', c: 'teal', d: 'gold' });
+  engine.teamScores.teal = 5; engine.finish('Time is up.', 4000);
+  assert.equal(engine.winningTeam, 'teal'); assert.deepEqual(new Set(engine.winnerIds), new Set(['a', 'c']));
+  engine.removePlayer('b'); engine.removePlayer('d');
+  assert.deepEqual(teams(), { a: 'teal', c: 'teal' }, 'A winner is never moved to the losing side under the results.');
+  engine.start(5000);
+  assert.notEqual(get('a').team, get('c').team, 'The next round evens the sides again.');
+
+  const filled = new MatchEngine({ mode: 'tdm', fillBots: true, practiceSeed: 'results' });
+  for (const id of ['h1', 'h2']) filled.addPlayer({ id, name: id, color: '#fff' }, 0);
+  for (const rival of PRACTICE_RIVALS.slice(0, 2)) filled.addPlayer(rival, 0, true);
+  filled.start(0); filled.step(3000, 0); filled.finish('Time is up.', 4000);
+  const sides = new Map([...filled.players.values()].map(p => [p.id, p.team]));
+  filled.removePlayer('h2');
+  for (const player of filled.players.values()) assert.equal(player.team, sides.get(player.id), `${player.id} keeps its side on the results screen`);
+  assert.equal(filled.addPlayer(PRACTICE_RIVALS[2]!, 4100, true).team, sides.get('h2'), 'A rival added after the match takes the smaller side.');
+});
+
+test('one frag downing two rivals as the round\'s first kills awards First Strike once', () => {
+  const { engine, events, get } = playing({ ids: ['a', 'b', 'c'] });
+  const a = get('a'), b = get('b'), c = get('c');
+  place(a, -28, -20); place(b, -27, -20); place(c, -28, -19);
+  send(engine, 'a', 3100, { grenade: true }); engine.step(3100, 0);
+  for (let now = 3200; now <= 6500; now += 100) { send(engine, 'a', now, { grenade: true }); engine.step(now, 0); }
+  assert.deepEqual([b.deaths, c.deaths, a.kills], [1, 1, 2], 'Setup: one frag downs both rivals in one resolution.');
+  assert.deepEqual(of(events, 'score').filter(s => s.reason === 'first-strike').map(s => s.playerId), ['a']);
+  assert.deepEqual(of(events, 'medal').filter(m => m.medal === 'first-strike').map(m => m.playerId), ['a']);
+  assert.equal(a.score, 2 * 100 + 100, 'Two eliminations and one First Strike.');
+});
+
+test('real rooms roll spread from a secret source and seed rivals privately, so the public round id predicts nothing', t => {
+  const shots = () => {
+    const events: GameEvent[] = [];
+    // No practice seed, exactly as the server creates rooms.
+    const engine = new MatchEngine({ onEvent: event => events.push(event) });
+    for (const id of ['a', 'b']) engine.addPlayer({ id, name: id, color: '#fff' }, 0);
+    engine.setLoadout('a', LOADOUT_PRESETS.marksman); engine.start(0); engine.step(3000, 0);
+    engine.id = 'the-round-id-every-snapshot-shows';
+    const a = engine.players.get('a')!; place(a, -28, -20); place(engine.players.get('b')!, 28, 20);
+    for (let i = 0; i < 4; i++) {
+      const now = 3100 + i * 1500;
+      send(engine, 'a', now, { fire: true, yaw: Math.PI / 2 }); engine.step(now, 0);
+      send(engine, 'a', now + TICK, { yaw: Math.PI / 2 }); engine.step(now + TICK, 0);
+    }
+    return of(events, 'shot').map(shot => shot.traces[0]!.to);
+  };
+  const first = shots(), second = shots();
+  assert.equal(first.length, 4, 'Setup: four Heron 7 shots from the hip.');
+  assert.notDeepEqual(first, second, 'Two rooms showing the same round id roll different spread.');
+  const seeds: string[] = [], reset = PracticeBots.prototype.reset;
+  t.mock.method(PracticeBots.prototype, 'reset', function (this: PracticeBots, seed?: string) { seeds.push(String(seed)); return reset.call(this, seed); });
+  const casual = new MatchEngine({ fillBots: true });
+  casual.addPlayer({ id: 'h', name: 'H', color: '#fff' }, 0); casual.addPlayer(PRACTICE_RIVALS[0]!, 0, true);
+  casual.start(0);
+  assert.equal(seeds.length, 1); assert.notEqual(seeds[0], casual.id); assert.ok(seeds[0]!.length >= 32, 'Rival brains get a private seed each round.');
 });
 
 test('bots in team play receive the mode and only send complete frames to the engine', () => {
