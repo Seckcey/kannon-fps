@@ -800,6 +800,9 @@ export class ViewModel {
       case 'grip': {
         const grip = side === 'left' ? anchors.gripLeft : anchors.gripRight;
         position.setFromMatrixPosition(grip.matrixWorld);
+        // Each arm is modelled holding its grip in that anchor's own frame (palm at the origin), so the
+        // hand turns with the anchor, not only the weapon; otherwise the fists sit 20-55 degrees off.
+        grip.getWorldQuaternion(rotation);
         if (side === 'left' && rig.handling.action === 'pump' && anchors.action && rig.actionRest) {
           position.add(this.v4.set(0, 0, anchors.action.position.z - rig.actionRest.position.z).applyQuaternion(root.quaternion));
         }
