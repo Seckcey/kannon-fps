@@ -678,7 +678,7 @@ export class PracticeBots {
     }
     return best;
   }
-  /** While our Recon Sweep runs, the minimap shows opponents (except Low Profile): head for the nearest. */
+  /** While our Recon Sweep runs, the minimap shows opponents (except No Trace): head for the nearest. */
   private radar(brain: Brain, player: PlayerState, others: readonly PlayerState[], mode: GameMode, now: number): Sighting | null {
     const active = brain.reconUntil > now || (mode === 'tdm' && !!player.team &&
       others.some(other => other.id !== player.id && other.bot && other.team === player.team && (this.brains.get(other.id)?.reconUntil ?? 0) > now));

@@ -18,3 +18,16 @@ art
 *.log
 README.md
 docs
+# Superseded models and unused images: kept in git for the asset checks and the vehicle and graphics test
+# pages, but the game never requests them, so the production image leaves them out.
+public/models/environment.glb
+public/models/environment-refined.glb
+public/models/environment-v2.glb
+public/models/environment-v2-phone.glb
+public/models/environment-vehicle-test.glb
+public/models/scout.glb
+public/models/scout-v2.glb
+public/models/vehicles-current.glb
+public/models/vehicles-improved.glb
+public/assets/limestone.png
+public/assets/sunbreak-lobby.png

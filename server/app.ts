@@ -1,7 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, realpathSync, statSync, type Stats } from 'node:fs';
+import { isIP } from 'node:net';
 import { resolve, sep, extname } from 'node:path';
+import { pipeline } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 import { MatchEngine, sanitizeInput } from './engine.js';
 import { PRACTICE_RIVALS } from './bots.js';
@@ -14,9 +16,14 @@ export interface ServerOptions {
   /** Compress WebSocket messages (permessage-deflate; env WS_COMPRESSION=1). An 8-player snapshot drops from about
    * 5.5 KB to under 0.5 KB. Off by default until it has been checked on real iPhones. */
   compression?: boolean;
+  /** Header a trusted proxy fills with the visitor's address, such as `cf-connecting-ip` behind Cloudflare Tunnel
+   * (env TRUSTED_CLIENT_IP_HEADER). Rate limits then count each visitor on their own instead of everyone behind
+   * the tunnel's one loopback address. Off by default; set it only when nothing but that proxy can reach the port. */
+  trustedClientIpHeader?: string;
 }
-/** `loadout` is the player's last valid choice on this connection; it follows them into any room they join. */
-interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; loadoutAt: number; loadouts: number; loadout: Loadout | null; alive: boolean; supportsReadiness: boolean }
+/** `loadout` is the player's last valid choice on this connection; it follows them into any room they join.
+ * `tokens` is the socket's message allowance, refilled at MESSAGE_RATE up to MESSAGE_BURST. */
+interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; tokens: number; refilledAt: number; controlAt: number; controls: number; loadoutAt: number; loadouts: number; loadout: Loadout | null; alive: boolean; supportsReadiness: boolean }
 interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; mode: GameMode; practiceDifficulty?: PracticeDifficulty; visibility: RoomVisibility; fillBots: boolean; botDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null; preparation?: { id: string; expiresAt: number; ready: Set<string> } }
 class HttpError extends Error { constructor(public readonly status: number, message: string) { super(message); } }
 class ProtocolError extends Error { constructor(public readonly code: string, message: string) { super(message); } }
@@ -24,7 +31,56 @@ const ROOM_LIFETIME = 2 * 60 * 60 * 1000;
 const DISCONNECT_GRACE = 30_000;
 const PREPARATION_TIMEOUT = 45_000;
 const GAME_UPDATE_MESSAGE = 'A player is using an older game page. Everyone should refresh the page before starting.';
+/** Each socket may send 90 messages a second on average and up to MESSAGE_BURST at once. A phone whose link stalls
+ * keeps queueing a frame every 33 ms and delivers them together when it recovers; the client gives up on a silent
+ * socket after 8-10 s, so about ten seconds of its traffic must fit. A flood still empties the allowance in seconds. */
+const MESSAGE_RATE = 90 / 1000, MESSAGE_BURST = 320;
 const MIME: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm', '.webmanifest': 'application/manifest+json' };
+/** A conditional request for an unchanged file. If-None-Match wins over If-Modified-Since (RFC 9110) and compares
+ * tags weakly; Last-Modified has whole-second precision. */
+function notModified(req: IncomingMessage, etag: string, mtimeMs: number): boolean {
+  const tags = req.headers['if-none-match'];
+  if (tags !== undefined) {
+    const opaque = (tag: string) => tag.trim().replace(/^W\//, '');
+    return tags.trim() === '*' || tags.split(',').some(tag => opaque(tag) === opaque(etag));
+  }
+  const since = Date.parse(req.headers['if-modified-since'] ?? '');
+  return Number.isFinite(since) && Math.floor(mtimeMs / 1000) * 1000 <= since;
+}
+/** Who a rate limit counts: an IPv4 address on its own (also when written IPv4-mapped), and an IPv6 address by its
+ * /64 network. A household is handed a whole /64, so keying on the full address would let one visitor rotate
+ * through fresh addresses past every limit. */
+export function rateLimitKey(address: string | undefined): string {
+  if (!address) return 'unknown';
+  const plain = address.split('%')[0]!;
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(plain);
+  if (mapped) return mapped[1]!;
+  if (isIP(plain) !== 6) return plain;
+  // Spell out the groups a "::" leaves out (an IPv4 tail is the last two), then keep the first four.
+  const [head = '', tail] = plain.split('::'), groups = (part: string) => part ? part.split(':').flatMap(group => group.includes('.') ? ['0', '0'] : [group]) : [];
+  const left = groups(head), right = tail === undefined ? [] : groups(tail);
+  const all = tail === undefined ? left : [...left, ...Array<string>(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  return `${all.slice(0, 4).map(group => parseInt(group, 16).toString(16)).join(':')}::/64`;
+}
+/** The tick loop's schedule: exactly 30 ticks a second on the wall clock. setInterval(…, 1000 / 30) runs every 33 ms
+ * plus however late the loop is (about 30.1 to 30.3 Hz), but each player's frames come at exactly 30 a second and
+ * each is one tick of movement, so a faster tick leaves a moving player without a frame every few seconds: a hitch
+ * everyone watching them sees. Ticks carry their scheduled times, so the engine sees exactly 1000/30 ms between
+ * ticks even when the loop runs a little late. A loop that falls more than `catchUp` ticks behind (a long pause), or
+ * a wall clock that jumps, starts the schedule afresh from now. */
+export class TickSchedule {
+  private next: number;
+  constructor(now: number, private readonly interval = 1000 / 30, private readonly catchUp = 3) { this.next = now + interval; }
+  /** The scheduled times of the ticks due by `now`, oldest first. */
+  due(now: number): number[] {
+    if (now - this.next > this.catchUp * this.interval || this.next - now > 2 * this.interval) this.next = now;
+    const ticks: number[] = [];
+    while (this.next <= now) { ticks.push(this.next); this.next += this.interval; }
+    return ticks;
+  }
+  /** Whole milliseconds until the next tick is due. */
+  wait(now: number): number { return Math.max(0, Math.ceil(this.next - now)); }
+}
 
 export function createGameServer(options: ServerOptions = {}) {
   const host = options.host ?? process.env.HOST ?? '127.0.0.1';
@@ -35,6 +91,7 @@ export function createGameServer(options: ServerOptions = {}) {
   const rooms = new Map<string, Room>(); const codes = new Map<string, string>();
   const connections = new Set<Connection>(); const playersOnline = new Map<string, Connection>();
   const rateBuckets = new Map<string, { count: number; since: number }>();
+  const clientIpHeader = (options.trustedClientIpHeader ?? process.env.TRUSTED_CLIENT_IP_HEADER ?? '').trim().toLowerCase();
   let closed = false;
   function originAllowed(req: IncomingMessage, required = false) {
     const origin = req.headers.origin;
@@ -45,9 +102,15 @@ export function createGameServer(options: ServerOptions = {}) {
   function json(res: ServerResponse, status: number, data: unknown) {
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(data));
   }
+  /** Who a request comes from for rate limits: the TCP peer, unless a trusted proxy's header (set in the options)
+   * names a valid address. Forwarding headers are otherwise ignored, since anyone can send them. */
+  function clientAddress(req: IncomingMessage) {
+    const raw = clientIpHeader ? req.headers[clientIpHeader] : undefined;
+    const first = (Array.isArray(raw) ? raw[0] : raw)?.split(',')[0]?.trim();
+    return first && isIP(first) ? first : req.socket.remoteAddress;
+  }
   function limit(req: IncomingMessage, key: string, max: number, window = 60_000) {
-    // Deliberately ignore untrusted forwarding headers. Trusted reverse proxies should rate-limit too.
-    const id = `${req.socket.remoteAddress}:${key}`; const now = Date.now();
+    const id = `${rateLimitKey(clientAddress(req))}:${key}`; const now = Date.now();
     let bucket = rateBuckets.get(id);
     if (!bucket || now - bucket.since >= window) { bucket = { count: 0, since: now }; rateBuckets.set(id, bucket); }
     if (++bucket.count > max) throw new HttpError(429, 'A few too many requests. Please try again shortly.');
@@ -122,8 +185,19 @@ export function createGameServer(options: ServerOptions = {}) {
       // the Emscripten bindings need it. A worker loaded from its own URL carries its own policy,
       // so the page keeps the strict policy above. It can load nothing else and reach nowhere.
       if (pathname === '/basis/ktx2-worker.js') res.setHeader('content-security-policy', "default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'");
-      res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream', 'cache-control': file.includes(`${sep}assets${sep}`) ? 'public, max-age=31536000, immutable' : 'no-cache' });
-      if (req.method === 'HEAD') res.end(); else { const stream = createReadStream(file); stream.on('error', () => res.destroy()); stream.pipe(res); }
+      let stats: Stats;
+      try { stats = statSync(file); } catch { throw new HttpError(404, 'File not found.'); }
+      // Model and transcoder URLs are versioned by hand, so they stay no-cache; validators let a browser keep its
+      // copy and check it with a tiny 304. iPhone Safari does not store a no-cache response that has neither.
+      const etag = `W/"${stats.size.toString(16)}-${Math.trunc(stats.mtimeMs).toString(16)}"`;
+      const headers = {
+        'content-type': MIME[extname(file)] ?? 'application/octet-stream', 'cache-control': file.includes(`${sep}assets${sep}`) ? 'public, max-age=31536000, immutable' : 'no-cache',
+        etag, 'last-modified': stats.mtime.toUTCString(),
+      };
+      if (notModified(req, etag, stats.mtimeMs)) { res.writeHead(304, headers); res.end(); return; }
+      res.writeHead(200, { ...headers, 'content-length': stats.size });
+      // pipeline closes the file when a download is abandoned part way (a phone leaving, or the page's own timeout).
+      if (req.method === 'HEAD') res.end(); else pipeline(createReadStream(file), res, () => {});
     } catch (error) {
       if (res.headersSent || res.destroyed) return;
       if (error instanceof HttpError) json(res, error.status, { error: error.message });
@@ -193,7 +267,10 @@ export function createGameServer(options: ServerOptions = {}) {
     if (humans.some(p => p.connected && !room.sockets.get(p.id)?.supportsReadiness)) {
       cancelPreparation(room, 'GAME_UPDATE_REQUIRED', GAME_UPDATE_MESSAGE); return;
     }
-    if (humans.length < 1 || room.engine.players.size < 2) {
+    // Team play needs someone on both sides. This counts players whose seats are held through a brief drop, so a
+    // reconnecting player does not cancel; back in the lobby the next start reseats the teams and refills bots.
+    const sides = new Set([...room.engine.players.values()].map(p => p.team));
+    if (humans.length < 1 || room.engine.players.size < 2 || (room.mode === 'tdm' && sides.size < 2)) {
       cancelPreparation(room, 'PREPARATION_CANCELLED', 'A player left before the match was ready. You are back in the lobby; the host can try again.'); return;
     }
     // Reserve a temporarily disconnected participant's place until recovery or
@@ -235,7 +312,7 @@ export function createGameServer(options: ServerOptions = {}) {
     connection.roomId = null;
     electConnectedHost(room);
     if (!room.sockets.size) room.emptySince = Date.now();
-    if (!disconnect && (room.engine.phase === 'playing' || room.engine.phase === 'countdown') && !room.practice && !hasMatchOpponents(room.engine.players.values())) room.engine.finish('Match ended because a player left.', Date.now(), true);
+    if (!disconnect && (room.engine.phase === 'playing' || room.engine.phase === 'countdown') && !room.practice && !hasMatchOpponents(room.engine.players.values(), room.mode)) room.engine.finish('Match ended because a player left.', Date.now(), true);
     syncLobbyBots(room);
     broadcastRoom(room);
     if (room.preparation) advancePreparation(room, Date.now());
@@ -260,13 +337,13 @@ export function createGameServer(options: ServerOptions = {}) {
     if (room.engine.phase === 'finished' && room.resultEvent) send(connection, { type: 'event', event: room.resultEvent });
   }
   wss.on('connection', (socket) => {
-    const connection: Connection = { socket, profile: null, roomId: null, connectedAt: Date.now(), bucketAt: Date.now(), messages: 0, controlAt: Date.now(), controls: 0, loadoutAt: Date.now(), loadouts: 0, loadout: null, alive: true, supportsReadiness: false }; connections.add(connection);
+    const connection: Connection = { socket, profile: null, roomId: null, connectedAt: Date.now(), tokens: MESSAGE_BURST, refilledAt: Date.now(), controlAt: Date.now(), controls: 0, loadoutAt: Date.now(), loadouts: 0, loadout: null, alive: true, supportsReadiness: false }; connections.add(connection);
     socket.on('pong', () => { connection.alive = true; });
     socket.on('message', (data, binary) => {
       try {
         const now = Date.now();
-        if (now - connection.bucketAt >= 1000) { connection.bucketAt = now; connection.messages = 0; }
-        if (++connection.messages > 90 || binary) { socket.close(1008, 'Message limit exceeded'); return; }
+        connection.tokens = Math.min(MESSAGE_BURST, connection.tokens + Math.max(0, now - connection.refilledAt) * MESSAGE_RATE); connection.refilledAt = now;
+        if (binary || --connection.tokens < 0) { socket.close(1008, 'Message limit exceeded'); return; }
         let message: ClientMessage;
         try { message = JSON.parse(data.toString()) as ClientMessage; } catch { throw new Error('Invalid message.'); }
         if (!message || typeof message !== 'object' || typeof message.type !== 'string') throw new Error('Invalid message.');
@@ -378,8 +455,8 @@ export function createGameServer(options: ServerOptions = {}) {
     });
   });
   let lastStep = Date.now(); let snapshotTick = 0;
-  const tickTimer = setInterval(() => {
-    const now = Date.now(); const dt = Math.min(0.1, Math.max(0, (now - lastStep) / 1000)); lastStep = now;
+  function tick(now: number) {
+    const dt = Math.min(0.1, Math.max(0, (now - lastStep) / 1000)); lastStep = now;
     for (const room of rooms.values()) {
       if (room.expiresAt <= now || (room.emptySince && now - room.emptySince > DISCONNECT_GRACE)) { destroyRoom(room); continue; }
       for (const [id, since] of room.disconnected) {
@@ -388,7 +465,7 @@ export function createGameServer(options: ServerOptions = {}) {
         if (room.engine.phase === 'waiting' || room.engine.phase === 'preparing' || room.engine.phase === 'finished') { room.engine.removePlayer(id); electConnectedHost(room); syncLobbyBots(room); broadcastRoom(room); }
         else if (!room.practice) {
           room.abandoned = true;
-          if (!hasMatchOpponents(room.engine.players.values())) room.engine.finish('Match ended because a player disconnected.', now, true);
+          if (!hasMatchOpponents(room.engine.players.values(), room.mode)) room.engine.finish('Match ended because a player disconnected.', now, true);
         }
       }
       if (room.preparation) advancePreparation(room, now);
@@ -397,7 +474,16 @@ export function createGameServer(options: ServerOptions = {}) {
       if (snapshotTick % 2 === 0 && room.sockets.size) broadcastSnapshot(room, now);
     }
     snapshotTick++;
-  }, 1000 / 30);
+  }
+  const schedule = new TickSchedule(Date.now());
+  let tickTimer: ReturnType<typeof setTimeout>;
+  function runTicks() {
+    if (closed) return;
+    const due = schedule.due(Date.now());
+    tickTimer = setTimeout(runTicks, schedule.wait(Date.now())); tickTimer.unref();
+    for (const now of due) tick(now);
+  }
+  tickTimer = setTimeout(runTicks, schedule.wait(Date.now()));
   const housekeeping = setInterval(() => {
     const now = Date.now();
     for (const connection of connections) {
@@ -414,7 +500,7 @@ export function createGameServer(options: ServerOptions = {}) {
       server.once('error', reject); server.listen(port, host, () => { server.removeListener('error', reject); const address = server.address(); if (!address || typeof address === 'string') reject(new Error('No TCP address')); else resolveListen({ port: address.port, host: address.address }); });
     }),
     close: async () => {
-      if (closed) return; closed = true; clearInterval(tickTimer); clearInterval(housekeeping);
+      if (closed) return; closed = true; clearTimeout(tickTimer); clearInterval(housekeeping);
       for (const connection of connections) connection.socket.terminate();
       await new Promise<void>((done) => wss.close(() => done()));
       await new Promise<void>((done) => { if (server.listening) { server.close(() => done()); server.closeAllConnections(); } else done(); });

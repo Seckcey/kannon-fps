@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { PracticeBots } from './bots.js';
 import { ARENA_LIMITS, OBSTACLES, SPAWNS } from '../shared/map.js';
 import {
@@ -18,8 +18,42 @@ import {
 
 /** Highest and lowest view pitch the server accepts, in radians. */
 export const MAX_PITCH = 1.5;
-/** A frame older than this stops counting (the player stands still), and so does a queued press. */
+/** After this long without a new frame, a player with nothing queued stands down (brakes and falls), and a press
+ * kept from a dropped frame stops counting. */
 const INPUT_TIMEOUT_MS = 300;
+/** Each client frame is one step of this length, exactly as the client predicts it. */
+export const FRAME_MS = 1000 / 30;
+const FRAME_SECONDS = 1 / 30;
+/** Frames waiting to be simulated per player (200 ms), beyond the frames a streaming player's playout holds back. On
+ * overflow the oldest frame's movement is dropped and its presses are kept for the next simulated frame. */
+export const INPUT_QUEUE_LIMIT = 6;
+/** The most of one player's frames a tick simulates, so a backlog drains at double speed at most. */
+export const FRAMES_PER_TICK = 2;
+/** Wall-clock time banked for catching up. Frames simulated over any window stay within the elapsed time divided by
+ * FRAME_MS plus this allowance, so sending faster never moves anyone faster. Five frames (167 ms) is the least that
+ * still simulates every frame of a 150 ms jitter spike; it is also the most a client that holds back its frames can
+ * spend at double speed afterwards (about 1.1 m of sprint). */
+export const FRAME_CREDIT_MS = 5 * FRAME_MS;
+/** A player is streaming once this many frames arrived within STREAM_WINDOW_MS, spread over at least
+ * STREAM_SPREAD_MS and with no gap over STREAM_GAP_MS between them (a client sending its 30 a second, not one burst
+ * and not across a pause), until the connection goes quiet. */
+const STREAM_FRAMES = 8, STREAM_WINDOW_MS = 10 * FRAME_MS, STREAM_SPREAD_MS = 4 * FRAME_MS, STREAM_GAP_MS = 2.5 * FRAME_MS;
+/** A streaming player's frames wait up to this long behind their own clock after a late frame (see updatePlayer)... */
+export const MAX_PLAYOUT_MS = 2 * FRAME_MS;
+/** ...and one frame less after this long with every frame arriving a tick early. */
+export const PLAYOUT_RELAX_MS = 5000;
+/** Every CLOCK_CHECK_FRAMES frames a streaming clock is compared with when its frames arrive. If even the least
+ * delayed of them came more than two ticks before its clock (a shorter route than when the clock was set), or more
+ * than a tick after it (a longer route, frames the page skipped), the clock moves towards them by at most
+ * CLOCK_SLEW_MS a frame: too little to change a timer the client predicted. Jitter only delays frames, so it never
+ * moves the clock. */
+const CLOCK_CHECK_FRAMES = 30, CLOCK_SLEW_MS = 1;
+/** A clock this far behind the tick is put straight back on it. */
+const CLOCK_RESET_MS = 250;
+/** Tick times and frame clocks are compared to this tolerance: rounding only. The server's ticks carry exact
+ * 1000/30 ms times (server/app.ts); on whole-millisecond ticks a frame due a fraction later waits a tick rather than
+ * running on a bent clock. */
+const CLOCK_TOLERANCE_MS = 1e-6;
 /** Firing waits until a vault is this far through (0..1). */
 export const VAULT_FIRE_PROGRESS = 0.7;
 /** Sprint-to-fire takes this much longer after the faster dash. */
@@ -121,10 +155,32 @@ function normalizeFrame(frame: Partial<InputFrame> | undefined, seq: number, now
 }
 
 interface PendingPress { input: InputFrame; receivedAt: number }
+/** An accepted frame waiting for its turn, with the actions it pressed relative to the frame before it. */
+interface QueuedFrame { input: InputFrame; receivedAt: number; presses: readonly PressAction[] }
 interface HistorySample { t: number; x: number; y: number; z: number; posture: Posture }
 type Pose = Vec3 & { posture: Posture };
 interface Runtime {
-  input: InputFrame; receivedAt: number; presses: Partial<Record<PressAction, PendingPress>>;
+  /** The newest accepted frame (sequence order and press edges) and when it arrived. */
+  input: InputFrame; receivedAt: number;
+  /** Accepted frames not yet simulated, oldest first; each is simulated once, in order. */
+  queue: QueuedFrame[];
+  /** Presses from frames dropped on overflow, used by the next simulated frame. */
+  presses: Partial<Record<PressAction, PendingPress>>;
+  /** Server time of the last simulated frame (published as `lastInputTime`), never later than the tick. While
+   * streaming, each frame is one FRAME_MS step after the frame `clockSeq` (one step per sequence number), so slides,
+   * vaults and weapon timers follow the client's predicted clock. `clockSeq` is null until a frame sets the clock
+   * after a spawn, reconnect or silence. */
+  clock: number; clockSeq: number | null;
+  /** Arrival times of the latest STREAM_FRAMES frames, and whether the player is streaming (see updatePlayer). */
+  arrivals: Array<{ at: number; seq: number }>; streaming: boolean;
+  /** Clock check: frames measured since the last one, the most any of them arrived before its clock, and the
+   * milliseconds the clock still has to move. `startAt` is the clock for the frame that starts a stream. */
+  checked: number; earliest: number; slew: number; startAt: number;
+  /** How far behind their own clock a streaming player's frames run, in ms (0 to MAX_PLAYOUT_MS); `late` marks a
+   * hold for a late frame, and `earlySince` when frames last stopped arriving a tick early. */
+  playout: number; late: boolean; earlySince: number;
+  /** Wall-clock milliseconds available for simulating frames, refilled every tick up to FRAME_CREDIT_MS. */
+  credit: number; creditAt: number;
   /** Held state at the end of the previous tick, for rising edges and continuous automatic fire. */
   fireDown: boolean; jumpDown: boolean; crouchDown: boolean; aimSince: number | null;
   /** A semi-automatic press came too early (raising, sprint-out, vault, between shots); it fires once allowed while held. */
@@ -142,9 +198,12 @@ interface Runtime {
   damageBy: Map<string, number>; lastKilledBy: string | null; lastKillAt: number; chain: number;
   random: number; explicitTeam: boolean;
 }
-interface QueuedShot { player: PlayerState; frame: InputFrame; spec: WeaponSpec; slot: Slot; ads: number }
-interface QueuedMelee { player: PlayerState; frame: InputFrame }
+/** `origin` is where the frame that made the action left the player. */
+interface QueuedShot { player: PlayerState; frame: InputFrame; spec: WeaponSpec; slot: Slot; ads: number; origin: Pose }
+interface QueuedMelee { player: PlayerState; frame: InputFrame; origin: Pose }
 interface TickActions { shots: QueuedShot[]; melees: QueuedMelee[] }
+/** Actions one frame queues before its movement is known. */
+interface FrameActions { shots: Array<Omit<QueuedShot, 'origin'>>; melees: Array<Omit<QueuedMelee, 'origin'>> }
 interface PendingHit { attacker: PlayerState; target: PlayerState; amount: number; cause: DamageCause; weapon?: WeaponId; slot?: Slot; zone?: HitZone; from: Vec3; life: number }
 /** One attacker's share of a target's damage in one resolution; `bullet` sums bullet damage by zone. */
 interface Contribution { attacker: PlayerState; amount: number; top: PendingHit; bullet: Record<HitZone, number> }
@@ -153,9 +212,14 @@ interface Grenade { id: string; ownerId: string; life: number; thrownAt: number;
 interface Drone extends DroneState { startedAt: number; angle: number; nextFireAt: number; random: number }
 interface Mortar extends MortarState { next: number; random: number }
 interface Settlement {
-  firstStrikeOpen: boolean; streaks: Array<{ player: PlayerState; life: number }>; chains: Array<{ player: PlayerState; life: number }>;
+  /** First Strike is open for this resolution; `firstStruck` holds who already took it, so a trade shares it but
+   * one frag downing two rivals awards it once. */
+  firstStrikeOpen: boolean; firstStruck: Set<string>;
+  streaks: Array<{ player: PlayerState; life: number }>; chains: Array<{ player: PlayerState; life: number }>;
   evened: Runtime[]; killedBy: Array<[Runtime, string]>; anyKill: boolean;
 }
+/** A secret seed for rolls and rival brains that never goes on the wire (the round id does). */
+const privateSeed = () => randomBytes(16).toString('hex');
 
 export interface EngineOptions {
   practice?: boolean; practiceDifficulty?: PracticeDifficulty; now?: number;
@@ -187,7 +251,7 @@ export class MatchEngine {
     this.practice = options.practice ?? false; this.mode = options.mode === 'tdm' ? 'tdm' : 'ffa';
     this.practiceSeed = options.practiceSeed;
     this.botDifficulty = (this.practice ? options.practiceDifficulty : options.botDifficulty) ?? 'normal';
-    this.bots = this.practice || options.fillBots ? new PracticeBots(this.botDifficulty, this.practiceSeed ?? this.id) : null;
+    this.bots = this.practice || options.fillBots ? new PracticeBots(this.botDifficulty, this.practiceSeed ?? privateSeed()) : null;
     this.onEvent = options.onEvent ?? (() => {}); this.onFinish = options.onFinish ?? (() => {});
   }
   get scoreLimit(): number { return this.mode === 'tdm' ? RULES.tdmScoreLimit : RULES.ffaScoreLimit; }
@@ -200,6 +264,7 @@ export class MatchEngine {
       existing.connected = true; existing.name = profile.name; existing.lastInputSeq = 0; existing.aiming = false;
       const rt = this.runtime.get(profile.id)!;
       rt.input = { ...idleInput(), yaw: existing.yaw, pitch: existing.pitch, slot: existing.slot }; rt.receivedAt = 0; this.releaseControls(rt);
+      this.resetClock(existing, rt, now);
       if (team && this.mode === 'tdm') { existing.team = team; rt.explicitTeam = true; }
       return existing;
     }
@@ -208,12 +273,14 @@ export class MatchEngine {
       id: profile.id, name: profile.name, color: profile.color, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, ...moveDefaults(),
       health: RULES.health, slot: 1, weapon: loadout.primary, loadout, kills: 0, deaths: 0, assists: 0, score: 0, streak: 0,
       connected: true, respawnAt: 0, protectedUntil: 0, reloadingUntil: 0, cookingSince: 0, lastInputSeq: 0, aiming: false,
-      mag: [0, 0], reserve: [0, 0], frags: 0, rewards: [], reloadSlot: 0, readyAt: 0, meleeUntil: 0, lastDamageAt: 0,
+      mag: [0, 0], reserve: [0, 0], frags: 0, rewards: [], reloadSlot: 0, readyAt: 0, meleeUntil: 0, lastDamageAt: 0, lastInputTime: now,
       ...(bot ? { bot: true } : {}),
     };
     this.players.set(profile.id, state);
     this.runtime.set(profile.id, {
-      input: idleInput(), receivedAt: 0, presses: {}, fireDown: false, jumpDown: false, crouchDown: false, aimSince: null, triggerPending: false,
+      input: idleInput(), receivedAt: 0, queue: [], presses: {}, clock: now, clockSeq: null, arrivals: [], streaming: false,
+      checked: 0, earliest: -Infinity, slew: 0, startAt: now, playout: 0, late: false, earlySince: now, credit: FRAME_CREDIT_MS, creditAt: now,
+      fireDown: false, jumpDown: false, crouchDown: false, aimSince: null, triggerPending: false,
       nextFireAt: [-Infinity, -Infinity], lastSprintAt: -Infinity, lastSprintDash: false, reload: null, pendingLoadout: null,
       history: [], aliveSince: now, life: 0, regenStart: NaN, regenBase: RULES.health,
       damageBy: new Map(), lastKilledBy: null, lastKillAt: -Infinity, chain: 0, random: 0, explicitTeam: false,
@@ -240,16 +307,18 @@ export class MatchEngine {
     if (this.phase === 'playing') { rt.pendingLoadout = loadout; return true; }
     rt.pendingLoadout = null; player.loadout = loadout; this.equip(player); return true;
   }
+  /** Queues one frame. Frames are simulated once each, in sequence order, one 1/30 s step apiece (see updatePlayer).
+   * A frame's presses are its rising edges against the frame before it, so a tap between two ticks is kept. */
   acceptInput(id: string, input: InputFrame, now = Date.now()): boolean {
     const runtime = this.runtime.get(id);
     // Pre-round input must not arm an action for the first live simulation tick.
     if (this.phase !== 'playing' || !this.players.get(id)?.connected || !runtime || input.seq <= runtime.input.seq) return false;
-    // Network frames may arrive in a batch between ticks. Keep one rising edge per action, with the view and
-    // weapon of that press, while movement coalesces to the newest frame. The latch cannot add shots per tick.
-    for (const action of PRESS_KEYS) {
-      if (input[action] && !runtime.input[action] && !runtime.presses[action]) runtime.presses[action] = { input: { ...input }, receivedAt: now };
-    }
-    if (input.streak && input.streak !== runtime.input.streak && !runtime.presses.streak) runtime.presses.streak = { input: { ...input }, receivedAt: now };
+    const previous = runtime.input, presses: PressAction[] = PRESS_KEYS.filter(action => input[action] && !previous[action]);
+    if (input.streak && input.streak !== previous.streak) presses.push('streak');
+    runtime.queue.push({ input: { ...input }, receivedAt: now, presses });
+    runtime.arrivals.push({ at: now, seq: input.seq }); if (runtime.arrivals.length > STREAM_FRAMES) runtime.arrivals.shift();
+    // A long stall delivers its backlog at once. Bound the delay: drop the oldest movement (see dropFrame).
+    while (runtime.queue.length > INPUT_QUEUE_LIMIT + Math.round(runtime.playout / FRAME_MS)) this.dropFrame(runtime);
     runtime.input = input; runtime.receivedAt = now; return true;
   }
   start(now = Date.now()): void { this.resetRound('countdown', now); }
@@ -304,7 +373,9 @@ export class MatchEngine {
     for (const player of this.players.values()) {
       if (player.bot && !botsActive) continue;
       if (player.health <= 0) { if (now >= player.respawnAt && player.connected) this.respawn(player, now); continue; }
-      if (!player.connected) continue;
+      // A dropped player stays a frozen body that can be hit, and heals only as an idle player would, so leaving
+      // mid-fight neither dodges the kill nor brings anyone back fresh.
+      if (!player.connected) { this.regenerate(player, this.runtime.get(player.id)!, now); continue; }
       this.updatePlayer(player, now, dt, actions);
     }
     for (const player of this.players.values()) if (player.health > 0) this.record(player, now);
@@ -353,7 +424,7 @@ export class MatchEngine {
     this.startedAt = 0; this.endedAt = 0; this.winnerIds = []; this.winningTeam = undefined; this.tick = 0;
     this.teamScores = { teal: 0, gold: 0 }; this.firstStrike = false; this.entityCount = 0;
     this.grenades.length = 0; this.drones.length = 0; this.recon.length = 0; this.mortars.length = 0;
-    this.bots?.reset(this.practiceSeed ?? this.id);
+    this.bots?.reset(this.practiceSeed ?? privateSeed());
     this.balanceTeams(true);
     // Spawns only weigh players already placed for this round, not where they stood last round.
     const placed = new Set<string>();
@@ -366,9 +437,10 @@ export class MatchEngine {
       if (phase === 'preparing') player.protectedUntil = 0;
     }
   }
-  /** Team deathmatch keeps humans split evenly, then seats bots to even the sides. Once a round is set up,
-   * only newcomers are seated, so nobody changes sides under the other players. */
-  private balanceTeams(reseat = this.phase === 'waiting' || this.phase === 'finished') {
+  /** Team deathmatch keeps humans split evenly, then seats bots to even the sides. Once a round is set up, and
+   * while its results are on screen, only newcomers are seated, so nobody changes sides under the other players
+   * (a winner must not be shown the loss). Every start and rematch reseats everyone (resetRound). */
+  private balanceTeams(reseat = this.phase === 'waiting') {
     if (this.mode !== 'tdm') return;
     const roster = [...this.players.values()].map(player => ({ player, rt: this.runtime.get(player.id)! }));
     const count = (team: Team, human?: boolean) => roster.filter(({ player }) => player.team === team && (human === undefined || !player.bot === human)).length;
@@ -392,8 +464,36 @@ export class MatchEngine {
     }
     for (const { player } of roster) if (player.bot && !player.team) player.team = pick(false);
   }
+  /** Forgets queued frames and held buttons (spawn, disconnect, reconnect): nothing from before can replay. */
   private releaseControls(rt: Runtime) {
-    rt.presses = {}; rt.fireDown = false; rt.jumpDown = false; rt.crouchDown = false; rt.aimSince = null; rt.triggerPending = false;
+    rt.queue = []; rt.presses = {}; rt.fireDown = false; rt.jumpDown = false; rt.crouchDown = false; rt.aimSince = null; rt.triggerPending = false;
+  }
+  /** A spawn or reconnect starts the player's clock afresh on the tick; the first frame sets it (see updatePlayer). */
+  private resetClock(player: PlayerState, rt: Runtime, now: number) {
+    rt.clock = now; this.endStream(rt); rt.earlySince = now;
+    player.lastInputTime = now;
+  }
+  /** The connection went quiet, or the life ended: the next frames start a stream (and its clock) afresh. */
+  private endStream(rt: Runtime) {
+    rt.clockSeq = null; rt.arrivals = []; rt.streaming = false; rt.checked = 0; rt.earliest = -Infinity; rt.slew = 0; rt.playout = 0; rt.late = false;
+  }
+  /** Starts a stream once frames come at about 30 a second. Placed on a 30 Hz grid, the recent frames show when the
+   * next one is due without delay (the earliest of them: a frame held back by a spike would set the clock late) and
+   * how much they jitter. The next frame's clock is that due time, the frames after it follow one step each, and the
+   * playout starts out covering the jitter seen. */
+  private startStream(rt: Runtime, now: number) {
+    const arrivals = rt.arrivals, head = rt.queue[0];
+    if (!head || arrivals.length < STREAM_FRAMES || arrivals[0]!.at <= now - STREAM_WINDOW_MS || arrivals.at(-1)!.at - arrivals[0]!.at < STREAM_SPREAD_MS) return;
+    if (arrivals.some((arrival, i) => i > 0 && arrival.at - arrivals[i - 1]!.at > STREAM_GAP_MS)) return;
+    const due = arrivals.map(arrival => arrival.at + (head.input.seq - arrival.seq) * FRAME_MS), earliest = Math.min(...due), jitter = Math.max(...due) - earliest;
+    rt.streaming = true; rt.clockSeq = null; rt.startAt = earliest; rt.checked = 0; rt.earliest = -Infinity; rt.slew = 0;
+    rt.playout = jitter < FRAME_MS / 4 ? 0 : Math.min(MAX_PLAYOUT_MS, Math.ceil(jitter / FRAME_MS) * FRAME_MS); rt.late = false; rt.earlySince = now;
+  }
+  /** Drops the oldest queued frame's movement but keeps its presses (one per action) for the next simulated frame,
+   * so no tap is lost. Its sequence number still counts one step of the player's clock. */
+  private dropFrame(rt: Runtime) {
+    const dropped = rt.queue.shift()!;
+    for (const action of dropped.presses) rt.presses[action] ??= { input: dropped.input, receivedAt: dropped.receivedAt };
   }
   /** Disconnected players and idle bots stop where they are; a grenade being cooked goes back in the pouch. */
   private freeze(player: PlayerState) {
@@ -427,7 +527,7 @@ export class MatchEngine {
     rt.reload = null; rt.nextFireAt = [-Infinity, -Infinity]; rt.lastSprintAt = -Infinity; rt.lastSprintDash = false; this.releaseControls(rt);
     // Multi-kills pair kills from one life only.
     rt.chain = 0; rt.lastKillAt = -Infinity;
-    rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0;
+    rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0; this.resetClock(player, rt, now);
     rt.history = [{ t: now, x: player.x, y: player.y, z: player.z, posture: player.posture }]; rt.aliveSince = now; rt.life++;
     rt.regenStart = NaN; rt.damageBy.clear();
     if (announce) this.onEvent({ type: 'respawn', playerId: player.id, at: now });
@@ -475,44 +575,126 @@ export class MatchEngine {
     const first = history[0]!;
     return { x: first.x, y: first.y, z: first.z, posture: first.posture };
   }
-  /** Enemies a shooter could hit, rewound to what the shooter was drawing. Nobody is hittable before they spawned. */
+  /** Enemies a shooter could hit, rewound to what the shooter was drawing. Nobody is hittable before they spawned;
+   * a disconnected player's frozen body still is. */
   private rewound(shooter: PlayerState, t: number, now: number): Array<{ player: PlayerState; pose: Pose }> {
     const targets: Array<{ player: PlayerState; pose: Pose }> = [];
     for (const player of this.players.values()) {
-      if (player.health <= 0 || !player.connected || !this.hostile(shooter, player)) continue;
+      if (player.health <= 0 || !this.hostile(shooter, player)) continue;
       if (t < this.runtime.get(player.id)!.aliveSince) continue;
       targets.push({ player, pose: this.poseAt(player, t, now) });
     }
     return targets;
   }
+  /** A roll in [0, 1). Real rooms use a cryptographic source: a hash of anything a client can see (the round id is in
+   * every snapshot) would let a modified page predict spread, drone misses and mortar scatter. Only an explicit
+   * practice seed (tests) gives the repeatable hash. */
   private random(key: string, holder: { random: number }): number {
+    if (this.practiceSeed === undefined) { holder.random++; return randomInt(0x100000000) / 0x100000000; }
     let hash = 2166136261;
-    for (const character of `${this.practiceSeed ?? this.id}:${key}:${holder.random++}`) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+    for (const character of `${this.practiceSeed}:${key}:${holder.random++}`) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
     hash ^= hash >>> 16; hash = Math.imul(hash, 0x85ebca6b); hash ^= hash >>> 13; hash = Math.imul(hash, 0xc2b2ae35); hash ^= hash >>> 16;
     return (hash >>> 0) / 4294967296;
   }
 
   // ---- One player's tick ---------------------------------------------------------------------
+  /** The client predicts exactly one 1/30 s step per frame it sends, so a person's frames are simulated the same
+   * way: each once, in order, up to FRAMES_PER_TICK per tick while wall-clock credit allows (a backlog catches up,
+   * a fast sender gains nothing). With no frame to run the body holds still, as the prediction does, until the
+   * connection has been silent for INPUT_TIMEOUT_MS; then the player stands down as before.
+   *
+   * A streaming player (about 30 frames a second arriving) keeps a clock of their own: each frame is one FRAME_MS
+   * step after the frame before it, by sequence number, exactly as the client predicts, and it runs on the first tick
+   * that reaches its clock plus a playout. The playout grows a frame when a frame comes late, so the next late frame
+   * finds one waiting and other players see a steady body instead of a stop and a double step; it shrinks after
+   * PLAYOUT_RELAX_MS of frames arriving a tick early. A clock left CLOCK_RESET_MS behind the tick is put back on it.
+   * Until a player streams (the first frames of a life, a sparse or stalled sender) frames run as they come, on the
+   * tick's clock. A rival's brain hands over one frame per tick, simulated with the tick's own clock and dt. */
   private updatePlayer(player: PlayerState, now: number, dt: number, actions: TickActions) {
     const rt = this.runtime.get(player.id)!;
-    const input = now - rt.receivedAt <= INPUT_TIMEOUT_MS ? rt.input : { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: player.pitch, slot: player.slot, viewTime: now };
+    this.regenerate(player, rt, now);
+    if (player.bot) {
+      const queued = rt.queue.shift(); rt.queue.length = 0;
+      if (queued) this.simulate(player, rt, queued, now, now, dt, actions);
+      return;
+    }
+    rt.credit = Math.min(FRAME_CREDIT_MS, rt.credit + Math.max(0, now - rt.creditAt)); rt.creditAt = now;
+    if (!rt.streaming) this.startStream(rt, now);
+    let simulated = 0;
+    while (rt.queue.length && simulated < FRAMES_PER_TICK && rt.credit >= FRAME_MS - 1e-6) {
+      const queued = rt.queue[0]!, behind = rt.queue.length - 1, own = rt.streaming && rt.clockSeq !== null;
+      let clock: number;
+      if (own) {
+        const strict = rt.clock + (queued.input.seq - rt.clockSeq!) * FRAME_MS, onTick = now - behind * FRAME_MS - rt.playout;
+        // Not due yet: wait. A full queue (a sender running ahead of real time) or a clock far ahead of the tick (a
+        // jump in sequence numbers) cannot hold the player up, though: those run now, on the tick's clock.
+        const forced = rt.queue.length >= INPUT_QUEUE_LIMIT + Math.round(rt.playout / FRAME_MS) || strict > now + CLOCK_RESET_MS;
+        if (strict + rt.playout > now + CLOCK_TOLERANCE_MS && !forced) break;
+        // The clock waits out a vault or slide before it moves, where even a millisecond shows.
+        const step = player.vault || player.posture === 'slide' ? 0 : Math.max(-CLOCK_SLEW_MS, Math.min(CLOCK_SLEW_MS, rt.slew));
+        rt.slew -= step;
+        clock = Math.min(now, Math.max(rt.clock, strict < onTick - CLOCK_RESET_MS ? onTick : strict + step));
+        // The clock check (see CLOCK_CHECK_FRAMES): how long before its clock the least delayed frame arrived.
+        rt.earliest = Math.max(rt.earliest, clock - queued.receivedAt);
+        if (++rt.checked >= CLOCK_CHECK_FRAMES) {
+          rt.slew = rt.earliest > 2 * FRAME_MS ? FRAME_MS - rt.earliest : rt.earliest < -FRAME_MS ? -rt.earliest : 0;
+          rt.checked = 0; rt.earliest = -Infinity;
+        }
+      } else if (rt.streaming) clock = Math.min(now, Math.max(rt.clock, rt.startAt)); // The frame that starts a stream.
+      else clock = Math.min(now, Math.max(now - behind * FRAME_MS, rt.clock + FRAME_MS));
+      rt.queue.shift(); rt.credit -= FRAME_MS; simulated++;
+      // A frame that came less than a tick before it ran needed the playout.
+      if (own && now - queued.receivedAt < FRAME_MS - CLOCK_TOLERANCE_MS) rt.earlySince = now;
+      this.simulate(player, rt, queued, clock, now, FRAME_SECONDS, actions);
+      rt.clockSeq = queued.input.seq;
+    }
+    if (rt.streaming && rt.clockSeq !== null) {
+      if (simulated) rt.late = false;
+      else if (!rt.queue.length && rt.clock + FRAME_MS + rt.playout <= now + CLOCK_TOLERANCE_MS) {
+        // The next frame is late. From now on run a frame further behind, so the next late frame finds one waiting.
+        if (!rt.late) rt.playout = Math.min(MAX_PLAYOUT_MS, rt.playout + FRAME_MS);
+        rt.late = true; rt.earlySince = now;
+      }
+      if (rt.playout > 0 && now - rt.earlySince >= PLAYOUT_RELAX_MS) { rt.playout = Math.max(0, rt.playout - FRAME_MS); rt.earlySince = now; }
+    }
+    if (simulated) return;
+    if (!rt.queue.length && now - rt.receivedAt > INPUT_TIMEOUT_MS) {
+      // A silent connection brakes and falls, keeping its view, weapon and any cooked frag. Its clock starts afresh.
+      const idle: QueuedFrame = { input: { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: player.pitch, slot: player.slot, viewTime: now }, receivedAt: now, presses: [] };
+      this.simulate(player, rt, idle, now, now, dt, actions, false);
+      this.endStream(rt);
+      return;
+    }
+    // Waiting for a frame: nothing moves. Off the stream a reload still finishes on the tick; a streaming player's
+    // reload finishes on their own clock, with their next frame.
+    if (!rt.streaming) this.advanceReload(player, rt, now);
+  }
+  /** One frame, completely and in order, at its own server time `now`: presses, swap, knife, cook, move, throw,
+   * reward, reload and trigger. Shots and knife swings are traced once every player has moved, from where this
+   * frame left the player. `real` is false for a silent connection's idle frame, which never releases a frag. */
+  private simulate(player: PlayerState, rt: Runtime, queued: QueuedFrame, now: number, tickNow: number, dt: number, actions: TickActions, real = true) {
+    const input = queued.input, frameActions: FrameActions = { shots: [], melees: [] };
+    rt.clock = now; player.lastInputTime = now;
     const take = (action: PressAction): InputFrame | undefined => {
-      const press = rt.presses[action]; delete rt.presses[action];
-      return press && now - press.receivedAt <= INPUT_TIMEOUT_MS ? press.input : undefined;
+      const own = queued.presses.includes(action), kept = rt.presses[action]; delete rt.presses[action];
+      if (kept && tickNow - kept.receivedAt <= INPUT_TIMEOUT_MS) {
+        // A press from a dropped frame goes first; this frame's own press of the same action waits one frame.
+        if (own) rt.presses[action] = { input, receivedAt: queued.receivedAt };
+        return kept.input;
+      }
+      return own ? input : undefined;
     };
     const firePress = take('fire'), jumpPress = take('jump'), reloadPress = take('reload'), crouchPress = take('crouch');
     const meleePress = take('melee'), grenadePress = take('grenade'), streakPress = take('streak');
     player.lastInputSeq = input.seq;
-    this.regenerate(player, rt, now);
     this.advanceReload(player, rt, now);
-    if (!input.aim) rt.aimSince = null; else if (rt.aimSince === null) rt.aimSince = now;
-    // A press made with the weapon held at the start of the tick fires before a later swap in the same batch;
+    // A press made with the weapon held at the start of the frame fires before a swap in the same frame;
     // a press made after the swap waits for the new weapon to come up.
     const earlyPress = firePress && firePress.slot === player.slot ? firePress : undefined;
-    if (earlyPress) this.tryFire(player, rt, earlyPress, now, actions);
+    if (earlyPress) this.tryFire(player, rt, earlyPress, now, frameActions);
     if (input.slot !== player.slot) this.swap(player, rt, input.slot, now);
-    // The knife and a cook start before moving, so they stop a sprint in the same tick.
-    if (meleePress) this.tryMelee(player, rt, meleePress, now, actions);
+    // The knife and a cook start before moving, so they stop a sprint in the same frame.
+    if (meleePress) this.tryMelee(player, rt, meleePress, now, frameActions);
     if (grenadePress) this.startCook(player, rt, now);
     const spec = weaponFor(player.loadout, player.slot);
     movePlayer(player, { ...input, fire: input.fire || !!firePress }, {
@@ -523,15 +705,20 @@ export class MatchEngine {
     player.aiming = input.aim && !player.sprinting;
     // Only a real frame releases a cooked grenade. A stalled connection keeps it in hand while the fuse runs,
     // instead of throwing it wherever the player last looked.
-    if (player.cookingSince > 0 && !rt.input.grenade) this.throwGrenade(player, rt, input, now);
+    if (real && player.cookingSince > 0 && !input.grenade) this.throwGrenade(player, rt, input, now);
     if (streakPress) this.useReward(player, streakPress, now);
     if (input.reload || reloadPress?.slot === player.slot) this.startReload(player, rt, now);
     if (!earlyPress) {
       const frame = firePress && firePress.slot === player.slot ? firePress : (spec.auto || rt.triggerPending) && input.fire && input.slot === player.slot ? input : undefined;
-      if (frame) this.tryFire(player, rt, frame, now, actions);
+      if (frame) this.tryFire(player, rt, frame, now, frameActions);
     }
+    // Aim time is read after the trigger: a shot keeps the aim it was pressed with even when this frame lets go.
+    if (!input.aim) rt.aimSince = null; else if (rt.aimSince === null) rt.aimSince = now;
     if (!input.fire) rt.triggerPending = false;
     rt.fireDown = input.fire; rt.jumpDown = input.jump; rt.crouchDown = input.crouch;
+    const origin: Pose = { x: player.x, y: player.y, z: player.z, posture: player.posture };
+    for (const shot of frameActions.shots) actions.shots.push({ ...shot, origin });
+    for (const melee of frameActions.melees) actions.melees.push({ ...melee, origin });
   }
   /** Health refills after a pause out of combat (shorter with Second Wind). Integer health, a function of time only. */
   private regenerate(player: PlayerState, rt: Runtime, now: number) {
@@ -579,7 +766,7 @@ export class MatchEngine {
     const time = spec.adsMs * (hasPerk(player.loadout, 'steady-aim') ? STEADY_AIM_ADS_FACTOR : 1);
     return clamp((now - rt.aimSince) / Math.max(1, time), 0, 1);
   }
-  private tryFire(player: PlayerState, rt: Runtime, frame: InputFrame, now: number, actions: TickActions): boolean {
+  private tryFire(player: PlayerState, rt: Runtime, frame: InputFrame, now: number, actions: FrameActions): boolean {
     const slot = player.slot, index = slot - 1, spec = weaponFor(player.loadout, slot);
     // Only a shell-by-shell reload with something loaded gives way to the trigger, and only once a shot goes off.
     if (player.reloadingUntil && (!spec.perShellMs || player.mag[index]! <= 0)) return false;
@@ -598,7 +785,7 @@ export class MatchEngine {
     actions.shots.push({ player, frame, spec, slot, ads: this.adsProgress(player, rt, frame, spec, now) });
     return true;
   }
-  private tryMelee(player: PlayerState, rt: Runtime, frame: InputFrame, now: number, actions: TickActions) {
+  private tryMelee(player: PlayerState, rt: Runtime, frame: InputFrame, now: number, actions: FrameActions) {
     if (now < player.meleeUntil || player.cookingSince > 0 || player.vault) return;
     player.meleeUntil = now + RULES.meleeMs; player.readyAt = Math.max(player.readyAt, player.meleeUntil);
     this.cancelReload(player, rt); player.protectedUntil = 0;
@@ -647,8 +834,8 @@ export class MatchEngine {
     const angle = drone.angle + DRONE.speed / DRONE.orbitRadius * (t - drone.startedAt) / 1000;
     return { x: Math.cos(angle) * DRONE.orbitRadius, y: DRONE.height, z: Math.sin(angle) * DRONE.orbitRadius, yaw: Math.atan2(-Math.sin(angle), -Math.cos(angle)) };
   }
-  private traceShot({ player, frame, spec, slot, ads }: QueuedShot, now: number, hits: PendingHit[], droneHits: DroneHit[]) {
-    const rt = this.runtime.get(player.id)!, eye = eyePosition(player);
+  private traceShot({ player, frame, spec, slot, ads, origin }: QueuedShot, now: number, hits: PendingHit[], droneHits: DroneHit[]) {
+    const rt = this.runtime.get(player.id)!, eye = eyePosition(origin);
     const forward = directionFromAngles(frame.yaw, frame.pitch), right = rightFromYaw(frame.yaw), up = cross(right, forward);
     const offset = (sideways: number, upward: number) => normalize(add(forward, add(scale(right, sideways), scale(up, upward))));
     const directions: Vec3[] = [];
@@ -663,7 +850,7 @@ export class MatchEngine {
         directions.push(offset(Math.cos(theta) * radius, Math.sin(theta) * radius));
       } else directions.push(forward);
     }
-    // Opponents and drones are traced where this shooter saw them, at most 200 ms back.
+    // Opponents and drones are traced where this shooter saw them, at most RULES.lagCompensationMs back.
     const viewTime = clamp(frame.viewTime, now - RULES.lagCompensationMs, now);
     const targets = this.rewound(player, viewTime, now);
     const drones = this.drones.filter(drone => this.hostile(player, { id: drone.ownerId, ...(drone.team ? { team: drone.team } : {}) })).map(drone => ({ drone, pose: this.dronePose(drone, viewTime) }));
@@ -695,11 +882,11 @@ export class MatchEngine {
     this.onEvent({ type: 'shot', playerId: player.id, weapon: spec.id, from: r3v(weaponMuzzle(eye, frame.yaw, frame.pitch)), traces, hit, at: now });
   }
   /** The knife finds the nearest enemy in reach and in front, with a clear eye-to-eye line, at rewound positions. */
-  private traceMelee({ player, frame }: QueuedMelee, now: number, hits: PendingHit[]) {
-    const rt = this.runtime.get(player.id)!, eye = eyePosition(player);
+  private traceMelee({ player, frame, origin }: QueuedMelee, now: number, hits: PendingHit[]) {
+    const rt = this.runtime.get(player.id)!, eye = eyePosition(origin);
     let best: { target: PlayerState; distance: number } | null = null;
     for (const { player: target, pose } of this.rewound(player, clamp(frame.viewTime, now - RULES.lagCompensationMs, now), now)) {
-      const dx = pose.x - player.x, dz = pose.z - player.z, horizontal = Math.hypot(dx, dz);
+      const dx = pose.x - origin.x, dz = pose.z - origin.z, horizontal = Math.hypot(dx, dz);
       if (horizontal > RULES.meleeLungeRange) continue;
       if (horizontal > 0.25 && Math.abs(angleDelta(Math.atan2(dx, -dz), frame.yaw)) > MELEE_HALF_ANGLE) continue;
       if (pose.y > eye.y + 0.6 || pose.y + POSTURE_HEIGHT[pose.posture] < eye.y - 1.7) continue;
@@ -741,7 +928,7 @@ export class MatchEngine {
     this.onEvent({ type: 'explosion', id, playerId: owner.id, cause: kind, position: r3v(position), at: now });
     const origin = { x: position.x, y: position.y + 0.1, z: position.z };
     for (const target of this.players.values()) {
-      if (target.health <= 0 || !target.connected || target.protectedUntil > now) continue;
+      if (target.health <= 0 || target.protectedUntil > now) continue;
       if (target.id === owner.id ? kind !== 'frag' : !this.hostile(owner, target)) continue;
       const torso = torsoCenter(target), distance = distance3(origin, torso);
       if (distance > EXPLOSIVES[kind].radius || !lineClear(origin, torso)) continue;
@@ -760,7 +947,7 @@ export class MatchEngine {
       const from = { x: drone.x, y: drone.y, z: drone.z };
       let best: { target: PlayerState; torso: Vec3; distance: number } | null = null;
       for (const target of this.players.values()) {
-        if (target.health <= 0 || !target.connected || target.protectedUntil > now || !this.hostile({ id: drone.ownerId, ...(drone.team ? { team: drone.team } : {}) }, target)) continue;
+        if (target.health <= 0 || target.protectedUntil > now || !this.hostile({ id: drone.ownerId, ...(drone.team ? { team: drone.team } : {}) }, target)) continue;
         const torso = torsoCenter(target), distance = distance3(from, torso);
         if (distance > DRONE.range || !lineClear(from, torso)) continue;
         if (!best || distance < best.distance) best = { target, torso, distance };
@@ -793,7 +980,7 @@ export class MatchEngine {
   // ---- Damage, eliminations and scoring ------------------------------------------------------
   private resolve(hits: PendingHit[], droneHits: DroneHit[], now: number) {
     this.resolving = true;
-    const settle: Settlement = this.settle = { firstStrikeOpen: !this.firstStrike, streaks: [], chains: [], evened: [], killedBy: [], anyKill: false };
+    const settle: Settlement = this.settle = { firstStrikeOpen: !this.firstStrike, firstStruck: new Set(), streaks: [], chains: [], evened: [], killedBy: [], anyKill: false };
     try {
       const targets = new Map<string, { target: PlayerState; byAttacker: Map<string, Contribution> }>();
       for (const hit of hits) {
@@ -877,7 +1064,9 @@ export class MatchEngine {
       if (headshot) { this.award(attacker, 'headshot', now); this.medal(attacker, 'headshot', now); }
       if (cause === 'bullet' && distance >= RULES.longShotMeters) { this.award(attacker, 'long-shot', now); this.medal(attacker, 'long-shot', now); }
       settle.anyKill = true;
-      if (settle.firstStrikeOpen) { this.award(attacker, 'first-strike', now); this.medal(attacker, 'first-strike', now); }
+      if (settle.firstStrikeOpen && !settle.firstStruck.has(attacker.id)) {
+        settle.firstStruck.add(attacker.id); this.award(attacker, 'first-strike', now); this.medal(attacker, 'first-strike', now);
+      }
       if (art.lastKilledBy === target.id) { settle.evened.push(art); this.award(attacker, 'even-score', now); this.medal(attacker, 'even-score', now); }
       settle.chains.push({ player: attacker, life: art.life });
       if (cause === 'melee') this.medal(attacker, 'blade', now);
@@ -942,5 +1131,6 @@ export function privateState(p: PlayerState): PlayerState {
     mag: [p.mag[0], p.mag[1]], reserve: [p.reserve[0], p.reserve[1]], frags: p.frags, rewards: [...p.rewards],
     reloadSlot: p.reloadSlot, readyAt: Math.round(p.readyAt), meleeUntil: Math.round(p.meleeUntil), stamina: r6(p.stamina),
     slideCooldownUntil: Math.round(p.slideCooldownUntil), lastDamageAt: Math.round(p.lastDamageAt),
+    ...(p.lastInputTime !== undefined ? { lastInputTime: r3(p.lastInputTime) } : {}),
   };
 }

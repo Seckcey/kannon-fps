@@ -28,8 +28,11 @@ assert.equal(directory.status, 200, 'Available Games must be accessible before c
 assert.equal(directory.headers.get('cache-control'), 'no-store');
 const { games } = await directory.json();
 assert.ok(Array.isArray(games), 'The public directory must return a game list.');
-const publicFields = new Set(['id', 'hostName', 'humanCount', 'botCount', 'maxPlayers', 'fillBots', 'botDifficulty']);
-for (const game of games) assert.ok(Object.keys(game).every(key => publicFields.has(key)), 'Public listings must not expose invitations or private profile data.');
+const publicFields = new Set(['id', 'hostName', 'humanCount', 'botCount', 'maxPlayers', 'mode', 'fillBots', 'botDifficulty']);
+for (const game of games) {
+  assert.ok(Object.keys(game).every(key => publicFields.has(key)), 'Public listings must not expose invitations or private profile data.');
+  assert.ok(['ffa', 'tdm'].includes(game.mode), 'Public listings must name a known game mode.');
+}
 
 const wsUrl = new URL('/ws', base);
 wsUrl.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
