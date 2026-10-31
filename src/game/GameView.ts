@@ -280,6 +280,10 @@ export class GameView {
     return { postprocessing: !!this.presentation?.enabled, shadowSize: this.sun.shadow.mapSize.toArray(), qualityScale: this.renderQuality.scale, tier: this.tier.name, meshes, casting, lightmapped, roots };
   }
 
+  /** True while the local player is alive and the spawn view has been applied; frames sent before that
+   * would carry the death-time view and slot into the new life. */
+  get inputLive(): boolean { return this.lastAlive && !this.disposed; }
+
   /** Called once for each input actually sent to the server, at 30 Hz. The local body moves one
    * server tick per sent input, exactly as the server will move it (frames only draw between
    * ticks), and the weapon predicts its shots on the same tick. */

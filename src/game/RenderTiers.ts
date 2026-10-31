@@ -1,4 +1,7 @@
 export type Quality = 'auto' | 'high' | 'low';
+/** The one touch-screen test used to pick the render tier: a coarse primary pointer. A laptop with a
+ * touch screen but a mouse or trackpad as its main pointer stays on the desktop tier. */
+export const coarsePointer = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 export interface RenderTier {
   name: 'phone' | 'desktop' | 'desktop-high';
   textureTier: 'phone' | 'full';
