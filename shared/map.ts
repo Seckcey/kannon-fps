@@ -118,15 +118,22 @@ export function groundSurfaceAt(x: number, z: number): SurfaceKind {
   if (ax >= 10 && ax <= 18 && z > 6 && z <= 13.5) return 'concrete';
   return 'grass';
 }
-/** Surface under a standing point: the highest supporting obstacle top, otherwise the ground. */
+/** Matches the physics body radius (PLAYER_RADIUS in shared/physics.ts, which imports this module). */
+const FOOT_RADIUS = 0.42;
+/** Surface under a standing point: the highest supporting obstacle top, otherwise the ground. A box
+ * directly under the point wins; failing that, one the body still stands on at its edge (the physics
+ * supports a body whose footprint overlaps a top, even with its centre past the edge). */
 export function surfaceAt(point: Vec3): SurfaceKind {
-  let best: MapObstacle | null = null;
+  let best: MapObstacle | null = null, edge: MapObstacle | null = null;
   for (const box of OBSTACLES) {
     const top = box.y + box.h / 2;
-    if (Math.abs(top - point.y) > 0.08 || Math.abs(point.x - box.x) > box.w / 2 || Math.abs(point.z - box.z) > box.d / 2) continue;
-    if (!best || top > best.y + best.h / 2) best = box;
+    if (Math.abs(top - point.y) > 0.08) continue;
+    const dx = Math.abs(point.x - box.x), dz = Math.abs(point.z - box.z);
+    if (dx <= box.w / 2 && dz <= box.d / 2) { if (!best || top > best.y + best.h / 2) best = box; }
+    else if (point.y > 0.08 && dx < box.w / 2 + FOOT_RADIUS && dz < box.d / 2 + FOOT_RADIUS) { if (!edge || top > edge.y + edge.h / 2) edge = box; }
   }
-  return best ? surfaceOf(best) : groundSurfaceAt(point.x, point.z);
+  const chosen = best ?? edge;
+  return chosen ? surfaceOf(chosen) : groundSurfaceAt(point.x, point.z);
 }
 
 export const SPAWNS: Array<Vec3 & { yaw: number }> = [
