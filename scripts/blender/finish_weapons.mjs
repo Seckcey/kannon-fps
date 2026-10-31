@@ -33,8 +33,12 @@ const ROOTS = {
   weapon_kr5: 'kr5', weapon_hornet9: 'hornet9', weapon_breaker12: 'breaker12', weapon_longbow: 'longbow', weapon_sentry9: 'sentry9',
   knife: 'knife', frag: 'frag', arm_left: 'arm_left', arm_right: 'arm_right',
 };
-const ANCHORS = new Set(['grip_r', 'grip_l', 'muzzle', 'sight', 'eject']);
+/** Empties: weapon anchors, plus `hold` on arm_left (where a held knife or grenade sits). */
+const ANCHORS = new Set(['grip_r', 'grip_l', 'muzzle', 'sight', 'eject', 'hold']);
+/** Moving parts: an empty pivot carrying a mesh child (`mag_mesh`, `action_mesh`). */
 const PIVOTS = new Set(['mag', 'action']);
+/** See-through window glass (reflex sights). Every other material ships opaque. */
+const GLASS_DEFAULTS = { WeaponReflexGlass: { alphaMode: 'BLEND', baseColorFactor: [0.15, 0.32, 0.36, 0.16], roughnessFactor: 0.05, metallicFactor: 0 } };
 
 await MeshoptDecoder.ready;
 await MeshoptEncoder.ready;
@@ -54,7 +58,9 @@ for (const node of roots) {
   node.setTranslation([0, 0, 0]).setRotation([0, 0, 0, 1]).setScale([1, 1, 1]);
   const entry = build.models[id] ?? {};
   node.setExtras({ kannonWeapons: 'weapons-v1', model: id, ...(entry.extras ?? {}) });
-  // Blender object names are '<root>__<node>'; the contract uses the bare node name.
+  // Blender object names are '<root>__<node>'; the contract uses the bare node name. Each tag value
+  // names exactly one node per root: `anchor` on empties, `part` on the mag/action pivots only, and
+  // `mesh` on every mesh (so a search for part "mag" finds the pivot, never its mesh child).
   node.traverse(child => {
     if (child === node) return;
     const name = child.getName();
@@ -62,8 +68,18 @@ for (const node of roots) {
     child.setName(bare);
     if (ANCHORS.has(bare)) child.setExtras({ anchor: bare });
     else if (PIVOTS.has(bare)) child.setExtras({ part: bare });
-    else if (child.getMesh()) child.setExtras({ part: bare.replace(/_mesh$/, '') });
+    else if (child.getMesh()) child.setExtras({ mesh: bare.replace(/_mesh$/, '') });
   });
+}
+
+// Reflex windows are blended glass you look through; everything else is solid.
+const glassSpec = { ...GLASS_DEFAULTS, ...(build.materials ?? {}) };
+for (const material of root.listMaterials()) {
+  const glass = glassSpec[material.getName()];
+  if (!glass) { material.setAlphaMode('OPAQUE'); continue; }
+  material.setAlphaMode(glass.alphaMode).setBaseColorFactor(glass.baseColorFactor).setRoughnessFactor(glass.roughnessFactor)
+    .setMetallicFactor(glass.metallicFactor).setDoubleSided(false).setBaseColorTexture(null).setMetallicRoughnessTexture(null)
+    .setNormalTexture(null).setOcclusionTexture(null).setEmissiveTexture(null).setEmissiveFactor([0, 0, 0]);
 }
 
 // Plain metal/rough materials only: Blender's IOR/specular extras would push three.js onto the

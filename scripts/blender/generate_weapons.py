@@ -58,6 +58,8 @@ X, Y, Z = Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))
 O = Vector((0, 0, 0))
 SEP = '__'  # Blender object names are '<root>__<node>'; finish_weapons.mjs strips the prefix.
 DEBUG_TRIS = '--debug-tris' in sys.argv
+SLIDE_TRAVEL = 0.022  # Sentry 9 slide travel per shot (docs/WEAPONS_ART.md); the slide clears the hand over it
+HAND_POINTS = {}      # arm id -> vertices (Blender arm space), filled when the arms are built (before the guns)
 
 
 def log(*parts):
@@ -199,6 +201,17 @@ def box(name, c, s, mat, bevel=0.0007, seg=1, **kw):
     return side(name, pts, cx - sx / 2, cx + sx / 2, mat, bevel=bevel, seg=seg, **kw)
 
 
+def pane(name, pts, y, mat):
+    """One-sided window glass: the (x, z) outline `pts` at `y`, facing the shooter (-Y). A single
+    sheet, so a blended material is seen through exactly once."""
+    bm = bmesh.new()
+    face = bm.faces.new([bm.verts.new((x, y, z)) for x, z in pts])
+    bm.normal_update()
+    if face.normal.y > 0:
+        face.normal_flip()
+    return obj_from_bm(name, bm, mat)
+
+
 def basis_for(axis, up=None):
     a = Vector(axis).normalized()
     ref = Vector(up) if up is not None else (Z if abs(a.dot(Z)) < 0.9 else X)
@@ -295,6 +308,31 @@ def rrect(w, h, r, n=3, cx=0.0, cy=0.0):
             a = math.radians(a0 + 90 * i / n)
             pts.append((cx + qx + r * math.cos(a), cy + qy + r * math.sin(a)))
     return pts
+
+
+def moulded_section(w, h, r, bulge, cx=0.0, cy=0.0, crown=0.0, long_side=9, short_side=3):
+    """Stock cross-section: a rounded rectangle (always 44 points, so sections loft together)
+    whose long sides bow out by `bulge` (fraction of the half-width) at mid-height and whose top
+    crowns by `crown` metres, so moulded stocks never read as flat slabs."""
+    corner = 4
+    pts = rrect(w, h, r, corner)
+    k = corner + 1
+    corners = [pts[i * k:(i + 1) * k] for i in range(4)]
+    dense = []
+    for ci in range(4):
+        dense.extend(corners[ci])
+        a, b = corners[ci][-1], corners[(ci + 1) % 4][0]
+        steps = short_side if ci in (0, 2) else long_side   # top and bottom are the short sides
+        for s in range(1, steps + 1):
+            f = s / (steps + 1)
+            dense.append((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f))
+    out = []
+    for x, y in dense:
+        v = 2 * y / h
+        grow = 1.0 + bulge * max(0.0, 1.0 - v * v)
+        lift = crown * max(0.0, 1.0 - (2 * x / w) ** 2) if y > 0 else 0.0
+        out.append((cx + x * grow, cy + y + lift))
+    return out
 
 
 def superellipse(a, b, p=2.5, n=24, cx=0.0, cy=0.0, phase=0.0):
@@ -463,8 +501,9 @@ def material_base(name):
 
 def surface(name, base, rough, metal=0.0, worn=None, worn_rough=None, worn_metal=None, wear=0.5, dirt=0.35,
             dirt_color=(0.028, 0.024, 0.019), variation=0.10, micro='satin', micro_scale=1.0, micro_depth=0.00008,
-            edge_radius=0.0024, round_radius=0.0010, scratches=0.0, scratch_axis='y', coat=0.0, wood=None, zone=None):
-    """A procedural PBR surface with edge wear, cavity dirt and micro relief.
+            edge_radius=0.0024, round_radius=0.0010, scratches=0.0, scratch_axis='y', coat=0.0, wood=None, zone=None, dust=0.0,
+            dust_color=(0.20, 0.17, 0.13)):
+    """A procedural PBR surface with edge wear, cavity dirt, field dust and micro relief.
 
     `zone` (glove) = dict(axis=(x, y, z), leather=material params) switches palm-facing faces
     (normals pointing at the held axis through the origin) to a second surface."""
@@ -517,10 +556,24 @@ def surface(name, base, rough, metal=0.0, worn=None, worn_rough=None, worn_metal
     colour = g.mix(wear_mask, colour, worn)
     colour = g.mix(g.mul(dirt_mask, 0.65), colour, dirt_color)
     colour = g.mix(g.mul(cavity, 0.45), colour, (0.0, 0.0, 0.0))
+    dust_mask = None
+    if dust > 0:
+        # Field dust: a light, blotchy film on upward-facing surfaces (object space, so it bakes the
+        # same whatever the preview pose) and packed into crevices; worn edges stay clean.
+        up = g.vmath('DOT_PRODUCT', tc.outputs['Normal'], (0.0, 0.0, 1.0))
+        blotch = g.ramp(g.add(n_big, g.mul(g.sub(n_mid, 0.5), 0.6)), 0.38, 0.72)
+        film = g.mul(g.ramp(up, 0.25, 0.95), blotch)
+        packed = g.mul(g.ramp(cavity, 0.15, 0.55), g.ramp(n_mid, 0.35, 0.6))
+        dust_mask = g.mul(g.mul(g.math('MAXIMUM', g.mul(film, 0.8), packed), g.sub(1.0, wear_mask, clamp=True)), dust, clamp=True)
+        colour = g.mix(dust_mask, colour, dust_color)
     rough_s = g.add(rough, g.add(g.mul(g.sub(n_mid, 0.5), 0.10), g.mul(g.sub(n_fine, 0.5), 0.06)))
     rough_s = g.lerp(wear_mask, rough_s, worn_rough)
     rough_s = g.add(rough_s, g.mul(dirt_mask, 0.18), clamp=True)
+    if dust_mask is not None:
+        rough_s = g.add(rough_s, g.mul(dust_mask, 0.35), clamp=True)
     metal_s = g.lerp(wear_mask, metal, worn_metal)
+    if dust_mask is not None:
+        metal_s = g.lerp(dust_mask, metal_s, 0.0)
     # Micro relief on top of a small rounding of every edge.
     small = g.new('ShaderNodeBevel', samples=8)
     small.inputs['Radius'].default_value = round_radius
@@ -664,6 +717,21 @@ def flat_material(name, base, rough, metal=0.0, emission=None, strength=1.0, cul
     return mat
 
 
+def glass_material(name, tint, alpha, rough=0.05):
+    """See-through window glass (reflex sights): a faint tint you look through, never baked.
+    finish_weapons.mjs ships it as a blended glTF material with this alpha."""
+    mat = flat_material(name, tint, rough, 0.0)
+    bsdf = BAKE_SOCKETS[mat.name]['bsdf']
+    bsdf.inputs['Alpha'].default_value = alpha
+    for attr, value in (('surface_render_method', 'BLENDED'), ('blend_method', 'BLEND')):
+        try:
+            setattr(mat, attr, value)
+        except (AttributeError, TypeError):
+            pass
+    BAKE_SOCKETS[mat.name]['alpha'] = alpha
+    return mat
+
+
 def srgb_to_linear(c):
     return tuple((v / 12.92) if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in c)
 
@@ -673,30 +741,35 @@ def hexcol(h):
     return srgb_to_linear(tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)))
 
 
+# Reflex-sight window: a faint blue-green coated glass. Low alpha keeps a standing target at 20 m
+# clearly visible through it; finish_weapons.mjs reads these values from weapons-build.json.
+REFLEX_GLASS = dict(tint=hexcol('#6c9aa3'), alpha=0.16, roughness=0.05)
+
+
 def build_materials():
     """Original Kannon finishes. Colours are sRGB hex for readability, converted to linear."""
     bare_al = hexcol('#a6a8aa')
     bare_steel = hexcol('#8d8f90')
     M = {}
-    M['anod_black'] = surface('Anodized_Black', hexcol('#1e1f21'), 0.42, 0.0, worn=bare_al, worn_rough=0.32, worn_metal=1.0, wear=0.55, dirt=0.4, micro='satin', micro_depth=0.00004, scratches=0.15)
-    M['anod_grey'] = surface('Cerakote_Grey', hexcol('#4a4d50'), 0.55, 0.0, worn=bare_al, worn_rough=0.34, worn_metal=1.0, wear=0.45, dirt=0.45, micro='cast', micro_depth=0.00004, scratches=0.25)
-    M['steel'] = surface('Phosphate_Steel', hexcol('#38393a'), 0.5, 0.55, worn=bare_steel, worn_rough=0.28, worn_metal=1.0, wear=0.5, dirt=0.5, micro='cast', micro_depth=0.00004, scratches=0.3)
-    M['steel_dark'] = surface('Nitride_Steel', hexcol('#232425'), 0.36, 0.7, worn=bare_steel, worn_rough=0.25, worn_metal=1.0, wear=0.55, dirt=0.35, micro='satin', micro_depth=0.00003, scratches=0.45)
-    M['steel_bright'] = surface('Bright_Steel', hexcol('#6e7072'), 0.40, 1.0, worn=hexcol('#9a9c9d'), worn_rough=0.28, wear=0.5, dirt=0.5, micro='brushed', micro_depth=0.00002)
-    M['polymer_fde'] = surface('Polymer_FDE', hexcol('#8b7457'), 0.62, 0.0, worn=hexcol('#a08a6c'), worn_rough=0.45, wear=0.45, dirt=0.55, dirt_color=hexcol('#2e261c'), micro='cast', micro_depth=0.00005, variation=0.08)
-    M['polymer_fde_grip'] = surface('Polymer_FDE_Stipple', hexcol('#856f53'), 0.7, 0.0, worn=hexcol('#9c8668'), worn_rough=0.5, wear=0.35, dirt=0.6, dirt_color=hexcol('#2e261c'), micro='stipple', micro_depth=0.00022)
-    M['polymer_black'] = surface('Polymer_Black', hexcol('#262728'), 0.62, 0.0, worn=hexcol('#3b3c3d'), worn_rough=0.45, wear=0.4, dirt=0.45, micro='cast', micro_depth=0.00005)
-    M['polymer_black_grip'] = surface('Polymer_Black_Stipple', hexcol('#242526'), 0.72, 0.0, worn=hexcol('#363738'), worn_rough=0.5, wear=0.3, dirt=0.5, micro='stipple', micro_depth=0.00022)
-    M['polymer_od'] = surface('Polymer_Ranger', hexcol('#4d5240'), 0.62, 0.0, worn=hexcol('#646a55'), worn_rough=0.45, wear=0.45, dirt=0.5, dirt_color=hexcol('#26261c'), micro='cast', micro_depth=0.00005)
-    M['polymer_od_grip'] = surface('Polymer_Ranger_Stipple', hexcol('#4a4f3d'), 0.72, 0.0, worn=hexcol('#5f6551'), worn_rough=0.5, wear=0.35, dirt=0.55, dirt_color=hexcol('#26261c'), micro='stipple', micro_depth=0.00022)
-    M['rubber'] = surface('Rubber', hexcol('#1d1e1f'), 0.82, 0.0, wear=0.15, worn=hexcol('#2e2f30'), dirt=0.5, micro='rubber', micro_depth=0.00012)
-    M['walnut'] = surface('Walnut', hexcol('#5a3a22'), 0.42, 0.0, worn=hexcol('#7a5634'), worn_rough=0.3, wear=0.4, dirt=0.45, micro='satin', micro_depth=0.00002,
+    M['anod_black'] = surface('Anodized_Black', hexcol('#1e1f21'), 0.42, 0.0, worn=bare_al, worn_rough=0.32, worn_metal=1.0, wear=0.55, dirt=0.4, micro='satin', micro_depth=0.00004, scratches=0.15, dust=0.22)
+    M['anod_grey'] = surface('Cerakote_Grey', hexcol('#4a4d50'), 0.55, 0.0, worn=bare_al, worn_rough=0.34, worn_metal=1.0, wear=0.45, dirt=0.45, micro='cast', micro_depth=0.00004, scratches=0.25, dust=0.25)
+    M['steel'] = surface('Phosphate_Steel', hexcol('#38393a'), 0.5, 0.55, worn=bare_steel, worn_rough=0.28, worn_metal=1.0, wear=0.5, dirt=0.5, micro='cast', micro_depth=0.00004, scratches=0.3, dust=0.2)
+    M['steel_dark'] = surface('Nitride_Steel', hexcol('#232425'), 0.36, 0.7, worn=bare_steel, worn_rough=0.25, worn_metal=1.0, wear=0.55, dirt=0.35, micro='satin', micro_depth=0.00003, scratches=0.45, dust=0.18)
+    M['steel_bright'] = surface('Bright_Steel', hexcol('#6e7072'), 0.40, 1.0, worn=hexcol('#9a9c9d'), worn_rough=0.28, wear=0.5, dirt=0.5, micro='brushed', micro_depth=0.00002, dust=0.12)
+    M['polymer_fde'] = surface('Polymer_FDE', hexcol('#8b7457'), 0.62, 0.0, worn=hexcol('#a08a6c'), worn_rough=0.45, wear=0.45, dirt=0.55, dirt_color=hexcol('#2e261c'), micro='cast', micro_depth=0.00005, variation=0.08, dust=0.16)
+    M['polymer_fde_grip'] = surface('Polymer_FDE_Stipple', hexcol('#856f53'), 0.7, 0.0, worn=hexcol('#9c8668'), worn_rough=0.5, wear=0.35, dirt=0.6, dirt_color=hexcol('#2e261c'), micro='stipple', micro_depth=0.00022, dust=0.14)
+    M['polymer_black'] = surface('Polymer_Black', hexcol('#262728'), 0.62, 0.0, worn=hexcol('#3b3c3d'), worn_rough=0.45, wear=0.4, dirt=0.45, micro='cast', micro_depth=0.00005, dust=0.25)
+    M['polymer_black_grip'] = surface('Polymer_Black_Stipple', hexcol('#242526'), 0.72, 0.0, worn=hexcol('#363738'), worn_rough=0.5, wear=0.3, dirt=0.5, micro='stipple', micro_depth=0.00022, dust=0.2)
+    M['polymer_od'] = surface('Polymer_Ranger', hexcol('#4d5240'), 0.62, 0.0, worn=hexcol('#646a55'), worn_rough=0.45, wear=0.45, dirt=0.5, dirt_color=hexcol('#26261c'), micro='cast', micro_depth=0.00005, dust=0.22)
+    M['polymer_od_grip'] = surface('Polymer_Ranger_Stipple', hexcol('#4a4f3d'), 0.72, 0.0, worn=hexcol('#5f6551'), worn_rough=0.5, wear=0.35, dirt=0.55, dirt_color=hexcol('#26261c'), micro='stipple', micro_depth=0.00022, dust=0.18)
+    M['rubber'] = surface('Rubber', hexcol('#1d1e1f'), 0.82, 0.0, wear=0.15, worn=hexcol('#2e2f30'), dirt=0.5, micro='rubber', micro_depth=0.00012, dust=0.2)
+    M['walnut'] = surface('Walnut', hexcol('#5a3a22'), 0.42, 0.0, worn=hexcol('#7a5634'), worn_rough=0.3, wear=0.4, dirt=0.45, micro='satin', micro_depth=0.00002, dust=0.12,
                           wood=dict(dark=hexcol('#40291a'), light=hexcol('#6b4528'), rings=38.0))
-    M['brass'] = surface('Brass', hexcol('#b08d4a'), 0.3, 1.0, worn=hexcol('#d2b26e'), worn_rough=0.2, wear=0.4, dirt=0.4, micro='satin', micro_depth=0.00002)
-    M['shell_red'] = surface('Shell_Hull', hexcol('#5e1c18'), 0.5, 0.0, worn=hexcol('#7a2f27'), wear=0.3, dirt=0.4, micro='grooves', micro_depth=0.00002)
-    M['od_paint'] = surface('Frag_OD', hexcol('#4f5638'), 0.55, 0.0, worn=hexcol('#7c7f73'), worn_rough=0.35, worn_metal=1.0, wear=0.45, dirt=0.45, micro='cast', micro_depth=0.00004)
-    M['marking_yellow'] = surface('Marking_Yellow', hexcol('#a88a3a'), 0.55, 0.0, worn=hexcol('#7c7f73'), worn_metal=1.0, wear=0.4, dirt=0.5, micro='cast', micro_depth=0.00003)
-    M['blade'] = surface('Blade_Coated', hexcol('#2b2c2d'), 0.48, 0.3, worn=bare_steel, worn_rough=0.22, worn_metal=1.0, wear=0.65, dirt=0.25, micro='satin', micro_depth=0.00002, scratches=0.5)
+    M['brass'] = surface('Brass', hexcol('#b08d4a'), 0.3, 1.0, worn=hexcol('#d2b26e'), worn_rough=0.2, wear=0.4, dirt=0.4, micro='satin', micro_depth=0.00002, dust=0.1)
+    M['shell_red'] = surface('Shell_Hull', hexcol('#5e1c18'), 0.5, 0.0, worn=hexcol('#7a2f27'), wear=0.3, dirt=0.4, micro='grooves', micro_depth=0.00002, dust=0.12)
+    M['od_paint'] = surface('Frag_OD', hexcol('#4f5638'), 0.55, 0.0, worn=hexcol('#7c7f73'), worn_rough=0.35, worn_metal=1.0, wear=0.45, dirt=0.45, micro='cast', micro_depth=0.00004, dust=0.2)
+    M['marking_yellow'] = surface('Marking_Yellow', hexcol('#a88a3a'), 0.55, 0.0, worn=hexcol('#7c7f73'), worn_metal=1.0, wear=0.4, dirt=0.5, micro='cast', micro_depth=0.00003, dust=0.15)
+    M['blade'] = surface('Blade_Coated', hexcol('#2b2c2d'), 0.48, 0.3, worn=bare_steel, worn_rough=0.22, worn_metal=1.0, wear=0.65, dirt=0.25, micro='satin', micro_depth=0.00002, scratches=0.5, dust=0.08)
     # Gloves: coyote textile on the back, darker synthetic leather on the palm side.
     glove_zone = lambda axis: dict(axis=axis, radius=0.085, leather=dict(base=hexcol('#33352b'), rough=0.6), seam=hexcol('#1d1e19'), depth=0.00007)
     M['glove_r'] = surface('Glove_Right', hexcol('#4a4e3c'), 0.86, 0.0, worn=hexcol('#5d614d'), wear=0.3, dirt=0.55, dirt_color=hexcol('#24231b'), micro='textile', micro_depth=0.00007,
@@ -707,8 +780,12 @@ def build_materials():
     M['cuff'] = surface('Neoprene_Cuff', hexcol('#1f2021'), 0.8, 0.0, worn=hexcol('#303132'), wear=0.2, dirt=0.4, micro='fabric', micro_scale=1.6, micro_depth=0.00008)
     M['sleeve'] = surface('Ripstop_Sleeve', hexcol('#75684f'), 0.9, 0.0, worn=hexcol('#857a62'), wear=0.25, dirt=0.45, dirt_color=hexcol('#2e281d'), micro='fabric', micro_depth=0.00016, edge_radius=0.004)
     M['velcro'] = surface('Hook_Tape', hexcol('#2a2b26'), 0.95, 0.0, wear=0.1, dirt=0.3, micro='foam', micro_scale=2.5, micro_depth=0.00012)
-    # Untextured primitives shared by every model.
+    # The weapon light's lens is part of the baked body (one draw call fewer than a flat lens).
+    M['light_lens'] = surface('Light_Lens', hexcol('#161d20'), 0.10, 0.0, worn=hexcol('#2b3337'), worn_rough=0.2, wear=0.15, dirt=0.25, micro='none', edge_radius=0.0012)
+    # Untextured primitives shared by every model. Scope glass stays opaque (the view model is
+    # hidden while scoped); reflex windows are see-through so the target stays visible when aiming.
     M['lens'] = flat_material('WeaponLens', hexcol('#0d1416'), 0.04, 0.0)
+    M['glass'] = glass_material('WeaponReflexGlass', REFLEX_GLASS['tint'], REFLEX_GLASS['alpha'], REFLEX_GLASS['roughness'])
     M['glow_red'] = flat_material('WeaponGlowRed', (0.02, 0.0, 0.0), 0.4, 0.0, emission=(1.0, 0.06, 0.03), strength=8.0)
     M['glow_green'] = flat_material('WeaponGlowGreen', (0.0, 0.02, 0.0), 0.4, 0.0, emission=(0.35, 1.0, 0.3), strength=5.0)
     return M
@@ -851,20 +928,47 @@ def chaikin(pts, iterations):
     return pts
 
 
+def phalanx(name, p0, p1, r0, r1, mat, flat=0.88, waist=0.92, seg=16, rings=4, tip=False):
+    """One finger bone under the glove: full in the middle, narrower at both joints (so every
+    joint shows a crease), with round ends that overlap the neighbouring bone. A fingertip (`tip`)
+    tapers straight into its rounded end instead of pinching into a bead."""
+    p0, p1 = Vector(p0), Vector(p1)
+    d = p1 - p0
+    length = max(d.length, 1e-5)
+    a0, a1 = r0 * waist, (r1 if tip else r1 * waist)
+    prof = []
+    for i in range(rings, 0, -1):
+        t = (math.pi / 2) * i / rings
+        prof.append((-a0 * math.sin(t), a0 * math.cos(t)))
+    prof += [(0.0, a0), (length * 0.30, r0), (length * 0.70, r0 * 0.4 + r1 * 0.6), (length, a1)]
+    for i in range(1, rings + 1):
+        t = (math.pi / 2) * i / rings
+        prof.append((length + a1 * math.sin(t), a1 * math.cos(t)))
+    return lathe(name, prof, mat, origin=p0, axis=d, seg=seg, raw=True, scale2=(1.0, flat))
+
+
 def build_hand_parts(spec, skel, glove):
     """Fingers, thumb, palm, heel and wrist in frame F (pre-mirror) to be fused into one skin."""
     fused = []
     for name, f in skel['fingers'].items():
         pts, r = f['points'], f['r']
-        radii = [r * 1.06, r * 1.0, r * 0.95, r * 0.90]
+        # Tapered bones: the fingertip is clearly slimmer than the base, like a real gloved finger.
+        radii = [r * 1.03, r * 0.95, r * 0.87, r * 0.80]
         for i in range(3):
-            fused.append(capsule(f'h_{name}_{i}', pts[i], pts[i + 1], radii[i], radii[i + 1], glove, seg=16, rings=4, flat=0.94))
-        # Slightly fuller joints read as knuckles through the glove.
+            fused.append(phalanx(f'h_{name}_{i}', pts[i], pts[i + 1], radii[i], radii[i + 1], glove, tip=i == 2))
+        # A small knuckle on the back of each finger joint (the outside of the bend).
         for i in (1, 2):
-            fused.append(ellipsoid(f'h_{name}_j{i}', pts[i], (X * radii[i] * 1.05, Y * radii[i] * 1.05, Z * radii[i] * 1.0), glove, 12, 8))
+            u = (pts[i] - pts[i - 1]).normalized()
+            v = (pts[i + 1] - pts[i]).normalized()
+            bend = v - u
+            back = -bend.normalized() if bend.length > 0.05 else Vector((pts[i].x, pts[i].y, 0.0)).normalized()
+            side = u.cross(back).normalized()
+            rk = radii[i]
+            fused.append(ellipsoid(f'h_{name}_k{i}', pts[i] + back * rk * 0.16, (u * rk * 0.60, back * rk * 0.55, side * rk * 0.74), glove, 12, 8))
     t = skel['thumb']
     for i in range(len(t['points']) - 1):
-        fused.append(capsule(f'h_thumb_{i}', t['points'][i], t['points'][i + 1], t['radii'][i], t['radii'][i + 1], glove, seg=16, rings=4))
+        fused.append(phalanx(f'h_thumb_{i}', t['points'][i], t['points'][i + 1], t['radii'][i], t['radii'][i + 1], glove, flat=0.92, waist=0.92 if i else 1.0,
+                             tip=i == len(t['points']) - 2))
     for blob in spec.get('blobs', []):
         fused.append(capsule('h_blob', blob[0], blob[1], blob[2], blob[3], glove, seg=16, rings=5, flat=blob[4] if len(blob) > 4 else 1.0))
     # Palm: the outline lofted across the hand's width, narrowing toward both edges.
@@ -996,35 +1100,58 @@ def sleeve_and_cuff(spec, glove_cuff, sleeve_mat, velcro, name):
     tab = loft(f'{name}_strap', band, velcro, raw=True)
     finish(tab, wn=False, smooth=80)
     parts.append(tab)
-    # Sleeve: a loose tube with a rolled hem at the cuff, folds that bunch toward the wrist and
-    # soft creases along the forearm. `spec['sleeve']` gives the size profile; folds are added here.
-    rings = []
+    # Sleeve: a loose ripstop tube over the glove cuff. It ends in a rolled hem with a clean round
+    # edge that sits outside the cuff all the way round (no folds at the hem, so the sleeve never
+    # cuts into the cuff); folds start just above the hem, bunch a little toward the wrist and
+    # soften toward the elbow. `spec['sleeve']` is [(t, scale, fold), ...] with the hem first.
     n = 32
     profile = spec['sleeve']
-    t_first, t_last = profile[0][0], profile[-2][0]
-    stations = [t_first + (t_last - t_first) * k / 21 for k in range(22)] + [profile[-1][0]]
-    for t_ in stations:
-        # Interpolate the size profile.
+    t_h, s_h = profile[0][0], profile[0][1]
+    half_a, half_b = w['size'][0] * 0.5, w['size'][1] * 0.5 * 1.08
+
+    def size_at(t_):
         for (ta, sa, fa), (tb, sb, fb) in zip(profile, profile[1:]):
             if ta <= t_ <= tb:
                 f = (t_ - ta) / max(1e-6, tb - ta)
-                s, fold = sa + (sb - sa) * f, fa + (fb - fa) * f
-                break
-        else:
-            s, fold = profile[-1][1], 0.0
-        near = max(0.0, 1.0 - (t_ - t_first) / 0.14)
-        hem = 0.045 * math.exp(-((t_ - t_first - 0.010) / 0.006) ** 2)
-        bunch = 1.0 + hem + 0.040 * near * math.sin((t_ - t_first) * 260.0)
+                return sa + (sb - sa) * f, fa + (fb - fa) * f
+        return profile[-1][1], 0.0
+
+    def ring(t_, s, grow=0.0, fold=0.0):
         c = c0 + d * t_
         pts = []
         for i in range(n):
             a = 2 * math.pi * i / n
             folds = 0.55 * math.sin(3 * a + t_ * 41.0) + 0.35 * math.sin(5 * a - t_ * 67.0) + 0.3 * math.sin(2 * a + t_ * 19.0 + 1.3)
-            wob = 1.0 + 2.0 * fold * (1.0 + 0.8 * near) * folds
-            pts.append(c + (side_u * math.cos(a) * w['size'][0] * 0.5 * s + side_v * math.sin(a) * w['size'][1] * 0.5 * s * 1.08) * wob * bunch)
-        rings.append(pts)
-    sleeve = loft(f'{name}_sleeve', rings, sleeve_mat, raw=True)
+            k = 1.0 + 2.0 * fold * folds
+            pts.append(c + side_u * math.cos(a) * (half_a * s * k + grow) + side_v * math.sin(a) * (half_b * s * k + grow))
+        return pts
+
+    lip = 0.0022
+    rings = [ring(t_h + 0.012, s_h, -lip)]                     # lining turned in under the hem (hidden)
+    for phi in (-90, -135, 180, 135, 90):                       # the rolled edge, a half round
+        p = math.radians(phi)
+        rings.append(ring(t_h + lip + lip * math.cos(p), s_h, lip * math.sin(p)))
+    rings.append(ring(t_h + 0.011, s_h, lip * 0.95))            # hem band
+    rings.append(ring(t_h + 0.0135, s_h, lip * 0.55))           # hem stitch line
+    t_body, t_last = t_h + 0.016, profile[-2][0]
+    for k in range(22):
+        t_ = t_body + (t_last - t_body) * k / 21
+        s, fold = size_at(t_)
+        ramp = min(1.0, max(0.0, (t_ - t_body) / 0.035))
+        ramp = ramp * ramp * (3 - 2 * ramp)
+        near = max(0.0, 1.0 - (t_ - t_body) / 0.12)
+        bunch = 1.0 + 0.022 * near * ramp * math.sin((t_ - t_body) * 230.0)
+        rings.append(ring(t_, s * bunch, lip * 0.35 * (1 - ramp), fold * ramp * (1.0 + 0.6 * near)))
+    rings.append(ring(profile[-1][0], profile[-1][1]))
+    sleeve = loft(f'{name}_sleeve', rings, sleeve_mat, cap0=False, raw=True)
     finish(sleeve, wn=False, smooth=80)
+    # The fabric surface folds back on itself at the hem: keep the outside facing out.
+    me = sleeve.data
+    probe = rings[8]
+    centre = sum(probe, Vector()) / len(probe)
+    outward = sum(((p.co - centre).normalized().dot(p.normal) for p in me.vertices if abs((p.co - centre).dot(d)) < 0.002), 0.0)
+    if outward < 0:
+        me.flip_normals()
     parts.append(sleeve)
     return parts
 
@@ -1035,7 +1162,7 @@ def build_arm(spec, M, model_id):
     glove = M['glove_l'] if mirror else M['glove_r']
     skel = hand_skeleton(spec)
     fused = build_hand_parts(spec, skel, glove)
-    hand = fuse(fused, f'{ROOT_NAMES[model_id]}{SEP}hand', 0.00100, spec.get('hand_tris', 4400))
+    hand = fuse(fused, f'{ROOT_NAMES[model_id]}{SEP}hand', 0.00090, spec.get('hand_tris', 4600), smooth_iter=7, factor=0.5)
     plate = knuckle_plate(spec, skel, M['pad'], f'{ROOT_NAMES[model_id]}{SEP}pads')
     extra = sleeve_and_cuff(spec, M['cuff'], M['sleeve'], M['velcro'], f'{ROOT_NAMES[model_id]}{SEP}sl')
     parts = [hand, plate] + extra
@@ -1059,14 +1186,14 @@ def _right_hand_spec():
         side='right',
         section=(0.0152, 0.0235),
         fingers=[
-            dict(name='index', r=0.0102, L=(0.047, 0.027, 0.023), mcp=(0.0312, 0.0168, 0.0272),
+            dict(name='index', r=0.0097, L=(0.047, 0.027, 0.023), mcp=(0.0312, 0.0168, 0.0272),
                  chain=[(-0.10, 1.0, 0.16), (-0.78, 0.50, -0.08), (-0.92, -0.32, -0.12)]),
-            dict(name='middle', r=0.0106, L=(0.051, 0.031, 0.025), phi=16, z=0.0055, dz=(0.0, -0.001, -0.002), proud=0.0075),
-            dict(name='ring', r=0.0102, L=(0.048, 0.030, 0.024), phi=13, z=-0.0155, dz=(0.0, -0.001, -0.002), proud=0.0075),
-            dict(name='pinky', r=0.0093, L=(0.039, 0.024, 0.021), phi=10, z=-0.0345, dz=(0.0, -0.001, -0.001), proud=0.0070),
+            dict(name='middle', r=0.0101, L=(0.051, 0.031, 0.025), phi=16, z=0.0055, dz=(0.0, -0.001, -0.002), proud=0.0075),
+            dict(name='ring', r=0.0097, L=(0.048, 0.030, 0.024), phi=13, z=-0.0155, dz=(0.0, -0.001, -0.002), proud=0.0075),
+            dict(name='pinky', r=0.0088, L=(0.039, 0.024, 0.021), phi=10, z=-0.0345, dz=(0.0, -0.001, -0.001), proud=0.0070),
         ],
         thumb=dict(points=[(0.0200, -0.0620, 0.0160), (0.0020, -0.0520, 0.0360), (-0.0200, -0.0280, 0.0410), (-0.0250, 0.0020, 0.0420)],
-                   radii=[0.0155, 0.0128, 0.0117, 0.0110]),
+                   radii=[0.0150, 0.0123, 0.0111, 0.0103]),
         blobs=[((0.0300, -0.0720, 0.0000), (0.0120, -0.0580, 0.0260), 0.0170, 0.0150, 0.9),    # thenar
                ((0.0330, -0.0800, -0.0420), (0.0320, -0.0620, -0.0120), 0.0150, 0.0140, 0.9),  # heel / hypothenar
                ((0.0390, -0.0300, -0.0330), (0.0400, -0.0300, 0.0260), 0.0110, 0.0110, 0.8)],  # back of hand
@@ -1074,9 +1201,9 @@ def _right_hand_spec():
         wrist=dict(center=(0.0360, -0.0920, -0.0040), u=(0.0, 0.0, 1.0), size=(0.0590, 0.0400),
                    profile=[(-0.012, (0.96, 0.96)), (0.000, (1.0, 1.0)), (0.030, (0.95, 0.96)), (0.070, (0.98, 1.0)), (0.100, (1.04, 1.06))]),
         cuff=[(0.006, 1.02), (0.014, 1.10), (0.040, 1.12), (0.068, 1.14), (0.078, 1.10)],
-        sleeve=[(0.062, 1.12, 0.02), (0.070, 1.20, 0.06), (0.090, 1.24, 0.055), (0.120, 1.27, 0.05), (0.160, 1.30, 0.045), (0.210, 1.34, 0.04), (0.260, 1.38, 0.035),
-                (0.310, 1.42, 0.03), (0.350, 1.45, 0.025), (0.390, 1.46, 0.02), (0.395, 0.6, 0.0)],
-        hand_tris=4400,
+        sleeve=[(0.064, 1.26, 0.0), (0.090, 1.27, 0.03), (0.120, 1.29, 0.045), (0.160, 1.31, 0.045), (0.210, 1.35, 0.04), (0.260, 1.39, 0.035),
+                (0.310, 1.43, 0.03), (0.350, 1.45, 0.025), (0.390, 1.46, 0.02), (0.395, 0.6, 0.0)],
+        hand_tris=4600,
     )
     # Reference pose: KR-5 grip (19.5 deg). Forearm back, out to the right and slightly down.
     r_fw = grip_frame(19.5)
@@ -1094,13 +1221,13 @@ def _left_hand_spec():
         side='left',
         section=(0.0262, 0.0262),
         fingers=[
-            dict(name='index', r=0.0102, L=(0.047, 0.027, 0.023), phi=22, z=0.0270, dz=(0.0, -0.0005, -0.001), proud=0.0072),
-            dict(name='middle', r=0.0106, L=(0.051, 0.031, 0.025), phi=18, z=0.0055, dz=(0.0, -0.0005, -0.001), proud=0.0075),
-            dict(name='ring', r=0.0102, L=(0.048, 0.030, 0.024), phi=15, z=-0.0155, dz=(0.0, -0.0005, -0.001), proud=0.0075),
-            dict(name='pinky', r=0.0093, L=(0.039, 0.024, 0.021), phi=12, z=-0.0345, dz=(0.0, -0.0005, -0.001), proud=0.0070),
+            dict(name='index', r=0.0097, L=(0.047, 0.027, 0.023), phi=22, z=0.0270, dz=(0.0, -0.0005, -0.001), proud=0.0072),
+            dict(name='middle', r=0.0101, L=(0.051, 0.031, 0.025), phi=18, z=0.0055, dz=(0.0, -0.0005, -0.001), proud=0.0075),
+            dict(name='ring', r=0.0097, L=(0.048, 0.030, 0.024), phi=15, z=-0.0155, dz=(0.0, -0.0005, -0.001), proud=0.0075),
+            dict(name='pinky', r=0.0088, L=(0.039, 0.024, 0.021), phi=12, z=-0.0345, dz=(0.0, -0.0005, -0.001), proud=0.0070),
         ],
         thumb=dict(points=[(0.0280, -0.0640, 0.0140), (0.0060, -0.0480, 0.0360), (-0.0060, -0.0410, 0.0630), (-0.0090, -0.0380, 0.0880)],
-                   radii=[0.0155, 0.0128, 0.0117, 0.0110]),
+                   radii=[0.0150, 0.0123, 0.0111, 0.0103]),
         blobs=[((0.0400, -0.0730, 0.0000), (0.0200, -0.0600, 0.0260), 0.0170, 0.0150, 0.9),
                ((0.0430, -0.0800, -0.0420), (0.0420, -0.0620, -0.0120), 0.0150, 0.0140, 0.9),
                ((0.0500, -0.0300, -0.0330), (0.0510, -0.0300, 0.0260), 0.0110, 0.0110, 0.8)],
@@ -1108,9 +1235,9 @@ def _left_hand_spec():
         wrist=dict(center=(0.0470, -0.0920, -0.0040), u=(0.0, 0.0, 1.0), size=(0.0590, 0.0400),
                    profile=[(-0.012, (0.96, 0.96)), (0.000, (1.0, 1.0)), (0.030, (0.95, 0.96)), (0.070, (0.98, 1.0)), (0.100, (1.04, 1.06))]),
         cuff=[(0.006, 1.02), (0.014, 1.10), (0.040, 1.12), (0.068, 1.14), (0.078, 1.10)],
-        sleeve=[(0.062, 1.12, 0.02), (0.070, 1.20, 0.06), (0.090, 1.24, 0.055), (0.120, 1.27, 0.05), (0.160, 1.30, 0.045), (0.210, 1.34, 0.04), (0.260, 1.38, 0.035),
-                (0.310, 1.42, 0.03), (0.350, 1.45, 0.025), (0.390, 1.46, 0.02), (0.395, 0.6, 0.0)],
-        hand_tris=4400,
+        sleeve=[(0.064, 1.26, 0.0), (0.090, 1.27, 0.03), (0.120, 1.29, 0.045), (0.160, 1.31, 0.045), (0.210, 1.35, 0.04), (0.260, 1.39, 0.035),
+                (0.310, 1.43, 0.03), (0.350, 1.45, 0.025), (0.390, 1.46, 0.02), (0.395, 0.6, 0.0)],
+        hand_tris=4600,
     )
     # Reference pose: KR-5 handguard, palm on the lower left, forearm back, left and down.
     r_fw = handguard_frame(LEFT_ROLL['kr5'])
@@ -1158,6 +1285,14 @@ def anchor_rotation(spec, r_fw):
         # Arm space of the left arm is the mirror of the pre-mirror arm space; F_left = mirror(F').
         return r_fw @ mirror @ r_fa @ mirror
     return r_fw @ r_fa
+
+
+def seated_points(arm_id, rotation, position=(0.0, 0.0, 0.0)):
+    """Vertices of an already built arm seated on an anchor (weapon space), or None."""
+    pts = HAND_POINTS.get(arm_id)
+    if pts is None:
+        return None
+    return pts @ np.array(rotation.to_3x3()).T + np.array(position)
 
 
 # =============================================================================================
@@ -1273,8 +1408,8 @@ def trigger(name, contact, mat, height=0.026, curve=0.007):
     return sym(name, pts, 0.0058, mat, bevel=0.0008, seg=1)
 
 
-def picatinny(name, y0, y1, z_base, mat, width=0.0212, pitch=0.01, slot=0.0052):
-    """Accessory rail: base strip plus dovetail teeth."""
+def picatinny(name, y0, y1, z_base, mat, width=0.0212, pitch=0.01, slot=0.0052, tooth_bevel=0.0004):
+    """Accessory rail: base strip plus dovetail teeth (unbevelled teeth where triangles are tight)."""
     parts = []
     base_h = 0.0040
     parts.append(front(name + '_base', [(-width / 2 + 0.002, z_base), (width / 2 - 0.002, z_base), (width / 2 - 0.002, z_base + base_h), (-width / 2 + 0.002, z_base + base_h)], y0, y1, mat, bevel=0.0005))
@@ -1283,7 +1418,7 @@ def picatinny(name, y0, y1, z_base, mat, width=0.0212, pitch=0.01, slot=0.0052):
     y = y0 + 0.002
     i = 0
     while y + (pitch - slot) <= y1 - 0.001:
-        parts.append(front(f'{name}_t{i}', tooth, y, y + pitch - slot, mat, bevel=0.0004, seg=1, wn=False))
+        parts.append(front(f'{name}_t{i}', tooth, y, y + pitch - slot, mat, bevel=tooth_bevel, seg=1, wn=False))
         y += pitch
         i += 1
     return join(parts, name)
@@ -1410,7 +1545,7 @@ def build_kr5(M):
                         an, origin=la, seg=16, bevel=0.0006))
     m.add('body', cyl('kr5_light_switch', la - Y * 0.006, la + Y * 0.001, 0.0085, rub, seg=12, bevel=0.0012))
     m.add('body', box('kr5_light_mount', (0.0170, la.y + 0.050, zb + 0.0130), (0.0110, 0.030, 0.0120), an, bevel=0.0012, seg=2))
-    m.add('body', cyl('kr5_light_lens', light_end - Y * 0.0015, light_end + Y * 0.0002, 0.0118, M['lens'], seg=16), flat=True)
+    m.add('body', cyl('kr5_light_lens', light_end - Y * 0.0015, light_end + Y * 0.0002, 0.0118, M['light_lens'], seg=16))
     # Closed reflex sight with a slanted hood.
     lens_y = reflex_sight(m, M, 'kr5_rds', 0.004, rail_z + 0.0092, sight_z)
     # Left-side charging handle, worked by the support hand (moves back on an empty reload).
@@ -1448,9 +1583,9 @@ def reflex_sight(m, M, name, y0, base_z, sight_z, width=0.0320, length=0.058):
     m.add('body', cyl(f'{name}_turret_r', (width / 2 - 0.001, y0 + 0.014, clamp_top + 0.006), (width / 2 + 0.0035, y0 + 0.014, clamp_top + 0.006), 0.0058, an, seg=14, bevel=0.0008))
     m.add('body', cyl(f'{name}_turret_t', (0, y0 + 0.014, top - 0.001), (0, y0 + 0.014, top + 0.0030), 0.0058, an, seg=14, bevel=0.0008))
     m.add('body', box(f'{name}_buttons', (-width / 2 - 0.0012, y0 + 0.030, clamp_top + 0.006), (0.0030, 0.018, 0.0065), M['rubber'], bevel=0.0010))
+    # See-through window (its edge hides inside the housing) with the dot just in front of it.
     lens_y = y0 + length - 0.012
-    lens = front(f'{name}_lens', rrect(0.0255, 0.0215, 0.0045, 3, 0, sight_z), lens_y, lens_y + 0.0015, M['lens'], wn=False)
-    m.add('body', lens, flat=True)
+    m.add('body', pane(f'{name}_glass', rrect(0.0256, 0.0216, 0.0046, 3, 0, sight_z), lens_y, M['glass']), flat=True)
     m.add('body', cyl(f'{name}_dot', (0, lens_y - 0.0004, sight_z), (0, lens_y - 0.0002, sight_z), 0.0010, M['glow_red'], seg=10, wn=False), flat=True)
     return lens_y
 
@@ -1603,7 +1738,7 @@ def build_hornet9(M):
     m.add('body', hoop)
     m.add('body', box('h9_rds_emitter', (0, -0.004, sb + 0.0130), (0.0080, 0.0060, 0.0050), an, bevel=0.0010))
     lens_y = 0.0265
-    m.add('body', front('h9_rds_lens', rrect(0.0222, 0.0182, 0.0040, 3, 0, sight_z + 0.0010), lens_y - 0.0006, lens_y + 0.0006, M['lens'], wn=False), flat=True)
+    m.add('body', pane('h9_rds_glass', rrect(0.0224, 0.0184, 0.0041, 3, 0, sight_z + 0.0010), lens_y, M['glass']), flat=True)
     m.add('body', cyl('h9_rds_dot', (0, lens_y - 0.0010, sight_z), (0, lens_y - 0.0008, sight_z), 0.0010, M['glow_red'], seg=10, wn=False), flat=True)
     # Ambidextrous charging handle at the top rear (action).
     ch = top('h9_charger', [(-0.0200, -0.0040), (0.0200, -0.0040), (0.0200, 0.0040), (0.0060, 0.0060), (0.0060, 0.0160), (-0.0060, 0.0160), (-0.0060, 0.0060), (-0.0200, 0.0040)],
@@ -1636,7 +1771,7 @@ def build_breaker12(M):
     zb = 0.0720
     yr, yf = -0.036, 0.170
     yb = 0.640
-    sight_z = zb + 0.0330
+    sight_z = zb + 0.0440   # ghost rings on tall bases: the comb stays well under the line
     an, st, poly, polyg, rub = M['anod_black'], M['steel'], M['polymer_black'], M['polymer_black_grip'], M['rubber']
     tube_z = zb - 0.0275
     # Receiver: arched top, big ejection port, loading port underneath.
@@ -1656,17 +1791,31 @@ def build_breaker12(M):
     m.add('body', trigger('b12_trigger', trig, M['steel_dark']))
     m.add('body', cyl('b12_safety', (-0.0120, 0.000, zb - 0.034), (0.0120, 0.000, zb - 0.034), 0.0038, M['steel_dark'], seg=12, bevel=0.0006))
     m.add('body', pistol_grip('b12_grip', tilt, 0.030, 0.060, polyg, top_extra=0.012))
-    # Fixed polymer stock with a cheek comb and a thick recoil pad.
+    # Moulded polymer stock: sides that bow out, a comb that rises toward the cheek, a slim wrist
+    # behind the grip, a skeleton opening and a sling slot with rounded edges, a ribbed pad.
     rings = []
-    for y, top_z, bot_z, w, r in ((-0.034, 0.016, -0.034, 0.0320, 0.0060), (-0.060, 0.018, -0.040, 0.0360, 0.0090), (-0.120, 0.020, -0.058, 0.0400, 0.0110),
-                                  (-0.190, 0.022, -0.082, 0.0420, 0.0120), (-0.250, 0.024, -0.104, 0.0430, 0.0120), (-0.296, 0.025, -0.118, 0.0430, 0.0110),
-                                  (-0.302, 0.024, -0.116, 0.0410, 0.0090)):
-        rings.append(ring3(rrect(w, top_z - bot_z, r, 3, 0.0, zb + (top_z + bot_z) / 2), Vector((0, y, 0)), X, Z))
-    stock = loft('b12_stock', rings, poly, wn=False, smooth=60)
-    cut(stock, [sym('b12_stock_hole', [(-0.120, zb - 0.040), (-0.176, zb - 0.040), (-0.212, zb - 0.084), (-0.140, zb - 0.084)], 0.06, None, raw=True)])
+    stock_end = (-0.304, 0.0192, -0.1168, 0.0396, 0.0090)
+    # The comb stays about 24 mm under the ghost-ring sight line so it never fills the aimed view.
+    for y, t, b, w, r, bulge, crown in ((-0.030, 0.0150, -0.0330, 0.0320, 0.0070, 0.03, 0.000), (-0.055, 0.0158, -0.0385, 0.0335, 0.0085, 0.07, 0.001),
+                                        (-0.090, 0.0170, -0.0485, 0.0360, 0.0095, 0.10, 0.0015), (-0.140, 0.0184, -0.0645, 0.0388, 0.0105, 0.12, 0.0015),
+                                        (-0.190, 0.0194, -0.0815, 0.0404, 0.0110, 0.12, 0.0015), (-0.240, 0.0199, -0.0985, 0.0414, 0.0115, 0.12, 0.0015),
+                                        (-0.280, 0.0200, -0.1125, 0.0418, 0.0115, 0.10, 0.0015), (-0.298, 0.0198, -0.1175, 0.0414, 0.0110, 0.06, 0.001),
+                                        stock_end + (0.02, 0.0005)):
+        rings.append(ring3(moulded_section(w, t - b, r, bulge, 0.0, zb + (t + b) / 2, crown), Vector((0, y, 0)), X, Z))
+    stock = loft('b12_stock', rings, poly, raw=True)
+    opening = chaikin([(-0.108, -0.0240), (-0.126, -0.0140), (-0.200, -0.0120), (-0.243, -0.0160), (-0.253, -0.0290), (-0.253, -0.0690), (-0.243, -0.0800),
+                       (-0.222, -0.0795), (-0.150, -0.0510), (-0.120, -0.0400)], 2)
+    cut(stock, [sym('b12_stock_hole', [(y, zb + z) for y, z in opening], 0.06, None, raw=True),
+                sym('b12_sling_slot', rrect(0.0170, 0.0060, 0.0029, 3, -0.272, zb - 0.0985), 0.06, None, raw=True)])
+    finish(stock, bevel=0.0024, seg=2, angle=35, wn=False, smooth=50)
     m.add('body', stock)
-    m.add('body', sym('b12_pad', [(-0.300, zb + 0.0260), (-0.326, zb + 0.0280), (-0.328, zb - 0.1180), (-0.300, zb - 0.1220)], 0.0460, rub, bevel=0.0050, seg=3))
-    m.add('body', cyl('b12_sling', (-0.0230, -0.270, zb - 0.096), (0.0230, -0.270, zb - 0.096), 0.0035, M['steel_dark'], seg=10, bevel=0.0004))
+    # Recoil pad: follows the stock's outline, one groove round its side, a slightly domed face.
+    y, t, b, w, r = stock_end
+    pad_rings = []
+    for py, grow in ((-0.302, -0.0004), (-0.3045, 0.0011), (-0.3125, 0.0013), (-0.3135, 0.0001), (-0.3150, 0.0013), (-0.3235, 0.0013), (-0.3258, 0.0004), (-0.3270, -0.0030)):
+        pad_rings.append(ring3(moulded_section(w + 2 * grow, t - b + 2 * grow, r + max(0.0, grow), 0.02, 0.0, zb + (t + b) / 2), Vector((0, py, 0)), X, Z))
+    m.add('body', loft('b12_pad', pad_rings, rub, wn=False, smooth=50))
+    m.add('body', cyl('b12_qd', (-0.0170, -0.068, zb - 0.0120), (-0.0205, -0.068, zb - 0.0120), 0.0060, M['steel_dark'], seg=14, bevel=0.0006))
     # Barrel, vented heat shield, magazine tube, clamp and cap.
     m.add('body', lathe('b12_barrel', [(0.0, 0.0118), (yb - yf - 0.004, 0.0118), (yb - yf, 0.0110)], st, origin=(0, yf, zb), seg=18, bevel=0.0004))
     m.add('body', lathe('b12_bore', [(0.0, 0.0090), (0.003, 0.0090)], M['steel_dark'], origin=(0, yb - 0.0025, zb), seg=14, wn=False))
@@ -1754,7 +1903,7 @@ def build_longbow(M):
     port_frame = box('lb_port_floor', (0.0150, 0.050, zb + 0.004), (0.0020, 0.068, 0.0160), M['steel_dark'], bevel=0.0003)
     m.add('body', port_frame)
     m.add('body', box('lb_rail_base', (0, 0.070, zb + 0.0205), (0.0200, 0.270, 0.0060), grey, bevel=0.0010, seg=2))
-    m.add('body', picatinny('lb_rail', -0.064, 0.204, rail_z, grey))
+    m.add('body', picatinny('lb_rail', -0.064, 0.204, rail_z, grey, tooth_bevel=0.0))
     # Trigger guard, grip and controls.
     lw_bot = zb - 0.040
     guard = sym('lb_guard', [(0.000, lw_bot + 0.002), (0.074, lw_bot + 0.002), (0.074, trig.z - 0.024), (0.066, trig.z - 0.030), (0.012, trig.z - 0.030), (0.004, trig.z - 0.022)], 0.0130, grey, bevel=0.0016, seg=2)
@@ -1763,17 +1912,36 @@ def build_longbow(M):
     m.add('body', trigger('lb_trigger', trig, M['steel_bright'], height=0.022, curve=0.004))
     m.add('body', pistol_grip('lb_grip', tilt, 0.032, 0.062, polyg, top_extra=0.010, width=0.0310))
     m.add('body', sym('lb_safety', [(-0.040, zb + 0.008), (-0.022, zb + 0.008), (-0.024, zb + 0.014), (-0.038, zb + 0.014)], 0.0060, M['steel_dark'], x=0.0170, bevel=0.0010))
-    # Skeleton chassis stock with an adjustable cheek riser and a thick pad.
-    stock_pts = [(yr - 0.004, zb + 0.004), (-0.330, zb + 0.004), (-0.336, zb - 0.004), (-0.336, zb - 0.104), (-0.300, zb - 0.112), (-0.150, zb - 0.072),
-                 (-0.060, zb - 0.042), (yr - 0.004, zb - 0.036)]
-    stock = sym('lb_stock', stock_pts, 0.0300, grey, bevel=0.0030, seg=2)
-    cut(stock, [sym('lb_stock_win1', [(-0.090, zb - 0.010), (-0.200, zb - 0.010), (-0.200, zb - 0.060), (-0.140, zb - 0.058)], 0.06, None, raw=True),
-                sym('lb_stock_win2', [(-0.220, zb - 0.010), (-0.316, zb - 0.010), (-0.316, zb - 0.090), (-0.290, zb - 0.096), (-0.220, zb - 0.070)], 0.06, None, raw=True)])
-    m.add('body', stock)
-    m.add('body', sym('lb_cheek', [(-0.150, zb + 0.004), (-0.300, zb + 0.004), (-0.300, zb + 0.028), (-0.160, zb + 0.032)], 0.0340, M['polymer_black'], bevel=0.0040, seg=3))
-    for y in (-0.180, -0.270):
-        m.add('body', cyl(f'lb_riser_post_{y}', (0, y, zb + 0.002), (0, y, zb + 0.008), 0.0040, M['steel_dark'], seg=10))
-    m.add('body', sym('lb_pad', [(-0.334, zb + 0.008), (-0.356, zb + 0.008), (-0.358, zb - 0.106), (-0.334, zb - 0.112)], 0.0400, rub, bevel=0.0050, seg=3))
+    # Folding chassis stock: a hinge block, a slotted top spine and an angled lower strut (both kept
+    # below the bolt's path), a butt plate with a thick grooved pad, and a cheek riser on two posts
+    # set behind the bolt's full travel.
+    sd, pb = M['steel_dark'], M['polymer_black']
+    m.add('body', box('lb_hinge', (0, -0.068, zb - 0.0330), (0.0320, 0.028, 0.0360), grey, bevel=0.0026, seg=2))
+    m.add('body', cyl('lb_hinge_pin', (-0.0150, -0.074, zb - 0.0515), (-0.0150, -0.074, zb - 0.0145), 0.0046, sd, seg=12, bevel=0.0005))
+    spine = front('lb_spine', rrect(0.0220, 0.0240, 0.0050, 3, 0, zb - 0.0260), -0.336, -0.078, grey, bevel=0.0012, seg=2)
+    cut(spine, mlok_cutters('lb_spine_slot', -0.300, -0.090, [(0.0110, zb - 0.0260), (-0.0110, zb - 0.0260)], [(1, 0), (-1, 0)],
+                            length=0.034, height=0.0088, pitch=0.046, depth=0.0024, corner=2))
+    m.add('body', spine)
+    p0, p1 = Vector((0, -0.074, zb - 0.0460)), Vector((0, -0.338, zb - 0.1010))
+    axis = (p1 - p0).normalized()
+    across = Vector((0, -axis.z, axis.y))
+    m.add('body', loft('lb_strut', [ring3(rrect(0.0160, 0.0130, 0.0040, 3), p0 + axis * t, X, across) for t in (0.0, (p1 - p0).length)], grey, bevel=0.0010, seg=2))
+    m.add('body', box('lb_buttplate', (0, -0.3405, zb - 0.0480), (0.0360, 0.0110, 0.1180), grey, bevel=0.0018, seg=2))
+    for z in (zb - 0.010, zb - 0.086):
+        m.add('body', cyl(f'lb_butt_screw_{round(z, 3)}', (-0.0180, -0.3405, z), (-0.0200, -0.3405, z), 0.0034, sd, seg=10, bevel=0.0004))
+    pad_rings = []
+    for py, grow in ((-0.3450, -0.0004), (-0.3475, 0.0010), (-0.3560, 0.0012), (-0.3570, 0.0001), (-0.3585, 0.0012), (-0.3670, 0.0012), (-0.3692, 0.0003), (-0.3705, -0.0030)):
+        pad_rings.append(ring3(moulded_section(0.0380 + 2 * grow, 0.1220 + 2 * grow, 0.0100 + max(0.0, grow), 0.04, 0.0, zb - 0.0480), Vector((0, py, 0)), X, Z))
+    m.add('body', loft('lb_pad', pad_rings, rub, wn=False, smooth=50))
+    rings = []
+    for y, top_z, w, crown in ((-0.196, zb + 0.0230, 0.0260, 0.001), (-0.202, zb + 0.0270, 0.0300, 0.002), (-0.230, zb + 0.0285, 0.0320, 0.003),
+                               (-0.270, zb + 0.0285, 0.0320, 0.003), (-0.296, zb + 0.0270, 0.0300, 0.002), (-0.302, zb + 0.0230, 0.0260, 0.001)):
+        bottom = zb - 0.0090
+        rings.append(ring3(moulded_section(w, top_z - bottom, 0.0080, 0.05, 0.0, (top_z + bottom) / 2, crown), Vector((0, y, 0)), X, Z))
+    m.add('body', loft('lb_riser', rings, pb, wn=False, smooth=50))
+    for y in (-0.214, -0.284):
+        m.add('body', cyl(f'lb_riser_post_{y}', (0, y, zb - 0.0150), (0, y, zb - 0.0080), 0.0042, sd, seg=10))
+    m.add('body', cyl('lb_riser_knob', (-0.0110, -0.214, zb - 0.0240), (-0.0175, -0.214, zb - 0.0240), 0.0068, pb, seg=14, bevel=0.0010))
     # Long slotted handguard.
     hg = octagon_guard('lb_handguard', yf - 0.002, 0.520, zb, 0.0250, zb + 0.0200, zb - 0.0320, 0.0100, grey)
     cut(hg, mlok_cutters('lb_slot', yf + 0.040, 0.510, [(0.0250, zb - 0.006), (-0.0250, zb - 0.006), (0.0, zb - 0.0320)], [(1, 0), (-1, 0), (0, -1)], pitch=0.050, corner=2))
@@ -1813,7 +1981,7 @@ def build_longbow(M):
     for axis, length, r in (((0, 0, 1), 0.020, 0.0125), ((1, 0, 0), 0.020, 0.0115), ((-1, 0, 0), 0.016, 0.0105)):
         a = Vector(axis)
         m.add('body', lathe(f'lb_turret_{axis}', [(0.012, 0.0080), (0.014, 0.0080), (0.015, r), (length + 0.012, r), (length + 0.013, r - 0.0012), (length + 0.013, 0.0)], M['steel_dark'],
-                            origin=(0, tz, sight_z), axis=a, seg=20, bevel=0.0005))
+                            origin=(0, tz, sight_z), axis=a, seg=16, bevel=0.0005))
     # Bolt (action): body along the bore and a handle with a large round knob on the right.
     bolt_y = yr - 0.006
     bolt = [lathe('lb_bolt', [(0.0, 0.0), (0.0, 0.0110), (0.012, 0.0125), (0.040, 0.0125), (0.044, 0.0090), (0.160, 0.0090)], M['steel_dark'], origin=(0, bolt_y - 0.042, zb), seg=16, bevel=0.0005)]
@@ -1843,26 +2011,43 @@ def build_longbow(M):
 def build_sentry9(M):
     """Sentry 9: polymer-frame service pistol with a serrated slide and glowing night sights."""
     m = Model('sentry9')
-    tilt = 18.0
+    tilt = 10.0
     r_grip = grip_frame(tilt)
     trig = r_grip @ trigger_point_F()
-    zb = 0.0505
     ys0, ys1 = -0.046, 0.142
-    slide_bot, slide_top = zb - 0.0075, zb + 0.0205
+    travel = SLIDE_TRAVEL
+    # The slide must ride clear of the firing hand through its whole travel. The gloved fist is a
+    # rifle grip whose web rises well above the trigger finger, so the bore sits higher above the
+    # hand than on a real pistol and the grip is fairly upright. With the arms built first, the
+    # slide's underside is placed from the seated hand itself: a thin frame tang over the web,
+    # then the slide just above it.
+    hand = seated_points('arm_right', anchor_rotation(RIGHT_HAND, r_grip))
+    if hand is not None:
+        under = hand[(np.abs(hand[:, 0]) < 0.0140) & (hand[:, 1] > ys0 - travel - 0.004)]
+        web_top = float(under[:, 2].max())
+    else:
+        web_top = 0.0575
+    slide_bot = round(web_top + 0.0034, 4)
+    zb = slide_bot + 0.0075
+    slide_top = zb + 0.0205
     sight_z = slide_top + 0.0058
     frame_m, frame_g = M['polymer_black'], M['polymer_black_grip']
-    # Frame: dust cover with rail, trigger guard, beavertail, grip and flared well.
-    frame_pts = [(ys0 + 0.006, slide_bot), (ys1 - 0.004, slide_bot), (ys1 - 0.006, zb - 0.026), (0.096, zb - 0.026), (0.092, zb - 0.030), (0.016, zb - 0.030),
-                 (0.006, zb - 0.034), (-0.020, zb - 0.030), (-0.040, zb - 0.022), (ys0 - 0.004, zb - 0.018), (ys0 - 0.002, slide_bot)]
-    frame = sym('s9_frame', frame_pts, 0.0250, frame_m, bevel=0.0022, seg=2)
+    # Frame: dust cover with rail, trigger guard, a thin tang over the web of the hand, grip.
+    frame_pts = [(ys0 + 0.008, slide_bot), (ys1 - 0.004, slide_bot), (ys1 - 0.006, zb - 0.030), (0.096, zb - 0.030), (0.092, zb - 0.036), (0.016, zb - 0.036),
+                 (0.006, zb - 0.040), (-0.012, zb - 0.036), (-0.020, slide_bot - 0.0024), (ys0 - 0.008, slide_bot - 0.0024), (ys0 - 0.011, slide_bot - 0.0010),
+                 (ys0 - 0.010, slide_bot)]
+    frame = sym('s9_frame', frame_pts, 0.0250, frame_m, bevel=0.0010, seg=2)
     m.add('body', frame)
-    tg = sym('s9_guard', [(0.010, zb - 0.030), (0.094, zb - 0.030), (0.098, trig.z - 0.014), (0.090, trig.z - 0.022), (0.016, trig.z - 0.022), (0.006, trig.z - 0.016)], 0.0120, frame_m, bevel=0.0018, seg=2)
-    cut(tg, [sym('s9_guard_hole', [(0.016, zb - 0.032), (0.088, zb - 0.032), (0.090, trig.z - 0.012), (0.084, trig.z - 0.017), (0.020, trig.z - 0.017), (0.014, trig.z - 0.012)], 0.03, None, raw=True)])
+    tg = sym('s9_guard', [(0.010, zb - 0.036), (0.094, zb - 0.036), (0.098, trig.z - 0.014), (0.090, trig.z - 0.022), (0.016, trig.z - 0.022), (0.006, trig.z - 0.016)], 0.0120, frame_m, bevel=0.0018, seg=2)
+    cut(tg, [sym('s9_guard_hole', [(0.016, zb - 0.038), (0.088, zb - 0.038), (0.090, trig.z - 0.012), (0.084, trig.z - 0.017), (0.020, trig.z - 0.017), (0.014, trig.z - 0.012)], 0.03, None, raw=True)])
     m.add('body', tg)
     m.add('body', trigger('s9_trigger', trig, frame_m, height=0.024, curve=0.006))
+    bar_top = zb - 0.034
+    if bar_top > trig.z + 0.008:  # the trigger blade reaches up into the frame
+        m.add('body', box('s9_trigger_bar', (0, trig.y - 0.0028, (trig.z + 0.006 + bar_top) / 2), (0.0050, 0.0040, bar_top - trig.z - 0.006), frame_m, bevel=0.0006))
     m.add('body', pistol_grip('s9_grip', tilt, 0.034, 0.056, frame_g, top_extra=0.004, width=0.0300, depth=0.0480))
     for i in range(3):
-        m.add('body', box(f's9_rail_{i}', (0, 0.104 + i * 0.012, zb - 0.0285), (0.0200, 0.0060, 0.0030), frame_m, bevel=0.0005))
+        m.add('body', box(f's9_rail_{i}', (0, 0.104 + i * 0.012, zb - 0.0310), (0.0200, 0.0060, 0.0030), frame_m, bevel=0.0005))
     m.add('body', sym('s9_slide_stop', [(0.020, zb - 0.010), (0.052, zb - 0.010), (0.054, zb - 0.005), (0.020, zb - 0.004)], 0.0022, M['steel_dark'], x=-0.0135, bevel=0.0005))
     m.add('body', box('s9_mag_release', (-0.0130, 0.010, zb - 0.022), (0.0030, 0.010, 0.0070), M['steel_dark'], bevel=0.0010))
     m.add('body', box('s9_takedown', (0.0130, 0.078, zb - 0.016), (0.0024, 0.012, 0.0030), M['steel_dark'], bevel=0.0006))
@@ -1881,17 +2066,20 @@ def build_sentry9(M):
             cuts.append(box(f's9_ser_f_{side_x}_{i}', (side_x * 0.0135, ys1 - 0.030 + i * 0.0040, zb + 0.004), (0.0016, 0.0016, 0.026), None, raw=True))
     cut(slide, cuts)
     m.add('action', slide)
-    m.add('action', box('s9_rear_sight', (0, -0.030, sight_z - 0.0024), (0.0180, 0.0080, 0.0064), M['steel_dark'], bevel=0.0010, seg=2))
-    rear_notch = box('s9_notch', (0, -0.030, sight_z + 0.0014), (0.0034, 0.012, 0.0030), None, raw=True)
-    cut(m.groups['action'][-1], [rear_notch])
-    m.add('action', box('s9_front_sight', (0, 0.130, sight_z - 0.0028), (0.0034, 0.0060, 0.0056), M['steel_dark'], bevel=0.0006))
+    # Night sights. The rear blade and the front post have their tops on the sight line; a deep
+    # U-notch (3 mm) frames the front post with light on both sides, so the post and its glowing
+    # dot sit inside the notch between the two rear dots when aiming.
+    rear = box('s9_rear_sight', (0, -0.030, sight_z - 0.0034), (0.0180, 0.0080, 0.0068), M['steel_dark'], bevel=0.0008, seg=2)
+    cut(rear, [box('s9_notch', (0, -0.030, sight_z), (0.0040, 0.012, 0.0060), None, raw=True)])
+    m.add('action', rear)
+    m.add('action', box('s9_front_sight', (0, 0.130, sight_z - 0.0034), (0.0033, 0.0060, 0.0068), M['steel_dark'], bevel=0.0005))
     for sx in (1, -1):
-        m.add('action', cyl(f's9_tritium_r_{sx}', (sx * 0.0045, -0.0342, sight_z - 0.0016), (sx * 0.0045, -0.0336, sight_z - 0.0016), 0.0010, M['glow_green'], seg=8, wn=False), flat=True)
-    m.add('action', cyl('s9_tritium_f', (0, 0.1268, sight_z - 0.0018), (0, 0.1274, sight_z - 0.0018), 0.0010, M['glow_green'], seg=8, wn=False), flat=True)
+        m.add('action', cyl(f's9_tritium_r_{sx}', (sx * 0.0050, -0.0342, sight_z - 0.0020), (sx * 0.0050, -0.0337, sight_z - 0.0020), 0.0010, M['glow_green'], seg=8, wn=False), flat=True)
+    m.add('action', cyl('s9_tritium_f', (0, 0.1268, sight_z - 0.0018), (0, 0.1273, sight_z - 0.0018), 0.0009, M['glow_green'], seg=8, wn=False), flat=True)
     m.pivots['action'] = Matrix.Translation((0, ys0, zb))
     # Magazine inside the grip; its baseplate shows under the flared well. Drops along local -Y.
     mag_dir = (r_grip @ Vector((0, 0, -1))).normalized()
-    mag_top = Vector((0, 0.020, 0.026))
+    mag_top = r_grip @ Vector((0, 0.002, 0.026))
     mag = []
     rings = []
     for t in (0.0, 0.088):
@@ -1911,9 +2099,11 @@ def build_sentry9(M):
     m.pivots['mag'] = pivot
     # Support hand wraps the firing hand: palm on the left of the grip, fingers round the front.
     m.anchor('grip_r', (0, 0, 0), anchor_rotation(RIGHT_HAND, r_grip))
-    # Canted forward so the support thumb lies along the frame rather than pointing up.
-    r_left = grip_frame(tilt + 52.0) @ Matrix.Rotation(math.radians(LEFT_ROLL['sentry9']), 3, Z)
-    m.anchor('grip_l', (-0.0100, 0.0060, -0.0060), anchor_rotation(LEFT_HAND, r_left))
+    # Canted forward so the support thumb lies along the frame rather than pointing up. The pose was
+    # set against an 18-degree grip; turning it with the grip keeps it wrapped round the firing hand.
+    turn = r_grip @ grip_frame(18.0).transposed()
+    r_left = turn @ grip_frame(18.0 + 52.0) @ Matrix.Rotation(math.radians(LEFT_ROLL['sentry9']), 3, Z)
+    m.anchor('grip_l', turn @ Vector((-0.0100, 0.0060, -0.0060)), anchor_rotation(LEFT_HAND, r_left))
     m.anchor('muzzle', (0, ys1 + 0.001, zb))
     m.anchor('sight', (0, -0.030, sight_z))
     m.anchor('eject', (0.0080, 0.012, zb + 0.0170))
@@ -1952,9 +2142,9 @@ def build_knife(M):
         t = k / 12
         y = 0.050 - 0.112 * t
         swell = 1.0 + 0.07 * math.sin(t * math.pi * 3.0)
-        rings.append(ring3(superellipse(0.0112 * swell, 0.0158 * swell, 2.3, 18, 0, -0.0010), Vector((0, y, 0)), X, Z))
+        rings.append(ring3(superellipse(0.0128 * swell, 0.0180 * swell, 2.3, 20, 0, -0.0010), Vector((0, y, 0)), X, Z))
     m.add('body', loft('knife_handle', rings, M['polymer_fde_grip'], wn=False, smooth=60))
-    pommel = lathe('knife_pommel', [(0.0, 0.0115), (0.012, 0.0125), (0.020, 0.0100), (0.022, 0.0)], M['steel_dark'], origin=(0, -0.062, -0.0010), axis=(0, -1, 0), seg=16, bevel=0.0006)
+    pommel = lathe('knife_pommel', [(0.0, 0.0132), (0.012, 0.0142), (0.020, 0.0114), (0.022, 0.0)], M['steel_dark'], origin=(0, -0.062, -0.0010), axis=(0, -1, 0), seg=16, bevel=0.0006)
     cut(pommel, [cyl('knife_lanyard', (-0.02, -0.074, -0.0010), (0.02, -0.074, -0.0010), 0.0032, None, seg=10, raw=True)])
     m.add('body', pommel)
     # The right fist holds the handle with the blade forward and the edge down: the held axis
@@ -1995,10 +2185,20 @@ BUILDERS = {'kr5': build_kr5, 'hornet9': build_hornet9, 'breaker12': build_break
 LEFT_ROLL['sentry9'] = -45.0
 
 
+def knife_hold_rotation():
+    """Where a knife sits in the left fist (arm space): handle along the fist's held axis, blade out
+    of the thumb end, edge toward the fingers. The view model puts its knife on the `hold` node."""
+    r_hold = frame_matrix(Vector((1, 0, 0)), Vector((0, 0, -1)), Vector((0, 1, 0)))
+    return anchor_rotation(LEFT_HAND, r_hold).transposed()
+
+
 def build_all(only):
     M = build_materials()
     models = {}
-    for mid in MODEL_IDS:
+    if only and 'sentry9' in only and 'arm_right' not in only:
+        only = list(only) + ['arm_right']  # the pistol's slide is fitted over the seated right hand
+    # Arms first: the pistol is fitted to the right hand (see build_sentry9).
+    for mid in ['arm_left', 'arm_right'] + [m for m in MODEL_IDS if not m.startswith('arm_')]:
         if only and mid not in only:
             continue
         started = time.time()
@@ -2008,6 +2208,11 @@ def build_all(only):
             arm, skel, r_fa = build_arm(spec, M, mid)
             model.add('arm', arm)
             model.extras = dict(heldAxis=list(spec['held_axis_arm']))
+            co = np.empty(len(arm.data.vertices) * 3, np.float32)
+            arm.data.vertices.foreach_get('co', co)
+            HAND_POINTS[mid] = co.reshape(-1, 3).astype(np.float64)
+            if mid == 'arm_left':
+                model.anchor('hold', (0, 0, 0), knife_hold_rotation())
         elif mid in BUILDERS:
             model = BUILDERS[mid](M)
         else:
@@ -2020,7 +2225,7 @@ def build_all(only):
         model.extras['triangles'] = tris
         models[mid] = model
         log(f'{mid}: {tris} triangles, {len(model.meshes)} meshes, built in {time.time() - started:.1f}s')
-    return M, models
+    return M, {mid: models[mid] for mid in MODEL_IDS if mid in models}
 
 
 # =============================================================================================
@@ -2258,7 +2463,9 @@ def world_matrix_gltf(m):
 
 
 def build_report(models, sizes):
-    report = {'generator': 'scripts/blender/generate_weapons.py', 'units': 'metres', 'up': 'glTF +Y', 'forward': 'glTF -Z', 'models': {}}
+    report = {'generator': 'scripts/blender/generate_weapons.py', 'units': 'metres', 'up': 'glTF +Y', 'forward': 'glTF -Z', 'models': {},
+              'materials': {'WeaponReflexGlass': dict(alphaMode='BLEND', baseColorFactor=[round(v, 5) for v in REFLEX_GLASS['tint']] + [REFLEX_GLASS['alpha']],
+                                                      roughnessFactor=REFLEX_GLASS['roughness'], metallicFactor=0.0)}}
     for mid, model in models.items():
         entry = {'root': model.root_name, 'triangles': model.extras.get('triangles'), 'texture': sizes.get(mid), 'nodes': sorted(model.meshes) + sorted(model.anchors)}
         entry['anchors'] = {name: dict(zip(('translation', 'rotation'), world_matrix_gltf(m))) for name, m in model.anchors.items()}
@@ -2266,6 +2473,9 @@ def build_report(models, sizes):
         if 'trigger' in entry['extras']:  # trigger contact point, Blender frame -> glTF frame
             x, y, z = entry['extras']['trigger']
             entry['extras']['trigger'] = [x, z, round(-y, 5)]
+        if 'heldAxis' in entry['extras']:  # held axis in the exported arm space (glTF axes, forearm +Z)
+            x, y, z = entry['extras']['heldAxis']
+            entry['extras']['heldAxis'] = [round(x, 6), round(z, 6), round(-y, 6)]
         report['models'][mid] = entry
     return report
 
@@ -2459,6 +2669,14 @@ def backdrop(coll, kind):
         for c in crate.users_collection:
             c.objects.unlink(crate)
         coll.objects.link(crate)
+        # A person-sized target 20 m ahead on the aim line: it must stay visible through every sight.
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, 20.0, -1.55 + 0.9))
+        board = bpy.context.object
+        board.scale = (0.5, 0.05, 1.8)
+        board.data.materials.append(flat_material('PreviewTarget', hexcol('#c46a2e'), 0.6))
+        for c in board.users_collection:
+            c.objects.unlink(board)
+        coll.objects.link(board)
     elif kind == 'table':
         mat = flat_material('PreviewTable', hexcol('#55585b'), 0.6)
         bpy.ops.mesh.primitive_plane_add(size=8, location=(0, 0, -0.30))
@@ -2478,7 +2696,7 @@ def first_person(models, gun, ads=False):
     m = models[gun]
     if ads:
         sight = m.anchors['sight'].translation
-        world = Matrix.Translation(Vector((0, 0.22, 0)) - sight)
+        world = Matrix.Translation(Vector((0, ADS_EYE.get(gun, 0.22), 0)) - sight)
     else:
         pose = HIP_POSE.get(gun, HIP_POSE['kr5'])
         rot = (Matrix.Rotation(math.radians(pose['yaw']), 4, Z) @ Matrix.Rotation(math.radians(pose['pitch']), 4, X) @ Matrix.Rotation(math.radians(pose['roll']), 4, Y))
@@ -2489,6 +2707,9 @@ def first_person(models, gun, ads=False):
             place(models[arm_id], world @ m.anchors[anchor])
     return world
 
+
+# Preview eye distance behind the sight anchor when aiming (the view model chooses its own).
+ADS_EYE = {'kr5': 0.22, 'hornet9': 0.22, 'breaker12': 0.24, 'longbow': 0.10, 'sentry9': 0.40}
 
 HIP_POSE = {
     'kr5': dict(grip=(0.125, 0.20, -0.215), yaw=4.0, pitch=1.0, roll=-4.0),
@@ -2589,6 +2810,29 @@ def render_previews(models, samples, views, out_dir, suffix='', ext='png'):
             scene.camera = cam
             render(out_dir / f'{name}{suffix}')
             rendered.append(name)
+    if want and {'hold-knife', 'grip-knife'} & want and 'knife' in models:
+        # The knife in a fist: on the left arm's `hold` node (as the view model shows it) and seated
+        # on the knife's own grip_r anchor in the right hand.
+        for name, arm_id, seat in (('hold-knife', 'arm_left', 'hold'), ('grip-knife', 'arm_right', 'grip_r')):
+            if name not in want or arm_id not in models:
+                continue
+            arm, knife = models[arm_id], models['knife']
+            if seat == 'hold':
+                place(arm, Matrix.Identity(4))
+                place(knife, arm.anchors['hold'])
+            else:
+                place(knife, Matrix.Identity(4))
+                place(arm, knife.anchors['grip_r'])
+            show_only(models, {arm_id, 'knife'})
+            lo, hi = model_bounds(knife)
+            centre = (lo + hi) / 2
+            for k, direction in enumerate((Vector((0.6, -0.5, 0.7)), Vector((-0.8, -0.2, -0.3)))):
+                cam = camera(stage, f'Cam_{name}_{k}', centre + direction.normalized() * 0.55, centre, lens=50)
+                scene.camera = cam
+                render(out_dir / f'{name}-{k}{suffix}')
+                rendered.append(f'{name}-{k}')
+            place(knife, Matrix.Identity(4))
+            place(arm, Matrix.Identity(4))
     if not want or 'lineup' in want:
         # Every model seen from its left side (the side the first-person camera sees).
         for mid, m in models.items():
@@ -2636,13 +2880,14 @@ def models_from_blend():
         m.anchors, m.meshes, m.extras = {}, {}, {}
         for child in root.children:
             name = child.name.split(SEP, 1)[1] if SEP in child.name else child.name
-            if child.type == 'EMPTY' and name in ('grip_r', 'grip_l', 'muzzle', 'sight', 'eject'):
+            if child.type == 'EMPTY' and name in ('grip_r', 'grip_l', 'muzzle', 'sight', 'eject', 'hold'):
                 m.anchors[name] = child.matrix_basis.copy()
         models[mid] = m
     return models
 
 
-SHIPPED_VIEWS = [f'fp-{g}-hip' for g in ('kr5', 'hornet9', 'breaker12', 'longbow', 'sentry9')] + ['fp-kr5-ads', 'over-kr5', 'lineup']
+SHIPPED_VIEWS = [f'fp-{g}-hip' for g in ('kr5', 'hornet9', 'breaker12', 'longbow', 'sentry9')] + [f'fp-{g}-ads' for g in ('kr5', 'hornet9', 'breaker12', 'sentry9')] + \
+    ['over-kr5', 'hands-r-sentry9', 'hold-knife', 'lineup']
 
 
 def main():

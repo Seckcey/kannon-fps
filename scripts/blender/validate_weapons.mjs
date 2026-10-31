@@ -1,6 +1,8 @@
 /** Validate the shipped first-person weapons file against its contract (docs/WEAPONS_ART.md):
- *  root and child node names, anchors and where they sit, clear sight lines, arms that wrap their
- *  palm grip point, bounds, triangle budgets, KTX2 textures, Meshopt geometry and the 6 MB budget.
+ *  root and child node names and tags, anchors and where they sit, sight pictures (nothing solid in
+ *  front of the eye on a reflex sight; iron sights that show the front post through the rear notch or
+ *  ring), hands that close round the real grip and handguard when seated, a pistol slide that clears
+ *  the hand, bounds, triangle budgets, KTX2 textures, Meshopt geometry and the 6 MB budget.
  *
  *  node scripts/blender/validate_weapons.mjs [--glb public/models/weapons-v1.glb] [--manifest art/source/weapons/weapons-v1-manifest.json] */
 import assert from 'node:assert/strict';
@@ -14,17 +16,22 @@ const glbPath = arg('glb', 'public/models/weapons-v1.glb');
 const manifestPath = arg('manifest', 'art/source/weapons/weapons-v1-manifest.json');
 const MAX_BYTES = 6_000_000;
 
-/** Contract and plausibility limits. Lengths are along glTF Z (the bore axis), metres. */
+/** Contract and plausibility limits. Lengths are along glTF Z (the bore axis), metres. `eye` is how far
+ *  behind the sight anchor the sight-picture checks put the aiming eye. */
 const WEAPONS = {
-  kr5: { root: 'weapon_kr5', length: [0.78, 0.95], sight: 'reflex' },
-  hornet9: { root: 'weapon_hornet9', length: [0.50, 0.72], sight: 'reflex' },
-  breaker12: { root: 'weapon_breaker12', length: [0.85, 1.05], sight: 'iron' },
-  longbow: { root: 'weapon_longbow', length: [1.05, 1.30], sight: 'scope' },
-  sentry9: { root: 'weapon_sentry9', length: [0.17, 0.23], sight: 'iron' },
+  kr5: { root: 'weapon_kr5', length: [0.78, 0.95], sight: 'reflex', eye: 0.22 },
+  hornet9: { root: 'weapon_hornet9', length: [0.50, 0.72], sight: 'reflex', eye: 0.22 },
+  breaker12: { root: 'weapon_breaker12', length: [0.85, 1.05], sight: 'iron', eye: 0.24 },
+  longbow: { root: 'weapon_longbow', length: [1.05, 1.30], sight: 'scope', eye: 0.02 },
+  sentry9: { root: 'weapon_sentry9', length: [0.17, 0.23], sight: 'iron', eye: 0.40, slideTravel: 0.022 },
 };
 const ROOTS = ['weapon_kr5', 'weapon_hornet9', 'weapon_breaker12', 'weapon_longbow', 'weapon_sentry9', 'knife', 'frag', 'arm_left', 'arm_right'];
 const ANCHORS = ['grip_r', 'grip_l', 'muzzle', 'sight', 'eject'];
-const FLAT = /^WeaponLens$|^WeaponGlow/;
+const GLASS = 'WeaponReflexGlass', LENS = 'WeaponLens', GLOW = /^WeaponGlow/;
+/** Untextured materials: reflex glass, scope glass and the glowing dots. */
+const FLAT = /^(WeaponReflexGlass|WeaponLens)$|^WeaponGlow/;
+/** Glass you can see through: blended with a low alpha. Every other surface stops the eye. */
+const seeThrough = material => material.alphaMode === 'BLEND' && (material.pbrMetallicRoughness?.baseColorFactor?.[3] ?? 1) <= 0.35;
 
 // --- GLB decoding ------------------------------------------------------------------------------
 assert.ok(existsSync(glbPath), `${glbPath} exists`);
@@ -71,15 +78,14 @@ const localMatrix = node => node.matrix ? new Matrix4().fromArray(node.matrix)
 
 /** Everything under one root, in that root's own space. */
 function collect(rootIndex) {
-  const nodes = new Map(), triangles = [], bounds = new Box3();
+  const nodes = new Map(), triangles = [], bounds = new Box3(), primitives = [];
   let triangleCount = 0;
-  const primitives = [];
-  (function visit(index, parent) {
+  (function visit(index, parent, parentName) {
     const node = gltf.nodes[index];
     const matrix = index === rootIndex ? new Matrix4() : new Matrix4().multiplyMatrices(parent, localMatrix(node));
     if (index !== rootIndex) {
       assert.ok(!nodes.has(node.name), `${gltf.nodes[rootIndex].name}: node name ${node.name} is unique within its root`);
-      nodes.set(node.name, { node, matrix });
+      nodes.set(node.name, { node, matrix, parent: parentName });
     }
     if (node.mesh !== undefined) for (const p of gltf.meshes[node.mesh].primitives) {
       assert.equal(p.mode ?? 4, 4, 'triangle lists');
@@ -88,12 +94,13 @@ function collect(rootIndex) {
       for (const attribute of ['NORMAL', 'TEXCOORD_0']) assert.notEqual(p.attributes[attribute], undefined, `${node.name}: ${attribute}`);
       const ids = accessor(p.indices).flat();
       triangleCount += ids.length / 3;
-      for (let i = 0; i < ids.length; i += 3) triangles.push({ a: positions[ids[i]], b: positions[ids[i + 1]], c: positions[ids[i + 2]], material: material.name, node: node.name });
+      const see = seeThrough(material);
+      for (let i = 0; i < ids.length; i += 3) triangles.push({ a: positions[ids[i]], b: positions[ids[i + 1]], c: positions[ids[i + 2]], material: material.name, node: node.name, see });
       for (const v of positions) { assert.ok([v.x, v.y, v.z].every(Number.isFinite), `${node.name}: finite positions`); bounds.expandByPoint(v); }
       primitives.push({ node: node.name, material, positions });
     }
-    for (const child of node.children ?? []) visit(child, matrix);
-  })(rootIndex, new Matrix4());
+    for (const child of node.children ?? []) visit(child, matrix, index === rootIndex ? null : node.name);
+  })(rootIndex, new Matrix4(), null);
   return { nodes, triangles, triangleCount, bounds, primitives };
 }
 
@@ -106,13 +113,51 @@ function hits(tris, origin, direction, filter = () => true) {
 }
 const position = entry => new Vector3().setFromMatrixPosition(entry.matrix);
 const rotation = entry => new Quaternion().setFromRotationMatrix(entry.matrix);
+const solid = t => !t.see;
+/** How many of `count` rays fanned out across `axis` from `origin` meet `tris` within `reach`. */
+function around(origin, axis, tris, reach, count = 12) {
+  const u = new Vector3(1, 0, 0).cross(axis).lengthSq() > 0.1 ? new Vector3(1, 0, 0).cross(axis).normalize() : new Vector3(0, 1, 0).cross(axis).normalize();
+  const v = axis.clone().cross(u).normalize();
+  let met = 0;
+  for (let k = 0; k < count; k++) {
+    const a = (k / count) * Math.PI * 2;
+    const direction = u.clone().multiplyScalar(Math.cos(a)).addScaledVector(v, Math.sin(a));
+    if (hits(tris, origin, direction).some(h => h.distance < reach)) met++;
+  }
+  return met;
+}
+/** Triangles of one root placed by a matrix (an arm seated on an anchor, a knife in a hand). */
+const placed = (tris, matrix) => tris.map(t => ({ ...t, a: t.a.clone().applyMatrix4(matrix), b: t.b.clone().applyMatrix4(matrix), c: t.c.clone().applyMatrix4(matrix) }));
+/** Each tag value names one node per root: `anchor` on empties, `part` on the mag/action pivots only,
+ *  `mesh` on every mesh. Returns part -> node name. */
+function checkTags(label, nodes) {
+  const parts = new Map(), anchors = new Map();
+  for (const [name, { node }] of nodes) {
+    const extras = node.extras ?? {};
+    if (node.mesh !== undefined) {
+      assert.equal(extras.mesh, name.replace(/_mesh$/, ''), `${label}: mesh ${name} carries extras.mesh`);
+      assert.equal(extras.part, undefined, `${label}: mesh ${name} carries no extras.part (only pivots do)`);
+      assert.equal(extras.anchor, undefined, `${label}: mesh ${name} is not an anchor`);
+    }
+    if (extras.part !== undefined) {
+      assert.ok(!parts.has(extras.part), `${label}: extras.part "${extras.part}" names exactly one node`);
+      assert.equal(node.mesh, undefined, `${label}: part ${extras.part} is a pivot, not a mesh`);
+      parts.set(extras.part, name);
+    }
+    if (extras.anchor !== undefined) {
+      assert.ok(!anchors.has(extras.anchor), `${label}: extras.anchor "${extras.anchor}" names exactly one node`);
+      anchors.set(extras.anchor, name);
+    }
+  }
+  return parts;
+}
 
 // --- Scene and materials -------------------------------------------------------------------------
 const scene = gltf.scenes[gltf.scene ?? 0];
 const rootNodes = scene.nodes.map(i => gltf.nodes[i]);
 assert.deepEqual(rootNodes.map(n => n.name).sort(), [...ROOTS].sort(), 'scene roots are exactly the contract roots');
 for (const node of rootNodes) {
-  assert.ok(!node.mesh, `${node.name}: root is a transform, not a mesh`);
+  assert.equal(node.mesh, undefined, `${node.name}: root is a transform, not a mesh`);
   assert.ok(localMatrix(node).equals(new Matrix4()), `${node.name}: root sits at the origin, unrotated`);
 }
 for (const image of gltf.images) {
@@ -125,32 +170,58 @@ for (const image of gltf.images) {
   assert.ok(w <= 2048 && h <= 2048 && (w & (w - 1)) === 0 && (h & (h - 1)) === 0, `${image.name}: ${w}x${h} is a power of two within 2048`);
 }
 for (const material of gltf.materials) {
-  if (FLAT.test(material.name)) {
-    if (material.name.startsWith('WeaponGlow')) assert.ok(Math.max(...(material.emissiveFactor ?? [0])) > 0, `${material.name}: glows`);
+  const pbr = material.pbrMetallicRoughness ?? {};
+  if (material.name === GLASS) {
+    assert.ok(seeThrough(material), `${GLASS}: blended with alpha <= 0.35 (${material.alphaMode}, alpha ${pbr.baseColorFactor?.[3]})`);
+    assert.ok(pbr.baseColorFactor[3] >= 0.05, `${GLASS}: still reads as glass`);
+    assert.ok(!pbr.baseColorTexture && !material.normalTexture && !material.doubleSided, `${GLASS}: untextured, one-sided`);
     continue;
   }
-  const pbr = material.pbrMetallicRoughness ?? {};
+  assert.equal(material.alphaMode ?? 'OPAQUE', 'OPAQUE', `${material.name}: opaque`);
+  if (FLAT.test(material.name)) {
+    if (GLOW.test(material.name)) assert.ok(Math.max(...(material.emissiveFactor ?? [0])) > 0, `${material.name}: glows`);
+    continue;
+  }
   assert.ok(pbr.baseColorTexture && pbr.metallicRoughnessTexture && material.normalTexture && material.occlusionTexture, `${material.name}: baked colour, ORM and normal maps`);
 }
+assert.ok(gltf.materials.some(m => m.name === GLASS), `${GLASS} is present`);
+
+// --- Arms and knife (needed to check hands on the weapons) -------------------------------------------
+const rootIndex = name => scene.nodes.find(i => gltf.nodes[i].name === name);
+const arms = {};
+for (const name of ['arm_left', 'arm_right']) {
+  const index = rootIndex(name);
+  const arm = collect(index);
+  checkTags(name, arm.nodes);
+  assert.ok(arm.nodes.get('arm')?.node.mesh !== undefined, `${name}: arm mesh`);
+  arm.heldAxis = new Vector3().fromArray(gltf.nodes[index].extras?.heldAxis ?? [0, 0, 0]);
+  assert.ok(Math.abs(arm.heldAxis.length() - 1) < 1e-3, `${name}: extras.heldAxis is a unit vector`);
+  arms[name] = arm;
+}
+const knife = collect(rootIndex('knife'));
+checkTags('knife', knife.nodes);
 
 // --- Weapons -------------------------------------------------------------------------------------
 const report = {};
-const rootIndex = name => scene.nodes.find(i => gltf.nodes[i].name === name);
+const forward = new Vector3(0, 0, -1);
 for (const [id, spec] of Object.entries(WEAPONS)) {
-  const { nodes, triangles, triangleCount, bounds } = collect(rootIndex(spec.root));
+  const { nodes, triangles, triangleCount, bounds, primitives } = collect(rootIndex(spec.root));
   const label = spec.root;
   for (const name of ANCHORS) {
     const entry = nodes.get(name);
     assert.ok(entry, `${label}: anchor ${name}`);
     assert.equal(entry.node.mesh, undefined, `${label}: ${name} is an empty`);
     assert.equal(entry.node.extras?.anchor, name, `${label}: ${name} carries extras.anchor`);
+    assert.equal(entry.parent, null, `${label}: ${name} is a direct child of the root`);
     assert.ok(Math.abs(rotation(entry).length() - 1) < 1e-4, `${label}: ${name} rotation is a unit quaternion`);
   }
+  const parts = checkTags(label, nodes);
+  assert.deepEqual([...parts.keys()].sort(), ['action', 'mag'], `${label}: parts are exactly mag and action`);
   for (const part of ['mag', 'action']) {
     const entry = nodes.get(part);
-    assert.ok(entry, `${label}: ${part} pivot`);
-    assert.equal(entry.node.extras?.part, part, `${label}: ${part} carries extras.part`);
-    assert.ok((entry.node.children ?? []).some(c => gltf.nodes[c].mesh !== undefined), `${label}: ${part} holds a mesh`);
+    assert.ok(entry && parts.get(part) === part, `${label}: ${part} pivot carries extras.part`);
+    const meshChild = (entry.node.children ?? []).map(c => gltf.nodes[c]).find(c => c.mesh !== undefined);
+    assert.ok(meshChild && meshChild.name === `${part}_mesh`, `${label}: ${part} pivot holds ${part}_mesh`);
   }
   assert.ok([...nodes.values()].some(e => e.node.mesh !== undefined && e.node.name === 'body'), `${label}: body mesh`);
   assert.ok(triangleCount <= 12_000, `${label}: ${triangleCount} triangles within 12,000`);
@@ -169,73 +240,148 @@ for (const [id, spec] of Object.entries(WEAPONS)) {
     assert.ok(gripL.z < grip.z - 0.15 && Math.abs(gripL.x) < 0.01, `${label}: support hand forward on the fore-end`);
     assert.ok(bounds.max.z > 0.18, `${label}: stock behind the grip`);
   }
-  // Seated arms run back toward the shooter: right forearm back, left forearm back and to the left.
+
+  // Hands seated on their anchors: forearms run back to the shooter, and each fist closes round the
+  // weapon's actual grip, handguard or pump (not just round its own palm point).
   const forearm = q => new Vector3(0, 0, 1).applyQuaternion(q);
   const right = forearm(rotation(nodes.get('grip_r'))), left = forearm(rotation(nodes.get('grip_l')));
   assert.ok(right.z > 0.5, `${label}: right forearm points back (${right.toArray().map(v => v.toFixed(2))})`);
   assert.ok(left.z > 0.2 && left.x < 0.1, `${label}: left forearm points back and left (${left.toArray().map(v => v.toFixed(2))})`);
-  // Sight picture.
-  const opaque = t => !FLAT.test(t.material);
-  const forward = new Vector3(0, 0, -1);
+  const seatedRight = placed(arms.arm_right.triangles, nodes.get('grip_r').matrix);
+  const seatedLeft = placed(arms.arm_left.triangles, nodes.get('grip_l').matrix);
+  const heldRight = arms.arm_right.heldAxis.clone().applyQuaternion(rotation(nodes.get('grip_r')));
+  const heldLeft = arms.arm_left.heldAxis.clone().applyQuaternion(rotation(nodes.get('grip_l')));
+  assert.ok(Math.abs(heldRight.y) > 0.85, `${label}: the firing fist holds an upright grip (${heldRight.toArray().map(v => v.toFixed(2))})`);
+  const inGrip = around(grip, heldRight, triangles, 0.032);
+  assert.ok(inGrip >= 11, `${label}: the pistol grip fills the firing fist (${inGrip}/12 rays meet it within 32 mm)`);
+  const gloveRight = around(grip, heldRight, seatedRight, 0.06);
+  assert.ok(gloveRight >= 8, `${label}: the seated firing glove closes round the grip (${gloveRight}/12)`);
+  let inSupport;
+  if (id === 'sentry9') {
+    inSupport = around(gripL, heldLeft, [...triangles, ...seatedRight], 0.05);
+    assert.ok(inSupport >= 9, `${label}: the support fist closes round the grip and firing hand (${inSupport}/12)`);
+  } else {
+    assert.ok(Math.abs(heldLeft.z) > 0.9, `${label}: the support fist holds a fore-end along the bore (${heldLeft.toArray().map(v => v.toFixed(2))})`);
+    inSupport = around(gripL, heldLeft, triangles, 0.04);
+    assert.ok(inSupport >= 10, `${label}: the handguard or pump fills the support fist (${inSupport}/12 rays meet it within 40 mm)`);
+  }
+  const gloveLeft = around(gripL, heldLeft, seatedLeft, 0.06);
+  assert.ok(gloveLeft >= 7, `${label}: the seated support glove closes round its fore-end (${gloveLeft}/12)`);
+
+  // Moving slide: neither seated hand may sit inside the slide anywhere along its travel.
+  if (spec.slideTravel) {
+    const slide = new Box3();
+    for (const p of primitives) if (p.node === 'action_mesh') for (const v of p.positions) slide.expandByPoint(v);
+    slide.max.z += spec.slideTravel;
+    slide.expandByScalar(-0.0005);
+    const inside = [...seatedRight, ...seatedLeft].flatMap(t => [t.a, t.b, t.c]).filter(v => slide.containsPoint(v)).length;
+    assert.equal(inside, 0, `${label}: the hands stay clear of the slide through ${spec.slideTravel * 1000} mm of travel (${inside} glove vertices inside)`);
+  }
+
+  // Sight picture, with the eye on the line through the sight anchor along -Z.
+  const eye = sight.clone().add(new Vector3(0, 0, spec.eye));
   const reach = sight.z - muzzle.z;
   if (spec.sight === 'scope') {
-    const first = hits(triangles, sight.clone().add(new Vector3(0, 0, 0.02)), forward)[0];
-    assert.ok(first && FLAT.test(first.t.material), `${label}: the eye looks into the ocular lens`);
+    const first = hits(triangles, eye, forward)[0];
+    assert.ok(first && first.t.material === LENS, `${label}: the eye looks into the ocular lens`);
+  } else if (spec.sight === 'reflex') {
+    // Nothing solid between the eye and the target: rays parallel to the bore through the window,
+    // 2-6 mm off the axis, may cross only see-through glass. A dark opaque lens fails here.
+    for (const r of [0.002, 0.004, 0.006]) for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      const blocked = hits(triangles, eye.clone().add(new Vector3(r * Math.cos(a), r * Math.sin(a), 0)), forward, solid);
+      assert.equal(blocked.length, 0, `${label}: clear view through the sight ${(r * 1000).toFixed(0)} mm off the axis (blocked by ${blocked[0]?.t.node}/${blocked[0]?.t.material} ${(blocked[0]?.distance - spec.eye).toFixed(3)} m past the sight)`);
+    }
+    assert.ok(hits(triangles, eye.clone().add(new Vector3(0, 0.003, 0)), forward, t => t.see).length > 0, `${label}: the window holds see-through glass`);
+    const first = hits(triangles, eye, forward)[0];
+    assert.ok(first && GLOW.test(first.t.material) && Math.abs(first.distance - spec.eye) < 0.003, `${label}: the reticle dot is the first thing on the sight axis`);
+    const dots = triangles.filter(t => GLOW.test(t.material));
+    const centre = dots.reduce((sum, t) => sum.add(t.a).add(t.b).add(t.c), new Vector3()).divideScalar(Math.max(1, dots.length * 3));
+    assert.ok(dots.length && Math.hypot(centre.x - sight.x, centre.y - sight.y) < 5e-4 && Math.abs(centre.z - sight.z) < 0.005, `${label}: reticle dot on the sight axis`);
   } else {
-    const clear = hits(triangles, sight.clone().add(new Vector3(0, 0.0004, 0.002)), forward, opaque).filter(h => h.distance < reach);
-    assert.equal(clear.length, 0, `${label}: clear sight line (blocked by ${clear[0]?.t.node} at ${clear[0]?.distance.toFixed(3)} m)`);
-    if (spec.sight === 'iron') {
-      const post = hits(triangles, sight.clone().add(new Vector3(0, -0.0015, 0.002)), forward, opaque).filter(h => h.distance > 0.08 && h.distance < reach + 0.01);
-      assert.ok(post.length > 0, `${label}: front sight sits on the sight line`);
-    } else {
-      const dots = triangles.filter(t => t.material.startsWith('WeaponGlow'));
-      const centre = dots.reduce((sum, t) => sum.add(t.a).add(t.b).add(t.c), new Vector3()).divideScalar(Math.max(1, dots.length * 3));
-      assert.ok(dots.length && Math.hypot(centre.x - sight.x, centre.y - sight.y) < 5e-4 && Math.abs(centre.z - sight.z) < 0.005, `${label}: reticle dot on the sight axis`);
+    // Clear just above the front sight's tip...
+    for (const dx of [-0.0012, 0, 0.0012]) {
+      const blocked = hits(triangles, eye.clone().add(new Vector3(dx, 0.0005, 0)), forward, solid);
+      assert.equal(blocked.length, 0, `${label}: clear just above the sight line (blocked by ${blocked[0]?.t.node})`);
+    }
+    // ...the front post shows through the rear notch or ring: rays just under the line pass the rear
+    // sight and stop on the post...
+    for (const dy of [0.0005, 0.0010, 0.0015, 0.0020]) {
+      const first = hits(triangles, eye.clone().add(new Vector3(0, -dy, 0)), forward, solid)[0];
+      const past = first ? first.distance - spec.eye : NaN;
+      assert.ok(first && past > 0.08 && past < reach + 0.01, `${label}: the front post shows through the rear sight ${(dy * 1000).toFixed(1)} mm under the line (stopped ${past.toFixed(3)} m past the rear sight by ${first?.t.node})`);
+    }
+    // ...with light on both sides of it...
+    for (const side of [-1, 1]) {
+      let light = false;
+      for (let x = 0.0002; x <= 0.0030 && !light; x += 0.0002) {
+        const direction = sight.clone().add(new Vector3(side * x, -0.001, 0)).sub(eye).normalize();
+        light = hits(triangles, eye, direction, solid).length === 0;
+      }
+      assert.ok(light, `${label}: light shows ${side < 0 ? 'left' : 'right'} of the front post`);
+    }
+    // ...and every glowing sight dot faces the eye.
+    const groups = [];
+    for (const t of triangles.filter(t => GLOW.test(t.material))) {
+      const c = t.a.clone().add(t.b).add(t.c).divideScalar(3);
+      const group = groups.find(g => g.first.distanceTo(c) < 0.004);
+      if (group) { group.sum.add(c); group.n++; } else groups.push({ first: c, sum: c.clone(), n: 1 });
+    }
+    for (const group of groups) {
+      const target = group.sum.divideScalar(group.n);
+      const first = hits(triangles, eye, target.clone().sub(eye).normalize())[0];
+      assert.ok(first && GLOW.test(first.t.material), `${label}: the sight dot at ${target.toArray().map(v => v.toFixed(3))} is visible from the eye (hidden by ${first?.t.node})`);
     }
   }
-  const mag = collect(rootIndex(spec.root)).primitives.filter(p => p.node === 'mag_mesh');
-  assert.ok(mag.length > 0, `${label}: magazine mesh`);
-  report[id] = { triangles: triangleCount, length: +length.toFixed(3), muzzle: muzzle.toArray().map(v => +v.toFixed(4)), sight: sight.toArray().map(v => +v.toFixed(4)), gripLeft: gripL.toArray().map(v => +v.toFixed(4)) };
+  const drawCalls = primitives.length + 2;
+  report[id] = { triangles: triangleCount, drawCallsWithArms: drawCalls, length: +length.toFixed(3), muzzle: muzzle.toArray().map(v => +v.toFixed(4)), sight: sight.toArray().map(v => +v.toFixed(4)),
+    gripLeft: gripL.toArray().map(v => +v.toFixed(4)), seated: { grip: inGrip, support: inSupport } };
 }
 
 // --- Knife and frag ------------------------------------------------------------------------------
 {
-  const knife = collect(rootIndex('knife'));
   assert.ok(knife.triangleCount <= 3000, `knife: ${knife.triangleCount} triangles`);
   const length = knife.bounds.max.z - knife.bounds.min.z;
   assert.ok(length > 0.25 && length < 0.35 && knife.bounds.min.z < -0.15 && knife.bounds.max.z < 0.10, `knife: ${length.toFixed(3)} m, blade toward -Z from the grip point`);
+  const seat = knife.nodes.get('grip_r');
+  assert.ok(seat && seat.node.extras?.anchor === 'grip_r', 'knife: grip_r anchor');
+  const held = arms.arm_right.heldAxis.clone().applyQuaternion(rotation(seat));
+  const inFist = around(position(seat), held, knife.triangles, 0.03);
+  assert.ok(inFist >= 11, `knife: the handle fills the right fist (${inFist}/12)`);
   const frag = collect(rootIndex('frag'));
+  checkTags('frag', frag.nodes);
   assert.ok(frag.triangleCount <= 3000, `frag: ${frag.triangleCount} triangles`);
   const size = frag.bounds.getSize(new Vector3());
   assert.ok([size.x, size.y, size.z].every(v => v > 0.05 && v < 0.13), `frag: ${size.toArray().map(v => v.toFixed(3))} m`);
-  report.knife = { triangles: knife.triangleCount, length: +length.toFixed(3) };
+  report.knife = { triangles: knife.triangleCount, length: +length.toFixed(3), rightFist: inFist };
   report.frag = { triangles: frag.triangleCount, size: size.toArray().map(v => +v.toFixed(3)) };
 }
 
 // --- Arms ----------------------------------------------------------------------------------------
 for (const name of ['arm_left', 'arm_right']) {
-  const index = rootIndex(name);
-  const { nodes, triangles, triangleCount, bounds } = collect(index);
-  assert.ok(nodes.get('arm')?.node.mesh !== undefined, `${name}: arm mesh`);
+  const { nodes, triangles, triangleCount, bounds, heldAxis } = arms[name];
   assert.ok(triangleCount <= 8000, `${name}: ${triangleCount} triangles within 8,000`);
   assert.ok(bounds.max.z > 0.30 && bounds.min.z > -0.16, `${name}: forearm runs toward +Z from the palm (${bounds.min.z.toFixed(3)} .. ${bounds.max.z.toFixed(3)})`);
   const spread = Math.max(-bounds.min.x, bounds.max.x, -bounds.min.y, bounds.max.y);
   assert.ok(spread < 0.16, `${name}: stays within 0.16 m of the forearm line (${spread.toFixed(3)} m)`);
-  const axis = new Vector3().fromArray(gltf.nodes[index].extras?.heldAxis ?? [0, 0, 0]);
-  assert.ok(Math.abs(axis.length() - 1) < 1e-3, `${name}: extras.heldAxis is a unit vector`);
   // The fist closes round its palm grip point: most rays across the held axis meet the glove.
-  const u = new Vector3(1, 0, 0).cross(axis).lengthSq() > 0.1 ? new Vector3(1, 0, 0).cross(axis).normalize() : new Vector3(0, 1, 0).cross(axis).normalize();
-  const v = axis.clone().cross(u).normalize();
-  let wrapped = 0;
-  for (let k = 0; k < 12; k++) {
-    const a = (k / 12) * Math.PI * 2;
-    const direction = u.clone().multiplyScalar(Math.cos(a)).addScaledVector(v, Math.sin(a));
-    if (hits(triangles, new Vector3(), direction).some(h => h.distance < 0.06)) wrapped++;
-  }
+  const wrapped = around(new Vector3(), heldAxis, triangles, 0.06);
   // The firing fist closes fully; the support hand leaves the top of the handguard open.
   const needed = name === 'arm_right' ? 8 : 7;
   assert.ok(wrapped >= needed, `${name}: hand wraps its palm grip point (${wrapped}/12 rays, need ${needed})`);
   report[name] = { triangles: triangleCount, reach: [+bounds.min.z.toFixed(3), +bounds.max.z.toFixed(3)], spread: +spread.toFixed(3), wrapped };
+  const hold = nodes.get('hold');
+  if (name === 'arm_left') {
+    // `hold` is where the view model puts a held knife: its handle runs along the fist's held axis,
+    // blade out of the thumb end, and fills the fist.
+    assert.ok(hold && hold.node.mesh === undefined && hold.node.extras?.anchor === 'hold' && hold.parent === null, `${name}: hold anchor`);
+    assert.ok(position(hold).length() < 1e-4, `${name}: hold sits at the palm grip point`);
+    const blade = forward.clone().applyQuaternion(rotation(hold));
+    assert.ok(blade.dot(heldAxis) > 0.98, `${name}: a held knife's blade runs along the held axis (${blade.dot(heldAxis).toFixed(3)})`);
+    const inFist = around(new Vector3(), heldAxis, placed(knife.triangles, hold.matrix), 0.03);
+    assert.ok(inFist >= 11, `${name}: a held knife's handle fills the fist (${inFist}/12)`);
+    report[name].holdKnife = inFist;
+  } else assert.equal(hold, undefined, `${name}: no hold node`);
 }
 
 if (existsSync(manifestPath)) {
