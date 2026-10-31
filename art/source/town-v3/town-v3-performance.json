@@ -1,0 +1,7183 @@
+{
+  "startedAt": "2026-10-31T08:05:26.095Z",
+  "status": "passed",
+  "url": "http://127.0.0.1:5194/graphics-test.html",
+  "purpose": "Kannon Town v3 (checkpoint dressing, golden-hour bake) versus Kannon Town v2 at identical camera, canvas and quality settings.",
+  "protocol": {
+    "sampleMs": 20000,
+    "warmupMs": 7000,
+    "views": [
+      "bus-gameplay",
+      "checkpoint-north"
+    ],
+    "order": "v2, v3, v2 per view",
+    "desktop": "1280x720 CSS, DPR 1, High fixed, desktop presentation stack",
+    "phone": "852x393 CSS, DPR 1, hasTouch/isMobile, Auto fixed = phone tier with the phone GLBs"
+  },
+  "limits": [
+    "Desktop browser touch emulation, not physical iPhone performance.",
+    "GPU timer values vary with driver scheduling and clocks; repeat brackets are retained, not averaged away.",
+    "Both towns are resident in the comparison page, so memory figures are not production memory.",
+    "Each side is lit with its own real-time light settings; lighting therefore differs between the two variants by design."
+  ],
+  "pages": [
+    {
+      "label": "desktop-high",
+      "url": "http://127.0.0.1:5194/graphics-test.html?graphics=v3&quality=high",
+      "initial": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 115,
+        "triangles": 417952,
+        "memory": {
+          "geometries": 88,
+          "textures": 161
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 16,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "models": [
+        {
+          "path": "/models/environment-v3.glb",
+          "contentLength": 25302388
+        },
+        {
+          "path": "/models/environment-v2.glb",
+          "contentLength": 25468864
+        },
+        {
+          "path": "/models/operator-v1.glb",
+          "contentLength": 2143776
+        }
+      ]
+    },
+    {
+      "label": "phone-emulated-auto",
+      "url": "http://127.0.0.1:5194/graphics-test.html?graphics=v3&quality=auto&tier=phone",
+      "initial": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 91,
+        "triangles": 406962,
+        "memory": {
+          "geometries": 86,
+          "textures": 137
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 14,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "models": [
+        {
+          "path": "/models/environment-v2-phone.glb",
+          "contentLength": 12399132
+        },
+        {
+          "path": "/models/environment-v3-phone.glb",
+          "contentLength": 13396220
+        },
+        {
+          "path": "/models/operator-v1.glb",
+          "contentLength": 2143776
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "label": "desktop-high-bus-gameplay-v2-1",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 95,
+        "triangles": 357828,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 206,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 95,
+        "triangles": 357828,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 812,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ],
+        "elapsedMs": 20023.60000000894,
+        "sampleFrames": 1198,
+        "fps": 59.838665367997805,
+        "frameMs": {
+          "p50": 16.700000000000728,
+          "p95": 16.799999999999272,
+          "p99": 16.80000000000291,
+          "over33Percent": 0.1669449081803005
+        },
+        "cpuSubmitMs": {
+          "p50": 0.7000000029802322,
+          "p95": 1.1000000089406967
+        },
+        "gpuMs": {
+          "samples": 1196,
+          "disjointEvents": 0,
+          "p50": 15.7,
+          "p95": 17.22391
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 95,
+        "triangles": 357828,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 813,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "desktop-high-bus-gameplay-v3-2",
+      "before": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 114,
+        "triangles": 396684,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1025,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 114,
+        "triangles": 396684,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1632,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ],
+        "elapsedMs": 20046.5,
+        "sampleFrames": 1166,
+        "fps": 58.19176332022437,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 33.400000000001455,
+          "over33Percent": 1.8867924528301887
+        },
+        "cpuSubmitMs": {
+          "p50": 0.7000000029802322,
+          "p95": 1.1000000089406967
+        },
+        "gpuMs": {
+          "samples": 1160,
+          "disjointEvents": 0,
+          "p50": 16.34895,
+          "p95": 17.40946
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 114,
+        "triangles": 396684,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1633,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "desktop-high-bus-gameplay-v2-3",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 95,
+        "triangles": 357828,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1846,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 95,
+        "triangles": 357828,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 2452,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ],
+        "elapsedMs": 20000.90000000596,
+        "sampleFrames": 1198,
+        "fps": 59.93866043598121,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.80000000000291,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 0.7000000029802322,
+          "p95": 1.1000000089406967
+        },
+        "gpuMs": {
+          "samples": 1196,
+          "disjointEvents": 0,
+          "p50": 15.42408,
+          "p95": 17.43051
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 95,
+        "triangles": 357828,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 2452,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "desktop-high-checkpoint-north-v2-1",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 96,
+        "triangles": 362964,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 2665,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 96,
+        "triangles": 362964,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 3271,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ],
+        "elapsedMs": 20000.90000000596,
+        "sampleFrames": 1198,
+        "fps": 59.93836055075249,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.80000000000291,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 0.7000000029802322,
+          "p95": 1
+        },
+        "gpuMs": {
+          "samples": 1196,
+          "disjointEvents": 0,
+          "p50": 15.00739,
+          "p95": 17.45894
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 96,
+        "triangles": 362964,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 3271,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "desktop-high-checkpoint-north-v3-2",
+      "before": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 115,
+        "triangles": 417952,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 3484,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 115,
+        "triangles": 417952,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4090,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ],
+        "elapsedMs": 20001.79999999702,
+        "sampleFrames": 1198,
+        "fps": 59.938660435981234,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.800000000017462,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 0.7999999970197678,
+          "p95": 1.0999999940395355
+        },
+        "gpuMs": {
+          "samples": 1196,
+          "disjointEvents": 0,
+          "p50": 14.88252,
+          "p95": 17.90456
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 115,
+        "triangles": 417952,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4090,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "desktop-high-checkpoint-north-v2-3",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 96,
+        "triangles": 362964,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4303,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 96,
+        "triangles": 362964,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4909,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ],
+        "elapsedMs": 20005.19999998808,
+        "sampleFrames": 1199,
+        "fps": 59.93861166378392,
+        "frameMs": {
+          "p50": 16.699999999982538,
+          "p95": 16.79999999998836,
+          "p99": 16.800000000017462,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 0.7000000029802322,
+          "p95": 1.2999999970197678
+        },
+        "gpuMs": {
+          "samples": 1197,
+          "disjointEvents": 0,
+          "p50": 15.2082,
+          "p95": 17.43536
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "high",
+        "qualityLocked": true,
+        "postprocessing": true,
+        "shadowSize": [
+          2048,
+          2048
+        ],
+        "qualityScale": 1,
+        "tier": "desktop-high",
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          1280,
+          720
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.8339405447884163,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 96,
+        "triangles": 362964,
+        "memory": {
+          "geometries": 157,
+          "textures": 289
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4909,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2.glb",
+            "transferSize": 25469164,
+            "encodedBodySize": 25468864,
+            "decodedBodySize": 25468864,
+            "durationMs": 414.79999999701977
+          },
+          {
+            "name": "/models/environment-v3.glb",
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 19.299999997019768
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-bus-gameplay-v2-1",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 343894,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 193,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 343894,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 800,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ],
+        "elapsedMs": 20003.29999999702,
+        "sampleFrames": 1189,
+        "fps": 59.438409510145526,
+        "frameMs": {
+          "p50": 16.700000000000728,
+          "p95": 16.799999999999272,
+          "p99": 16.80000000000291,
+          "over33Percent": 0.2523128679562658
+        },
+        "cpuSubmitMs": {
+          "p50": 1.3999999910593033,
+          "p95": 1.9000000059604645
+        },
+        "gpuMs": {
+          "samples": 1188,
+          "disjointEvents": 0,
+          "p50": 4.15192,
+          "p95": 5.40432
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 343894,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 800,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-bus-gameplay-v3-2",
+      "before": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 89,
+        "triangles": 382694,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1012,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 89,
+        "triangles": 382694,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1619,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ],
+        "elapsedMs": 20003.5,
+        "sampleFrames": 1198,
+        "fps": 59.93836055075249,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.80000000000291,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 1.1000000089406967,
+          "p95": 1.7999999970197678
+        },
+        "gpuMs": {
+          "samples": 1197,
+          "disjointEvents": 0,
+          "p50": 4.854,
+          "p95": 5.37384
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "improved",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 89,
+        "triangles": 382694,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1619,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-bus-gameplay-v2-3",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 343894,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 1832,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 343894,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 2438,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ],
+        "elapsedMs": 20003.09999999404,
+        "sampleFrames": 1199,
+        "fps": 59.93891130140925,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.80000000000291,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 1.2999999970197678,
+          "p95": 1.7999999970197678
+        },
+        "gpuMs": {
+          "samples": 1198,
+          "disjointEvents": 0,
+          "p50": 4.16044,
+          "p95": 5.40156
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "bus-gameplay",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -7.75,
+            1.62,
+            -14.4
+          ],
+          "quaternion": [
+            0.0030415307188599396,
+            0.9698680874150403,
+            0.012123982556690577,
+            -0.24330978433212103
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 71,
+        "triangles": 343894,
+        "memory": {
+          "geometries": 152,
+          "textures": 259
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -7.75,
+          "y": 0,
+          "z": -14.4,
+          "yaw": 2.65,
+          "pitch": -0.025,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 2438,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-checkpoint-north-v2-1",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 74,
+        "triangles": 355530,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 2650,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 74,
+        "triangles": 355530,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 3257,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ],
+        "elapsedMs": 20003.09999999404,
+        "sampleFrames": 1199,
+        "fps": 59.938611663783874,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.80000000000291,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 1.300000011920929,
+          "p95": 1.9000000059604645
+        },
+        "gpuMs": {
+          "samples": 1198,
+          "disjointEvents": 0,
+          "p50": 4.3414,
+          "p95": 5.62824
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 74,
+        "triangles": 355530,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 3257,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-checkpoint-north-v3-2",
+      "before": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 91,
+        "triangles": 406962,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 3470,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 91,
+        "triangles": 406962,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4076,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ],
+        "elapsedMs": 20002.69999998808,
+        "sampleFrames": 1199,
+        "fps": 59.93861166378392,
+        "frameMs": {
+          "p50": 16.69999999999709,
+          "p95": 16.80000000000291,
+          "p99": 16.800000000017462,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 1.4000000059604645,
+          "p95": 2.0999999940395355
+        },
+        "gpuMs": {
+          "samples": 1198,
+          "disjointEvents": 0,
+          "p50": 4.89224,
+          "p95": 6.118
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "improved",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": false,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": true,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 5.2,
+          "hemisphere": 1.4,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 91,
+        "triangles": 406962,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4076,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    },
+    {
+      "label": "phone-emulated-auto-checkpoint-north-v2-3",
+      "before": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 74,
+        "triangles": 355530,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4289,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "measured": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 74,
+        "triangles": 355530,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4895,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ],
+        "elapsedMs": 20002.60000000894,
+        "sampleFrames": 1199,
+        "fps": 59.93861166378383,
+        "frameMs": {
+          "p50": 16.699999999982538,
+          "p95": 16.79999999998836,
+          "p99": 16.800000000017462,
+          "over33Percent": 0
+        },
+        "cpuSubmitMs": {
+          "p50": 1.0999999940395355,
+          "p95": 1.7999999970197678
+        },
+        "gpuMs": {
+          "samples": 1198,
+          "disjointEvents": 0,
+          "p50": 4.32156,
+          "p95": 5.63248
+        }
+      },
+      "after": {
+        "ready": true,
+        "variant": "current",
+        "view": "checkpoint-north",
+        "walking": false,
+        "quality": "auto",
+        "qualityLocked": true,
+        "postprocessing": false,
+        "shadowSize": [
+          1024,
+          1024
+        ],
+        "qualityScale": 1,
+        "tier": "phone",
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
+        "roots": {
+          "VehicleTestTown": {
+            "visible": true,
+            "meshes": 73,
+            "triangles": 367921,
+            "casting": 1
+          },
+          "TownVariant_improved": {
+            "visible": false,
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
+          }
+        },
+        "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "viewport": [
+          852,
+          393
+        ],
+        "devicePixelRatio": 1,
+        "canvas": [
+          852,
+          393
+        ],
+        "pixelRatio": 1,
+        "camera": {
+          "position": [
+            -3,
+            1.62,
+            -21
+          ],
+          "quaternion": [
+            0.00542467355374325,
+            0.9802054807331698,
+            0.027123367768716242,
+            -0.19604109614663395
+          ],
+          "fov": 68,
+          "projection": [
+            0.6838573481520034,
+            0,
+            0,
+            0,
+            0,
+            1.48256096851274,
+            0,
+            0,
+            0,
+            0,
+            -1.0001714432665656,
+            -1,
+            0,
+            0,
+            -0.12001028659599393,
+            0
+          ]
+        },
+        "lighting": {
+          "exposure": 1,
+          "toneMapping": 4,
+          "sun": 3.3,
+          "hemisphere": 0.8,
+          "environment": 0.055,
+          "shadows": true,
+          "streetReflection": {
+            "size": 128,
+            "position": [
+              0,
+              2.3,
+              -3.5
+            ],
+            "static": true
+          }
+        },
+        "drawCalls": 74,
+        "triangles": 355530,
+        "memory": {
+          "geometries": 155,
+          "textures": 267
+        },
+        "gpuTimerAvailable": true,
+        "player": {
+          "id": "vehicle-review",
+          "name": "Graphics review",
+          "color": "#64bdda",
+          "x": -3,
+          "y": 0,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
+          "vx": 0,
+          "vy": 0,
+          "vz": 0,
+          "health": 100,
+          "slot": 1,
+          "weapon": "kr5",
+          "loadout": {
+            "primary": "kr5",
+            "secondary": "sentry9",
+            "lethal": "frag",
+            "perks": [
+              "deep-pockets",
+              "low-profile",
+              "second-wind"
+            ]
+          },
+          "kills": 0,
+          "deaths": 0,
+          "assists": 0,
+          "score": 0,
+          "streak": 0,
+          "connected": true,
+          "respawnAt": 0,
+          "protectedUntil": 0,
+          "reloadingUntil": 0,
+          "cookingSince": 0,
+          "lastInputSeq": 4895,
+          "mag": [
+            30,
+            12
+          ],
+          "reserve": [
+            120,
+            48
+          ],
+          "frags": 1,
+          "rewards": [],
+          "reloadSlot": 0,
+          "readyAt": 0,
+          "meleeUntil": 0,
+          "lastDamageAt": 0,
+          "posture": "stand",
+          "stamina": 1,
+          "slideUntil": 0,
+          "slideCooldownUntil": 0,
+          "vault": null,
+          "sprinting": false,
+          "dashing": false
+        },
+        "resources": [
+          {
+            "name": "/models/environment-v2-phone.glb",
+            "transferSize": 12399432,
+            "encodedBodySize": 12399132,
+            "decodedBodySize": 12399132,
+            "durationMs": 85.8999999910593
+          },
+          {
+            "name": "/models/environment-v3-phone.glb",
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
+          },
+          {
+            "name": "/models/operator-v1.glb",
+            "transferSize": 2144076,
+            "encodedBodySize": 2143776,
+            "decodedBodySize": 2143776,
+            "durationMs": 18.5
+          }
+        ]
+      },
+      "fixedCameraAndSettings": true
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "browserVersion": "156.0.4314.50",
+  "finishedAt": "2026-10-31T08:10:56.539Z"
+}
