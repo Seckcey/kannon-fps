@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { AIM_TAPS, AimFocusShader, ArenaPresentation, LOOK, LookShader, aimBlur, lookValues } from '../../src/game/Presentation';
+import { AIM_TAPS, AimFocusShader, ArenaPresentation, LOOK, LookShader, aimBlur, lookValues, presentationOptions, writesDepth } from '../../src/game/Presentation';
+import { CONTACT_SCALE, applyGradedToneMapping } from '../../src/game/RenderQuality';
+import { renderTier } from '../../src/game/RenderTiers';
 
 // SMAA decodes two lookup images through `Image` when it is built. Node has no `Image` and never draws.
 (globalThis as { Image?: unknown }).Image ??= class { src = ''; onload: (() => void) | null = null; };
@@ -27,7 +29,7 @@ function fakeRenderer(width = 1280, height = 720) {
   };
   const renderer = {
     autoClear: true, autoClearColor: true, autoClearDepth: true, autoClearStencil: true,
-    toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1, outputColorSpace: THREE.SRGBColorSpace,
+    toneMapping: THREE.ACESFilmicToneMapping as THREE.ToneMapping, toneMappingExposure: 1, outputColorSpace: THREE.SRGBColorSpace,
     getPixelRatio: () => 1,
     getSize: (size: THREE.Vector2) => size.set(width, height),
     getRenderTarget: () => target,
@@ -53,8 +55,11 @@ function setup(options: ConstructorParameters<typeof ArenaPresentation>[3] = { b
   const presentation = new ArenaPresentation(fake.renderer, world, camera, options);
   presentation.resize(1280, 720);
   const viewmodel = new THREE.Scene(); viewmodel.name = 'viewmodel';
+  viewmodel.add(new THREE.HemisphereLight('#ffffff', '#55504a', 1.4));
+  const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 0.5), new THREE.MeshStandardMaterial());
+  weapon.name = 'weapon'; viewmodel.add(weapon);
   const viewCamera = new THREE.PerspectiveCamera(60, 16 / 9, 0.01, 10);
-  return { ...fake, presentation, viewmodel, viewCamera };
+  return { ...fake, presentation, viewmodel, viewCamera, weapon };
 }
 
 const lookMaterial = (log: Entry[]) => {
@@ -63,11 +68,28 @@ const lookMaterial = (log: Entry[]) => {
   return entry.material;
 };
 
+/** Draws between tone mapping and the grade: the edge smoothing. */
+const edgePasses = (log: Entry[]) => {
+  const output = log.findIndex(entry => entry.what === 'OutputShader');
+  const look = log.findIndex(entry => entry.what === LookShader.name);
+  return log.slice(output + 1, look).filter(entry => entry.op === 'render');
+};
+
+/** Width of the contact shading image: the first draw after the world. */
+const contactWidth = (log: Entry[], targets: Map<string, THREE.WebGLRenderTarget>) => {
+  const world = log.findIndex(entry => entry.what === 'world');
+  return targets.get(log.slice(world + 1).find(entry => entry.op === 'render')!.target)!.width;
+};
+
+const drawsFocus = (log: Entry[]) => log.some(entry => entry.what === AimFocusShader.name);
+
 test('the viewmodel is drawn inside render: depth cleared, after contact shading, before bloom and the grade', () => {
   const { presentation, log, viewmodel, viewCamera } = setup({ bloom: true, depthOfField: true });
   assert.equal(presentation.drawsOverlay, true);
   presentation.setOverlay(viewmodel, viewCamera);
   presentation.render(1 / 60);
+  // An ordinary hip frame, after the first frame has built the weapon blur shader.
+  log.length = 0; presentation.render(1 / 60);
 
   const world = log.findIndex(entry => entry.what === 'world');
   const overlay = log.findIndex(entry => entry.what === 'viewmodel');
@@ -81,7 +103,33 @@ test('the viewmodel is drawn inside render: depth cleared, after contact shading
   assert.equal(shaded?.target, target, 'the viewmodel lands on the contact-shaded world image');
   assert.ok(log.slice(overlay + 1, output).some(entry => entry.op === 'render' && entry.target === target), 'bloom adds onto the image with the viewmodel');
   assert.deepEqual([log.at(-1)?.what, log.at(-1)?.target], [LookShader.name, 'screen'], 'the grade is the last pass and draws to the canvas');
-  assert.ok(!log.some(entry => entry.what === AimFocusShader.name), 'no aim blur while not aiming');
+  assert.ok(!drawsFocus(log), 'no aim blur while not aiming');
+});
+
+test('the weapon blur shader is built on the first frame, at load, instead of on the first aim', () => {
+  const { presentation, log, viewmodel, viewCamera } = setup({ bloom: true });
+  presentation.setOverlay(viewmodel, viewCamera);
+  presentation.render(1 / 60);
+  const built = log.filter(entry => entry.what === AimFocusShader.name);
+  assert.equal(built.length, 1, 'drawn once with the first frame');
+  assert.equal((built[0].material as THREE.ShaderMaterial).uniforms.uBlur.value, 0, 'as a plain copy: nothing blurs');
+  const at = log.indexOf(built[0]);
+  assert.ok(at > log.findIndex(entry => entry.what === 'viewmodel') && at < log.findIndex(entry => entry.what === 'OutputShader'), 'in its usual place in the stack');
+  assert.notEqual(built[0].target, log.find(entry => entry.what === 'viewmodel')!.target, 'into a fresh image, as when aiming');
+
+  log.length = 0; presentation.render(1 / 60);
+  assert.ok(!drawsFocus(log), 'after that, hip frames cost nothing extra');
+  presentation.setAim(1, 25); log.length = 0; presentation.render(1 / 60);
+  assert.ok(drawsFocus(log), 'the first aim uses the shader built at load');
+
+  const off = setup({ bloom: true, depthOfField: false });
+  off.presentation.setOverlay(off.viewmodel, off.viewCamera); off.presentation.render(1 / 60);
+  assert.ok(!drawsFocus(off.log), 'without depth of field there is nothing to build');
+  off.presentation.configure({ bloom: true, depthOfField: true });
+  off.log.length = 0; off.presentation.render(1 / 60);
+  assert.equal(off.log.filter(entry => entry.what === AimFocusShader.name).length, 1, 'turned on later, it is built on the next frame');
+  off.log.length = 0; off.presentation.render(1 / 60);
+  assert.ok(!drawsFocus(off.log));
 });
 
 test('contact shading multiplies into the world image in place, without copying the frame', () => {
@@ -98,24 +146,20 @@ test('contact shading multiplies into the world image in place, without copying 
   assert.ok(between.every(entry => entry.target !== 'screen'));
 });
 
-test('anti-aliasing: SMAA by default, one FXAA pass when asked', () => {
-  const between = (log: Entry[]) => {
-    const output = log.findIndex(entry => entry.what === 'OutputShader');
-    const look = log.findIndex(entry => entry.what === LookShader.name);
-    return log.slice(output + 1, look).filter(entry => entry.op === 'render');
-  };
-  const smaa = setup({ bloom: true }); smaa.presentation.render(1 / 60);
-  assert.equal(between(smaa.log).length, 3, 'SMAA: edges, weights, blend');
-  const fxaa = setup({ bloom: true, antialias: 'fxaa' }); fxaa.presentation.render(1 / 60);
-  assert.deepEqual(between(fxaa.log).map(entry => entry.what), ['FXAAShader']);
-  const material = between(fxaa.log)[0].material as THREE.ShaderMaterial;
+test('anti-aliasing: one FXAA pass unless SMAA is asked for (High)', () => {
+  const fxaa = setup({ bloom: true, depthOfField: true }); fxaa.presentation.render(1 / 60);
+  assert.deepEqual(edgePasses(fxaa.log).map(entry => entry.what), ['FXAAShader'], 'GameView\'s bare { bloom, depthOfField } never costs more than Automatic');
+  const material = edgePasses(fxaa.log)[0].material as THREE.ShaderMaterial;
   assert.deepEqual((material.uniforms.resolution.value as THREE.Vector2).toArray(), [1 / 1280, 1 / 720]);
+  const smaa = setup({ bloom: true, antialias: 'smaa' }); smaa.presentation.render(1 / 60);
+  assert.equal(edgePasses(smaa.log).length, 3, 'SMAA: edges, weights, blend');
 });
 
 test('without an overlay the stack renders the world only', () => {
   const { presentation, log, viewmodel, viewCamera } = setup();
-  presentation.setAim(1, 20);
   presentation.render(1 / 60);
+  presentation.setAim(1, 20);
+  log.length = 0; presentation.render(1 / 60);
   assert.ok(!log.some(entry => entry.what === 'viewmodel' || entry.op === 'clearDepth' || entry.what === AimFocusShader.name));
   presentation.setOverlay(viewmodel, viewCamera); presentation.setOverlay(null, null);
   log.length = 0; presentation.render(1 / 60);
@@ -140,16 +184,54 @@ test('aiming blurs the weapon from the viewmodel depth and stops when the aim en
   assert.equal(material.depthTest, false); assert.equal(material.depthWrite, false);
 
   presentation.setAim(0, 25); log.length = 0; presentation.render(1 / 60);
-  assert.ok(!log.some(entry => entry.what === AimFocusShader.name), 'hip fire costs nothing extra');
+  assert.ok(!drawsFocus(log), 'hip fire costs nothing extra');
+});
+
+test('the weapon blur stops by itself while the viewmodel hides everything (fully scoped)', () => {
+  const { presentation, log, viewmodel, viewCamera, weapon } = setup({ bloom: true });
+  presentation.setOverlay(viewmodel, viewCamera); presentation.setAim(1, 25);
+  const blurs = () => { log.length = 0; presentation.render(1 / 60); return drawsFocus(log); };
+  assert.equal(blurs(), true);
+  weapon.visible = false;
+  assert.equal(blurs(), false, 'scoped: the weapon and arms are hidden but the aim blend stays full');
+  assert.ok(log.some(entry => entry.what === 'viewmodel'), 'the viewmodel pass itself still runs (it is cheap)');
+  weapon.visible = true; viewmodel.visible = false;
+  assert.equal(blurs(), false, 'the whole viewmodel hidden');
+  viewmodel.visible = true;
+  assert.equal(blurs(), true, 'back as soon as the weapon shows');
+});
+
+test('the weapon blur looks only for what the viewmodel leaves in the depth buffer', () => {
+  const camera = new THREE.PerspectiveCamera();
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(), new THREE.DirectionalLight());
+  assert.equal(writesDepth(scene, camera.layers), false, 'lights alone leave nothing');
+  const holder = new THREE.Group(); scene.add(holder);
+  const material = new THREE.MeshStandardMaterial();
+  const weapon = new THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>(new THREE.BoxGeometry(), material); holder.add(weapon);
+  assert.equal(writesDepth(scene, camera.layers), true);
+  holder.visible = false; assert.equal(writesDepth(scene, camera.layers), false, 'a hidden parent hides its children');
+  holder.visible = true; weapon.layers.set(3); assert.equal(writesDepth(scene, camera.layers), false, 'other layers are not drawn');
+  weapon.layers.set(0); material.visible = false; assert.equal(writesDepth(scene, camera.layers), false, 'an invisible material is not drawn');
+  material.visible = true; material.depthWrite = false; assert.equal(writesDepth(scene, camera.layers), false, 'flashes and smoke leave no depth');
+  material.depthWrite = true; material.depthTest = false; assert.equal(writesDepth(scene, camera.layers), false, 'no depth test means no depth write');
+  material.depthTest = true;
+  weapon.material = [new THREE.MeshBasicMaterial({ depthWrite: false }), material];
+  assert.equal(writesDepth(scene, camera.layers), true, 'any material of a multi-material mesh');
+  holder.remove(weapon);
+  const casings = new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial(), 8); holder.add(casings);
+  casings.count = 0; assert.equal(writesDepth(scene, camera.layers), false, 'an empty instanced mesh draws nothing');
+  casings.count = 3; assert.equal(writesDepth(scene, camera.layers), true);
+  scene.visible = false; assert.equal(writesDepth(scene, camera.layers), false);
 });
 
 test('depth of field can be turned off and is on by default for the desktop stack', () => {
   const off = setup({ bloom: true, depthOfField: false });
   off.presentation.setOverlay(off.viewmodel, off.viewCamera); off.presentation.setAim(1, 25); off.presentation.render(1 / 60);
-  assert.ok(!off.log.some(entry => entry.what === AimFocusShader.name));
+  assert.ok(!drawsFocus(off.log));
   const defaulted = setup({ bloom: true });
   defaulted.presentation.setOverlay(defaulted.viewmodel, defaulted.viewCamera); defaulted.presentation.setAim(1, 25); defaulted.presentation.render(1 / 60);
-  assert.ok(defaulted.log.some(entry => entry.what === AimFocusShader.name));
+  assert.ok(drawsFocus(defaulted.log));
 });
 
 test('render applies condition, aim, grain and resolution to the grade', () => {
@@ -184,6 +266,60 @@ test('chromatic aberration is compiled in only when asked for (High)', () => {
   const plainLook = lookMaterial(plain.log);
   assert.ok(!('CHROMATIC' in plainLook.defines));
   assert.equal(plainLook.uniforms.uAberration.value, 0);
+});
+
+test('configure switches between the Automatic and High stacks in place', () => {
+  const { presentation, log, targets } = setup(presentationOptions(renderTier('auto', false, true)));
+  const frame = () => { log.length = 0; presentation.render(1 / 60); return [...log]; };
+  let entries = frame();
+  assert.deepEqual(edgePasses(entries).map(entry => entry.what), ['FXAAShader']);
+  assert.ok(!('CHROMATIC' in lookMaterial(entries).defines));
+  assert.equal(contactWidth(entries, targets), Math.floor(1280 * 0.35));
+  const replaced = new Set<THREE.Material>(edgePasses(entries).map(entry => entry.material!));
+  const disposed = new Set<unknown>();
+  for (const material of replaced) material.addEventListener('dispose', () => disposed.add(material));
+
+  presentation.configure(presentationOptions(renderTier('high', false, true)));
+  assert.equal(disposed.size, replaced.size, 'the replaced edge smoothing is released at once');
+  entries = frame();
+  assert.equal(edgePasses(entries).length, 3, 'SMAA: edges, weights, blend');
+  const highLook = lookMaterial(entries);
+  assert.ok('CHROMATIC' in highLook.defines && highLook.uniforms.uAberration.value > 0, 'edge fringing on');
+  assert.equal(contactWidth(entries, targets), Math.floor(1280 * 0.6));
+  assert.deepEqual([entries.at(-1)?.what, entries.at(-1)?.target], [LookShader.name, 'screen'], 'the grade stays last');
+
+  const smaa = new Set<THREE.Material>(edgePasses(entries).map(entry => entry.material!));
+  for (const material of smaa) material.addEventListener('dispose', () => disposed.add(material));
+  presentation.configure(presentationOptions(renderTier('auto', false, true)));
+  assert.ok([...smaa].every(material => disposed.has(material)), 'SMAA is released when going back');
+  entries = frame();
+  assert.deepEqual(edgePasses(entries).map(entry => entry.what), ['FXAAShader']);
+  const autoLook = lookMaterial(entries);
+  assert.ok(!('CHROMATIC' in autoLook.defines));
+  assert.equal(autoLook.uniforms.uAberration.value, 0);
+  assert.equal(contactWidth(entries, targets), Math.floor(1280 * 0.35));
+
+  // Bloom's blur passes are the only ones with a KERNEL_RADIUS.
+  const bloomDraws = (list: Entry[]) => list.filter(entry => entry.material instanceof THREE.ShaderMaterial && 'KERNEL_RADIUS' in entry.material.defines).length;
+  assert.ok(bloomDraws(entries) > 0);
+  presentation.configure({ bloom: false });
+  assert.equal(bloomDraws(frame()), 0, 'bloom can be switched off');
+  presentation.configure({ bloom: true });
+  assert.ok(bloomDraws(frame()) > 0, 'and on again');
+});
+
+test('the desktop look tone-maps with plain ACES Filmic even when the direct path grades in tone mapping', () => {
+  const original = THREE.ShaderChunk.tonemapping_pars_fragment;
+  try {
+    const { presentation, renderer, log } = setup();
+    assert.equal(applyGradedToneMapping(renderer), true);
+    presentation.render(1 / 60);
+    const output = log.find(entry => entry.what === 'OutputShader')!.material as THREE.ShaderMaterial;
+    assert.ok('ACES_FILMIC_TONE_MAPPING' in output.defines && !('CUSTOM_TONE_MAPPING' in output.defines), 'graded once, by the look pass');
+    assert.equal(renderer.toneMapping, THREE.CustomToneMapping, 'the direct path keeps its graded tone mapping');
+  } finally {
+    THREE.ShaderChunk.tonemapping_pars_fragment = original;
+  }
 });
 
 test('look values stay in range for any condition, including bad input', () => {
@@ -253,6 +389,9 @@ test('aim blur keeps the aim point sharp and stays bounded', () => {
   assert.ok(aimBlur(1, 0.1, 1080) >= 0);
   const { uSharpRadius, uFullRadius } = AimFocusShader.uniforms;
   assert.ok(uSharpRadius.value > 0.05 && uSharpRadius.value < uFullRadius.value && uFullRadius.value <= 1, 'the centre of the screen is never blurred');
+  // The radii are in half screen heights: the shader doubles the offset from the centre.
+  assert.match(AimFocusShader.fragmentShader, /\( vUv - 0\.5 \) \* vec2\( uResolution\.x \/ uResolution\.y, 1\.0 \) \* 2\.0/);
+  assert.ok(Math.abs(uSharpRadius.value * 540 - 65) < 1, 'sharp within about 65 px of the centre on a 1080-line image');
   assert.equal(AIM_TAPS.length, 16);
   for (const [x, y] of AIM_TAPS) assert.ok(Math.hypot(x, y) <= 1 + 1e-9);
   const mean = AIM_TAPS.reduce((sum, [x, y]) => [sum[0] + x / AIM_TAPS.length, sum[1] + y / AIM_TAPS.length], [0, 0]);
@@ -263,16 +402,16 @@ test('contact shading runs at the requested share of the scene resolution', () =
   const occlusionWidth = (options: ConstructorParameters<typeof ArenaPresentation>[3]) => {
     const { presentation, log, targets } = setup(options);
     presentation.render(1 / 60);
-    const world = log.findIndex(entry => entry.what === 'world');
-    return targets.get(log.slice(world + 1).find(entry => entry.op === 'render')!.target)!.width;
+    return contactWidth(log, targets);
   };
-  assert.equal(occlusionWidth({ bloom: true }), Math.floor(1280 * 0.6), 'default matches the previous stack');
-  assert.equal(occlusionWidth({ bloom: true, contactScale: 0.5 }), 640);
-  assert.equal(occlusionWidth({ bloom: true, contactScale: Number.NaN }), Math.floor(1280 * 0.6));
+  assert.equal(occlusionWidth({ bloom: true }), Math.floor(1280 * CONTACT_SCALE.automatic), 'Automatic\'s share unless asked');
+  assert.equal(occlusionWidth({ bloom: true, contactScale: 0.6 }), 768);
+  assert.equal(occlusionWidth({ bloom: true, contactScale: Number.NaN }), Math.floor(1280 * CONTACT_SCALE.automatic));
+  assert.equal(occlusionWidth({ bloom: true, contactScale: 0.1 }), 320, 'never below a quarter');
   assert.equal(occlusionWidth({ bloom: true, contactScale: 5 }), 1280, 'never above the scene resolution');
 });
 
-for (const options of [{ bloom: true, chromaticAberration: true }, { bloom: false, antialias: 'fxaa' as const, contactScale: 0.5 }]) test(`dispose releases every owned target, texture and material, but not the viewmodel (${JSON.stringify(options)})`, () => {
+for (const options of [{ bloom: true, chromaticAberration: true, antialias: 'smaa' as const }, { bloom: false, contactScale: 0.5 }]) test(`dispose releases every owned target, texture and material, but not the viewmodel (${JSON.stringify(options)})`, () => {
   const { presentation, renderer, viewmodel, viewCamera } = setup(options);
   const weaponMaterial = new THREE.MeshStandardMaterial();
   viewmodel.add(new THREE.Mesh(new THREE.BoxGeometry(), weaponMaterial));

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { renderTier } from '../../src/game/RenderTiers.js';
 import { presentationOptions } from '../../src/game/Presentation.js';
+import { presentationOptions as tierPresentation } from '../../src/game/RenderQuality.js';
 
 const phone = { name: 'phone', textureTier: 'phone', shadowMapSize: 1024, shadowHalfExtent: 14, postprocessing: false, bloom: false, depthOfField: false, grassDensity: 0, effects: 'phone', muzzleLight: false, decals: 48 };
 
@@ -37,6 +38,7 @@ test('the desktop presentation follows the tier: High is the full look, Automati
   const high = { bloom: true, depthOfField: true, chromaticAberration: true, antialias: 'smaa', contactScale: 0.6 };
   assert.deepEqual(presentationOptions(renderTier('high', false, true)), high);
   assert.deepEqual(presentationOptions(renderTier('high', true, true)), high, 'High forced on a tablet');
-  assert.deepEqual(presentationOptions(renderTier('auto', false, true)), { bloom: true, depthOfField: true, chromaticAberration: false, antialias: 'fxaa', contactScale: 0.5 });
-  assert.deepEqual(presentationOptions(renderTier('auto', true, true)), { bloom: false, depthOfField: false, chromaticAberration: false, antialias: 'fxaa', contactScale: 0.5 });
+  assert.deepEqual(presentationOptions(renderTier('auto', false, true)), { bloom: true, depthOfField: true, chromaticAberration: false, antialias: 'fxaa', contactScale: 0.35 });
+  assert.deepEqual(presentationOptions(renderTier('auto', true, true)), { bloom: false, depthOfField: false, chromaticAberration: false, antialias: 'fxaa', contactScale: 0.35 });
+  assert.equal(presentationOptions, tierPresentation, 'one helper, importable without the post-processing code');
 });

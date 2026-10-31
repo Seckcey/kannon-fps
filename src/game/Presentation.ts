@@ -8,8 +8,11 @@ import { FullScreenQuad, Pass } from 'three/examples/jsm/postprocessing/Pass.js'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import type { RenderTier } from './RenderTiers';
-import { screenCondition, unitValue } from './RenderQuality';
+import { CONTACT_SCALE, FILM_GRADE, hasGradedToneMapping, screenCondition, unitValue, type PresentationOptions } from './RenderQuality';
+
+// Still importable from here; GameView should take them from './RenderQuality', which phones download anyway.
+export { neutralTint, presentationOptions } from './RenderQuality';
+export type { PresentationOptions } from './RenderQuality';
 
 /** Reconstruct contact normals from the color pass depth instead of redrawing
  * the entire arena, every animated player, and their shadows a second time.
@@ -43,27 +46,23 @@ class ContactPass extends GTAOPass {
   }
 }
 
-const LUMA = [0.2126, 0.7152, 0.0722] as const;
-
-/** Remove the brightness from a colour offset so it changes hue only. */
-export function neutralTint(r: number, g: number, b: number): [number, number, number] {
-  const luma = r * LUMA[0] + g * LUMA[1] + b * LUMA[2];
-  return [r - luma, g - luma, b - luma];
+/** The desktop look always tone-maps with plain ACES Filmic, because its own look pass grades afterwards. A
+ * renderer set up for the direct path's graded tone mapping (`applyGradedToneMapping`) would otherwise be
+ * graded twice whenever the presentation runs. */
+class FilmicOutputPass extends OutputPass {
+  override render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget, dt: number, mask: boolean) {
+    if (!hasGradedToneMapping(renderer)) { super.render(renderer, writeBuffer, readBuffer, dt, mask); return; }
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    try { super.render(renderer, writeBuffer, readBuffer, dt, mask); } finally { renderer.toneMapping = THREE.CustomToneMapping; }
+  }
 }
 
 /** Every tuned number of the desktop look in one place. Grade values are display space (after tone
- * mapping); bloom values are linear HDR luminance. */
+ * mapping); bloom values are linear HDR luminance. The colour of the grade is `FILM_GRADE`, shared with
+ * the direct path's tone mapping. */
 export const LOOK = {
   grade: {
-    /** Slightly drained colour. */
-    saturation: 0.9,
-    /** Strength of the S-curve around mid grey (0 = none). */
-    curve: 0.3,
-    /** Matte film lift of the blacks. */
-    lift: 0.012,
-    /** Split toning: cool, slightly teal shadows and warm highlights, with no brightness change. */
-    shadowTint: neutralTint(-0.016, 0.004, 0.026),
-    highlightTint: neutralTint(0.032, 0.011, -0.026),
+    ...FILM_GRADE,
     vignette: 0.34,
     /** Peak grain in the midtones; it changes `grainRate` times a second, like film. */
     grain: 0.03,
@@ -85,7 +84,9 @@ export const LOOK = {
     /** Weapon blur radius in pixels of a 1080-line image at full aim, and its cap on large images. */
     blur: 5.5,
     maxBlur: 8,
-    /** Screen-height units from the centre: inside `sharpRadius` nothing blurs; full blur from `fullRadius`. */
+    /** Distance from the screen centre in half screen heights (1 = the top edge; aspect corrected). Nothing
+     * blurs inside `sharpRadius` (0.12: about 65 px on a 1080-line image, 6% of the height); the blur
+     * reaches full strength at `fullRadius` (0.62: about 335 px, 31% of the height). */
     sharpRadius: 0.12,
     fullRadius: 0.62,
     /** Rough distance of the weapon from the eye (metres), for how far out of focus it is. */
@@ -102,26 +103,6 @@ export const LOOK = {
     flashBoost: 0.5,
   },
 } as const;
-
-export interface PresentationOptions {
-  bloom: boolean;
-  /** Aim-down-sights blur of the first-person weapon. On unless false. */
-  depthOfField?: boolean;
-  /** Slight colour fringing at the screen edges. Off unless true (High). */
-  chromaticAberration?: boolean;
-  /** Edge smoothing: 'smaa' (default, sharpest) or 'fxaa' (one pass, about a third of the cost). */
-  antialias?: 'smaa' | 'fxaa';
-  /** Contact shading resolution as a share of the scene image, 0.25..1 (default 0.6). */
-  contactScale?: number;
-}
-
-/** What the desktop presentation turns on for a render tier. High is the full look; Automatic trades
- * SMAA for FXAA and computes contact shading on fewer pixels, which cut the frame by about 30% on the
- * integrated AMD GPU at 1080p (20.3 to 14.5 ms in a light test scene). */
-export function presentationOptions(tier: RenderTier): PresentationOptions {
-  const high = tier.name === 'desktop-high';
-  return { bloom: tier.bloom, depthOfField: tier.depthOfField, chromaticAberration: high, antialias: high ? 'smaa' : 'fxaa', contactScale: high ? 0.6 : 0.5 };
-}
 
 const smooth01 = (value: number) => value * value * (3 - 2 * value);
 const positive = (value: number, fallback: number) => Number.isFinite(value) && value > 0 ? value : fallback;
@@ -164,6 +145,22 @@ export function aimBlur(blend: number, focusDistance: number, height: number): n
   const focus = Math.max(near, positive(focusDistance, Number.POSITIVE_INFINITY));
   const radius = Math.min(LOOK.aim.maxBlur, LOOK.aim.blur * (positive(height, 1080) / 1080));
   return radius * smooth01(aim) * (1 - near / focus);
+}
+
+type Drawable = THREE.Object3D & { isMesh?: boolean; isPoints?: boolean; isLine?: boolean; isSprite?: boolean; isInstancedMesh?: boolean; count?: number; material?: THREE.Material | THREE.Material[] };
+
+/** True when rendering `object` with a camera on `layers` would leave anything in the depth buffer, following
+ * the renderer's own rules (hidden objects hide their children; layers and material visibility skip one
+ * object). Depth is all the weapon blur can see, so without it the blur has nothing to work on. */
+export function writesDepth(object: THREE.Object3D, layers: THREE.Layers): boolean {
+  if (!object.visible) return false;
+  const drawable = object as Drawable;
+  if ((drawable.isMesh || drawable.isPoints || drawable.isLine || drawable.isSprite) && object.layers.test(layers) && !(drawable.isInstancedMesh && drawable.count === 0)) {
+    const material = drawable.material;
+    for (const item of Array.isArray(material) ? material : [material]) if (item && item.visible && item.depthTest && item.depthWrite) return true;
+  }
+  for (const child of object.children) if (writesDepth(child, layers)) return true;
+  return false;
 }
 
 const FULLSCREEN_VERTEX = /* glsl */`
@@ -278,6 +275,7 @@ export const AimFocusShader = {
     void main() {
       vec4 centre = texture2D( tDiffuse, vUv );
       gl_FragColor = centre;
+      // Half screen heights from the centre (1 = the top edge), aspect corrected.
       vec2 fromCentre = ( vUv - 0.5 ) * vec2( uResolution.x / uResolution.y, 1.0 ) * 2.0;
       float radius = uBlur * smoothstep( uSharpRadius, uFullRadius, length( fromCentre ) );
       if ( radius < 0.5 ) return;
@@ -328,7 +326,8 @@ class OverlayPass extends Pass {
   }
 }
 
-/** Reads the viewmodel depth left in the image it blurs; writes a fresh image (never the one it reads). */
+/** Reads the viewmodel depth left in the image it blurs; writes a fresh image (never the one it reads).
+ * With `blur` 0 it is a plain copy, which is how its program gets built before the first aim. */
 class AimFocusPass extends ShaderPass {
   blur = 0;
 
@@ -346,21 +345,53 @@ class AimFocusPass extends ShaderPass {
   }
 }
 
+interface ResolvedOptions { bloom: boolean; depthOfField: boolean; chromatic: boolean; antialias: 'smaa' | 'fxaa'; contactScale: number }
+
+/** Options left out take Automatic's lighter choices: a bare `{ bloom }` must never cost more than Automatic.
+ * `presentationOptions(tier)` gives High its SMAA, edge fringing and finer contact shading. */
+function resolveOptions(options: PresentationOptions): ResolvedOptions {
+  return {
+    bloom: !!options.bloom,
+    depthOfField: options.depthOfField !== false,
+    chromatic: options.chromaticAberration === true,
+    antialias: options.antialias === 'smaa' ? 'smaa' : 'fxaa',
+    contactScale: Number.isFinite(options.contactScale) ? Math.min(1, Math.max(0.25, options.contactScale!)) : CONTACT_SCALE.automatic,
+  };
+}
+
+const createAntialias = (kind: 'smaa' | 'fxaa') => kind === 'smaa' ? new SMAAPass() : new FXAAPass();
+
+function createBloom() {
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), LOOK.bloom.strength, LOOK.bloom.radius, LOOK.bloom.threshold);
+  // A soft knee: brightness ramps into the glow instead of popping at the threshold.
+  (bloom.highPassUniforms as Record<string, THREE.IUniform<number>>).smoothWidth.value = LOOK.bloom.knee;
+  return bloom;
+}
+
+function setChromatic(material: THREE.ShaderMaterial, on: boolean) {
+  if (('CHROMATIC' in material.defines) === on) return;
+  if (on) material.defines.CHROMATIC = ''; else delete material.defines.CHROMATIC;
+  material.needsUpdate = true;
+}
+
 /** Desktop presentation: contact shading, the first-person viewmodel, aim depth of field on the weapon,
- * bloom tuned for flashes and explosions, tone mapping, SMAA or FXAA edges and a gritty filmic grade
- * with low-health and flash conditions. Phones render directly and never download this module. */
+ * bloom tuned for flashes and explosions, ACES Filmic tone mapping, FXAA (Automatic) or SMAA (High) edges
+ * and a gritty filmic grade with low-health and flash conditions. Phones render directly and never
+ * download this module. */
 export class ArenaPresentation {
   private readonly composer: EffectComposer;
   private readonly ambient: ContactPass;
   private readonly overlay = new OverlayPass();
   private readonly focus = new AimFocusPass();
-  private readonly bloom: UnrealBloomPass | null = null;
-  private readonly output = new OutputPass();
-  private readonly antialias: SMAAPass | FXAAPass;
+  private bloom: UnrealBloomPass | null = null;
+  private readonly output = new FilmicOutputPass();
+  private antialias: SMAAPass | FXAAPass;
   private readonly look = new ShaderPass(LookShader);
-  private readonly depthOfField: boolean;
-  private readonly chromatic: boolean;
-  private readonly contactScale: number;
+  private options: ResolvedOptions;
+  private viewWidth = 1;
+  private viewHeight = 1;
+  /** The weapon blur's program has been built (it is drawn once on the first frame). */
+  private focusBuilt = false;
   private aim = 0;
   private focusDistance = Number.POSITIVE_INFINITY;
   private lowHealth = 0;
@@ -371,9 +402,7 @@ export class ArenaPresentation {
   readonly drawsOverlay: boolean = true;
 
   constructor(private renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, options: PresentationOptions = { bloom: true }) {
-    this.depthOfField = options.depthOfField !== false;
-    this.chromatic = options.chromaticAberration === true;
-    this.contactScale = Number.isFinite(options.contactScale) ? Math.min(1, Math.max(0.25, options.contactScale!)) : 0.6;
+    this.options = resolveOptions(options);
     const target = new THREE.WebGLRenderTarget(1, 1, {
       type: THREE.HalfFloatType,
       depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType),
@@ -395,19 +424,33 @@ export class ArenaPresentation {
     // occlusion) and before bloom, so its muzzle flash glows like every other flash.
     this.composer.addPass(this.overlay);
     this.composer.addPass(this.focus);
-    if (options.bloom) {
-      this.bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), LOOK.bloom.strength, LOOK.bloom.radius, LOOK.bloom.threshold);
-      // A soft knee: brightness ramps into the glow instead of popping at the threshold.
-      (this.bloom.highPassUniforms as Record<string, THREE.IUniform<number>>).smoothWidth.value = LOOK.bloom.knee;
-      this.composer.addPass(this.bloom);
-    }
+    if (this.options.bloom) { this.bloom = createBloom(); this.composer.addPass(this.bloom); }
     this.composer.addPass(this.output);
     // Edges are found on the tone-mapped image before grain and fringing are added.
-    this.antialias = options.antialias === 'fxaa' ? new FXAAPass() : new SMAAPass();
+    this.antialias = createAntialias(this.options.antialias);
     this.composer.addPass(this.antialias);
-    if (this.chromatic) this.look.material.defines.CHROMATIC = '';
+    setChromatic(this.look.material, this.options.chromatic);
     this.look.material.depthTest = false; this.look.material.depthWrite = false;
     this.composer.addPass(this.look);
+  }
+
+  /** Switch to another tier's options in place, for a quality change between Automatic and High: edge
+   * smoothing, edge fringing, contact shading resolution, bloom and the weapon blur. Options left out take
+   * Automatic's lighter choices, as in the constructor. Changed shaders are built on the next frame. */
+  configure(options: PresentationOptions) {
+    const previous = this.options, next = resolveOptions(options);
+    this.options = next;
+    if (next.antialias !== previous.antialias) {
+      const index = this.composer.passes.indexOf(this.antialias);
+      this.composer.removePass(this.antialias);
+      this.antialias.dispose();
+      this.antialias = createAntialias(next.antialias);
+      this.composer.insertPass(this.antialias, index);
+    }
+    if (next.bloom && !this.bloom) { this.bloom = createBloom(); this.composer.insertPass(this.bloom, this.composer.passes.indexOf(this.output)); }
+    if (this.bloom) this.bloom.enabled = next.bloom;
+    setChromatic(this.look.material, next.chromatic);
+    this.resize(this.viewWidth, this.viewHeight);
   }
 
   /** First-person viewmodel drawn over the world with cleared depth, before bloom and grading.
@@ -417,7 +460,9 @@ export class ArenaPresentation {
     this.overlay.enabled = !!scene && !!camera;
   }
 
-  /** Aim-down-sights blend 0..1 and the distance to the aimed point (metres), for depth of field. */
+  /** Aim-down-sights blend 0..1 and the distance to the aimed point (metres), for depth of field. The weapon
+   * blur costs time only while the blend is above 0 and the viewmodel has something in the depth buffer:
+   * fully scoped, the viewmodel hides everything and the blur stops by itself. */
   setAim(blend: number, focusDistance: number) {
     this.aim = unitValue(blend);
     this.focusDistance = focusDistance;
@@ -431,10 +476,12 @@ export class ArenaPresentation {
   }
 
   resize(width: number, height: number) {
+    this.viewWidth = width; this.viewHeight = height;
     const ratio = this.renderer.getPixelRatio();
     this.composer.setPixelRatio(ratio);
     this.composer.setSize(width, height);
-    this.ambient.setSize(Math.max(1, Math.floor(width * ratio * this.contactScale)), Math.max(1, Math.floor(height * ratio * this.contactScale)));
+    const contact = this.options.contactScale;
+    this.ambient.setSize(Math.max(1, Math.floor(width * ratio * contact)), Math.max(1, Math.floor(height * ratio * contact)));
     this.bloom?.setSize(Math.max(1, Math.floor(width * ratio * 0.5)), Math.max(1, Math.floor(height * ratio * 0.5)));
     const pixels = this.pixelSize();
     (this.focus.uniforms.uResolution.value as THREE.Vector2).set(pixels.width, pixels.height);
@@ -445,9 +492,15 @@ export class ArenaPresentation {
     const step = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.25) : 0;
     this.time = (this.time + step) % 3600;
     const { height } = this.pixelSize();
-    this.focus.blur = this.depthOfField && this.overlay.enabled ? aimBlur(this.aim, this.focusDistance, height) : 0;
-    this.focus.enabled = this.focus.blur >= 0.5;
-    const values = lookValues({ lowHealth: this.lowHealth, flash: this.flash, aim: this.aim, time: this.time, height, chromatic: this.chromatic });
+    const blur = this.weaponBlur(height);
+    // three.js builds a shader program, synchronously, the first time it is drawn. Built on the first aim, the
+    // weapon blur added about 60 ms to that frame on integrated graphics, often while aiming at someone; drawn
+    // once as a plain copy on the first frame, it is built at load with every other pass.
+    const build = this.options.depthOfField && !this.focusBuilt;
+    this.focus.blur = blur;
+    this.focus.enabled = blur > 0 || build;
+    this.focusBuilt ||= this.focus.enabled;
+    const values = lookValues({ lowHealth: this.lowHealth, flash: this.flash, aim: this.aim, time: this.time, height, chromatic: this.options.chromatic });
     const uniforms = this.look.uniforms;
     uniforms.uSaturation.value = values.saturation;
     uniforms.uVignette.value = values.vignette;
@@ -466,6 +519,15 @@ export class ArenaPresentation {
     // Three r185's UnrealBloomPass.dispose omits its owned high-pass material.
     if (this.bloom) { this.bloom.dispose(); (this.bloom as unknown as { materialHighPassFilter: THREE.Material }).materialHighPassFilter.dispose(); }
     this.focus.dispose(); this.output.dispose(); this.antialias.dispose(); this.look.dispose(); this.composer.dispose();
+  }
+
+  /** This frame's weapon blur radius in scene pixels, or 0 when the pass should not run: at the hip, with depth
+   * of field off, without a viewmodel, or when the viewmodel would leave nothing in the depth buffer. */
+  private weaponBlur(height: number) {
+    const { scene, camera } = this.overlay;
+    if (!this.options.depthOfField || !this.overlay.enabled || !scene || !camera || this.aim <= 0) return 0;
+    const radius = aimBlur(this.aim, this.focusDistance, height);
+    return radius >= 0.5 && writesDepth(scene, camera.layers) ? radius : 0;
   }
 
   /** Size of the scene image in device pixels. */
