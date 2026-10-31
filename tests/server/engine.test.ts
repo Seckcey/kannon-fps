@@ -641,11 +641,14 @@ test('the Attack Drone circles for 25 s, fires at visible enemies with a seeded 
 
 test('each viewer receives their own full state while everyone else stays public', () => {
   const { engine, a, b } = playing();
-  a.rewards = ['recon']; Object.assign(a, { x: 1.23456789, yaw: 0.123456789, readyAt: 3456.7 });
+  a.rewards = ['recon']; Object.assign(a, { x: 1.23456789, yaw: 0.123456789, readyAt: 3456.70004, slideCooldownUntil: 3200.33333, reloadingUntil: 4100.66667 });
   const view = engine.snapshot(3100.4, 'a');
   assert.equal(view.serverTime, 3100); assert.deepEqual([view.mode, view.scoreLimit, view.teamScores], ['ffa', RULES.ffaScoreLimit, undefined]);
   assert.deepEqual([view.drones, view.recon, view.mortars], [[], [], []]);
-  assert.equal(view.self?.id, 'a'); assert.deepEqual(view.self.mag, a.mag); assert.deepEqual(view.self.rewards, ['recon']); assert.equal(view.self.readyAt, 3457);
+  assert.equal(view.self?.id, 'a'); assert.deepEqual(view.self.mag, a.mag); assert.deepEqual(view.self.rewards, ['recon']);
+  // Frame clocks are 1000/30 ms apart, so the prediction needs its own timers to the microsecond to end them on the server's frame.
+  assert.deepEqual([view.self.readyAt, view.self.slideCooldownUntil, view.self.reloadingUntil], [3456.7, 3200.333, 4100.667], 'Own timers keep microseconds.');
+  assert.equal(view.players.find(player => player.id === 'a')!.reloadingUntil, 4101, 'Public timers stay whole milliseconds.');
   const hidden = ['mag', 'reserve', 'frags', 'rewards', 'reloadSlot', 'readyAt', 'meleeUntil', 'stamina', 'slideCooldownUntil', 'lastDamageAt'];
   for (const player of view.players) for (const key of hidden) assert.equal(key in player, false, `${player.id}.${key} is private`);
   const own = view.players.find(player => player.id === 'a')!;

@@ -596,13 +596,15 @@ export class GameView {
     // state and replay none. (The server keeps my weapon slot, so this is not a new life.)
     const restarted = !spawned && local.lastInputSeq < this.lastAck;
     this.lastAck = local.lastInputSeq;
+    // The server time my acknowledged input ran at: a queued input can run behind the tick.
+    const ranAt = self?.lastInputTime ?? snapshot.serverTime;
     if (spawned) {
       input.resetSpawnView(local.yaw, local.pitch);
       this.firstLocalSnapshot = false; this.killer = null; this.recoil.reset(); this.serverTracers.clear();
-      if (self) this.weapon.reset(self, snapshot.serverTime);
+      if (self) this.weapon.reset(self, ranAt);
     } else if (self) {
-      if (restarted) this.weapon.reset(self, snapshot.serverTime);
-      else this.weapon.reconcile(self, local.lastInputSeq, snapshot.serverTime);
+      if (restarted) this.weapon.reset(self, ranAt);
+      else this.weapon.reconcile(self, local.lastInputSeq, ranAt);
     }
     this.lastAlive = alive;
     const snapped = this.prediction.receive(self ? { ...local, ...self } : local, snapshot.serverTime, local.lastInputSeq,

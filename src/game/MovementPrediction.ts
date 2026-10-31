@@ -1,9 +1,9 @@
-import { clamp, moveDefaults, movePlayer, type MoveContext, type MoveEvents, type MoveState } from '../../shared/physics';
+import { clamp, moveDefaults, movePlayer, reached, type MoveContext, type MoveEvents, type MoveState } from '../../shared/physics';
 import { RULES, type InputFrame, type Loadout, type PlayerState, type PublicPlayerState, type Vec3 } from '../../shared/protocol';
 import { DEFAULT_LOADOUT, weaponFor } from '../../shared/weapons';
 
 /** What a snapshot tells the predictor: the public pose plus, for the local player, `self`. */
-export type PredictionSource = PublicPlayerState & Partial<Pick<PlayerState, 'stamina' | 'slideCooldownUntil' | 'meleeUntil' | 'frags'>>;
+export type PredictionSource = PublicPlayerState & Partial<Pick<PlayerState, 'stamina' | 'slideCooldownUntil' | 'meleeUntil' | 'frags' | 'lastInputTime'>>;
 /** The previous accepted input's held buttons; rising edges are measured against it. */
 export type InputEdges = Pick<InputFrame, 'jump' | 'crouch' | 'melee' | 'grenade'>;
 const released: InputEdges = { jump: false, crouch: false, melee: false, grenade: false };
@@ -20,17 +20,16 @@ export function serverMoveContext(input: InputFrame, previous: InputEdges, loado
     now, dt,
     jumpPressed: input.jump && !previous.jump, crouchPressed: input.crouch && !previous.crouch,
     moveFactor: weapon.moveFactor, adsFactor: weapon.adsMoveFactor,
-    canSprint: !limits.cooking && now >= limits.meleeUntil,
+    canSprint: !limits.cooking && reached(now, limits.meleeUntil),
   };
 }
 
 /** Replays `movePlayer` for the local player from the latest authoritative snapshot, one server
- * tick per sent input. Replay advances from that snapshot's server time, not the wall clock at
- * which old inputs are replayed. As on the server, this tick's knife and cook start before the
- * move, so they stop a sprint on the same tick; both are refused while a vault is under way (judged
- * on the body before the move), and the frag leaves the belt when the cook starts. One tick per
- * input is what the server does with a steady input stream; it can coalesce inputs that arrive in
- * a burst. */
+ * tick per sent input. Replay advances from the server time the acknowledged input ran at, not the
+ * wall clock at which old inputs are replayed. As on the server, this tick's knife and cook start
+ * before the move, so they stop a sprint on the same tick; both are refused while a vault is under
+ * way (judged on the body before the move), and the frag leaves the belt when the cook starts. The
+ * server runs every input once, one step each, on a clock of the player's own. */
 export class MovementPrediction {
   readonly state: MoveState = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, ...moveDefaults() };
   /** Predicted server time of the last step. */
@@ -67,14 +66,14 @@ export class MovementPrediction {
     // The server's order: the knife and a cook start before the move, both refused while a vault is
     // under way on the body before it, and the cook takes the frag as it starts.
     const vaulting = !!this.state.vault;
-    if (input.melee && !this.previous.melee && this.time >= this.meleeUntil && !this.cooking && !vaulting) this.meleeUntil = this.time + RULES.meleeMs;
-    if (input.grenade && !this.previous.grenade && !this.cooking && this.frags > 0 && this.time >= this.meleeUntil && !vaulting) {
+    if (input.melee && !this.previous.melee && reached(this.time, this.meleeUntil) && !this.cooking && !vaulting) this.meleeUntil = this.time + RULES.meleeMs;
+    if (input.grenade && !this.previous.grenade && !this.cooking && this.frags > 0 && reached(this.time, this.meleeUntil) && !vaulting) {
       this.cooking = true; this.cookingSince = this.time; this.frags--;
     }
     const ctx = serverMoveContext(input, this.previous, this.loadout, this.time, TICK_SECONDS, { cooking: this.cooking, meleeUntil: this.meleeUntil });
     const events = movePlayer(this.state, input, ctx);
     // A release throws after the move, and a fuse that runs out goes off in hand; the frag is already gone.
-    if (this.cooking && (!input.grenade || this.time >= this.cookingSince + RULES.fragFuseMs)) { this.cooking = false; this.cookingSince = 0; }
+    if (this.cooking && (!input.grenade || reached(this.time, this.cookingSince + RULES.fragFuseMs))) { this.cooking = false; this.cookingSince = 0; }
     this.previous = { jump: input.jump, crouch: input.crouch, melee: input.melee, grenade: input.grenade };
     return events;
   }
@@ -142,7 +141,10 @@ export class LocalPrediction {
     this.pending = live.playing && !live.spawned ? this.pending.filter(frame => frame.seq > ack) : [];
     if (live.spawned) this.acknowledged = null;
     const drawn = this.active && !live.spawned ? this.feet(now) : null;
-    const state = this.movement.reset(source, serverTime, this.acknowledged);
+    // Replay from the server time input `ack` ran at (`lastInputTime`): a queued input can run behind
+    // the tick. The lead below is still measured against the tick, which the wall clock extrapolates.
+    const ranAt = live.playing && live.alive && Number.isFinite(source.lastInputTime) ? source.lastInputTime! : serverTime;
+    const state = this.movement.reset(source, ranAt, this.acknowledged);
     copyPoint(this.prior, state);
     if (live.playing && live.alive) {
       this.pending.forEach((frame, index) => {

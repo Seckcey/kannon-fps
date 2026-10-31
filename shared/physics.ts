@@ -64,6 +64,13 @@ export const moveDefaults = (): Pick<MoveState, 'posture' | 'stamina' | 'slideUn
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const finite = (value: number, fallback: number) => (Number.isFinite(value) ? value : fallback);
+/** Timers often end exactly on a frame (a 900 rpm gun fires every second frame, a slide lasts 24
+ * frames), and the server and the page reach that frame's clock by different sums a hair apart (the
+ * page's copy of the server clock is rounded to the microsecond). A deadline counts as reached this
+ * close before it, so both sides judge the same frame. */
+export const TIME_EPSILON_MS = 0.01;
+/** Whether time `now` has reached `deadline` (see TIME_EPSILON_MS). */
+export const reached = (now: number, deadline: number) => now >= deadline - TIME_EPSILON_MS;
 export function directionFromAngles(yaw: number, pitch: number): Vec3 {
   return { x: Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) };
 }
@@ -448,7 +455,7 @@ function cancelVault(state: MoveState, input: InputFrame, events: MoveEvents) {
 function advanceVault(state: MoveState, input: InputFrame, ctx: MoveContext, dt: number, events: MoveEvents, ongoing: boolean) {
   let vault = state.vault!;
   const duration = Math.max(1, vault.end - vault.start);
-  const t = finite(clamp((ctx.now - vault.start) / duration, 0, 1), 0);
+  const t = reached(ctx.now, vault.end) ? 1 : finite(clamp((ctx.now - vault.start) / duration, 0, 1), 0);
   if (ongoing && ctx.crouchPressed && t < MOVE.vaultCancelWindow) { cancelVault(state, input, events); return; }
   vault = steerVault(state, vault, input.moveX, dt);
   const rise = easeOut(clamp(t / 0.55, 0, 1)), cross = easeInOut(clamp((t - 0.25) / 0.75, 0, 1));
@@ -466,7 +473,7 @@ function advanceVault(state: MoveState, input: InputFrame, ctx: MoveContext, dt:
   // vault over thin cover, which ends in the air with the body tucked in a crouch (the vault body's size,
   // so it fits). A slow vault ends crouched.
   if (input.crouch) {
-    if (isPlayerGrounded(state) && vault.exitSpeed >= MOVE.slideMinStartSpeed && ctx.now >= state.slideCooldownUntil) {
+    if (isPlayerGrounded(state) && vault.exitSpeed >= MOVE.slideMinStartSpeed && reached(ctx.now, state.slideCooldownUntil)) {
       startSlide(state, ctx.now); events.slideStarted = true;
     } else state.posture = 'crouch';
   }
@@ -665,7 +672,7 @@ export function movePlayer(state: MoveState, input: InputFrame, ctx: MoveContext
       state.vx *= MOVE.slideJumpKeep; state.vz *= MOVE.slideJumpKeep; state.vy = MOVE.jumpSpeed; events.jumped = true;
     } else if (!grounded) {
       endSlide(state, now, command.crouch, true); events.slideEnded = true;
-    } else if (now >= state.slideUntil || Math.hypot(state.vx, state.vz) <= MOVE.slideEndSpeed + 0.05) {
+    } else if (reached(now, state.slideUntil) || Math.hypot(state.vx, state.vz) <= MOVE.slideEndSpeed + 0.05) {
       endSlide(state, now, command.crouch, false); events.slideEnded = true;
     }
   } else {
@@ -684,7 +691,7 @@ export function movePlayer(state: MoveState, input: InputFrame, ctx: MoveContext
     }
   }
   if (!events.jumped && state.posture === 'stand' && grounded && crouchPressed && wasSprinting
-    && Math.hypot(state.vx, state.vz) >= MOVE.slideMinStartSpeed && now >= state.slideCooldownUntil) {
+    && Math.hypot(state.vx, state.vz) >= MOVE.slideMinStartSpeed && reached(now, state.slideCooldownUntil)) {
     startSlide(state, now); events.slideStarted = true;
   } else if (state.posture === 'stand' && command.crouch && grounded && !events.jumped && !wantsSprint) {
     state.posture = 'crouch';
@@ -724,7 +731,7 @@ export function movePlayer(state: MoveState, input: InputFrame, ctx: MoveContext
   const landed = integrate(state, moveHeight(state.posture), grounded && !events.jumped, dt, events);
   // A body tucked in a crouch (crouch held through a vault over thin cover) that lands fast slides on.
   if (landed && !grounded && state.posture === 'crouch' && command.crouch && Math.hypot(state.vx, state.vz) >= MOVE.slideMinStartSpeed
-    && now >= state.slideCooldownUntil) {
+    && reached(now, state.slideCooldownUntil)) {
     startSlide(state, now); events.slideStarted = true;
   }
   return events;

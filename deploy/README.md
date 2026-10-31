@@ -54,7 +54,8 @@ everyone from joining. If the proxy writes the real client address into a header
 that clients cannot set, put that header's name in `TRUSTED_CLIENT_IP_HEADER`
 (`cf-connecting-ip` behind Cloudflare Tunnel; the Coastline override sets it). The
 server uses the first address in that header, and the connection's own address when
-the header is missing or is not a valid IP address. Leave it unset when players
+the header is missing or is not a valid IP address. IPv6 addresses count by their
+/64 network, the block one household is given. Leave it unset when players
 reach the server directly, or when the server can be reached without going through
 that proxy, because a client could then pick its own value.
 

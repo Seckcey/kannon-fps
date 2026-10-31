@@ -3,7 +3,7 @@ import { PracticeBots } from './bots.js';
 import { ARENA_LIMITS, OBSTACLES, SPAWNS } from '../shared/map.js';
 import {
   add, clamp, directionFromAngles, eyePosition, grenadeLaunch, GrenadeTrajectory, hitboxes, magnitude, moveDefaults, movePlayer, normalize,
-  POSTURE_HEIGHT, rayBox, raycastMap, raycastMapDetailed, rayHitboxes, rightFromYaw, scale, subtract, weaponMuzzle,
+  POSTURE_HEIGHT, rayBox, raycastMap, raycastMapDetailed, rayHitboxes, reached, rightFromYaw, scale, subtract, weaponMuzzle,
 } from '../shared/physics.js';
 import {
   hasMatchOpponents, RULES, SCORE_POINTS, type DamageCause, type DroneState, type GameEvent, type GameMode, type HitZone, type InputFrame,
@@ -699,7 +699,7 @@ export class MatchEngine {
     const spec = weaponFor(player.loadout, player.slot);
     movePlayer(player, { ...input, fire: input.fire || !!firePress }, {
       now, dt, jumpPressed: !!jumpPress || (input.jump && !rt.jumpDown), crouchPressed: !!crouchPress || (input.crouch && !rt.crouchDown),
-      moveFactor: spec.moveFactor, adsFactor: spec.adsMoveFactor, canSprint: player.cookingSince <= 0 && now >= player.meleeUntil,
+      moveFactor: spec.moveFactor, adsFactor: spec.adsMoveFactor, canSprint: player.cookingSince <= 0 && reached(now, player.meleeUntil),
     });
     if (player.sprinting) { rt.lastSprintAt = now; rt.lastSprintDash = !!player.dashing; }
     player.aiming = input.aim && !player.sprinting;
@@ -736,7 +736,7 @@ export class MatchEngine {
   }
   private cancelReload(player: PlayerState, rt: Runtime) { rt.reload = null; player.reloadingUntil = 0; player.reloadSlot = 0; }
   private startReload(player: PlayerState, rt: Runtime, now: number) {
-    if (player.reloadingUntil || player.cookingSince > 0 || now < player.meleeUntil) return;
+    if (player.reloadingUntil || player.cookingSince > 0 || !reached(now, player.meleeUntil)) return;
     const slot = player.slot, index = slot - 1, spec = weaponFor(player.loadout, slot);
     const missing = spec.magazine - player.mag[index]!, spare = player.reserve[index]!;
     if (missing <= 0 || spare <= 0) return;
@@ -752,11 +752,11 @@ export class MatchEngine {
     const index = reload.slot - 1, spec = weaponFor(player.loadout, reload.slot), k = handling(player.loadout);
     if (spec.perShellMs) {
       // Shell n goes in at start + (shellStartMs + n × perShellMs); a shot can stop the reload between shells.
-      while (player.mag[index]! < spec.magazine && player.reserve[index]! > 0 && reload.start + ((spec.shellStartMs ?? 0) + (reload.shells + 1) * spec.perShellMs) * k <= now) {
+      while (player.mag[index]! < spec.magazine && player.reserve[index]! > 0 && reached(now, reload.start + ((spec.shellStartMs ?? 0) + (reload.shells + 1) * spec.perShellMs) * k)) {
         player.mag[index]!++; player.reserve[index]!--; reload.shells++;
       }
       if (player.mag[index]! >= spec.magazine || player.reserve[index]! <= 0) this.cancelReload(player, rt);
-    } else if (now >= player.reloadingUntil) {
+    } else if (reached(now, player.reloadingUntil)) {
       const take = Math.min(spec.magazine - player.mag[index]!, player.reserve[index]!);
       player.mag[index]! += take; player.reserve[index]! -= take; this.cancelReload(player, rt);
     }
@@ -772,27 +772,27 @@ export class MatchEngine {
     if (player.reloadingUntil && (!spec.perShellMs || player.mag[index]! <= 0)) return false;
     if (player.cookingSince > 0) return false;
     // Too early: a semi-automatic press is kept while the trigger stays down, then fires once.
-    const early = now < player.meleeUntil || now < player.readyAt || vaultProgress(player, now) < VAULT_FIRE_PROGRESS
-      || now < rt.lastSprintAt + spec.sprintToFireMs * (rt.lastSprintDash ? DASH_SPRINT_TO_FIRE : 1) || now < rt.nextFireAt[index]!;
+    const early = !reached(now, player.meleeUntil) || !reached(now, player.readyAt) || vaultProgress(player, now) < VAULT_FIRE_PROGRESS
+      || !reached(now, rt.lastSprintAt + spec.sprintToFireMs * (rt.lastSprintDash ? DASH_SPRINT_TO_FIRE : 1)) || !reached(now, rt.nextFireAt[index]!);
     if (early) { if (!spec.auto && player.mag[index]! > 0) rt.triggerPending = true; return false; }
     if (player.mag[index]! <= 0) { this.startReload(player, rt, now); return false; }
     if (player.reloadingUntil) this.cancelReload(player, rt);
     // Held automatic fire accumulates the interval so 30 Hz ticks keep the true rate; a new pull starts fresh,
     // so idle time never banks extra shots. Semi-automatic rounds are always a full interval apart.
-    const interval = fireIntervalMs(spec), continuous = spec.auto && rt.fireDown && now - rt.nextFireAt[index]! < interval;
+    const interval = fireIntervalMs(spec), continuous = spec.auto && rt.fireDown && !reached(now, rt.nextFireAt[index]! + interval);
     rt.nextFireAt[index] = (continuous ? rt.nextFireAt[index]! : now) + interval;
     player.mag[index]!--; player.protectedUntil = 0; rt.triggerPending = false;
     actions.shots.push({ player, frame, spec, slot, ads: this.adsProgress(player, rt, frame, spec, now) });
     return true;
   }
   private tryMelee(player: PlayerState, rt: Runtime, frame: InputFrame, now: number, actions: FrameActions) {
-    if (now < player.meleeUntil || player.cookingSince > 0 || player.vault) return;
+    if (!reached(now, player.meleeUntil) || player.cookingSince > 0 || player.vault) return;
     player.meleeUntil = now + RULES.meleeMs; player.readyAt = Math.max(player.readyAt, player.meleeUntil);
     this.cancelReload(player, rt); player.protectedUntil = 0;
     actions.melees.push({ player, frame });
   }
   private startCook(player: PlayerState, rt: Runtime, now: number) {
-    if (player.cookingSince > 0 || player.frags <= 0 || now < player.meleeUntil || player.vault) return;
+    if (player.cookingSince > 0 || player.frags <= 0 || !reached(now, player.meleeUntil) || player.vault) return;
     player.cookingSince = now; player.frags--; this.cancelReload(player, rt);
   }
   private throwGrenade(player: PlayerState, rt: Runtime, input: InputFrame, now: number) {
@@ -898,7 +898,7 @@ export class MatchEngine {
   }
   private advanceExplosives(now: number, hits: PendingHit[]) {
     // Holding a cooked grenade past its fuse ends badly.
-    for (const player of this.players.values()) if (player.health > 0 && player.cookingSince > 0 && now >= player.cookingSince + EXPLOSIVES.frag.fuseMs) {
+    for (const player of this.players.values()) if (player.health > 0 && player.cookingSince > 0 && reached(now, player.cookingSince + EXPLOSIVES.frag.fuseMs)) {
       player.cookingSince = 0; this.explode('frag', player, eyePosition(player), now, hits, this.runtime.get(player.id)!.life, `frag-${++this.entityCount}`);
     }
     for (let i = 0; i < this.grenades.length; i++) {
@@ -1109,9 +1109,9 @@ export class MatchEngine {
   }
 }
 
-const roundVault = (vault: VaultState | null, r = r3): VaultState | null => vault && {
+const roundVault = (vault: VaultState | null, r = r3, time: (ms: number) => number = Math.round): VaultState | null => vault && {
   fromX: r(vault.fromX), fromY: r(vault.fromY), fromZ: r(vault.fromZ), toX: r(vault.toX), toY: r(vault.toY), toZ: r(vault.toZ),
-  start: Math.round(vault.start), end: Math.round(vault.end), exitSpeed: r(vault.exitSpeed), exitYaw: r4(vault.exitYaw),
+  start: time(vault.start), end: time(vault.end), exitSpeed: r(vault.exitSpeed), exitYaw: r4(vault.exitYaw),
 };
 /** What every client may know about a player: no ammunition, grenades, rewards or timers that reveal intent. */
 export function publicState(p: PlayerState): PublicPlayerState {
@@ -1124,13 +1124,14 @@ export function publicState(p: PlayerState): PublicPlayerState {
     lastInputSeq: p.lastInputSeq, ...(p.bot ? { bot: true } : {}), aiming: !!p.aiming, sprinting: !!p.sprinting, dashing: !!p.dashing,
   };
 }
-/** The receiving player's own full state. */
+/** The receiving player's own full state. Timers keep their fractions (frame clocks are 1000/30 ms apart), so
+ * the page's prediction judges each deadline on the same frame as the server (see `reached`). */
 export function privateState(p: PlayerState): PlayerState {
   return {
-    ...publicState(p), x: r6(p.x), y: r6(p.y), z: r6(p.z), vx: r6(p.vx), vy: r6(p.vy), vz: r6(p.vz), vault: roundVault(p.vault, r6),
+    ...publicState(p), x: r6(p.x), y: r6(p.y), z: r6(p.z), vx: r6(p.vx), vy: r6(p.vy), vz: r6(p.vz), vault: roundVault(p.vault, r6, r3),
     mag: [p.mag[0], p.mag[1]], reserve: [p.reserve[0], p.reserve[1]], frags: p.frags, rewards: [...p.rewards],
-    reloadSlot: p.reloadSlot, readyAt: Math.round(p.readyAt), meleeUntil: Math.round(p.meleeUntil), stamina: r6(p.stamina),
-    slideCooldownUntil: Math.round(p.slideCooldownUntil), lastDamageAt: Math.round(p.lastDamageAt),
+    reloadSlot: p.reloadSlot, reloadingUntil: r3(p.reloadingUntil), readyAt: r3(p.readyAt), meleeUntil: r3(p.meleeUntil), cookingSince: r3(p.cookingSince),
+    stamina: r6(p.stamina), slideUntil: r3(p.slideUntil), slideCooldownUntil: r3(p.slideCooldownUntil), lastDamageAt: Math.round(p.lastDamageAt),
     ...(p.lastInputTime !== undefined ? { lastInputTime: r3(p.lastInputTime) } : {}),
   };
 }

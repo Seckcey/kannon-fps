@@ -1876,11 +1876,11 @@ def build_breaker12(M):
 
 
 # =============================================================================================
-# Longbow bolt-action rifle
+# Heron 7 bolt-action rifle (id longbow)
 # =============================================================================================
 
 def build_longbow(M):
-    """Longbow: chassis bolt rifle, fluted heavy barrel, big brake, 4x-class scope on a rail."""
+    """Heron 7: chassis bolt rifle, fluted heavy barrel, big brake, 4x-class scope on a rail."""
     m = Model('longbow')
     tilt = 12.0
     r_grip = grip_frame(tilt)
