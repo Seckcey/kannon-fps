@@ -56,6 +56,13 @@ export function vaultProgress(state: { vault: VaultState | null }, now: number):
   const vault = state.vault;
   return vault ? clamp((now - vault.start) / Math.max(1, vault.end - vault.start), 0, 1) : 1;
 }
+/** Where most of a blast of bullet damage landed. The head counts only when it took strictly the largest share,
+ * so a shotgun aimed at the chest is not a headshot because one pellet clipped the head. */
+export function mainZone(byZone: Readonly<Record<HitZone, number>>): HitZone | undefined {
+  const most = Math.max(byZone.head, byZone.torso, byZone.legs);
+  if (!(most > 0)) return undefined;
+  return byZone.torso === most ? 'torso' : byZone.legs === most ? 'legs' : 'head';
+}
 /** Middle of the torso hitbox, where explosions and the drone aim. */
 export function torsoCenter(state: Vec3 & { posture: Posture }): Vec3 {
   const torso = hitboxes(state)[1]!;
@@ -120,7 +127,9 @@ interface Runtime {
   fireDown: boolean; jumpDown: boolean; crouchDown: boolean; aimSince: number | null;
   /** A semi-automatic press came too early (raising, sprint-out, vault, between shots); it fires once allowed while held. */
   triggerPending: boolean;
-  nextFireAt: number; lastSprintAt: number; lastSprintDash: boolean;
+  /** Earliest next shot per weapon slot: a swap waits only for the new weapon's raise, and swapping back
+   * cannot skip the main gun's own bolt or pump cycle. */
+  nextFireAt: [number, number]; lastSprintAt: number; lastSprintDash: boolean;
   /** Active reload; `shells` counts rounds already loaded by a shell-by-shell reload. */
   reload: { slot: Slot; start: number; shells: number } | null;
   pendingLoadout: Loadout | null;
@@ -135,12 +144,16 @@ interface QueuedShot { player: PlayerState; frame: InputFrame; spec: WeaponSpec;
 interface QueuedMelee { player: PlayerState; frame: InputFrame }
 interface TickActions { shots: QueuedShot[]; melees: QueuedMelee[] }
 interface PendingHit { attacker: PlayerState; target: PlayerState; amount: number; cause: DamageCause; weapon?: WeaponId; slot?: Slot; zone?: HitZone; from: Vec3; life: number }
-interface Contribution { attacker: PlayerState; amount: number; top: PendingHit; headshot: boolean }
+/** One attacker's share of a target's damage in one resolution; `bullet` sums bullet damage by zone. */
+interface Contribution { attacker: PlayerState; amount: number; top: PendingHit; bullet: Record<HitZone, number> }
 interface DroneHit { attacker: PlayerState; drone: Drone; amount: number }
 interface Grenade { id: string; ownerId: string; life: number; thrownAt: number; explodeAt: number; trajectory: GrenadeTrajectory }
 interface Drone extends DroneState { startedAt: number; angle: number; nextFireAt: number; random: number }
 interface Mortar extends MortarState { next: number; random: number }
-interface Settlement { firstStrikeOpen: boolean; streaks: Array<{ player: PlayerState; life: number }>; evened: Runtime[]; killedBy: Array<[Runtime, string]>; anyKill: boolean }
+interface Settlement {
+  firstStrikeOpen: boolean; streaks: Array<{ player: PlayerState; life: number }>; chains: Array<{ player: PlayerState; life: number }>;
+  evened: Runtime[]; killedBy: Array<[Runtime, string]>; anyKill: boolean;
+}
 
 export interface EngineOptions {
   practice?: boolean; practiceDifficulty?: PracticeDifficulty; now?: number;
@@ -199,7 +212,7 @@ export class MatchEngine {
     this.players.set(profile.id, state);
     this.runtime.set(profile.id, {
       input: idleInput(), receivedAt: 0, presses: {}, fireDown: false, jumpDown: false, crouchDown: false, aimSince: null, triggerPending: false,
-      nextFireAt: -Infinity, lastSprintAt: -Infinity, lastSprintDash: false, reload: null, pendingLoadout: null,
+      nextFireAt: [-Infinity, -Infinity], lastSprintAt: -Infinity, lastSprintDash: false, reload: null, pendingLoadout: null,
       history: [], aliveSince: now, life: 0, regenStart: NaN, regenBase: RULES.health,
       damageBy: new Map(), lastKilledBy: null, lastKillAt: -Infinity, chain: 0, random: 0, explicitTeam: false,
     });
@@ -345,7 +358,7 @@ export class MatchEngine {
     for (const player of this.players.values()) {
       const rt = this.runtime.get(player.id)!;
       Object.assign(player, { kills: 0, deaths: 0, assists: 0, score: 0, streak: 0, rewards: [] });
-      rt.lastKilledBy = null; rt.chain = 0; rt.lastKillAt = -Infinity;
+      rt.lastKilledBy = null;
       this.respawn(player, this.countdownUntil || now, false, placed); placed.add(player.id);
       player.lastInputSeq = rt.input.seq;
       if (phase === 'preparing') player.protectedUntil = 0;
@@ -409,7 +422,9 @@ export class MatchEngine {
     // A round start raises weapons during the countdown; a respawn raises the primary now.
     player.readyAt = placed ? now : now + WEAPONS[player.loadout.primary].raiseMs * handling(player.loadout);
     if (player.bot) this.bots?.forget(player.id);
-    rt.reload = null; rt.nextFireAt = -Infinity; rt.lastSprintAt = -Infinity; rt.lastSprintDash = false; this.releaseControls(rt);
+    rt.reload = null; rt.nextFireAt = [-Infinity, -Infinity]; rt.lastSprintAt = -Infinity; rt.lastSprintDash = false; this.releaseControls(rt);
+    // Multi-kills pair kills from one life only.
+    rt.chain = 0; rt.lastKillAt = -Infinity;
     rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0;
     rt.history = [{ t: now, x: player.x, y: player.y, z: player.z, posture: player.posture }]; rt.aliveSince = now; rt.life++;
     rt.regenStart = NaN; rt.damageBy.clear();
@@ -419,19 +434,23 @@ export class MatchEngine {
     return a.id !== b.id && (this.mode !== 'tdm' || !a.team || !b.team || a.team !== b.team);
   }
   /** Spawns no living enemy can see come first (eye to chest), then unoccupied ones, then the farthest from enemies.
-   * Team deathmatch spawns each team on its own house's side. */
+   * Team deathmatch prefers each team's own house side: a round always starts there, and a respawn crosses to the
+   * far side only when enemies can see every home spawn and a far one is hidden. A round start spreads players over
+   * free spawns before anything else (everyone is protected through the countdown), so teammates never stack. */
   private chooseSpawn(player: PlayerState, placed?: ReadonlySet<string>) {
     const others = [...this.players.values()].filter(p => p.id !== player.id && p.health > 0 && p.connected && (!placed || placed.has(p.id)));
     const enemies = others.filter(p => this.hostile(player, p)), eyes = enemies.map(eyePosition);
-    const side = this.mode === 'tdm' && player.team ? SPAWNS.filter(s => player.team === 'teal' ? s.x < 0 : s.x > 0) : [];
-    const candidates = side.length ? side : SPAWNS;
+    const home = (spawn: Vec3) => this.mode !== 'tdm' || !player.team || (player.team === 'teal' ? spawn.x < 0 : spawn.x > 0);
+    const candidates = placed ? SPAWNS.filter(home) : SPAWNS;
     const scored = candidates.map((spawn, index) => ({
-      spawn, index,
+      spawn, index, away: !home(spawn),
       seen: eyes.some(eye => lineClear(eye, { x: spawn.x, y: spawn.y + SPAWN_CHEST, z: spawn.z })),
       occupied: others.some(other => Math.hypot(other.x - spawn.x, other.z - spawn.z) < 1.5),
       distance: enemies.length ? Math.min(...enemies.map(enemy => Math.hypot(enemy.x - spawn.x, enemy.z - spawn.z))) : 0,
     }));
-    scored.sort((a, b) => Number(a.seen) - Number(b.seen) || Number(a.occupied) - Number(b.occupied) || b.distance - a.distance || a.index - b.index);
+    const free = (a: typeof scored[number], b: typeof scored[number]) => Number(a.occupied) - Number(b.occupied);
+    scored.sort((a, b) => (placed ? free(a, b) : 0) || Number(a.seen) - Number(b.seen) || Number(a.away) - Number(b.away) || free(a, b)
+      || b.distance - a.distance || a.index - b.index);
     return scored[0]!.spawn;
   }
   private record(player: PlayerState, now: number) {
@@ -500,7 +519,9 @@ export class MatchEngine {
     });
     if (player.sprinting) { rt.lastSprintAt = now; rt.lastSprintDash = !!player.dashing; }
     player.aiming = input.aim && !player.sprinting;
-    if (player.cookingSince > 0 && !input.grenade) this.throwGrenade(player, rt, input, now);
+    // Only a real frame releases a cooked grenade. A stalled connection keeps it in hand while the fuse runs,
+    // instead of throwing it wherever the player last looked.
+    if (player.cookingSince > 0 && !rt.input.grenade) this.throwGrenade(player, rt, input, now);
     if (streakPress) this.useReward(player, streakPress, now);
     if (input.reload || reloadPress?.slot === player.slot) this.startReload(player, rt, now);
     if (!earlyPress) {
@@ -558,21 +579,19 @@ export class MatchEngine {
   }
   private tryFire(player: PlayerState, rt: Runtime, frame: InputFrame, now: number, actions: TickActions): boolean {
     const slot = player.slot, index = slot - 1, spec = weaponFor(player.loadout, slot);
-    if (player.reloadingUntil) {
-      // Only a shell-by-shell reload with something loaded gives way to the trigger.
-      if (!spec.perShellMs || player.mag[index]! <= 0) return false;
-      this.cancelReload(player, rt);
-    }
+    // Only a shell-by-shell reload with something loaded gives way to the trigger, and only once a shot goes off.
+    if (player.reloadingUntil && (!spec.perShellMs || player.mag[index]! <= 0)) return false;
     if (player.cookingSince > 0) return false;
     // Too early: a semi-automatic press is kept while the trigger stays down, then fires once.
     const early = now < player.meleeUntil || now < player.readyAt || vaultProgress(player, now) < VAULT_FIRE_PROGRESS
-      || now < rt.lastSprintAt + spec.sprintToFireMs * (rt.lastSprintDash ? DASH_SPRINT_TO_FIRE : 1) || now < rt.nextFireAt;
+      || now < rt.lastSprintAt + spec.sprintToFireMs * (rt.lastSprintDash ? DASH_SPRINT_TO_FIRE : 1) || now < rt.nextFireAt[index]!;
     if (early) { if (!spec.auto && player.mag[index]! > 0) rt.triggerPending = true; return false; }
     if (player.mag[index]! <= 0) { this.startReload(player, rt, now); return false; }
+    if (player.reloadingUntil) this.cancelReload(player, rt);
     // Held automatic fire accumulates the interval so 30 Hz ticks keep the true rate; a new pull starts fresh,
     // so idle time never banks extra shots. Semi-automatic rounds are always a full interval apart.
-    const interval = fireIntervalMs(spec), continuous = spec.auto && rt.fireDown && now - rt.nextFireAt < interval;
-    rt.nextFireAt = (continuous ? rt.nextFireAt : now) + interval;
+    const interval = fireIntervalMs(spec), continuous = spec.auto && rt.fireDown && now - rt.nextFireAt[index]! < interval;
+    rt.nextFireAt[index] = (continuous ? rt.nextFireAt[index]! : now) + interval;
     player.mag[index]!--; player.protectedUntil = 0; rt.triggerPending = false;
     actions.shots.push({ player, frame, spec, slot, ads: this.adsProgress(player, rt, frame, spec, now) });
     return true;
@@ -772,17 +791,17 @@ export class MatchEngine {
   // ---- Damage, eliminations and scoring ------------------------------------------------------
   private resolve(hits: PendingHit[], droneHits: DroneHit[], now: number) {
     this.resolving = true;
-    const settle: Settlement = this.settle = { firstStrikeOpen: !this.firstStrike, streaks: [], evened: [], killedBy: [], anyKill: false };
+    const settle: Settlement = this.settle = { firstStrikeOpen: !this.firstStrike, streaks: [], chains: [], evened: [], killedBy: [], anyKill: false };
     try {
       const targets = new Map<string, { target: PlayerState; byAttacker: Map<string, Contribution> }>();
       for (const hit of hits) {
         let entry = targets.get(hit.target.id);
         if (!entry) targets.set(hit.target.id, entry = { target: hit.target, byAttacker: new Map() });
         let contribution = entry.byAttacker.get(hit.attacker.id);
-        if (!contribution) entry.byAttacker.set(hit.attacker.id, contribution = { attacker: hit.attacker, amount: 0, top: hit, headshot: false });
+        if (!contribution) entry.byAttacker.set(hit.attacker.id, contribution = { attacker: hit.attacker, amount: 0, top: hit, bullet: { head: 0, torso: 0, legs: 0 } });
         contribution.amount += hit.amount;
         if (hit.amount > contribution.top.amount) contribution.top = hit;
-        if (hit.cause === 'bullet' && hit.zone === 'head') contribution.headshot = true;
+        if (hit.cause === 'bullet' && hit.zone) contribution.bullet[hit.zone] += hit.amount;
       }
       for (const { target, byAttacker } of targets.values()) this.applyDamage(target, [...byAttacker.values()], now);
       const drones = new Map<Drone, Map<string, { attacker: PlayerState; amount: number }>>();
@@ -809,8 +828,11 @@ export class MatchEngine {
       // Settle scores first, then remember who downed whom this tick.
       for (const rt of settle.evened) rt.lastKilledBy = null;
       for (const [rt, attackerId] of settle.killedBy) rt.lastKilledBy = attackerId;
-      // A kill only extends a streak if its maker is still standing once the tick settles, in the same life.
-      for (const { player, life } of settle.streaks) if (player.health > 0 && this.runtime.get(player.id)?.life === life) this.extendStreak(player, now);
+      // Multi-kills and streaks only count kills whose maker is still standing once the tick settles, in the same
+      // life, so a same-tick trade or a grenade landing after its thrower went down reads the same in any order.
+      const standing = ({ player, life }: { player: PlayerState; life: number }) => player.health > 0 && this.runtime.get(player.id)?.life === life;
+      for (const kill of settle.chains) if (standing(kill)) this.extendChain(kill.player, now);
+      for (const kill of settle.streaks) if (standing(kill)) this.extendStreak(kill.player, now);
     } finally { this.resolving = false; this.settle = null; }
   }
   /** Equal simultaneous contributions use a per-tick hash rather than join order. */
@@ -827,7 +849,7 @@ export class MatchEngine {
     rounded.sort((a, b) => b.amount - a.amount || this.tieBreak(target.id, a.attacker.id) - this.tieBreak(target.id, b.attacker.id) || a.attacker.id.localeCompare(b.attacker.id));
     const rt = this.runtime.get(target.id)!;
     for (const c of rounded) {
-      const zone = c.headshot ? 'head' : c.top.zone;
+      const zone = c.top.cause === 'bullet' ? mainZone(c.bullet) ?? c.top.zone : c.top.zone;
       this.onEvent({ type: 'damage', playerId: target.id, attackerId: c.attacker.id, amount: c.amount, cause: c.top.cause, ...(zone ? { zone } : {}), from: r3v(c.top.from), at: now });
       if (c.attacker.id !== target.id) rt.damageBy.set(c.attacker.id, (rt.damageBy.get(c.attacker.id) ?? 0) + c.amount);
     }
@@ -843,7 +865,7 @@ export class MatchEngine {
     if (target.cookingSince > 0) this.launchGrenade(target, rt, eyePosition(target), { x: 0, y: 0, z: 0 }, now);
     const assists = [...rt.damageBy].filter(([id, amount]) => id !== attacker.id && amount >= RULES.assistMinDamage && this.players.has(id)).map(([id]) => id);
     rt.damageBy.clear();
-    const headshot = cause === 'bullet' && killer.headshot, distance = Math.round(distance3(attacker, target) * 10) / 10;
+    const headshot = cause === 'bullet' && mainZone(killer.bullet) === 'head', distance = Math.round(distance3(attacker, target) * 10) / 10;
     this.onEvent({ type: 'elimination', playerId: target.id, attackerId: attacker.id, cause, ...(killer.top.weapon ? { weapon: killer.top.weapon } : {}), headshot, distance, assists, at: now });
     if (!suicide) {
       const art = this.runtime.get(attacker.id)!;
@@ -855,8 +877,7 @@ export class MatchEngine {
       settle.anyKill = true;
       if (settle.firstStrikeOpen) { this.award(attacker, 'first-strike', now); this.medal(attacker, 'first-strike', now); }
       if (art.lastKilledBy === target.id) { settle.evened.push(art); this.award(attacker, 'even-score', now); this.medal(attacker, 'even-score', now); }
-      art.chain = now - art.lastKillAt <= RULES.multiKillWindowMs ? art.chain + 1 : 1; art.lastKillAt = now;
-      if (art.chain >= 2) { this.award(attacker, 'multi', now); this.medal(attacker, art.chain === 2 ? 'double' : 'triple', now); }
+      settle.chains.push({ player: attacker, life: art.life });
       if (cause === 'melee') this.medal(attacker, 'blade', now);
       if (cause === 'frag') this.medal(attacker, 'grenadier', now);
       // Streaks count your own fighting in this life: not reward kills, nor kills after you went down.
@@ -868,6 +889,12 @@ export class MatchEngine {
     }
     for (const id of assists) { const helper = this.players.get(id)!; helper.assists++; this.award(helper, 'assist', now); }
     if (!this.resolving) this.checkScoreLimit(now);
+  }
+  /** Kills within the multi-kill window of each other, in one life, earn the double and triple medals. */
+  private extendChain(player: PlayerState, now: number) {
+    const rt = this.runtime.get(player.id)!;
+    rt.chain = now - rt.lastKillAt <= RULES.multiKillWindowMs ? rt.chain + 1 : 1; rt.lastKillAt = now;
+    if (rt.chain >= 2) { this.award(player, 'multi', now); this.medal(player, rt.chain === 2 ? 'double' : 'triple', now); }
   }
   private extendStreak(player: PlayerState, now: number) {
     player.streak++;

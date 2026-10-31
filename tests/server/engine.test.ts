@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { highestSurface, idleInput, MatchEngine, MAX_PITCH, sanitizeInput, torsoCenter, type EngineOptions } from '../../server/engine.js';
+import { highestSurface, idleInput, mainZone, MatchEngine, MAX_PITCH, sanitizeInput, torsoCenter, type EngineOptions } from '../../server/engine.js';
 import { PRACTICE_RIVALS } from '../../server/bots.js';
-import { SPAWNS } from '../../shared/map.js';
+import { ARENA_LIMITS, SPAWNS } from '../../shared/map.js';
 import { eyePosition, grenadeLaunch, grenadePosition, magnitude, normalize, raycastMap, subtract } from '../../shared/physics.js';
 import { RULES, type GameEvent, type InputFrame, type Loadout, type PlayerState, type Team, type Vec3 } from '../../shared/protocol.js';
 import { damageAt, DEFAULT_LOADOUT, DRONE, EXPLOSIVES, explosionDamage, fireIntervalMs, LOADOUT_PRESETS, WEAPONS } from '../../shared/weapons.js';
@@ -58,6 +58,13 @@ test('input accepts exactly a v3 frame and rejects malformed or hostile values w
   assert.ok(Math.abs(clean.yaw) < Math.PI * 2);
   assert.equal('x' in clean, false); assert.equal('health' in clean, false); assert.deepEqual(clean.streakTarget, { x: 10, z: -5 });
   assert.equal('streakTarget' in sanitizeInput({ ...valid, streakTarget: null })!, false, 'A null target reads as no target.');
+  // The mortar may target anything up to the inner fence faces; a page must clamp to ARENA_LIMITS before sending.
+  for (const target of [{ x: -ARENA_LIMITS.x, z: ARENA_LIMITS.z }, { x: ARENA_LIMITS.x, z: -ARENA_LIMITS.z }]) {
+    assert.deepEqual(sanitizeInput({ ...valid, streak: 'mortar', streakTarget: target })?.streakTarget, target);
+  }
+  for (const target of [{ x: ARENA_LIMITS.x + 0.01, z: 0 }, { x: 0, z: -ARENA_LIMITS.z - 0.01 }]) {
+    assert.equal(sanitizeInput({ ...valid, streak: 'mortar', streakTarget: target }), null, JSON.stringify(target));
+  }
 });
 
 test('spawning equips the class from the weapon table; Deep Pockets adds two magazines and a frag', () => {
@@ -270,6 +277,26 @@ test('a frag being cooked drops live where its thrower goes down', () => {
   assert.equal(of(events, 'explosion').length, 1);
 });
 
+test('a cooked frag stays in hand through a network stall; only a real frame releases it', () => {
+  const { engine, a, events } = playing();
+  place(a, -28, -20);
+  send(engine, 'a', 3100, { grenade: true, yaw: 1 }); engine.step(3100, 0);
+  // No frames arrive for half a second: movement stops, but silence is not a release.
+  for (let now = 3133; now <= 3600; now += 33) engine.step(now, 1 / 30);
+  assert.equal(of(events, 'grenade').length, 0, 'A stalled connection does not throw the grenade.');
+  assert.deepEqual([a.cookingSince, a.frags], [3100, 1]);
+  send(engine, 'a', 3650, { yaw: 1 }); engine.step(3650, 0);
+  const [thrown] = of(events, 'grenade');
+  assert.ok(thrown); assert.deepEqual([thrown.at, thrown.explodeAt, a.cookingSince], [3650, 6500, 0]);
+  // A stall that outlasts the fuse ends in the hand, as holding it would.
+  const held = playing(); place(held.a, -28, -20);
+  send(held.engine, 'a', 3100, { grenade: true }); held.engine.step(3100, 0);
+  for (let now = 3200; now <= 6500; now += 100) held.engine.step(now, 0);
+  assert.equal(of(held.events, 'grenade').length, 0);
+  const [blast] = of(held.events, 'explosion');
+  assert.ok(blast); assert.equal(blast.at, 6500); near(blast.position, { x: -28, y: 1.62, z: -20 });
+});
+
 test('reloads draw from the reserve, an empty magazine reloads slower, and each elimination returns a magazine', () => {
   const { engine, a, b } = playing();
   a.mag[0] = 10; a.reserve[0] = 25;
@@ -299,6 +326,28 @@ test('swapping waits for the new weapon to come up, faster with Quick Hands, and
     send(engine, 'a', 3200 + raise + 10, { slot: 2, yaw }); engine.step(3200 + raise + 10, 0);
     send(engine, 'a', 3200 + raise + 40, { slot: 2, fire: true, yaw }); engine.step(3200 + raise + 40, 0);
     assert.equal(of(events, 'shot').length, 1);
+  }
+});
+
+test('after a bolt or pump shot the sidearm fires as soon as it is up, and swapping back cannot skip the cycle', () => {
+  for (const primary of ['longbow', 'breaker12'] as const) {
+    const { engine, a, events } = playing({ loadouts: { a: { ...STEADY, primary } } });
+    place(a, -28, -20);
+    const yaw = Math.PI / 2, spec = WEAPONS[primary], cycle = 3100 + fireIntervalMs(spec);
+    const fired = (weapon: string) => of(events, 'shot').filter(shot => shot.weapon === weapon).map(shot => shot.at);
+    send(engine, 'a', 3100, { fire: true, yaw }); engine.step(3100, 0);
+    send(engine, 'a', 3133, { yaw }); engine.step(3133, 0);
+    send(engine, 'a', 3166, { slot: 2, yaw }); engine.step(3166, 0);
+    const up = 3166 + WEAPONS.sentry9.raiseMs;
+    assert.equal(a.readyAt, up); assert.ok(up < cycle, `Setup: the sidearm is up before the ${primary} could fire again.`);
+    send(engine, 'a', up, { slot: 2, fire: true, yaw }); engine.step(up, 0);
+    assert.deepEqual(fired('sentry9'), [up], `${primary}: the sidearm waits only for its own raise.`);
+    // Straight back to the main gun: it still has to finish its own bolt or pump cycle.
+    const back = up + 10;
+    send(engine, 'a', back, { slot: 1, yaw }); engine.step(back, 0);
+    for (let now = back + TICK; now < back + 2000 && fired(primary).length < 2; now += TICK) { send(engine, 'a', now, { slot: 1, fire: true, yaw }); engine.step(now, 0); }
+    const [, second] = fired(primary), allowed = Math.max(cycle, back + spec.raiseMs);
+    assert.ok(second !== undefined && second >= allowed && second < allowed + TICK + 1e-6, `${primary}: second shot at ${second}, allowed from ${allowed}`);
   }
 });
 
@@ -334,6 +383,30 @@ test('the Breaker 12 reloads shell by shell and a shot stops the reload between 
   send(engine, 'a', 4400, { fire: true, yaw }); engine.step(4400, 0);
   assert.deepEqual([a.reloadingUntil, a.mag[0], a.reserve[0], of(events, 'shot').length], [0, 3, spec.magazine * 5 - 2, 1]);
   const [shot] = of(events, 'shot'); assert.equal(shot!.traces.length, spec.pellets);
+});
+
+test('a trigger tap that cannot fire yet leaves a shell reload running; a held press stops it only when it fires', () => {
+  const { engine, a, events } = playing({ loadouts: { a: { ...STEADY, primary: 'breaker12' } } });
+  place(a, -28, -20);
+  const spec = WEAPONS.breaker12, yaw = Math.PI / 2, shells = (spec.shellStartMs ?? 0) + spec.perShellMs!;
+  send(engine, 'a', 3100, { fire: true, yaw }); engine.step(3100, 0);
+  send(engine, 'a', 3133, { yaw }); engine.step(3133, 0);
+  send(engine, 'a', 3200, { reload: true, yaw }); engine.step(3200, 0);
+  assert.equal(a.reloadingUntil, 3200 + shells);
+  // Tapped and let go inside the pump's fire delay.
+  send(engine, 'a', 3400, { fire: true, yaw }); engine.step(3400, 0);
+  send(engine, 'a', 3433, { yaw }); engine.step(3433, 0);
+  assert.deepEqual([a.reloadingUntil, a.mag[0], of(events, 'shot').length], [3200 + shells, 5, 1], 'The early tap changed nothing.');
+  engine.step(3200 + shells, 0); assert.deepEqual([a.mag[0], a.reloadingUntil], [spec.magazine, 0], 'The reload finished.');
+  // Held through the delay instead: the shot goes off once allowed, and only then ends the reload.
+  send(engine, 'a', 4300, { fire: true, yaw }); engine.step(4300, 0);
+  send(engine, 'a', 4333, { yaw }); engine.step(4333, 0);
+  send(engine, 'a', 4400, { reload: true, yaw }); engine.step(4400, 0);
+  const cycle = 4300 + fireIntervalMs(spec);
+  let now = 4500;
+  for (; now < cycle; now += TICK) { send(engine, 'a', now, { fire: true, yaw }); engine.step(now, 0); assert.equal(a.reloadingUntil, 4400 + shells, 'Still reloading while the shot waits.'); }
+  send(engine, 'a', now, { fire: true, yaw }); engine.step(now, 0);
+  assert.deepEqual([of(events, 'shot').length, a.mag[0], a.reloadingUntil], [3, 4, 0]);
 });
 
 test('team deathmatch splits the humans, fills even sides with bots, spawns each team at home and has no friendly fire', () => {
@@ -444,6 +517,32 @@ test('respawns avoid every spot a living enemy can see while a hidden spawn exis
     assert.ok(a.x < 0, 'Teal spawns on its own side.');
     assert.equal(sees(eyePosition(b), { x: a.x, y: 1.2, z: a.z }), false, 'The intruder cannot see the spawn chosen.');
   }
+});
+
+test('team deathmatch moves a respawn to the far side when enemies watch every home spawn, but never a round start', () => {
+  const { engine, get } = playing({ ids: ['a', 'b', 'c'], options: { mode: 'tdm' }, teams: { a: 'teal', b: 'gold', c: 'gold' } });
+  const a = get('a'), b = get('b'), c = get('c');
+  // Two gold players in the teal back yard: between them they can see all four teal spawns.
+  place(b, -30.4, -22.4); place(c, -25.4, 17.6);
+  const seen = (point: Vec3) => [b, c].some(enemy => sees(eyePosition(enemy), { x: point.x, y: point.y + 1.2, z: point.z }));
+  assert.ok(SPAWNS.filter(spawn => spawn.x < 0).every(seen), 'Setup: every teal spawn is in view.');
+  assert.ok(SPAWNS.some(spawn => spawn.x > 0 && !seen(spawn)), 'Setup: a gold-side spawn is hidden from both.');
+  engine.damage(a, b, 150, 3100); engine.step(3100 + RULES.respawnMs, 0);
+  assert.equal(a.health, 100);
+  assert.equal(seen(a), false, 'The respawn is out of both intruders\' sight.');
+  assert.ok(a.x > 0, 'With home in view, the spawn moves to the far side.');
+
+  // A new round always starts each team at home.
+  engine.finish('Test round over.', 4000); engine.start(5000);
+  for (const player of engine.players.values()) assert.ok(player.team === 'teal' ? player.x < 0 : player.x > 0, `${player.id} starts at home`);
+
+  // A full four-a-side round spreads each team over its own four spawns instead of stacking teammates.
+  const full = new MatchEngine({ mode: 'tdm', practiceSeed: 'four-a-side' });
+  for (let i = 0; i < RULES.maxPlayers; i++) full.addPlayer({ id: `p${i}`, name: `P${i}`, color: '#fff' }, 0);
+  full.start(0);
+  const roster = [...full.players.values()];
+  assert.equal(new Set(roster.map(p => `${p.x},${p.z}`)).size, RULES.maxPlayers, roster.map(p => `${p.id} ${p.team} (${p.x}, ${p.z})`).join('; '));
+  for (const player of roster) assert.ok(player.team === 'teal' ? player.x < 0 : player.x > 0, `${player.id} starts at home`);
 });
 
 test('streaks earn rewards at 3, 5 and 7 kills, reset when you go down, and earned rewards wait for later lives', () => {
@@ -579,6 +678,48 @@ test('eliminations score points and medals: headshot, long shot, first strike, e
   const mark = events.length;
   engine.damage(b, a, 150, 9400); engine.damage(c, a, 150, 9400 + RULES.multiKillWindowMs);
   assert.deepEqual(of(events.slice(mark), 'medal').filter(m => m.medal === 'double').map(m => m.playerId), ['a']);
+});
+
+test('a shotgun blast is a headshot only when the head took the largest share of it', () => {
+  assert.equal(mainZone({ head: 28, torso: 84, legs: 0 }), 'torso');
+  assert.equal(mainZone({ head: 14, torso: 14, legs: 0 }), 'torso', 'A tie is not a headshot.');
+  assert.equal(mainZone({ head: 28, torso: 0, legs: 14 }), 'head');
+  assert.equal(mainZone({ head: 0, torso: 0, legs: 0 }), undefined);
+  for (const [label, aimY, headshot] of [['upper chest', 1.35, false], ['face', 1.62, true]] as const) {
+    const { engine, a, b, events } = playing({ loadouts: { a: { ...STEADY, primary: 'breaker12' } } });
+    place(a, -28, -20); place(b, -25, -20); wound(b, 40, 3000);
+    send(engine, 'a', 3100, { fire: true, ...aimAt(a, { x: b.x, y: aimY, z: b.z }) }); engine.step(3100, 0);
+    const zones = of(events, 'shot')[0]!.traces.filter(trace => trace.kind === 'player').map(trace => trace.zone!);
+    const count = (zone: string) => zones.filter(z => z === zone).length;
+    assert.ok(count('head') > 0 && (headshot ? count('head') > count('torso') + count('legs') : count('head') < count('torso')), `${label} setup: ${zones.join(',')}`);
+    const [down] = of(events, 'elimination'), [hit] = of(events, 'damage');
+    assert.ok(down, `${label}: the blast downs the target`);
+    assert.equal(down.headshot, headshot, label); assert.equal(hit!.zone, headshot ? 'head' : 'torso', label);
+    assert.equal(of(events, 'medal').some(m => m.medal === 'headshot'), headshot, label);
+    assert.equal(of(events, 'score').some(s => s.reason === 'headshot'), headshot, label);
+  }
+});
+
+test('multi-kills only pair kills made while standing in one life', () => {
+  const { engine, events, get } = playing({ ids: ['a', 'b', 'c'] });
+  const a = get('a'), b = get('b'), c = get('c');
+  const multi = () => [of(events, 'medal').filter(m => m.playerId === 'a' && (m.medal === 'double' || m.medal === 'triple')).length, of(events, 'score').filter(s => s.playerId === 'a' && s.reason === 'multi').length];
+  engine.damage(b, a, 150, 3100);
+  engine.damage(a, c, 150, 3150);
+  engine.step(3150 + RULES.respawnMs, 0); for (const p of [a, c]) p.protectedUntil = 0;
+  engine.damage(c, a, 150, 3100 + RULES.multiKillWindowMs - 100);
+  assert.deepEqual(multi(), [0, 0], 'A kill before going down does not pair with one after the respawn.');
+
+  // A grenade that lands after its thrower went down does not make a multi-kill either.
+  const late = playing({ ids: ['a', 'b', 'c', 'd'] });
+  const [la, lb, lc, ld] = ['a', 'b', 'c', 'd'].map(late.get) as [PlayerState, PlayerState, PlayerState, PlayerState];
+  place(la, -28, -20); place(lc, -27, -20); place(ld, 28, 20);
+  send(late.engine, 'a', 3100, { grenade: true }); late.engine.step(3100, 0);
+  late.engine.damage(lb, la, 150, 3200);
+  late.engine.damage(la, ld, 150, 4000);
+  for (let now = 4100; now <= 6500; now += 100) late.engine.step(now, 0);
+  assert.deepEqual([lc.deaths, la.kills], [1, 2], 'Setup: the dropped frag downs c after a went down.');
+  assert.equal(of(late.events, 'medal').some(m => m.playerId === 'a' && (m.medal === 'double' || m.medal === 'triple')), false);
 });
 
 test('the match ends at 15 eliminations or when time is up, once, with every tied leader winning', () => {

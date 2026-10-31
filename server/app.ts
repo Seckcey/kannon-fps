@@ -9,7 +9,12 @@ import { GameStore } from './store.js';
 import { hasMatchOpponents, RULES, WORLD_VERSION, type AvailableGame, type ClientMessage, type GameEvent, type GameMode, type Loadout, type PracticeDifficulty, type Profile, type RoomSnapshot, type RoomVisibility, type ServerMessage } from '../shared/protocol.js';
 import { sanitizeLoadout } from '../shared/weapons.js';
 
-export interface ServerOptions { port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[] }
+export interface ServerOptions {
+  port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[];
+  /** Compress WebSocket messages (permessage-deflate; env WS_COMPRESSION=1). An 8-player snapshot drops from about
+   * 5.5 KB to under 0.5 KB. Off by default until it has been checked on real iPhones. */
+  compression?: boolean;
+}
 /** `loadout` is the player's last valid choice on this connection; it follows them into any room they join. */
 interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; loadoutAt: number; loadouts: number; loadout: Loadout | null; alive: boolean; supportsReadiness: boolean }
 interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; mode: GameMode; practiceDifficulty?: PracticeDifficulty; visibility: RoomVisibility; fillBots: boolean; botDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null; preparation?: { id: string; expiresAt: number; ready: Set<string> } }
@@ -127,7 +132,10 @@ export function createGameServer(options: ServerOptions = {}) {
     }
   });
   server.requestTimeout = 15_000; server.headersTimeout = 10_000;
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
+  // Only messages over 1 KB (snapshots, rooms) are compressed, at the fastest level; each socket keeps its context,
+  // so a snapshot mostly refers back to the one before. maxPayload still bounds what a client's message inflates to.
+  const compression = options.compression ?? process.env.WS_COMPRESSION === '1';
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: compression ? { threshold: 1024, zlibDeflateOptions: { level: 1 } } : false });
   server.on('upgrade', (req, socket, head) => {
     try {
       if (req.url !== '/ws') throw new Error('Not found');

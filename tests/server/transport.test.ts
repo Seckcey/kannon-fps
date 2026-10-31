@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import WebSocket from 'ws';
 import { createGameServer } from '../../server/app.js';
-import { fixture, frame, startReady } from '../acceptance/helpers.js';
-import { RULES, type Crew } from '../../shared/protocol.js';
+import { fixture, frame, Peer, startReady, type Identity } from '../acceptance/helpers.js';
+import { RULES, WORLD_VERSION, type Crew } from '../../shared/protocol.js';
 import { idleInput } from '../../server/engine.js';
 import { LOADOUT_PRESETS } from '../../shared/weapons.js';
 
@@ -131,6 +132,24 @@ test('malformed or hostile inputs are refused without stopping the room, and une
   assert.equal(accepted.snapshot.phase, 'playing'); assert.deepEqual(accepted.snapshot.drones, []);
   assert.equal(host.messages.slice(mark).some(m => m.type === 'event' && m.event.type === 'streak'), false, 'An unearned reward does nothing.');
   await guest.wait('snapshot', m => m.snapshot.serverTime > accepted.snapshot.serverTime, guest.mark());
+});
+test('message compression stays off by default and, when switched on, still delivers rooms and snapshots', async t => {
+  const plain = await fixture(t);
+  assert.equal((await plain.connect()).socket.extensions, '', 'Without the switch the server never compresses.');
+  const app = createGameServer({ host: '127.0.0.1', port: 0, dbPath: ':memory:', staticDir: join(tmpdir(), 'kannon-no-client'), compression: true });
+  const base = `http://127.0.0.1:${(await app.listen()).port}`;
+  let peer: Peer | undefined;
+  t.after(async () => { peer?.close(); await app.close(); });
+  const response = await fetch(base + '/api/profile', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Phone on mobile data' }) });
+  const identity = await response.json() as Identity;
+  const socket = new WebSocket(base.replace('http:', 'ws:') + '/ws', { origin: base }); peer = new Peer(socket);
+  await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
+  assert.match(socket.extensions, /permessage-deflate/);
+  await peer.command({ type: 'hello', token: identity.token, readyProtocol: 1, worldVersion: WORLD_VERSION }, 'welcome');
+  const created = await peer.command({ type: 'create', ranked: false, practice: true }, 'room', m => m.room.players.length === 4);
+  const lobby = await peer.wait('snapshot', m => m.snapshot.players.length === 4);
+  assert.equal(lobby.snapshot.self?.id, identity.profile.id); assert.equal(created.room.practice, true);
+  assert.ok(JSON.stringify(lobby).length > 1024, 'Setup: the snapshot is large enough to be compressed.');
 });
 test('finished recovery replays the saved ranked result exactly once without another rating write and clears it on rematch', async t => {
   const originalNow = Date.now; let offset = 0; Date.now = () => originalNow() + offset;
