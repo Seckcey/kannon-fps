@@ -3,7 +3,7 @@ import type { PublicPlayerState } from '../../shared/protocol';
 
 /** A body hit, a headshot, or an explosion/knife: a brief, bounded warm flash (never gore). */
 export type CharacterImpactKind = 'hit' | 'head' | 'blast';
-type LifeState = Pick<PublicPlayerState, 'health' | 'connected' | 'protectedUntil'>;
+type LifeState = Pick<PublicPlayerState, 'health' | 'protectedUntil'>;
 
 export interface CharacterImpact {
   impact(kind: CharacterImpactKind): void;
@@ -62,7 +62,8 @@ function materialPulse(materials: THREE.MeshStandardMaterial[], now: () => numbe
     },
     update(player) {
       if (disposed) return;
-      alive = player.health > 0 && player.connected;
+      // A body left by a dropped connection can still be hit, so it still flashes.
+      alive = player.health > 0;
       // The new spawn's protection timestamp also catches a skipped dead snapshot.
       if (!alive || (protectedUntil !== undefined && player.protectedUntil > protectedUntil)) clear();
       protectedUntil = player.protectedUntil;

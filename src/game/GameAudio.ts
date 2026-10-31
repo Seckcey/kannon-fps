@@ -139,6 +139,26 @@ export class GameAudio {
     } catch { /* Audio may be unavailable; gameplay still works. */ }
   }
 
+  /** Pauses all sound while the page is hidden. Frames are what update and stop the loops, and frames
+   * stop in a hidden page, so otherwise the heartbeat, wind and drone hum would play on unchanged, and
+   * the distant gunfire, barrages and helicopters due meanwhile would all start together on return.
+   * A suspended context also stops its clock. `resume()` undoes it. */
+  suspend() {
+    try { if (this.context?.state === 'running') void this.context.suspend().catch(() => {}); }
+    catch { /* Pausing is best effort. */ }
+  }
+
+  /** The page is shown again: resumes the sound paused by `suspend()`. Only a context that already
+   * exists is resumed; before the first tap or click there is none, and `unlock()` makes it then, as
+   * browsers require. A phone that refuses to resume without a tap resumes on the next one. */
+  resume() {
+    if (this.disposed || document.hidden) return;
+    try {
+      const context = this.context;
+      if (context && context.state !== 'running' && context.state !== 'closed') void context.resume().catch(() => {});
+    } catch { /* The next tap resumes it. */ }
+  }
+
   setVolume(volume: number) {
     if (!finite(volume)) return;
     this.volume = Math.max(0, Math.min(1, volume));
@@ -245,7 +265,7 @@ export class GameAudio {
     });
   }
 
-  /** Reload choreography for the local weapon. Pump and Longbow bolt reuse the shot cycle sounds. */
+  /** Reload choreography for the local weapon. Pump and Heron 7 bolt reuse the shot cycle sounds. */
   reloadStep(weapon: WeaponId, step: ReloadStep) {
     this.guard(() => {
       if (!RELOAD_STEPS.includes(step)) return;

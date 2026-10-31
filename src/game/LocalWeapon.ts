@@ -1,7 +1,8 @@
 import { clamp, directionFromAngles, normalize, rightFromYaw } from '../../shared/physics';
 import { RULES, type InputFrame, type Loadout, type PlayerState, type Slot, type Vec3, type WeaponId } from '../../shared/protocol';
 import {
-  DEEP_POCKETS_EXTRA_MAGS, DEFAULT_LOADOUT, EXPLOSIVES, fireIntervalMs, hasPerk, PELLET_PATTERN, QUICK_HANDS_FACTOR, weaponFor, type WeaponSpec,
+  DEEP_POCKETS_EXTRA_MAGS, DEFAULT_LOADOUT, EXPLOSIVES, fireIntervalMs, hasPerk, PELLET_PATTERN, QUICK_HANDS_FACTOR, STEADY_AIM_ADS_FACTOR, weaponFor,
+  type WeaponSpec,
 } from '../../shared/weapons';
 
 /** The local player's weapon as the server will run it, predicted for instant presentation.
@@ -19,6 +20,8 @@ export interface WeaponState {
   nextFireAt: [number, number]; burst: number; triggerPending: boolean;
   /** The last tick spent sprinting, and whether it was the faster dash (sprint-to-fire). */
   lastSprintAt: number; lastSprintDash: boolean;
+  /** The tick aim went down, as the server records it for the shot's aim progress; null while not aiming. */
+  aimSince: number | null;
 }
 export interface WeaponStepContext {
   /** Predicted server time of the tick that processes this input. */
@@ -26,13 +29,19 @@ export interface WeaponStepContext {
   alive: boolean;
   /** Movement after this tick's move (sprint ends when firing starts). */
   sprinting: boolean; dashing: boolean;
-  /** Vault progress 0..1 (1 when not vaulting); firing waits for 0.7. */
+  /** Vault progress 0..1 after this tick's move (1 when not vaulting); the held trigger waits for 0.7. */
   vaultProgress: number;
+  /** The same on the body before this tick's move, where the server judges a new trigger press. */
+  pressVaultProgress: number;
+  /** A vault was under way before this tick's move; the server refuses the knife and a cook then. */
+  vaultingBefore: boolean;
   /** Aim-down-sights blend when the shot leaves, for recoil. */
   ads: number;
 }
 export type WeaponEvent =
-  | { type: 'shot'; weapon: WeaponId; slot: Slot; burst: number; kick: { yaw: number; pitch: number } }
+  /** `aim` is how far the sights were up as the server judges it (0..1), which sets its spread;
+   * `at` is the predicted server time of the tick. */
+  | { type: 'shot'; weapon: WeaponId; slot: Slot; burst: number; kick: { yaw: number; pitch: number }; aim: number; at: number }
   | { type: 'reload'; weapon: WeaponId; empty: boolean }
   | { type: 'shell'; weapon: WeaponId }
   | { type: 'reloaded'; weapon: WeaponId; empty: boolean }
@@ -72,17 +81,57 @@ export function recoilKick(spec: WeaponSpec, burst: number, ads: number): { yaw:
   return { yaw: recoil.horizontal * drift * scale, pitch: vertical * scale };
 }
 
+/** How far the sights are up for a shot, as the server judges it: from the tick aim went down, over
+ * the weapon's aim time (20% shorter with Cool Head); 0 when the shot's frame is not aiming. */
+export function aimProgress(spec: WeaponSpec, loadout: Loadout, aimSince: number | null, aimed: boolean, now: number): number {
+  if (!aimed || aimSince === null || !Number.isFinite(aimSince)) return 0;
+  const time = spec.adsMs * (hasPerk(loadout, 'steady-aim') ? STEADY_AIM_ADS_FACTOR : 1);
+  return clamp((now - aimSince) / Math.max(1, time), 0, 1);
+}
+const progress01 = (value: number) => clamp(Number.isFinite(value) ? value : 0, 0, 1);
+/** Half-angle of the random cone the server rolls a single bullet inside, narrowing as the sights come
+ * up (only the Heron 7 has one: wide from the hip, none fully scoped). Shotgun pellets keep their fixed
+ * pattern instead, so this is 0 for them. */
+export function shotCone(spec: WeaponSpec, aim: number): number {
+  if (spec.pellets > 1) return 0;
+  return spec.hipSpread + (spec.adsSpread - spec.hipSpread) * progress01(aim);
+}
+
 /** Directions a shot travels for presentation: the crosshair ray, or the shotgun's fixed pellet
- * pattern (centre first) spread around it, tighter when aimed. */
-export function shotDirections(spec: WeaponSpec, yaw: number, pitch: number, aimed: boolean): Vec3[] {
+ * pattern (centre first) spread around it, narrowing with the aim progress exactly as on the server. */
+export function shotDirections(spec: WeaponSpec, yaw: number, pitch: number, aim: number): Vec3[] {
   const forward = directionFromAngles(yaw, pitch);
   if (spec.pellets <= 1) return [forward];
   const right = rightFromYaw(yaw);
   const up = { x: right.y * forward.z - right.z * forward.y, y: right.z * forward.x - right.x * forward.z, z: right.x * forward.y - right.y * forward.x };
-  const spread = (aimed ? spec.pelletSpread?.ads : spec.pelletSpread?.hip) ?? 0;
+  const hip = spec.pelletSpread?.hip ?? 0, spread = hip + ((spec.pelletSpread?.ads ?? 0) - hip) * progress01(aim);
   return PELLET_PATTERN.slice(0, spec.pellets).map(([px, py]) => normalize({
     x: forward.x + (right.x * px + up.x * py) * spread, y: forward.y + (right.y * px + up.y * py) * spread, z: forward.z + (right.z * px + up.z * py) * spread,
   }));
+}
+
+/** How far apart (ms) a predicted shot and the server's confirmation of it may be. */
+const TRACER_MATCH_MS = 250;
+/** The local player's shots that left inside a random cone: the client cannot know where they went,
+ * so their tracer is drawn from the server's shot event instead of along the crosshair. Each confirmed
+ * shot is matched to the expected one by weapon and tick time; shots the server never fired fall away. */
+export class ServerTracers {
+  private expected: Array<{ weapon: WeaponId; at: number }> = [];
+  expect(weapon: WeaponId, at: number) {
+    if (!Number.isFinite(at)) return;
+    this.expected.push({ weapon, at });
+    if (this.expected.length > 8) this.expected.shift();
+  }
+  /** True when this confirmed local shot is one whose tracer was left to the server. */
+  take(weapon: WeaponId | 'drone', at: number): boolean {
+    if (!Number.isFinite(at)) return false;
+    while (this.expected.length && this.expected[0]!.at < at - TRACER_MATCH_MS) this.expected.shift();
+    const next = this.expected[0];
+    if (!next || next.weapon !== weapon || next.at > at + TRACER_MATCH_MS) return false;
+    this.expected.shift();
+    return true;
+  }
+  clear() { this.expected = []; }
 }
 
 /** Gives back part of a burst's climb after the trigger is released, never below where it began
@@ -125,7 +174,7 @@ const blankState = (loadout: Loadout): WeaponState => {
     slot: 1, mag: [primary.magazine, secondary.magazine], reserve: [spawnReserve(primary, loadout), spawnReserve(secondary, loadout)], frags: spawnFrags(loadout),
     reloadSlot: 0, reloadingUntil: 0, reloadStartedAt: 0, reloadEmpty: false, reloadShells: 0, shellsLeft: 0, nextShellAt: 0,
     readyAt: 0, meleeUntil: 0, cookingSince: 0, nextFireAt: [-Infinity, -Infinity], burst: 0, triggerPending: false,
-    lastSprintAt: -Infinity, lastSprintDash: false,
+    lastSprintAt: -Infinity, lastSprintDash: false, aimSince: null,
   };
 };
 const copy = (state: WeaponState): WeaponState => ({
@@ -274,25 +323,27 @@ export class LocalWeapon {
     if (this.history.length > HISTORY) this.history.splice(0, this.history.length - HISTORY);
     const s = this.state, now = ctx.now;
     this.previous = { fire: input.fire, melee: input.melee, grenade: input.grenade };
-    if (!ctx.alive) { s.burst = 0; s.triggerPending = false; return; }
+    if (!ctx.alive) { s.burst = 0; s.triggerPending = false; s.aimSince = null; return; }
     const pressed = (key: keyof Edges) => input[key] && !(previous?.[key] ?? false);
     const factor = handlingFactor(this.loadout), slot = input.slot === 1 || input.slot === 2 ? input.slot : s.slot;
-    const firePressed = pressed('fire'), wasFiring = !!previous?.fire, vaulting = ctx.vaultProgress < 1;
-    // The server's order: due shells go in, a press made with the weapon in hand fires before a swap,
-    // the knife and a cook start before moving, then the reload key, then the held trigger.
+    const firePressed = pressed('fire'), wasFiring = !!previous?.fire;
+    // The server's order: due shells go in, the aim start is noted, a press made with the weapon in hand
+    // fires before a swap, the knife and a cook start before moving, then the reload key, then the held
+    // trigger. The press, the knife and the cook are judged on the body before this tick's move.
     this.progressReload(s, now, events);
+    if (!input.aim) s.aimSince = null; else if (s.aimSince === null) s.aimSince = now;
     const early = firePressed && slot === s.slot;
-    if (early) this.tryFire(s, ctx, events, firePressed, wasFiring);
+    if (early) this.tryFire(s, { ...ctx, vaultProgress: ctx.pressVaultProgress }, events, firePressed, wasFiring, input.aim);
     if (slot !== s.slot) {
       s.slot = slot; this.cancelReload(s); s.burst = 0; s.triggerPending = false;
       s.readyAt = Math.max(s.readyAt, now + weaponFor(this.loadout, s.slot).raiseMs * factor);
       events?.push({ type: 'swap', weapon: weaponFor(this.loadout, s.slot).id });
     }
-    if (pressed('melee') && now >= s.meleeUntil && !s.cookingSince && !vaulting) {
+    if (pressed('melee') && now >= s.meleeUntil && !s.cookingSince && !ctx.vaultingBefore) {
       s.meleeUntil = now + RULES.meleeMs; s.readyAt = Math.max(s.readyAt, s.meleeUntil); this.cancelReload(s); s.burst = 0;
       events?.push({ type: 'melee' });
     }
-    if (pressed('grenade') && !s.cookingSince && s.frags > 0 && now >= s.meleeUntil && !vaulting) {
+    if (pressed('grenade') && !s.cookingSince && s.frags > 0 && now >= s.meleeUntil && !ctx.vaultingBefore) {
       // The frag leaves the belt when the cook starts, as on the server.
       s.cookingSince = now; s.frags--; this.cancelReload(s); s.burst = 0;
       events?.push({ type: 'cook' });
@@ -303,12 +354,12 @@ export class LocalWeapon {
     if (ctx.sprinting) { s.lastSprintAt = now; s.lastSprintDash = ctx.dashing; }
     const spec = weaponFor(this.loadout, s.slot), index = s.slot - 1;
     if (input.reload && !s.reloadSlot && s.mag[index] < spec.magazine && s.reserve[index] > 0 && !s.cookingSince && now >= s.meleeUntil) this.startReload(s, now, events);
-    if (!early && (firePressed || ((spec.auto || s.triggerPending) && input.fire))) this.tryFire(s, ctx, events, firePressed, wasFiring);
+    if (!early && (firePressed || ((spec.auto || s.triggerPending) && input.fire))) this.tryFire(s, ctx, events, firePressed, wasFiring, input.aim);
     if (!input.fire) { s.burst = 0; s.triggerPending = false; }
   }
 
   /** The server's trigger rules, step for step. */
-  private tryFire(s: WeaponState, ctx: WeaponStepContext, events: WeaponEvent[] | null, firePressed: boolean, wasFiring: boolean) {
+  private tryFire(s: WeaponState, ctx: WeaponStepContext, events: WeaponEvent[] | null, firePressed: boolean, wasFiring: boolean, aimed: boolean) {
     const now = ctx.now, spec = weaponFor(this.loadout, s.slot), index = s.slot - 1;
     // Only a shell-by-shell reload with something loaded gives way to the trigger, and only once a shot goes off.
     if (s.reloadSlot && (!spec.perShellMs || s.mag[index] <= 0)) return;
@@ -327,7 +378,10 @@ export class LocalWeapon {
     const interval = fireIntervalMs(spec), continuous = spec.auto && wasFiring && now - s.nextFireAt[index] < interval;
     s.nextFireAt[index] = (continuous ? s.nextFireAt[index] : now) + interval;
     s.mag[index]--; s.triggerPending = false;
-    events?.push({ type: 'shot', weapon: spec.id, slot: s.slot, burst: s.burst, kick: recoilKick(spec, s.burst, ctx.ads) });
+    events?.push({
+      type: 'shot', weapon: spec.id, slot: s.slot, burst: s.burst, kick: recoilKick(spec, s.burst, ctx.ads),
+      aim: aimProgress(spec, this.loadout, s.aimSince, aimed, now), at: now,
+    });
     s.burst++;
   }
 }

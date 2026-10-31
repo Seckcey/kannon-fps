@@ -164,7 +164,8 @@ export function createBlenderCharacter(color: string, onReady?: () => void, onEr
     },
     update(player, dt, time, local, motion) {
       if (disposed) return;
-      root.visible = player.health > 0 && player.connected;
+      // A living player whose connection dropped stays in the world as a frozen body others can hit.
+      root.visible = player.health > 0;
       const spec = WEAPONS[player.weapon] ?? WEAPONS.kr5;
       kickRate = spec.kind === 'pistol' ? 0.8 : spec.kind === 'sniper' || spec.kind === 'shotgun' ? 0.9 : 1.5;
       kickWeight = spec.kind === 'pistol' ? 0.7 : spec.kind === 'shotgun' || spec.kind === 'sniper' ? 1.5 : 1;

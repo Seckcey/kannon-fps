@@ -72,7 +72,7 @@ class FakeNode {
 let allowed = false;
 const contexts: FakeContext[] = [];
 class FakeContext {
-  state = 'suspended'; currentTime = 1; sampleRate = 48000; resumes = 0; buffers = 0;
+  state = 'suspended'; currentTime = 1; sampleRate = 48000; resumes = 0; suspends = 0; buffers = 0;
   /** Makes the next node of this kind fail to create, like a browser running out of resources. */
   failNext: string | null = null;
   readonly invalid: string[] = [];
@@ -100,6 +100,8 @@ class FakeContext {
     return { numberOfChannels: channels, length, sampleRate, duration: length / sampleRate, getChannelData: (c: number) => data[c] };
   }
   async resume() { this.resumes++; if (!allowed) throw new Error('A tap has not ended yet'); this.state = 'running'; }
+  /** Like a browser, a suspended context stops its clock until it resumes. */
+  async suspend() { this.suspends++; if (this.state !== 'closed') this.state = 'suspended'; }
   async close() { this.state = 'closed'; }
 }
 
@@ -221,6 +223,37 @@ test('muted or hidden games do not take over the phone audio route; routing erro
   await f.gesture('click');
   f.audio.hitMarker('hit');
   assert.equal(f.contexts[0].state, 'running'); assert.ok(f.contexts[0].nodes.some(node => node.starts.length));
+});
+
+test('a hidden page pauses every sound, and showing it again carries on where it left off', async t => {
+  const f = await unlocked(t), { context, audio } = f;
+  audio.lowHealth(1); audio.ambience(true); audio.drone({ x: 10, y: 11, z: -12 });
+  for (let i = 0; i < 10; i++) { context.currentTime += 0.016; audio.setListener(EAR, 0, 0, false); }
+  const loops = context.nodes.filter(node => (node.loop || node.kind === 'oscillator') && node.starts.length && !node.stops.length);
+  assert.ok(loops.length >= 3, 'the heartbeat, the wind and the drone hum are playing');
+  f.document.hidden = true;
+  audio.suspend();
+  assert.equal(context.state, 'suspended', 'nothing plays on in the background, and the context clock stops with it');
+  const before = context.nodes.length;
+  audio.hitMarker('hit'); audio.shot('kr5', near(10, -5), false); audio.setListener(EAR, 0, 0, false);
+  assert.equal(context.nodes.length, before, 'no sound is started while paused');
+  audio.suspend(); assert.equal(context.suspends, 1, 'pausing again is harmless');
+  audio.resume(); assert.equal(context.state, 'suspended', 'a hidden page stays paused');
+  f.document.hidden = false;
+  audio.resume(); await Promise.resolve();
+  assert.equal(context.state, 'running', 'showing the page resumes the sound');
+  assert.ok(loops.every(node => !node.stops.length), 'the loops resume where they were instead of starting over');
+  audio.dispose(); audio.suspend(); audio.resume();
+  assert.equal(context.suspends, 1, 'a closed context is left alone');
+});
+
+test('showing the page before the first tap does not start the sound or take over the phone audio route', async t => {
+  const f = fixture(t); f.allow();
+  f.audio.suspend(); f.audio.resume();
+  assert.equal(f.contexts.length, 0, 'Browsers want a tap or click first');
+  assert.equal(f.session.type, 'auto');
+  await f.gesture('touchend');
+  assert.equal(f.contexts[0]!.state, 'running', 'The first tap still starts it');
 });
 
 // ── The contract surface ─────────────────────────────────────────────────────────────────────────
@@ -538,10 +571,10 @@ test('each weapon has its own voice: brightness, weight and length all differ', 
     return [voice, { bright: logCentroid(data, RATE), low: lowShare(data, RATE), long: decayTime(data, RATE, 60), crack: bandEnergy(data, RATE, 2000, 8000) / energyOf(data) }];
   }));
   const f = (voice: GunVoice) => features.get(voice)!;
-  // Darkest to brightest; the Longbow sits between the shotgun and the carbine.
+  // Darkest to brightest; the Heron 7 sits between the shotgun and the carbine.
   const order: GunVoice[] = ['breaker12', 'kr5', 'hornet9', 'sentry9', 'drone'];
   order.slice(1).forEach((voice, i) => assert.ok(f(voice).bright > f(order[i]).bright * 1.2, `${voice} is brighter than ${order[i]}`));
-  assert.ok(f('longbow').bright > f('breaker12').bright && f('longbow').bright * 1.1 < f('kr5').bright, 'the Longbow is darker than the carbine');
+  assert.ok(f('longbow').bright > f('breaker12').bright && f('longbow').bright * 1.1 < f('kr5').bright, 'the Heron 7 is darker than the carbine');
   assert.ok(f('longbow').long > f('breaker12').long && f('breaker12').long > f('kr5').long && f('kr5').long > f('hornet9').long);
   assert.ok(f('longbow').crack > f('breaker12').crack * 1.4, 'the rifle cracks, the shotgun booms');
   // No two guns sit close together in (brightness, weight, length, crack).

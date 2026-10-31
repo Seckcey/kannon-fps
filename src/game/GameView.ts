@@ -22,8 +22,8 @@ import { ViewModel } from './ViewModel';
 import { THROW_MOVE, THROW_RELEASE } from './viewmodel/choreography';
 import { loadWeaponModels, type WeaponLibrary } from './WeaponModels';
 import type { HudStore } from './hud';
-import { blastFeedback, FirstPersonCamera, FirstPersonMotion, flinchKick, LandingFilter, verticalFov } from './FirstPersonCamera';
-import { LocalWeapon, RecoilRecovery, shotDirections, type WeaponEvent } from './LocalWeapon';
+import { blastFeedback, FirstPersonCamera, FirstPersonMotion, flinchKick, LandingFilter, verticalFov, viewYaw } from './FirstPersonCamera';
+import { LocalWeapon, RecoilRecovery, ServerTracers, shotCone, shotDirections, type WeaponEvent } from './LocalWeapon';
 import { isFriend, RemotePlayers, renderTime, type Buffered, type RemoteSounds } from './RemotePlayers';
 import { crosshairGap, displayedHealth, dueWhistles, GrenadeTracker, HudFeed, nearMiss, shotMarker } from './HudFeed';
 
@@ -99,6 +99,10 @@ export class GameView {
   /** Strongest landing predicted since the last frame (0..1), shown on the next frame. */
   private landing = 0;
   private readonly weapon = new LocalWeapon();
+  /** My shots fired inside a random cone, whose tracers come from the server's shot events. */
+  private readonly serverTracers = new ServerTracers();
+  /** The last input the server reported processing for me; it only goes back when it starts again at 0. */
+  private lastAck = 0;
   private readonly recoil = new RecoilRecovery();
   private readonly hudFeed: HudFeed;
   private readonly grenades = new GrenadeTracker();
@@ -122,6 +126,7 @@ export class GameView {
   private indoors = false;
   private indoorsCheckedAt = 0;
   private readonly scratch = new THREE.Vector3();
+  private readonly listenerFacing = new THREE.Vector3();
   /** Other players' movement sounds, positioned in 3D. */
   private readonly remoteSounds: RemoteSounds = {
     footstep: (surface, position, loudness) => this.audio.footstep(surface, position, false, loudness),
@@ -175,7 +180,7 @@ export class GameView {
       this.world.prepareReflections(this.scene); this.effects.setBreakables(this.world.breakables);
       this.viewModel.scene.environment = this.world.environment; this.environmentReady = true;
       // Behind the loading screen, so the first shot, hole or blast never stalls a frame.
-      this.effects.precompile(this.renderer, this.scene, this.camera).catch(() => {});
+      this.precompileEffects();
     }, message => this.options.onError?.(message), artwork);
     this.scene.add(this.world.root);
     this.scene.environment = this.world.environment;
@@ -190,6 +195,7 @@ export class GameView {
     container.append(this.canvas, this.labels);
     options.input.attach(this.canvas);
     this.audio = new GameAudio(this.settings.volume, { quality: this.tier.effects });
+    this.connectBreakSounds();
     this.hudFeed = new HudFeed(options.hud ?? null);
     this.remotes = new RemotePlayers(this.scene, this.labels, message => this.options.onError?.(message));
     // One parsed weapons file serves the first-person view and every other player's gun; the view model owns it.
@@ -214,6 +220,29 @@ export class GameView {
     this.audio.hitMarker('hit');
   }
 
+  /** A shot breaking a pane or a pot is heard where it breaks. Glass and pots are not in the collision
+   * map, so the server's trace never reports them; the wall behind still makes its own sound. */
+  private connectBreakSounds() {
+    this.effects.onBreak = (kind, position) => this.audio.impact(kind === 'glass' ? 'glass' : 'concrete', position);
+  }
+
+  /** Builds the effect shaders for each way they are drawn: straight to the canvas, and on tiers with
+   * the desktop presentation also into its float target (linear output, no tone mapping), which three.js
+   * treats as a different program. Otherwise the first shot, hole, case, frag or drone would compile
+   * mid-fight. The programs are built inside the call (its promise only waits for linking to finish),
+   * so the target can be put back straight away. */
+  private precompileEffects() {
+    this.effects.precompile(this.renderer, this.scene, this.camera).catch(() => {});
+    if (!this.tier.postprocessing) return;
+    const previous = this.renderer.getRenderTarget(), target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+    try {
+      this.renderer.setRenderTarget(target);
+      this.effects.precompile(this.renderer, this.scene, this.camera).catch(() => {});
+    } finally {
+      this.renderer.setRenderTarget(previous); target.dispose();
+    }
+  }
+
   setSettings(settings: Partial<GameSettings>) {
     const graphicsChanged = !this.graphicsConfigured || (settings.quality !== undefined && settings.quality !== this.settings.quality);
     this.settings = { ...this.settings, ...settings };
@@ -228,7 +257,7 @@ export class GameView {
     // A new budget rebuilds the effect pools in place; breakables, grenades and drones carry on.
     const budget = this.effects.budget;
     this.effects.configure(effectsOptionsFor(this.tier));
-    if (this.environmentReady && JSON.stringify(budget) !== JSON.stringify(this.effects.budget)) this.effects.precompile(this.renderer, this.scene, this.camera).catch(() => {});
+    if (this.environmentReady && JSON.stringify(budget) !== JSON.stringify(this.effects.budget)) this.precompileEffects();
     if (previous.muzzleLight !== this.tier.muzzleLight) this.viewModel?.setQuality({ muzzleLight: this.tier.muzzleLight });
     // Every tier draws character shadows; the environment's own light is baked.
     this.renderer.shadowMap.enabled = true;
@@ -291,13 +320,18 @@ export class GameView {
     if (this.disposed) return;
     const wall = performance.now();
     const latest = this.snapshotBuffer[this.snapshotBuffer.length - 1];
+    // The server judges a new trigger press, the knife and a cook on the body before this tick's move.
+    // A reference is enough: a move replaces or clears the vault, never edits it.
+    const vaultBefore = this.prediction.movement.state.vault;
     const moved = this.prediction.record(frame, wall, !!latest && wall - latest.received < 500 && this.localPlaying());
     const state = this.prediction.movement.state;
     if (moved) this.landing = Math.max(this.landing, this.landings.tick(moved, isPlayerGrounded(state), state.posture));
     const now = moved ? this.prediction.movement.time : this.serverTime(wall) + this.prediction.clockLead;
+    const pressVault = moved ? vaultBefore : state.vault;
     const events = this.weapon.step(frame, {
       now, alive: this.localPlaying(), sprinting: !!state.sprinting, dashing: !!state.dashing,
-      vaultProgress: vaultProgress(state.vault, now), ads: this.motion.ads,
+      vaultProgress: vaultProgress(state.vault, now), pressVaultProgress: vaultProgress(pressVault, now), vaultingBefore: !!pressVault,
+      ads: this.motion.ads,
     });
     for (const event of events) this.weaponEvent(event, frame);
     if (!frame.fire) this.recoil.release(this.weapon.spec.recoil.recovery);
@@ -328,7 +362,13 @@ export class GameView {
         this.audio.shot(event.weapon, eye, true);
         this.recoil.kick(event.kick, this.options.input.pitch);
         this.options.input.addViewKick(event.kick.yaw, event.kick.pitch);
-        if (WEAPONS[event.weapon].pellets > 1 || event.burst % 3 === 0) this.localTracer(frame, event.weapon, eye);
+        const spec = WEAPONS[event.weapon];
+        if (spec.pellets > 1 || event.burst % 3 === 0) {
+          // Until the sights are fully up the server rolls this bullet inside a random cone, so a streak
+          // along the crosshair could show a hit that is really a miss: the server's shot event draws it.
+          if (shotCone(spec, event.aim) > 0) this.serverTracers.expect(event.weapon, event.at);
+          else this.localTracer(frame, event.weapon, eye, event.aim);
+        }
         break;
       }
       case 'shell': this.audio.reloadStep(event.weapon, 'shell'); break;
@@ -342,14 +382,15 @@ export class GameView {
     }
   }
 
-  /** The predicted shot's streak to whatever the crosshair (or each fixed pellet) meets; the
-   * server's own shot event later draws the impacts. */
-  private localTracer(frame: InputFrame, weapon: WeaponId, eye: Vec3) {
+  /** The predicted shot's streak to whatever the crosshair (or each fixed pellet, spread by the aim
+   * progress `aim`) meets; the server's own shot event later draws the impacts. A body left by a
+   * dropped connection still stops it: the server can hit that body. */
+  private localTracer(frame: InputFrame, weapon: WeaponId, eye: Vec3, aim: number) {
     const spec = WEAPONS[weapon], local = this.localState();
-    const traces = shotDirections(spec, frame.yaw, frame.pitch, frame.aim).map(direction => {
+    const traces = shotDirections(spec, frame.yaw, frame.pitch, aim).map(direction => {
       let distance = raycastMap(eye, direction, spec.maxRange);
       for (const { state } of this.remotes.entries.values()) {
-        if (state.health <= 0 || !state.connected || (local && this.snapshot && isFriend(state, local.team, this.snapshot.mode))) continue;
+        if (state.health <= 0 || (local && this.snapshot && isFriend(state, local.team, this.snapshot.mode))) continue;
         const hit = rayHitboxes(eye, direction, state, distance);
         if (hit && hit.distance < distance) distance = hit.distance;
       }
@@ -412,14 +453,17 @@ export class GameView {
       this.effects.shot(event, event.from, { local: false, tracer: true, viewerId: localId });
       this.audio.shot('drone', event.from, false);
     } else if (event.playerId === localId) {
-      // Muzzle, sound, recoil and tracer were predicted when the input was sent.
-      this.effects.shot(event, this.viewModel.muzzleWorld(this.camera, this.scratch), { local: true, tracer: false, viewerId: localId });
+      // Muzzle, sound and recoil were predicted when the input was sent, and so was the tracer, except for
+      // a shot inside a random cone: only this event knows where that one went.
+      const tracer = this.serverTracers.take(event.weapon, event.at);
+      this.effects.shot(event, this.viewModel.muzzleWorld(this.camera, this.scratch), { local: true, tracer, viewerId: localId });
       const kind = shotMarker(event, localId);
       if (kind) { this.hudFeed.marker(kind, now); this.audio.hitMarker(kind); }
     } else {
-      this.audio.shot(event.weapon, this.remotes.presentShot(event, this.effects, this.camera.position), false);
+      // My id keeps hits on me off my own lens, wherever my drawn eye is relative to the server's body.
+      this.audio.shot(event.weapon, this.remotes.presentShot(event, this.effects, this.camera.position, localId), false);
       const shooter = this.remotes.rendered(event.playerId), local = this.localState();
-      // Unsuppressed fire pings the minimap unless the shooter runs Low Profile.
+      // Unsuppressed fire pings the minimap unless the shooter runs No Trace.
       if (shooter && !(local && this.snapshot && isFriend(shooter, local.team, this.snapshot.mode)) && !(shooter.loadout && hasPerk(shooter.loadout, 'low-profile'))) {
         this.hudFeed.ping(event.playerId, event.from, event.at);
       }
@@ -494,20 +538,32 @@ export class GameView {
     this.options.onError?.('Your graphics were interrupted. Rejoin the match to restore your view.');
   };
 
-  private visibilityChange = () => {
+  private visibilityChange = () => this.pageVisibilityChanged();
+
+  /** The page was hidden or shown again (another app or tab, a locked screen). */
+  private pageVisibilityChanged() {
     // Time spent in another app is not a slow GPU frame and must not lower graphics quality.
     this.lastFrame = performance.now();
     this.frames = 0; this.statsTime = 0; this.slowTime = 0;
     this.renderQuality.resetTiming();
-    this.effects.clear(); this.respawns.clear(); this.remotes.resetMotion();
+    // Flying particles and queued respawn flashes are stale by the time the page is back. Bullet holes,
+    // scorches, broken glass and drones belong to the round and stay; only a new round clears them.
+    this.effects.clearTransient(); this.respawns.clear(); this.remotes.resetMotion();
     for (const id of this.grenades.clear()) this.effects.grenade(id, null);
     this.heldGrenades.clear();
-  };
+    // Frames stop while hidden, and they are what update or stop every loop, so the sound pauses with
+    // the page: no heartbeat or drone hum carries on in the background, and the clock of the distant
+    // ambience stands still, so nothing piles up to play at once on return.
+    if (document.hidden) this.audio.suspend();
+    else this.audio.resume();
+  }
 
   private receiveSnapshot(snapshot: WorldSnapshot, now: number) {
     const roundReset = (snapshot.phase === 'preparing' && this.snapshot?.phase !== 'preparing')
       || (snapshot.phase === 'countdown' && this.snapshot?.phase !== 'countdown' && this.snapshot?.phase !== 'preparing')
-      || (snapshot.phase === 'playing' && this.snapshot?.phase === 'finished');
+      || (snapshot.phase === 'playing' && this.snapshot?.phase === 'finished')
+      // A round that turned over while this page was hidden or reconnecting arrives with a new id.
+      || (!!snapshot.roundId && !!this.snapshot?.roundId && snapshot.roundId !== this.snapshot.roundId);
     if (roundReset) {
       this.effects.clear(); this.respawns.clear(); this.localRespawnAt = 0; this.remotes.resetMotion(); this.hudFeed.reset();
       for (const id of this.grenades.clear()) this.effects.grenade(id, null);
@@ -535,14 +591,22 @@ export class GameView {
     if (self) input.setRewards(self.rewards ?? []);
     const alive = local.health > 0 && local.connected;
     const spawned = this.firstLocalSnapshot || roundReset || (!this.lastAlive && alive);
+    // A reconnect makes the server count my inputs again from 0. Every frame still held went down with
+    // the old socket or was simulated before the drop, so the weapon and the body take the server's
+    // state and replay none. (The server keeps my weapon slot, so this is not a new life.)
+    const restarted = !spawned && local.lastInputSeq < this.lastAck;
+    this.lastAck = local.lastInputSeq;
     if (spawned) {
       input.resetSpawnView(local.yaw, local.pitch);
-      this.firstLocalSnapshot = false; this.killer = null; this.recoil.reset();
+      this.firstLocalSnapshot = false; this.killer = null; this.recoil.reset(); this.serverTracers.clear();
       if (self) this.weapon.reset(self, snapshot.serverTime);
-    } else if (self) this.weapon.reconcile(self, local.lastInputSeq, snapshot.serverTime);
+    } else if (self) {
+      if (restarted) this.weapon.reset(self, snapshot.serverTime);
+      else this.weapon.reconcile(self, local.lastInputSeq, snapshot.serverTime);
+    }
     this.lastAlive = alive;
     const snapped = this.prediction.receive(self ? { ...local, ...self } : local, snapshot.serverTime, local.lastInputSeq,
-      { playing: snapshot.phase === 'playing', alive, spawned }, now);
+      { playing: snapshot.phase === 'playing', alive, spawned, restarted }, now);
     // Teleports and respawns should never drag a camera through the arena.
     const state = this.prediction.movement.state;
     if (snapped) { this.fpCamera.snap(state, state.posture); this.motion.reset(state.posture); this.landings.reset(); this.landing = 0; }
@@ -635,7 +699,9 @@ export class GameView {
       motion.leave();
       controller.setAimZoom(1, false);
       if (local && !alive && prediction.active && snapshot?.phase === 'playing') {
-        this.fpCamera.updateDeath(this.camera, dt, this.killer ? this.remotes.position(this.killer) ?? null : null, this.settings.reduceMotion);
+        // The scope or sights zoom ends with the life: the death view eases back to the hip field of view.
+        this.fpCamera.updateDeath(this.camera, dt, this.killer ? this.remotes.position(this.killer) ?? null : null, this.settings.reduceMotion,
+          verticalFov(this.settings.fov, this.width / this.height));
       } else {
         const orbit = this.elapsed * 0.025;
         this.camera.position.set(Math.sin(orbit) * 27, 15, Math.cos(orbit) * 27); this.camera.lookAt(0, 1.2, -3);
@@ -679,7 +745,9 @@ export class GameView {
     const level = Math.round(lowHealth * 20) / 20;
     if (level !== this.lowHealthLevel) { this.lowHealthLevel = level; this.audio.lowHealth(level); }
     if (now - this.indoorsCheckedAt > 250) { this.indoorsCheckedAt = now; this.indoors = raycastMap(this.camera.position, { x: 0, y: 1, z: 0 }, 12) < 12; }
-    this.audio.setListener(this.camera.position, input.yaw, input.pitch, this.indoors);
+    // The ears face where the drawn view faces: the death view turns toward the attacker and the orbit
+    // looks at the town, while the frozen input still holds the yaw from before.
+    this.audio.setListener(this.camera.position, firstPerson ? input.yaw : viewYaw(this.camera, this.listenerFacing), input.pitch, this.indoors);
     if (local && snapshot) {
       const hidden = !alive || !!state.sprinting || state.posture === 'vault' || scoped || !firstPerson;
       const slot = this.weapon.state.slot;

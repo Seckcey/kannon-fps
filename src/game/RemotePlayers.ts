@@ -53,12 +53,13 @@ export function accentColor(player: { color: string; team?: Team }, localTeam: T
 }
 export const isFriend = (player: { team?: Team }, localTeam: Team | undefined, mode: GameMode) => mode === 'tdm' && !!localTeam && player.team === localTeam;
 
-/** The enemy whose hitboxes the crosshair ray meets first with a clear line of sight. */
-export function crosshairEnemy(origin: Vec3, direction: Vec3, players: Iterable<Pick<PublicPlayerState, 'id' | 'x' | 'y' | 'z' | 'posture' | 'health' | 'connected'> & { team?: Team }>,
+/** The enemy whose hitboxes the crosshair ray meets first with a clear line of sight. A living player
+ * whose connection dropped counts: the body stays in the world and can still be hit. */
+export function crosshairEnemy(origin: Vec3, direction: Vec3, players: Iterable<Pick<PublicPlayerState, 'id' | 'x' | 'y' | 'z' | 'posture' | 'health'> & { team?: Team }>,
   localId: string, localTeam: Team | undefined, mode: GameMode, range = 120): string | null {
   let best: { id: string; distance: number } | null = null;
   for (const player of players) {
-    if (player.id === localId || player.health <= 0 || !player.connected || isFriend(player, localTeam, mode)) continue;
+    if (player.id === localId || player.health <= 0 || isFriend(player, localTeam, mode)) continue;
     const hit = rayHitboxes(origin, direction, { x: player.x, y: player.y, z: player.z, posture: player.posture ?? 'stand' }, best?.distance ?? range);
     if (hit && hit.distance < (best?.distance ?? range)) best = { id: player.id, distance: hit.distance };
   }
@@ -112,6 +113,8 @@ export class RemotePlayers {
   private readonly direction = new THREE.Vector3();
   private readonly projected = new THREE.Vector3();
   private readonly scratch = new THREE.Vector3();
+  /** Whether the guns in hand cast shadows now; a quality change re-applies it to every one. */
+  private weaponShadows = true;
   private disposed = false;
 
   constructor(private readonly scene: THREE.Scene, private readonly labels: HTMLElement, private readonly onError?: (message: string) => void,
@@ -143,13 +146,16 @@ export class RemotePlayers {
   resetMotion() { for (const entry of this.entries.values()) { entry.locomotion.reset(); entry.shots = 0; entry.landing.reset(); } }
   /** Another player's confirmed shot from their drawn weapon: body recoil, muzzle-side effects with a
    * tracer on the first and every third round (every pellet for shotguns), and a shell when close.
+   * `viewerId` is the watching player, so a hit on them makes no puff at their own lens and its tracer
+   * stops short (the server's hit on their rewound body can land well away from their drawn eye).
    * Returns the muzzle used, for positioned sound. */
-  presentShot(event: Extract<GameEvent, { type: 'shot' }>, effects: Pick<CombatEffects, 'shot' | 'shell'>, listener: THREE.Vector3): THREE.Vector3 {
+  presentShot(event: Extract<GameEvent, { type: 'shot' }>, effects: Pick<CombatEffects, 'shot' | 'shell'>, listener: THREE.Vector3,
+    viewerId?: string | null): THREE.Vector3 {
     const muzzle = new THREE.Vector3();
     if (!this.muzzle(event.playerId, muzzle)) muzzle.set(event.from.x, event.from.y, event.from.z);
     this.recoil(event.playerId);
     const pellets = event.weapon !== 'drone' && (WEAPONS[event.weapon]?.pellets ?? 1) > 1;
-    effects.shot(event, muzzle, { local: false, tracer: this.nextTracer(event.playerId, pellets) });
+    effects.shot(event, muzzle, { local: false, tracer: this.nextTracer(event.playerId, pellets), viewerId: viewerId ?? null });
     const shooter = this.rendered(event.playerId);
     if (shooter && event.weapon !== 'drone' && muzzle.distanceTo(listener) < 25 && this.eject(event.playerId, this.scratch)) {
       effects.shell(this.scratch.clone(), new THREE.Vector3(Math.cos(shooter.yaw) * 1.6, 1.4, Math.sin(shooter.yaw) * 1.6), event.weapon);
@@ -159,7 +165,12 @@ export class RemotePlayers {
 
   update(frame: RemoteFrame) {
     if (this.disposed) return;
-    const present = new Set<string>();
+    const present = new Set<string>(), shadows = frame.weaponShadows !== false;
+    if (shadows !== this.weaponShadows) {
+      // A quality change reaches the guns already in hand, not only the next one drawn.
+      this.weaponShadows = shadows;
+      for (const entry of this.entries.values()) entry.weapon?.root.traverse(object => { if (object instanceof THREE.Mesh) object.castShadow = shadows; });
+    }
     frame.camera.getWorldDirection(this.direction);
     const target = crosshairEnemy(frame.camera.position, this.direction, frame.players.map(player => this.entries.get(player.id)?.state ?? player),
       frame.localId, frame.localTeam, frame.mode);
@@ -172,12 +183,13 @@ export class RemotePlayers {
       entry.position.set(rendered.x, rendered.y, rendered.z);
       entry.model.root.position.copy(entry.position); entry.model.root.rotation.y = -rendered.yaw;
       entry.model.setAccent(accentColor(state, frame.localTeam, frame.mode));
-      this.arm(entry, rendered.weapon, frame.library, frame.weaponShadows !== false);
+      this.arm(entry, rendered.weapon, frame.library, shadows);
       const velocity = entry.locomotion.update(rendered, frame.elapsed, 'remote');
       const grounded = isPlayerGrounded(rendered);
       entry.model.update({ ...rendered, vx: velocity.vx, vz: velocity.vz }, frame.dt, frame.serverNow, false, { aim: rendered.aiming ?? false, grounded });
       this.sound(entry, rendered, velocity, grounded, frame);
-      const alive = rendered.health > 0 && rendered.connected;
+      // A living player whose connection dropped stays where they stood, drawn and hittable.
+      const alive = rendered.health > 0;
       entry.shadow.visible = alive;
       const floor = supportHeight(rendered);
       entry.shadow.position.set(rendered.x, floor + 0.018, rendered.z);

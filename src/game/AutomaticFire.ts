@@ -1,17 +1,18 @@
 import type { GameMode, PublicPlayerState, Team, Vec3 } from '../../shared/protocol';
 import { add, magnitude, normalize, rayHitboxes, raycastMap, scale, subtract } from '../../shared/physics';
 
-export type ReticleCandidate = Pick<PublicPlayerState, 'id' | 'x' | 'y' | 'z' | 'posture' | 'health' | 'connected' | 'protectedUntil'> & { team?: Team };
+export type ReticleCandidate = Pick<PublicPlayerState, 'id' | 'x' | 'y' | 'z' | 'posture' | 'health' | 'protectedUntil'> & { team?: Team };
 
 /** Input assistance only: the normal server trace still decides every hit.
  * Uses displayed opponent positions, their posture hitboxes and the actual eye ray, with a
  * second obstruction check from the weapon muzzle so a lowered barrel cannot fire through cover.
- * Teammates are not targets (bullets pass through them). */
+ * Teammates are not targets (bullets pass through them). A living player whose connection dropped
+ * is: the body stays where it stood and can still be hit. */
 export function reticleTarget(origin: Vec3, direction: Vec3, muzzle: Vec3, targets: readonly ReticleCandidate[], localId: string, now: number, range: number,
   team?: { mode: GameMode; team?: Team }): string | null {
   let distance = raycastMap(origin, direction, range), selected: ReticleCandidate | null = null;
   for (const target of targets) {
-    if (target.id === localId || !target.connected || target.health <= 0) continue;
+    if (target.id === localId || target.health <= 0) continue;
     if (team?.mode === 'tdm' && team.team && target.team === team.team) continue;
     const hit = rayHitboxes(origin, direction, { x: target.x, y: target.y, z: target.z, posture: target.posture ?? 'stand' }, distance);
     if (hit && hit.distance < distance) { selected = target; distance = hit.distance; }

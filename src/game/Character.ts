@@ -127,7 +127,8 @@ export function createCharacter(color: string): CharacterModel {
       weaponSocket.position.z = -0.41 + kick * 0.06;
       if (player.reloadingUntil > time) { arms.rotation.z = -0.22 + Math.sin(time * 0.006) * 0.08; } else arms.rotation.z *= Math.exp(-dt * 10);
       protection.visible = player.protectedUntil > time && player.health > 0;
-      root.visible = player.health > 0 && player.connected;
+      // A living player whose connection dropped stays in the world as a frozen body others can hit.
+      root.visible = player.health > 0;
     },
     dispose() {
       if (disposed) return;

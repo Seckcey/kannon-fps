@@ -119,19 +119,20 @@ export interface BlipContext {
   localId: string; localTeam?: Team; mode: GameMode;
   /** Server time of the drawn world. */
   now: number;
-  players: ReadonlyArray<Pick<PublicPlayerState, 'id' | 'x' | 'z' | 'yaw' | 'team' | 'health' | 'connected' | 'loadout'>>;
+  players: ReadonlyArray<Pick<PublicPlayerState, 'id' | 'x' | 'z' | 'yaw' | 'team' | 'health' | 'loadout'>>;
   recon: readonly ReconState[]; drones: readonly DroneState[]; mortars: readonly MortarState[];
   grenades: ReadonlyArray<{ x: number; z: number }>;
   /** Recent unsuppressed fire by enemies, by shooter id. */
   pings: ReadonlyMap<string, { x: number; z: number; at: number }>;
 }
-/** Teammates always; enemies during my team's Recon Sweep unless they run Low Profile; firing
- * pings for two seconds; drones; mortar targets; live grenades. */
+/** Teammates always; enemies during my team's Recon Sweep unless they run No Trace; firing
+ * pings for two seconds; drones; mortar targets; live grenades. A living player whose connection
+ * dropped is still a body in the world, so they show like anyone else. */
 export function minimapBlips(context: BlipContext): MinimapBlip[] {
   const blips: MinimapBlip[] = [], swept = reconActive(context.recon, context.localId, context.localTeam, context.mode, context.now);
   const shown = new Set<string>();
   for (const player of context.players) {
-    if (player.id === context.localId || !player.connected || player.health <= 0) continue;
+    if (player.id === context.localId || player.health <= 0) continue;
     if (isTeammate(player, context.localTeam, context.mode)) { blips.push({ x: player.x, z: player.z, yaw: player.yaw, kind: 'friend', fade: 1 }); continue; }
     if (swept && !(player.loadout && hasPerk(player.loadout, 'low-profile'))) { blips.push({ x: player.x, z: player.z, yaw: player.yaw, kind: 'enemy', fade: 1 }); shown.add(player.id); }
   }
@@ -170,7 +171,7 @@ export class HudFeed {
     this.arcs.push({ id: this.nextId++, at, amount, from: { ...from } });
     if (this.arcs.length > 8) this.arcs.shift();
   }
-  /** An enemy fired without Low Profile; `at` is server time. */
+  /** An enemy fired without No Trace; `at` is server time. */
   ping(playerId: string, position: { x: number; z: number }, at: number) { this.pings.set(playerId, { x: position.x, z: position.z, at }); }
   get pingMap(): ReadonlyMap<string, { x: number; z: number; at: number }> { return this.pings; }
 
