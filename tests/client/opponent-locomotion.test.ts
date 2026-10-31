@@ -1,30 +1,25 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { PlayerState, WorldSnapshot } from '../../shared/protocol';
-import { GameView } from '../../src/game/GameView';
+import type { PublicPlayerState, WorldSnapshot } from '../../shared/protocol';
+import { DEFAULT_LOADOUT } from '../../shared/weapons';
+import { interpolatePlayer, type Buffered } from '../../src/game/RemotePlayers';
 import { LocomotionVelocity } from '../../src/game/LocomotionVelocity';
 
-const actor = (extra: Partial<PlayerState> = {}): PlayerState => ({
+const actor = (extra: Partial<PublicPlayerState> = {}): PublicPlayerState => ({
   id: 'opponent', name: 'Opponent', color: '#ffffff', x: 0, y: 0, z: 0,
-  vx: 0, vy: 0, vz: -6.5, yaw: 0, pitch: 0, health: 100, shield: 50,
-  slot: 1, ammoAR: 30, ammoShotgun: 6, heals: 2, kills: 0, deaths: 0,
-  connected: true, respawnAt: 0, protectedUntil: 0, healingUntil: 0,
-  reloadingUntil: 0, lastInputSeq: 1, ...extra,
+  vx: 0, vy: 0, vz: -6.5, yaw: 0, pitch: 0, health: 100, slot: 1, weapon: 'kr5', loadout: DEFAULT_LOADOUT,
+  kills: 0, deaths: 0, assists: 0, score: 0, streak: 0, connected: true, respawnAt: 0, protectedUntil: 0,
+  reloadingUntil: 0, posture: 'stand', vault: null, slideUntil: 0, cookingSince: 0, lastInputSeq: 1, ...extra,
 });
-type Buffered = { world: WorldSnapshot; received: number };
-function buffer(rows: Array<[number, PlayerState | null]>): Buffered[] {
+function buffer(rows: Array<[number, PublicPlayerState | null]>): Buffered[] {
   return rows.map(([time, player], index) => ({ received: time,
-    world: Object.freeze({ tick: index, serverTime: time, phase: 'playing' as const,
-      timeRemaining: 100, winnerIds: [], players: player ? [Object.freeze(player)] : [] }),
+    world: Object.freeze({ tick: index, serverTime: time, phase: 'playing' as const, mode: 'ffa' as const, scoreLimit: 15,
+      timeRemaining: 100, winnerIds: [], drones: [], recon: [], mortars: [], players: player ? [Object.freeze(player)] : [] }) as WorldSnapshot,
   }));
 }
 
-// Exercise the actual renderer method without constructing a WebGL renderer or
-// DOM. The receiver supplies only the snapshot buffer this method reads.
-const interpolate = (GameView.prototype as unknown as {
-  opponentState(this: { snapshotBuffer: Buffered[] }, player: PlayerState, now: number): PlayerState;
-}).opponentState;
-const render = (snapshots: Buffered[], player: PlayerState, now: number) => interpolate.call({ snapshotBuffer: snapshots }, player, now);
+// Exercise the actual remote-player interpolation without a WebGL renderer or DOM.
+const render = (snapshots: Buffered[], player: PublicPlayerState, now: number) => interpolatePlayer(snapshots, player, now);
 const speed = (value: { vx: number; vz: number }) => Math.hypot(value.vx, value.vz);
 
 test('fresh snapshots crossing into a stopped interval preserve the last visible stride then settle', () => {

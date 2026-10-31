@@ -1,16 +1,25 @@
-import type { InputController } from './InputController';
+import type { InputAction, InputController, TouchRole } from './InputController';
 
-type Role = 'move' | 'look' | 'fire' | 'jump' | 'reload';
 type Source = 'touch' | 'pointer';
-interface Contact { id: number; source: Source; role: Role; target: HTMLElement; x: number; y: number; originX: number; originY: number }
-const roles = new Set(['move', 'look', 'fire', 'jump', 'reload']);
+interface Contact { id: number; source: Source; role: TouchRole; target: HTMLElement; x: number; y: number; originX: number; originY: number }
+export const TOUCH_ROLES: readonly TouchRole[] = ['move', 'look', 'fire', 'fire-left', 'jump', 'reload', 'grenade', 'melee'];
+const roles = new Set<string>(TOUCH_ROLES);
+/** Stick travel in CSS pixels; the knob reaches the edge (full speed, or sprint at the top) here. */
+export const STICK_RADIUS = 44;
+const isFire = (role: TouchRole) => role === 'fire' || role === 'fire-left';
+/** Buttons held by a finger: press on contact, release on lift. */
+const buttonAction = (role: TouchRole): InputAction | null =>
+  role === 'jump' || role === 'reload' || role === 'grenade' || role === 'melee' ? role : null;
 
 /** Native TouchEvents identify each iPhone finger independently of pointer
  * capture. The document's complete live-contact list reconciles missed element
- * releases. A held stationary finger never expires on a timer. */
+ * releases. A held stationary finger never expires on a timer.
+ * Roles: `move` stick (top edge sprints in auto sprint mode), `look` pad, `fire` (drag also aims),
+ * `fire-left` (a plain left-thumb trigger), and held buttons `jump`, `reload`, `grenade` (cook, release
+ * throws) and `melee`. Toggles such as aim, crouch, swap and rewards are ordinary buttons. */
 export class TouchGestures {
   private nativeTouch = 'ontouchstart' in window;
-  private contacts = new Map<Role, Contact>();
+  private contacts = new Map<TouchRole, Contact>();
   private abort = new AbortController();
   private unsubscribe: () => void;
   constructor(private root: HTMLElement, private input: InputController, private stick: (x: number, y: number) => void) {
@@ -33,25 +42,29 @@ export class TouchGestures {
     return element && this.root.contains(element) && roles.has(element.dataset.touch ?? '') ? element : null;
   }
   private start(id: number, source: Source, target: HTMLElement, x: number, y: number) {
-    const role = target.dataset.touch as Role;
+    const role = target.dataset.touch as TouchRole;
     if (!this.input.acceptsInput || this.contacts.has(role)) return;
     const bounds = target.getBoundingClientRect();
     const contact = { id, source, target, role, x, y, originX: bounds.x + bounds.width / 2, originY: bounds.y + bounds.height / 2 };
+    const firing = this.firing();
     this.contacts.set(role, contact);
     if (role === 'move') this.move(contact, x, y);
-    if (role === 'fire' || role === 'jump' || role === 'reload') {
-      if (role === 'fire') this.input.setFireAim(this.input.firingMode === 'advanced');
-      this.input.setAction(role, true);
+    if (isFire(role) && !firing) {
+      this.input.setFireAim(this.input.firingMode === 'advanced');
+      this.input.setAction('fire', true);
     }
+    const action = buttonAction(role);
+    if (action) this.input.setAction(action, true);
     if (source === 'pointer') { try { target.setPointerCapture(id); } catch { /* Document listeners own release even without capture. */ } }
   }
+  private firing() { return this.contacts.has('fire') || this.contacts.has('fire-left'); }
   private move(contact: Contact, x: number, y: number) {
     if (contact.role === 'move') {
       const dx = x - contact.originX, dy = y - contact.originY;
-      const scale = Math.max(1, Math.hypot(dx, dy) / 44);
-      this.stick(dx / scale, dy / scale); this.input.setTouchMove(dx / scale / 44, -dy / scale / 44);
+      const scale = Math.max(1, Math.hypot(dx, dy) / STICK_RADIUS);
+      this.stick(dx / scale, dy / scale); this.input.setTouchMove(dx / scale / STICK_RADIUS, -dy / scale / STICK_RADIUS);
     } else if (contact.role === 'look' || contact.role === 'fire') {
-      // The firing thumb can aim too. If both aiming contacts exist, the
+      // The right firing thumb can aim too. If both aiming contacts exist, the
       // dedicated look thumb owns rotation to avoid doubled input.
       if (contact.role === 'look' || !this.contacts.has('look')) this.input.setTouchLook(x - contact.x, y - contact.y);
     }
@@ -60,10 +73,14 @@ export class TouchGestures {
   private end(contact: Contact, cancelled: boolean) {
     this.contacts.delete(contact.role);
     if (contact.role === 'move') { this.input.setTouchMove(0, 0); this.stick(0, 0); }
-    if (contact.role === 'fire' || contact.role === 'jump' || contact.role === 'reload') {
-      if (cancelled) this.input.cancelAction(contact.role); else this.input.setAction(contact.role, false);
-      if (contact.role === 'fire') this.input.setFireAim(false);
+    // Two triggers share one fire action: lifting one keeps firing while the other is held.
+    if (isFire(contact.role) && !this.firing()) {
+      if (cancelled) this.input.cancelAction('fire'); else this.input.setAction('fire', false);
+      this.input.setFireAim(false);
     }
+    const action = buttonAction(contact.role);
+    // A cancelled grenade still leaves the hand: releasing the cook is the only way to end it.
+    if (action) { if (cancelled && action !== 'grenade') this.input.cancelAction(action); else this.input.setAction(action, false); }
     if (contact.source === 'pointer') { try { if (contact.target.hasPointerCapture(contact.id)) contact.target.releasePointerCapture(contact.id); } catch { /* It may already be gone. */ } }
   }
   private reconcile(touches: TouchList) {
@@ -79,7 +96,7 @@ export class TouchGestures {
       event.preventDefault();
       // Hybrid browsers may expose TouchEvents only after the first contact.
       // Transfer that pointer gesture before its compatibility cancellation.
-      const previous = this.contacts.get(target.dataset.touch as Role);
+      const previous = this.contacts.get(target.dataset.touch as TouchRole);
       if (previous?.source === 'pointer') this.end(previous, true);
       this.start(touch.identifier, 'touch', target, touch.clientX, touch.clientY);
     }

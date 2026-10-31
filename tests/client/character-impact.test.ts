@@ -6,7 +6,8 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { createAccentImpact, createCharacterImpact, type CharacterImpactKind } from '../../src/game/CharacterImpact';
 import { createCharacter } from '../../src/game/Character';
-import type { PlayerState } from '../../shared/protocol';
+import type { PublicPlayerState } from '../../shared/protocol';
+import { DEFAULT_LOADOUT } from '../../shared/weapons';
 
 const living = { health: 100, connected: true, protectedUntil: 0 };
 let scout: Promise<GLTF> | undefined;
@@ -89,7 +90,7 @@ test('a Scout impact owns only its body surface and leaves cached models, accent
   const baselinePose = pose(victim);
   effect.update(living);
 
-  for (const kind of ['shield', 'armor', 'break'] as const) {
+  for (const kind of ['hit', 'head', 'blast'] as const) {
     effect.impact(kind);
     assert.notDeepEqual(emission(owned), originalEmission, `${kind} responds on the actual skinned surface`);
     assert.deepEqual(emission(original), originalEmission, 'The GLTF cache stays pristine');
@@ -120,12 +121,12 @@ test('pulse timing is independent of frame count and repeated damage cannot accu
   let clockA = 0, clockB = 0;
   const effectA = createCharacterImpact(a, () => clockA), effectB = createCharacterImpact(b, () => clockB);
   const surfaceA = bodySurface(a), surfaceB = bodySurface(b), baseline = emission(surfaceA);
-  effectA.impact('break'); effectB.impact('break');
+  effectA.impact('blast'); effectB.impact('blast');
   for (let frame = 1; frame <= 12; frame++) { clockA = frame * 10; effectA.update(living); }
   clockB = 120; effectB.update(living);
   assert.deepEqual(emission(surfaceA), emission(surfaceB), 'A delayed render gets the same absolute-time brightness');
   const materialBindings = meshes(a).map(mesh => mesh.material);
-  const kinds: CharacterImpactKind[] = ['shield', 'armor', 'break'];
+  const kinds: CharacterImpactKind[] = ['hit', 'head', 'blast'];
   for (let hit = 0; hit < 1_000; hit++) {
     effectA.impact(kinds[hit % kinds.length]);
     assert.ok(surfaceA.emissive.toArray().every(value => Number.isFinite(value) && value >= 0 && value < 2), 'A burst is bounded rather than added to prior hits');
@@ -141,20 +142,20 @@ test('death, disconnect and new-spawn protection clear the pulse and deliberate 
   const effect = createCharacterImpact(model, () => 100);
   const surface = bodySurface(model), baseline = emission(surface);
   effect.update(living);
-  effect.impact('shield'); effect.update({ ...living, health: 0 });
+  effect.impact('hit'); effect.update({ ...living, health: 0 });
   assert.deepEqual(emission(surface), baseline);
-  effect.impact('break');
+  effect.impact('blast');
   assert.deepEqual(emission(surface), baseline, 'Late damage cannot recolor a dead character');
   effect.update({ ...living, protectedUntil: 5_000 });
-  effect.impact('armor');
+  effect.impact('head');
   assert.notDeepEqual(emission(surface), baseline);
   effect.update({ ...living, protectedUntil: 10_000 });
   assert.deepEqual(emission(surface), baseline, 'A respawn clears even when the dead snapshot was skipped');
-  effect.impact('shield'); effect.update({ ...living, connected: false, protectedUntil: 10_000 });
+  effect.impact('hit'); effect.update({ ...living, connected: false, protectedUntil: 10_000 });
   assert.deepEqual(emission(surface), baseline);
-  effect.impact('armor'); assert.deepEqual(emission(surface), baseline);
+  effect.impact('head'); assert.deepEqual(emission(surface), baseline);
   effect.update({ ...living, protectedUntil: 10_000 });
-  effect.impact('armor'); assert.notDeepEqual(emission(surface), baseline);
+  effect.impact('head'); assert.notDeepEqual(emission(surface), baseline);
   effect.dispose(); assert.deepEqual(emission(surface), baseline);
 });
 
@@ -165,15 +166,15 @@ test('exact emissive baselines survive interruption, zero original intensity, in
     let clock = 50;
     const effect = createAccentImpact(surface, () => clock);
     let disposals = 0; surface.addEventListener('dispose', () => disposals++);
-    effect.impact('shield'); clock = 70; effect.update(living); effect.impact('break');
+    effect.impact('hit'); clock = 70; effect.update(living); effect.impact('blast');
     clock = 10_000; effect.update(living);
     assert.deepEqual(emission(surface), baseline);
-    effect.impact('armor'); clock = NaN; effect.update(living);
+    effect.impact('head'); clock = NaN; effect.update(living);
     assert.deepEqual(emission(surface), baseline);
-    effect.impact('break'); assert.deepEqual(emission(surface), baseline);
-    clock = 20_000; effect.impact('break'); effect.dispose(); effect.dispose();
+    effect.impact('blast'); assert.deepEqual(emission(surface), baseline);
+    clock = 20_000; effect.impact('blast'); effect.dispose(); effect.dispose();
     assert.deepEqual(emission(surface), baseline);
-    effect.impact('shield'); effect.update(living);
+    effect.impact('hit'); effect.update(living);
     assert.deepEqual(emission(surface), baseline);
     assert.equal(disposals, 0, 'A caller-owned fallback material is not disposed by its pulse');
     surface.dispose();
@@ -196,8 +197,8 @@ test('Scout cleanup disposes its private material once, never shared textures, a
   }
   for (const texture of textures) texture.addEventListener('dispose', onTextureDispose);
   assert.ok(textures.size > 0, 'The asset includes shared PBR texture references');
-  effect.impact('break'); effect.dispose(); effect.dispose();
-  effect.impact('shield'); effect.update(living);
+  effect.impact('blast'); effect.dispose(); effect.dispose();
+  effect.impact('hit'); effect.update(living);
   assert.equal(privateDisposals, 1); assert.equal(sharedDisposals, 0); assert.equal(textureDisposals, 0);
   assert.deepEqual(emission(owned), baseline);
   assert.equal(bodySurface(model), bodySurface(asset.scene));
@@ -211,23 +212,46 @@ test('the loading fallback follows the same isolation, lifecycle and late-dispos
   assert.ok(accent instanceof THREE.MeshStandardMaterial);
   const baseline = emission(accent), otherSurfaces = materials(other.root).filter(material => material instanceof THREE.MeshStandardMaterial) as THREE.MeshStandardMaterial[];
   const otherBefore = otherSurfaces.map(emission), beforePose = pose(victim.root);
-  victim.impact('armor');
+  victim.impact('head');
   assert.notDeepEqual(emission(accent), baseline);
   assert.deepEqual(otherSurfaces.map(emission), otherBefore);
   assert.deepEqual(pose(victim.root), beforePose);
-  const player: PlayerState = {
+  const player: PublicPlayerState = {
     id: 'victim', name: 'Victim', color: '#f123ab', x: 0, y: 0, z: 0, yaw: 0, pitch: 0,
-    vx: 0, vy: 0, vz: 0, health: 0, shield: 0, slot: 1, ammoAR: 30, ammoShotgun: 6,
-    heals: 2, kills: 0, deaths: 1, connected: true, respawnAt: 3_000, protectedUntil: 0,
-    healingUntil: 0, reloadingUntil: 0, lastInputSeq: 0,
+    vx: 0, vy: 0, vz: 0, health: 0, slot: 1, weapon: 'kr5', loadout: DEFAULT_LOADOUT,
+    kills: 0, deaths: 1, assists: 0, score: 0, streak: 0, connected: true, respawnAt: 3_000, protectedUntil: 0,
+    reloadingUntil: 0, posture: 'stand', vault: null, slideUntil: 0, cookingSince: 0, lastInputSeq: 0,
   };
   victim.update(player, 0, 0, false);
   assert.deepEqual(emission(accent), baseline);
-  victim.impact('break'); assert.deepEqual(emission(accent), baseline);
+  victim.impact('blast'); assert.deepEqual(emission(accent), baseline);
   victim.update({ ...player, health: 100, protectedUntil: 5_000 }, 0, 3_000, false);
-  victim.impact('break'); assert.notDeepEqual(emission(accent), baseline);
+  victim.impact('blast'); assert.notDeepEqual(emission(accent), baseline);
   let disposals = 0; accent.addEventListener('dispose', () => disposals++);
-  victim.dispose(); victim.dispose(); victim.impact('shield');
+  victim.dispose(); victim.dispose(); victim.impact('hit');
   assert.equal(disposals, 1); assert.deepEqual(emission(accent), baseline);
   other.dispose();
+});
+
+test('an operator export without scout names pulses only its non-accent skinned body materials', () => {
+  const geometry = new THREE.BoxGeometry(0.4, 1.8, 0.3), count = geometry.getAttribute('position').count;
+  geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(new Array(count * 4).fill(0), 4));
+  geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(Array.from({ length: count * 4 }, (_, index) => index % 4 === 0 ? 1 : 0), 4));
+  const gear = new THREE.MeshStandardMaterial({ name: 'OperatorGear' }), accent = new THREE.MeshStandardMaterial({ name: 'PlayerAccent' });
+  const visor = new THREE.MeshStandardMaterial({ name: 'Visor' });
+  geometry.clearGroups(); geometry.addGroup(0, 12, 0); geometry.addGroup(12, 12, 1); geometry.addGroup(24, 12, 2);
+  const mesh = new THREE.SkinnedMesh(geometry, [gear, accent, visor]), bone = new THREE.Bone();
+  mesh.add(bone); mesh.bind(new THREE.Skeleton([bone]));
+  const model = new THREE.Group(); model.add(mesh);
+  const effect = createCharacterImpact(model, () => 0);
+  const bound = mesh.material as THREE.MeshStandardMaterial[];
+  assert.notEqual(bound[0], gear, 'The body surface is privately cloned');
+  assert.equal(bound[1], accent); assert.equal(bound[2], visor);
+  const restingAccent = emission(accent), restingVisor = emission(visor), restingGear = emission(bound[0]!);
+  effect.update(living); effect.impact('head');
+  assert.notDeepEqual(emission(bound[0]!), restingGear);
+  assert.deepEqual(emission(accent), restingAccent); assert.deepEqual(emission(visor), restingVisor);
+  effect.dispose();
+  assert.deepEqual(mesh.material, [gear, accent, visor], 'Disposal restores the shared materials');
+  geometry.dispose(); gear.dispose(); accent.dispose(); visor.dispose();
 });

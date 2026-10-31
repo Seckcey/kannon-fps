@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { type TestContext } from 'node:test';
-import { ArenaConnection } from '../../src/lib/connection.js';
-import type { ClientMessage, RoomSnapshot, ServerMessage } from '../../shared/protocol.js';
+import { ArenaConnection, EVENT_LIMIT, FEED_LIMIT } from '../../src/lib/connection.js';
+import { WORLD_VERSION, type ClientMessage, type GameEvent, type RoomSnapshot, type ServerMessage } from '../../shared/protocol.js';
 
 class SocketDouble {
   static OPEN = 1;
@@ -24,7 +24,7 @@ class SocketDouble {
 
 const room: RoomSnapshot = {
   id: 'private-room', code: '00000000000000000001', hostId: 'player', ranked: false,
-  practice: false, phase: 'playing', expiresAt: 10_000_000,
+  practice: false, mode: 'ffa', phase: 'playing', expiresAt: 10_000_000,
   players: [{ id: 'player', name: 'Player', color: '#fff', connected: true }],
 };
 
@@ -72,7 +72,7 @@ test('a silent open connection is retired and rejoins without waiting for a TCP 
   t.mock.timers.tick(500);
   assert.equal(f.sockets.length, 2);
   const next = f.sockets[1]!; next.open(); next.receive({ type: 'welcome', playerId: 'player' });
-  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key', readyProtocol: 1, worldVersion: 'kannon-town-v1' }, { type: 'join', code: room.code }]);
+  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key', readyProtocol: 1, worldVersion: WORLD_VERSION }, { type: 'join', code: room.code }]);
   old.receive({ type: 'welcome', playerId: 'obsolete-player' });
   old.disconnect(4001);
   assert.equal(f.connection.getSnapshot().status, 'connected');
@@ -160,7 +160,7 @@ test('leaving a connected room ignores queued room updates and allows a fresh ex
   assert.deepEqual(f.connection.getSnapshot().events, []);
   const opening = f.connection.connect(); const next = f.sockets[1]!;
   next.open(); next.receive({ type: 'welcome', playerId: 'player' }); await opening;
-  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key', readyProtocol: 1, worldVersion: 'kannon-town-v1' }]);
+  assert.deepEqual(next.sent, [{ type: 'hello', token: 'test-player-key', readyProtocol: 1, worldVersion: WORLD_VERSION }]);
 });
 
 test('replacement closes do not reconnect and take over the other device', async t => {
@@ -195,4 +195,29 @@ test('handshake timeout rejects promptly even when close never arrives, and disp
   t.mock.timers.tick(20_000);
   assert.equal(f.sockets.length, 1);
   await assert.rejects(f.connection.connect(), /closed/);
+});
+
+test('the event buffer keeps the last 128 events and the feed keeps the last 40 that are not shots or damage', async t => {
+  const f = fixture(t); const socket = await f.join();
+  const at = Date.now();
+  const shot = (index: number): GameEvent => ({ type: 'shot', playerId: 'player', weapon: 'kr5', from: { x: 0, y: 1.6, z: 0 }, traces: [], hit: false, at: at + index });
+  const damage = (index: number): GameEvent => ({ type: 'damage', playerId: 'player', attackerId: 'rival', amount: 10, cause: 'bullet', from: { x: 1, y: 1, z: 1 }, at: at + index });
+  const medal = (index: number): GameEvent => ({ type: 'medal', playerId: 'player', medal: 'headshot', at: at + index });
+  for (let index = 0; index < 50; index++) socket.receive({ type: 'event', event: medal(index) });
+  for (let index = 0; index < 200; index++) socket.receive({ type: 'event', event: index % 2 ? shot(index) : damage(index) });
+  const state = f.connection.getSnapshot();
+  assert.equal(EVENT_LIMIT, 128); assert.equal(FEED_LIMIT, 40);
+  assert.equal(state.events.length, EVENT_LIMIT);
+  assert.equal(state.events.at(-1)!.at, at + 199, 'Newest events are kept, oldest first');
+  assert.ok(state.events.every(event => event.type === 'shot' || event.type === 'damage'), 'A burst of fire fills the event buffer');
+  assert.equal(state.feed.length, FEED_LIMIT);
+  assert.ok(state.feed.every(event => event.type === 'medal'), 'Shots and damage never push the kill feed out');
+  assert.equal(state.feed[0]!.at, at + 10); assert.equal(state.feed.at(-1)!.at, at + 49);
+  socket.receive({ type: 'event', event: { type: 'elimination', playerId: 'rival', attackerId: 'player', cause: 'bullet', weapon: 'kr5', headshot: true, distance: 12, assists: [], at: at + 300 } });
+  assert.equal(f.connection.getSnapshot().feed.at(-1)!.type, 'elimination');
+  assert.equal(f.connection.getSnapshot().feed.length, FEED_LIMIT);
+  socket.receive({ type: 'event', event: null as unknown as GameEvent });
+  assert.equal(f.connection.getSnapshot().events.at(-1)!.type, 'elimination', 'A malformed event is ignored');
+  f.connection.leave();
+  assert.deepEqual(f.connection.getSnapshot().events, []); assert.deepEqual(f.connection.getSnapshot().feed, []);
 });

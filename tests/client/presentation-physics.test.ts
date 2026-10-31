@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cameraPosition, isPlayerGrounded, supportHeight } from '../../shared/physics';
+import { EYE_HEIGHT, eyePosition, isPlayerGrounded, raycastMap, supportHeight, weaponMuzzle } from '../../shared/physics';
 
 test('animation and contact shadows use the actual floor, stair and platform beneath a player', () => {
   for (const player of [{ x: 0, y: 0, z: 5, vy: 0 }, { x: -24.35, y: .32, z: -4.49, vy: 0 }, { x: -13, y: 3.2, z: 0, vy: 0 }]) {
@@ -13,12 +13,21 @@ test('animation and contact shadows use the actual floor, stair and platform ben
   assert.equal(isPlayerGrounded({ x: -13, y: 3.2, z: 0, vy: 6 }), false, 'jump takeoff starts the airborne pose immediately');
 });
 
-test('the shared shoulder camera keeps the same minimum ground height for rendering and accepted aim', () => {
-  const player = { x: -28, y: 0, z: 0 };
-  for (const [aim, pitch] of [[false, 0.6435011088], [true, 0.9914890996]] as const) {
-    assert.equal(cameraPosition(player, 0, pitch, aim).y, .12);
-    assert.ok(cameraPosition(player, 0, pitch - .1, aim).y > .12);
+test('the first-person eye is the shared posture eye, so the camera and the server trace from the same point', () => {
+  const feet = { x: -13, y: 3.2, z: 0 };
+  for (const posture of ['stand', 'crouch', 'slide', 'vault'] as const) {
+    const eye = eyePosition({ ...feet, posture });
+    assert.deepEqual(eye, { x: feet.x, y: feet.y + EYE_HEIGHT[posture], z: feet.z });
   }
-  const clipped = cameraPosition({ x: -20.8, y: 0, z: -2 }, Math.PI / 2, 0, false);
-  assert.ok(clipped.x > -21.86 && clipped.y >= .12, 'the same canonical camera still stops in front of a solid wall');
+  assert.ok(EYE_HEIGHT.stand > EYE_HEIGHT.crouch && EYE_HEIGHT.crouch > EYE_HEIGHT.slide);
+});
+
+test('the cosmetic muzzle stays on the near side of a wall the player is pressed against', () => {
+  // Facing the teal house front wall (x = -10) from just outside it.
+  const eye = { x: -9.5, y: 1.62, z: 0 }, yaw = -Math.PI / 2;
+  const muzzle = weaponMuzzle(eye, yaw, 0);
+  assert.ok(muzzle.x > -10 + 0.14, 'The barrel never reaches into the wall');
+  assert.ok(raycastMap(eye, { x: -1, y: 0, z: 0 }, 2) < 0.6, 'The wall is close enough to lower the weapon');
+  const open = weaponMuzzle({ x: 0, y: 1.62, z: 0 }, yaw, 0);
+  assert.ok(Math.abs(Math.hypot(open.x, open.y - 1.62, open.z) - Math.hypot(0.55, 0.13, 0.1)) < 1e-9, 'In the open the barrel sits at its full reach');
 });
