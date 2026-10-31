@@ -42,7 +42,7 @@ test('the kill feed shows recent eliminations with weapon, headshot and team col
   assert.ok(frag?.kind === 'elimination' && frag.icon === 'grenade' && frag.weapon === 'Frag grenade' && frag.attacker?.relation === 'enemy' && frag.victim.relation === 'friend');
   assert.ok(sniped?.kind === 'elimination' && sniped.headshot && sniped.icon === 'sniper' && sniped.weapon === 'Longbow' && sniped.attacker?.name === 'Cy' && sniped.victim.relation === 'self');
   assert.ok(own?.kind === 'elimination' && own.attacker === null, 'a self-elimination has no attacker');
-  assert.ok(mortar?.kind === 'message' && mortar.text === 'Bo called in Mortar Strike' && mortar.tone === 'enemy');
+  assert.ok(mortar?.kind === 'message' && mortar.text === 'Bo called in Mortar Volley' && mortar.tone === 'enemy');
   assert.ok(notice?.kind === 'message' && notice.tone === 'info');
   assert.equal(new Set(entries.map(entry => entry.key)).size, entries.length, 'stable unique keys');
   assert.equal(killFeed(feed, lookup, { id: 'me' }, 'ffa', 10_000, 6000, 2).length, 2);
@@ -76,7 +76,7 @@ test('score pop-ups, medals and reward announcements belong to the viewer', () =
 test('phone callouts keep only what fits above the crosshair, warnings first', () => {
   const size = TOUCH_CALLOUT;
   const full: Callouts = {
-    notices: ['Mortar Strike incoming. Keep moving.', 'Enemy Attack Drone overhead.'],
+    notices: ['Mortar Volley incoming. Keep moving.', 'Enemy Attack Drone overhead.'],
     medals: [{ key: 'm1', medal: 'headshot', name: 'Bullseye' }],
     popups: [{ key: 'p1', points: 100, label: 'Elimination' }, { key: 'p2', points: 50, label: 'Headshot' }],
     reward: 'mortar',
@@ -162,7 +162,7 @@ test('the score bar compares you with your best rival, or team with team', () =>
 test('enemy rewards warn the viewer; friendly ones do not', () => {
   const base = { serverTime: 5000, drones: [], recon: [], mortars: [] };
   const self = { id: 'me', team: 'teal' as Team, loadout: LOADOUT_PRESETS.close };
-  assert.deepEqual(threatNotices({ ...base, mortars: [{ id: 'm', ownerId: 'bo', team: 'gold', x: 0, z: 0, impacts: [6000] }] }, self, 'tdm'), ['Mortar Strike incoming. Keep moving.']);
+  assert.deepEqual(threatNotices({ ...base, mortars: [{ id: 'm', ownerId: 'bo', team: 'gold', x: 0, z: 0, impacts: [6000] }] }, self, 'tdm'), ['Mortar Volley incoming. Keep moving.']);
   assert.deepEqual(threatNotices({ ...base, mortars: [{ id: 'm', ownerId: 'ana', team: 'teal', x: 0, z: 0, impacts: [6000] }] }, self, 'tdm'), []);
   assert.deepEqual(threatNotices({ ...base, mortars: [{ id: 'm', ownerId: 'bo', team: 'gold', x: 0, z: 0, impacts: [4000] }] }, self, 'tdm'), [], 'landed shells are not a warning');
   assert.deepEqual(threatNotices({ ...base, drones: [{ id: 'd', ownerId: 'ana', team: 'teal', x: 0, y: 0, z: 0, yaw: 0, health: 200, until: 9000 }] }, self, 'ffa'), ['Enemy Attack Drone overhead.']);

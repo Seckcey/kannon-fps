@@ -125,7 +125,7 @@ test('knifing and cooking stop the sprint from the next tick in prediction and o
 
 test('the equipped weapon sets walking and aimed speeds, and a swap changes them on that tick', () => {
   for (const [loadout, aim, expected] of [
-    [LOADOUT_PRESETS.marksman, true, 5 * 0.88 * 0.42], [LOADOUT_PRESETS.close, true, 5 * 1 * 0.62],
+    [LOADOUT_PRESETS.marksman, true, 5 * 0.42], [LOADOUT_PRESETS.close, true, 5 * 0.62],
     [LOADOUT_PRESETS.assault, false, 5 * 0.95], [LOADOUT_PRESETS.marksman, false, 5 * 0.88],
   ] as const) {
     const result = run(startState(-6, 20, Math.PI / 2), 30, (_tick, _state, seq) => frame(seq, { moveZ: 1, aim, yaw: Math.PI / 2 }), loadout);
@@ -135,7 +135,7 @@ test('the equipped weapon sets walking and aimed speeds, and a swap changes them
   }
   const swap = run(startState(-6, 20, Math.PI / 2), 40, (tick, _state, seq) => frame(seq, { moveZ: 1, aim: true, slot: tick >= 20 ? 2 : 1, yaw: Math.PI / 2 }), LOADOUT_PRESETS.marksman);
   const final = swap.states.at(-1)!.server.state;
-  assert.ok(Math.abs(Math.hypot(final.vx, final.vz) - 5 * WEAPONS.sentry9.moveFactor * WEAPONS.sentry9.adsMoveFactor) < 1e-9);
+  assert.ok(Math.abs(Math.hypot(final.vx, final.vz) - 5 * WEAPONS.sentry9.adsMoveFactor) < 1e-9);
   assertParity(swap, 5);
 });
 
@@ -381,9 +381,10 @@ test('running down the house stairs and vaulting in through a window match the s
   const indoors = (index: number): Partial<InputFrame> => ({ moveZ: index < 10 ? 0 : 1, yaw: -Math.PI / 2 });
   for (const link of links()) {
     if (link.renderPhase !== 5.3 || ![30, 60, 100].includes(link.latency)) continue;
-    // A press on the first landing of the run down the stairs, then a vault through the front window
-    // (over the 0.95 m sill) followed by a press on the landing inside.
-    const stairs = session(link, { ...startState(-19, 3.6, 0), y: 3.2 }, jumpOnLanding(downstairs, 10, 'drawn', 0, false));
+    // Sprinting down the stairs steps from tread to tread without leaving the ground, so the run
+    // jumps part-way down and presses again on the landing on a lower tread. Then a vault through
+    // the front window (over the 0.95 m sill) followed by a press on the landing inside.
+    const stairs = session(link, { ...startState(-19, 3.6, 0), y: 3.2 }, jumpOnLanding(downstairs, 24, 'drawn', 0));
     agree(stairs, `stairs, ${linkLabel(link)}`);
     assert.ok(stairs.snapBack < 1e-9, `stairs, ${linkLabel(link)}: snapped back ${stairs.snapBack} m`);
     assert.ok(stairs.final.y < 0.05 && [...stairs.server.values()].some(events => events.jumped), 'The run reaches the bottom with a jump on the way');

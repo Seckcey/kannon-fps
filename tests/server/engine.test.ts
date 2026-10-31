@@ -459,7 +459,7 @@ test('team grenades and the drone never hurt teammates', () => {
 test('movement uses the weapon handling, publishes aim and sprint, and no sprinting while cooking or knifing', () => {
   const speed = (p: PlayerState) => Math.hypot(p.vx, p.vz);
   for (const [changes, expected, label] of [
-    [{}, 5 * WEAPONS.kr5.moveFactor, 'hip'], [{ aim: true }, 5 * WEAPONS.kr5.moveFactor * WEAPONS.kr5.adsMoveFactor, 'aiming'],
+    [{}, 5 * WEAPONS.kr5.moveFactor, 'hip'], [{ aim: true }, 5 * WEAPONS.kr5.adsMoveFactor, 'aiming'],
     [{ sprint: true }, 6.9 * WEAPONS.kr5.moveFactor, 'sprinting'], [{ sprint: true, grenade: true }, 5 * WEAPONS.kr5.moveFactor, 'cooking'],
   ] as const) {
     const { engine, a } = playing();
@@ -576,7 +576,7 @@ test('Recon Sweep lasts 20 s; unearned or untargeted rewards do nothing', () => 
   assert.deepEqual(of(events, 'streak').map(e => [e.reward, e.action]), [['recon', 'used'], ['recon', 'ended']]);
 });
 
-test('Mortar Strike lands three seeded shells after its delays on the highest surface, sparing its caller', () => {
+test('Mortar Volley lands three seeded shells after its delays on the highest surface, sparing its caller', () => {
   const run = () => {
     const { engine, a, b, events } = playing();
     place(a, 1.5, -21); place(b, 0, -20); a.rewards = ['mortar']; a.streak = 2;

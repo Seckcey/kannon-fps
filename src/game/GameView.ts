@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { GameEvent, InputFrame, Phase, PlayerState, PublicPlayerState, Vec3, WeaponId, WorldSnapshot } from '../../shared/protocol';
-import { clamp, directionFromAngles, eyePosition, isPlayerGrounded, raycastMap, rayHitboxes, weaponMuzzle } from '../../shared/physics';
+import { clamp, directionFromAngles, eyePosition, isPlayerGrounded, raycastMap, rayHitboxes, rightFromYaw, weaponMuzzle } from '../../shared/physics';
 import { surfaceAt } from '../../shared/map';
 import { hasPerk, WEAPONS } from '../../shared/weapons';
 import { disposeCharacterResources } from './Character';
@@ -10,10 +10,11 @@ import { GameAudio } from './GameAudio';
 import { createWorld, type ArenaWorld, type WorldArtwork } from './World';
 import { EXPOSURE, FOG, HEMISPHERE, SKY_LIGHT_INTENSITY, SUN_COLOR, SUN_DIRECTION, SUN_INTENSITY } from './Atmosphere';
 import type { ArenaPresentation } from './Presentation';
-import { RenderQuality, scenePixelRatio } from './RenderQuality';
+import { applyGradedToneMapping, DirectGrade, presentationOptions, RenderQuality, scenePixelRatio } from './RenderQuality';
 import { buildSunVisibility, type SunVisibilityGrid } from './SunVisibility';
 import { renderTier, type RenderTier } from './RenderTiers';
 import { CombatEffects } from './CombatEffects';
+import { effectsOptionsFor } from './effects/budget';
 import { DeferredRespawns } from './DeferredRespawns';
 import { LocalPrediction, vaultProgress } from './MovementPrediction';
 import { AutomaticFire, reticleTarget } from './AutomaticFire';
@@ -64,6 +65,8 @@ export class GameView {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly world: ArenaWorld;
   private presentation: ArenaPresentation | null = null;
+  /** The cheap grade and vignette drawn over the direct path (phones, or the presentation off). */
+  private directGrade: DirectGrade | null = null;
   private presentationRequest = 0;
   private overlayAttached = false;
   private readonly renderQuality = new RenderQuality();
@@ -119,7 +122,7 @@ export class GameView {
     footstep: (surface, position, loudness) => this.audio.footstep(surface, position, false, loudness),
     land: (position, intensity) => this.audio.land(position, false, intensity),
     slide: position => this.audio.slide(position, false),
-    vault: position => { if (Math.hypot(position.x - this.camera.position.x, position.y - this.camera.position.y, position.z - this.camera.position.z) < 12) this.audio.vault(false); },
+    vault: position => { if (Math.hypot(position.x - this.camera.position.x, position.y - this.camera.position.y, position.z - this.camera.position.z) < 12) this.audio.vault(false, position); },
   };
   private lastFrame = performance.now();
   private elapsed = 0;
@@ -143,7 +146,8 @@ export class GameView {
     this.canvas.tabIndex = 0;
     this.canvas.addEventListener('webglcontextlost', this.contextLost);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    // The direct path's colour grade rides on tone mapping; the desktop presentation grades in its own pass.
+    if (!applyGradedToneMapping(this.renderer)) this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = EXPOSURE;
     this.renderer.info.autoReset = false;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -165,6 +169,8 @@ export class GameView {
     this.world = createWorld(this.renderer, this.tier.textureTier, () => {
       this.world.prepareReflections(this.scene); this.effects.setBreakables(this.world.breakables);
       this.viewModel.scene.environment = this.world.environment; this.environmentReady = true;
+      // Behind the loading screen, so the first shot, hole or blast never stalls a frame.
+      this.effects.precompile(this.renderer, this.scene, this.camera).catch(() => {});
     }, message => this.options.onError?.(message), artwork);
     this.scene.add(this.world.root);
     this.scene.environment = this.world.environment;
@@ -173,18 +179,21 @@ export class GameView {
     // its background separately so clear blue and cloud shapes do not wash out.
     this.scene.backgroundIntensity = this.world.environment ? 0.28 : 0.8;
     this.scene.environmentIntensity = SKY_LIGHT_INTENSITY;
-    this.effects = new CombatEffects({ quality: this.tier.effects });
+    this.effects = new CombatEffects(effectsOptionsFor(this.tier));
     this.scene.add(this.effects.root);
     this.labels.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
     container.append(this.canvas, this.labels);
     options.input.attach(this.canvas);
-    this.audio = new GameAudio(this.settings.volume);
+    this.audio = new GameAudio(this.settings.volume, { quality: this.tier.effects });
     this.hudFeed = new HudFeed(options.hud ?? null);
     this.remotes = new RemotePlayers(this.scene, this.labels, message => this.options.onError?.(message));
-    this.viewModel = new ViewModel(this.renderer);
-    // A missing weapons file falls back to stand-ins inside the library; never block the round on it.
+    // One parsed weapons file serves the first-person view and every other player's gun; the view model owns it.
+    const weapons = loadWeaponModels(this.renderer);
+    this.viewModel = new ViewModel(this.renderer, { library: weapons, effects: this.tier.effects, muzzleLight: this.tier.muzzleLight });
+    this.viewModel.setWorld(this.camera, this.scene);
+    // A missing weapons file falls back to stand-ins inside the view model; never block the round on it.
     this.viewModel.ready.catch(() => {}).finally(() => { this.weaponsReady = true; });
-    loadWeaponModels(this.renderer).then(library => { if (this.disposed) library.dispose(); else this.worldWeapons = library; }).catch(() => {});
+    weapons.then(library => { if (!this.disposed) this.worldWeapons = library; }).catch(() => {});
     preloadCharacter().then(() => { this.characterReady = true; }).catch(() => {
       if (!this.disposed) this.options.onError?.('A player model could not load. Check your connection and rejoin the match.');
     });
@@ -211,20 +220,21 @@ export class GameView {
     this.renderQuality.reset();
     const previous = this.tier;
     this.tier = renderTier(this.settings.quality, this.options.input.isTouch, this.renderer.extensions.has('EXT_color_buffer_float'));
-    if (previous.effects !== this.tier.effects && this.effects) {
-      this.effects.dispose(); this.effects = new CombatEffects({ quality: this.tier.effects }); this.scene.add(this.effects.root);
-      if (this.environmentReady) this.effects.setBreakables(this.world.breakables);
-    }
+    // A new budget rebuilds the effect pools in place; breakables, grenades and drones carry on.
+    const budget = this.effects.budget;
+    this.effects.configure(effectsOptionsFor(this.tier));
+    if (this.environmentReady && JSON.stringify(budget) !== JSON.stringify(this.effects.budget)) this.effects.precompile(this.renderer, this.scene, this.camera).catch(() => {});
+    if (previous.muzzleLight !== this.tier.muzzleLight) this.viewModel?.setQuality({ muzzleLight: this.tier.muzzleLight });
     // Every tier draws character shadows; the environment's own light is baked.
     this.renderer.shadowMap.enabled = true;
     const request = ++this.presentationRequest;
-    if (this.tier.postprocessing && this.presentation) this.presentation.enabled = true;
+    if (this.tier.postprocessing && this.presentation) { this.presentation.configure(presentationOptions(this.tier)); this.presentation.enabled = true; }
     else if (this.tier.postprocessing) {
       // Phones do not download the desktop postprocessing bundle. Direct
       // rendering remains usable while this optional effect becomes ready.
       void import('./Presentation').then(({ ArenaPresentation: Presentation }) => {
         if (this.disposed || request !== this.presentationRequest) return;
-        this.presentation = new Presentation(this.renderer, this.scene, this.camera, { bloom: this.tier.bloom, depthOfField: this.tier.depthOfField });
+        this.presentation = new Presentation(this.renderer, this.scene, this.camera, presentationOptions(this.tier));
         this.overlayAttached = false;
         this.presentation.resize(this.width, this.height);
       }).catch(() => { /* A failed optional enhancement leaves direct rendering available. */ });
@@ -304,6 +314,8 @@ export class GameView {
     switch (event.type) {
       case 'shot': {
         this.viewModel.fire();
+        // The muzzle light at once; the barrel is pulled back to the eye's side of any wall it pokes through.
+        this.effects.localShot(this.viewModel.muzzleWorld(this.camera, this.scratch), eye, event.weapon, false, eye);
         this.audio.shot(event.weapon, eye, true);
         this.recoil.kick(event.kick, this.options.input.pitch);
         this.options.input.addViewKick(event.kick.yaw, event.kick.pitch);
@@ -335,7 +347,7 @@ export class GameView {
       return { to: { x: eye.x + direction.x * distance, y: eye.y + direction.y * distance, z: eye.z + direction.z * distance }, kind: 'range' as const };
     });
     const event: ShotEvent = { type: 'shot', playerId: this.options.getPlayerId(), weapon, from: eye, traces, hit: false, at: this.serverTime(performance.now()) };
-    this.effects.shot(event, this.viewModel.muzzleWorld(this.camera, this.scratch), { local: true, tracer: true });
+    this.effects.shot(event, this.viewModel.muzzleWorld(this.camera, this.scratch), { local: true, tracer: true, viewerId: event.playerId });
   }
 
   handleEvent(event: GameEvent) {
@@ -385,11 +397,11 @@ export class GameView {
 
   private shotEvent(event: ShotEvent, localId: string, now: number) {
     if (event.weapon === 'drone') {
-      this.effects.shot(event, event.from, { local: false, tracer: true });
+      this.effects.shot(event, event.from, { local: false, tracer: true, viewerId: localId });
       this.audio.shot('drone', event.from, false);
     } else if (event.playerId === localId) {
       // Muzzle, sound, recoil and tracer were predicted when the input was sent.
-      this.effects.shot(event, this.viewModel.muzzleWorld(this.camera, this.scratch), { local: true, tracer: false });
+      this.effects.shot(event, this.viewModel.muzzleWorld(this.camera, this.scratch), { local: true, tracer: false, viewerId: localId });
       const kind = shotMarker(event, localId);
       if (kind) { this.hudFeed.marker(kind, now); this.audio.hitMarker(kind); }
     } else {
@@ -402,12 +414,11 @@ export class GameView {
     }
     const crack = this.localPlaying() ? nearMiss(event, this.camera.position, localId) : null;
     if (crack) this.audio.flyby(crack);
+    // effects.shot() already placed the holes and sprays; one impact sound of each kind per shot.
     let surfaced = false, flesh = false;
     for (const trace of event.traces) {
-      if (trace.kind === 'world' && trace.normal && trace.surface) {
-        this.effects.bulletHole(trace.to, trace.normal, trace.surface);
-        if (!surfaced) { this.audio.impact(trace.surface, trace.to); surfaced = true; }
-      } else if (trace.kind === 'player' && !trace.protected && !flesh) { this.audio.impact('flesh', trace.to); flesh = true; }
+      if (trace.kind === 'world' && trace.surface && !surfaced) { this.audio.impact(trace.surface, trace.to); surfaced = true; }
+      else if (trace.kind === 'player' && !trace.protected && !flesh) { this.audio.impact('flesh', trace.to); flesh = true; }
     }
   }
 
@@ -501,9 +512,9 @@ export class GameView {
     this.lastProcessedTick = snapshot.tick;
     this.snapshotBuffer.push({ world: snapshot, received: now });
     if (this.snapshotBuffer.length > 12) this.snapshotBuffer.shift();
-    this.effects.setDrones(snapshot.drones ?? [], snapshot.serverTime);
-    this.droneSound(snapshot);
     const local = snapshot.players.find(player => player.id === localId);
+    this.effects.setDrones(snapshot.drones ?? [], snapshot.serverTime, { playerId: localId, team: local?.team });
+    this.droneSound(snapshot);
     if (!local) { this.prediction.active = false; return; }
     const self = snapshot.self?.id === localId ? snapshot.self : undefined;
     input.resumeSequence(local.lastInputSeq);
@@ -625,6 +636,7 @@ export class GameView {
       now, serverNow, elapsed: elapsedFrame, dt, localId, localTeam: local?.team, mode: snapshot?.mode ?? 'ffa',
       camera: this.camera, width: this.width, height: this.height, buffer: this.snapshotBuffer, players: snapshot?.players ?? [],
       library: this.worldWeapons, sunVisibility: this.sunVisibility, sounds: document.hidden ? null : this.remoteSounds,
+      weaponShadows: this.tier.name !== 'phone',
     });
     const viewTime = renderTime(this.snapshotBuffer, now) ?? serverNow;
     controller.setViewTime(viewTime);
@@ -633,11 +645,16 @@ export class GameView {
     const scoped = spec.scoped && motion.ads >= 0.9;
     const showViewModel = firstPerson && this.weaponsReady && !this.options.graphicsTest;
     if (showViewModel) {
+      const forward = directionFromAngles(input.yaw, 0), right = rightFromYaw(input.yaw), weaponState = this.weapon.state;
       this.viewModel.setProjection(this.camera.fov, this.camera.aspect);
+      this.viewModel.setSunVisibility(this.sunVisibility.sample(feet.x, feet.z, feet.y + this.fpCamera.eyeOffset));
       this.viewModel.update({
         weapon: spec.id, ads: motion.ads, sprint: motion.sprint, dash: !!state.dashing, posture: state.posture, speed, grounded, lookDelta,
-        reload: progress, reloadEmpty: this.weapon.state.reloadEmpty, raise: this.weapon.raise(predictedNow), wallBlock: motion.wallBlock,
+        reload: progress, reloadEmpty: weaponState.reloadEmpty, raise: this.weapon.raise(predictedNow), wallBlock: motion.wallBlock,
         cook: this.weapon.cook(predictedNow), scoped, reduceMotion: this.settings.reduceMotion,
+        velocity: { right: state.vx * right.x + state.vz * right.z, up: state.vy, forward: state.vx * forward.x + state.vz * forward.z },
+        stamina: state.stamina, magEmpty: weaponState.mag[weaponState.slot - 1] === 0,
+        ...(spec.perShellMs ? { reloadShells: weaponState.reloadShells } : {}),
       }, dt, this.elapsed);
     }
     this.viewModel.scene.visible = showViewModel;
@@ -678,6 +695,8 @@ export class GameView {
     } else {
       this.renderer.render(this.scene, this.camera);
       if (showViewModel) this.renderViewModel();
+      const grade = this.directGrade ??= new DirectGrade();
+      grade.setAim(motion.ads); grade.setCondition(lowHealth, this.flash); grade.render(this.renderer);
     }
     this.firstPersonFrame = firstPerson;
     this.options.graphicsTest?.afterRender?.(this.renderer, performance.now() - submitStarted, elapsedFrame * 1000);
@@ -727,7 +746,8 @@ export class GameView {
     this.options.input.setFireBlocked(false); this.options.input.setAimZoom(1, false);
     this.remotes.dispose(); this.world.dispose();
     this.effects.dispose(); this.respawns.dispose(); this.localRespawnAt = 0;
-    this.viewModel.dispose(); this.worldWeapons?.dispose(); this.worldWeapons = null;
+    // The view model owns the shared weapons library.
+    this.viewModel.dispose(); this.worldWeapons = null; this.directGrade?.dispose(); this.directGrade = null;
     this.hudFeed.dispose(); this.grenades.clear();
     disposeCharacterResources();
     const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();

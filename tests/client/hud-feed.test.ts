@@ -30,11 +30,14 @@ test('angles are measured from straight ahead, positive to the right, for any vi
   near(relativeAngle(east, { x: 10, z: 20 }), Math.PI / 2, 1e-9);
 });
 
-test('hit markers come from the local player\'s own confirmed traces: head on any pellet wins, protection and misses do not count', () => {
+test('hit markers come from the local player\'s own confirmed traces: a blast is a head hit only when head pellets did the most damage, protection and misses do not count', () => {
   assert.equal(shotMarker(shot([{ to: { x: 0, y: 1, z: -5 }, kind: 'player', targetId: 'rival', zone: 'torso' }]), 'me'), 'hit');
-  assert.equal(shotMarker(shot([
-    { to: { x: 0, y: 1, z: -5 }, kind: 'player', targetId: 'rival', zone: 'legs' }, { to: { x: 0, y: 1.6, z: -5 }, kind: 'player', targetId: 'rival', zone: 'head' },
-  ], 'me', 'breaker12'), 'me'), 'head');
+  assert.equal(shotMarker(shot([{ to: { x: 0, y: 1.6, z: -5 }, kind: 'player', targetId: 'rival', zone: 'head' }]), 'me'), 'head');
+  const legs = { to: { x: 0, y: 0.5, z: -5 }, kind: 'player' as const, targetId: 'rival', zone: 'legs' as const };
+  const head = { to: { x: 0, y: 1.6, z: -5 }, kind: 'player' as const, targetId: 'rival', zone: 'head' as const };
+  assert.equal(shotMarker(shot([legs, head], 'me', 'breaker12'), 'me'), 'hit', 'A tie is not a headshot, as on the server');
+  assert.equal(shotMarker(shot([legs, head, head], 'me', 'breaker12'), 'me'), 'head');
+  assert.equal(shotMarker(shot([head, { ...legs, targetId: 'other' }, { ...legs, targetId: 'other' }], 'me', 'breaker12'), 'me'), 'head', 'Each target is judged on its own pellets');
   assert.equal(shotMarker(shot([{ to: { x: 0, y: 1, z: -5 }, kind: 'player', targetId: 'rival', zone: 'head', protected: true }]), 'me'), null);
   assert.equal(shotMarker(shot([{ to: { x: 0, y: 1, z: -5 }, kind: 'world', surface: 'wood', normal: { x: 0, y: 0, z: 1 } }]), 'me'), null);
   assert.equal(shotMarker(shot([{ to: { x: 0, y: 8, z: -5 }, kind: 'drone', targetId: 'drone-1' }]), 'me'), 'hit');

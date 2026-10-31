@@ -2,8 +2,11 @@ import type { Posture, Slot, StreakId, WeaponId } from '../../shared/protocol';
 
 /** Per-frame HUD feed from GameView to React. GameView publishes at most ~30 times a second;
  * low-frequency match data (scores, clock, kill feed, medals) still comes from the connection. */
+/** `at` is performance.now() milliseconds, the clock of HudFrame.time; the HUD fades a marker by
+ * `frame.time - at` (hit 260 ms, head 360 ms, kill 560 ms) and treats a stamp over 1 s ahead as expired. */
 export interface HitMarker { id: number; at: number; kind: 'hit' | 'head' | 'kill' }
 /** `angle` is radians from straight ahead, positive to the right, at the time of drawing. */
+/** `at` is performance.now() milliseconds, like HitMarker.at; arcs fade over 1600 ms. */
 export interface DamageArc { id: number; at: number; angle: number; amount: number }
 export interface GrenadeWarning { id: string; angle: number; distance: number }
 export interface MinimapBlip {

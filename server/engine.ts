@@ -39,6 +39,8 @@ const STREAK_MEDALS: Readonly<Record<number, MedalId>> = { 3: 'streak-3', 5: 'st
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 const r3 = (value: number) => Math.round(value * 1000) / 1000;
 const r4 = (value: number) => Math.round(value * 10000) / 10000;
+/** The owning player's own pose: replaying inputs from a 1 mm rounding drifts at step corners and lintels. */
+const r6 = (value: number) => Math.round(value * 1e6) / 1e6;
 const r3v = (v: Vec3): Vec3 => ({ x: r3(v.x), y: r3(v.y), z: r3(v.z) });
 const distance3 = (a: Vec3, b: Vec3) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const angleDelta = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
@@ -918,9 +920,9 @@ export class MatchEngine {
   }
 }
 
-const roundVault = (vault: VaultState | null): VaultState | null => vault && {
-  fromX: r3(vault.fromX), fromY: r3(vault.fromY), fromZ: r3(vault.fromZ), toX: r3(vault.toX), toY: r3(vault.toY), toZ: r3(vault.toZ),
-  start: Math.round(vault.start), end: Math.round(vault.end), exitSpeed: r3(vault.exitSpeed), exitYaw: r4(vault.exitYaw),
+const roundVault = (vault: VaultState | null, r = r3): VaultState | null => vault && {
+  fromX: r(vault.fromX), fromY: r(vault.fromY), fromZ: r(vault.fromZ), toX: r(vault.toX), toY: r(vault.toY), toZ: r(vault.toZ),
+  start: Math.round(vault.start), end: Math.round(vault.end), exitSpeed: r(vault.exitSpeed), exitYaw: r4(vault.exitYaw),
 };
 /** What every client may know about a player: no ammunition, grenades, rewards or timers that reveal intent. */
 export function publicState(p: PlayerState): PublicPlayerState {
@@ -936,8 +938,9 @@ export function publicState(p: PlayerState): PublicPlayerState {
 /** The receiving player's own full state. */
 export function privateState(p: PlayerState): PlayerState {
   return {
-    ...publicState(p), mag: [p.mag[0], p.mag[1]], reserve: [p.reserve[0], p.reserve[1]], frags: p.frags, rewards: [...p.rewards],
-    reloadSlot: p.reloadSlot, readyAt: Math.round(p.readyAt), meleeUntil: Math.round(p.meleeUntil), stamina: r3(p.stamina),
+    ...publicState(p), x: r6(p.x), y: r6(p.y), z: r6(p.z), vx: r6(p.vx), vy: r6(p.vy), vz: r6(p.vz), vault: roundVault(p.vault, r6),
+    mag: [p.mag[0], p.mag[1]], reserve: [p.reserve[0], p.reserve[1]], frags: p.frags, rewards: [...p.rewards],
+    reloadSlot: p.reloadSlot, readyAt: Math.round(p.readyAt), meleeUntil: Math.round(p.meleeUntil), stamina: r6(p.stamina),
     slideCooldownUntil: Math.round(p.slideCooldownUntil), lastDamageAt: Math.round(p.lastDamageAt),
   };
 }

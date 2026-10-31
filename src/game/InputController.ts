@@ -1,4 +1,5 @@
 import type { InputFrame, Slot, StreakId } from '../../shared/protocol';
+import { ARENA_LIMITS } from '../../shared/map';
 
 export type AimMode = 'hold' | 'toggle';
 export type SprintMode = 'hold' | 'toggle' | 'auto';
@@ -206,7 +207,10 @@ export class InputController {
   setStreakTarget(target: { x: number; z: number } | null) {
     if (!finitePoint(target)) { this.cancelTargeting(); return; }
     if (!this.acceptsInput) return;
-    this.streakPulse = 'mortar'; this.streakTarget = { x: target.x, z: target.z };
+    // The server refuses a whole frame whose target lies outside the arena, so a pick at the map's edge
+    // is pulled in to the boundary.
+    const limit = (value: number, edge: number) => Math.max(-edge, Math.min(edge, value));
+    this.streakPulse = 'mortar'; this.streakTarget = { x: limit(target.x, ARENA_LIMITS.x), z: limit(target.z, ARENA_LIMITS.z) };
     this.targeting = false;
   }
   /** Earned, unused rewards from the latest snapshot, oldest first; key 4 uses the first. */

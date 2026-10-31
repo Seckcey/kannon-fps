@@ -69,8 +69,30 @@ test('press-to-fire weapons fire once per press and never faster than their mini
     const held = armed(loadout, { slot });
     assert.equal(shotTicks(drive(held, 60, () => ({ fire: true, slot }))).length, 1, `${id}: holding the trigger fires once`);
   }
-  const swapped = armed(plain);
-  assert.equal(shotTicks(drive(swapped, 30, () => ({ fire: true, slot: 2 }))).length, 0, 'A press while the new weapon raises is lost');
+  // As on the server: a semi-automatic press made while the new weapon raises fires once, as soon as it
+  // is up, if the trigger stays down; a tap released before then is lost.
+  const raise = Math.ceil(WEAPONS.sentry9.raiseMs / TICK);
+  assert.deepEqual(shotTicks(drive(armed(plain), 30, () => ({ fire: true, slot: 2 }))), [raise], 'A held press fires once the pistol is up');
+  assert.deepEqual(shotTicks(drive(armed(plain), 30, tick => ({ fire: tick < 3, slot: 2 }))), [], 'A tap released during the raise is lost');
+});
+
+test('each weapon keeps its own cadence: the pistol fires once raised after a bolt shot, and swapping back waits out the bolt', () => {
+  const loadout: Loadout = { ...plain, primary: 'longbow' }, weapon = armed(loadout), start = 80_000;
+  const interval = fireIntervalMs(WEAPONS.longbow), raise = WEAPONS.sentry9.raiseMs, longbowRaise = WEAPONS.longbow.raiseMs;
+  assert.ok(weapon.step(frame(1, { fire: true }), context(start)).some(event => event.type === 'shot'));
+  weapon.step(frame(2, { slot: 2 }), context(start + TICK));
+  assert.ok(weapon.step(frame(3, { slot: 2, fire: true }), context(start + TICK + raise)).some(event => event.type === 'shot'),
+    'The pistol does not wait for the Longbow bolt');
+  weapon.step(frame(4, { slot: 1 }), context(start + 2 * TICK + raise));
+  const back = start + 2 * TICK + raise + longbowRaise;
+  assert.ok(back < start + interval, 'the scenario swaps back before the bolt is ready');
+  assert.deepEqual(weapon.step(frame(5, { slot: 1, fire: true }), context(back)).filter(event => event.type === 'shot'), [], 'Swapping back cannot skip the bolt');
+  assert.ok(weapon.step(frame(6, { slot: 1, fire: true }), context(start + interval)).some(event => event.type === 'shot'), 'The held press fires when the bolt is ready');
+});
+
+test('a fresh pull of an automatic waits a full interval for its second round', () => {
+  const run = drive(armed(plain), 6, () => ({ fire: true }));
+  assert.deepEqual(shotTicks(run).slice(0, 2), [0, Math.ceil(fireIntervalMs(WEAPONS.kr5) / TICK)]);
 });
 
 test('spawn magazines, spare rounds and frags follow the loadout and Deep Pockets', () => {
@@ -124,6 +146,15 @@ test('the pump shotgun loads shell by shell and a trigger pull interrupts the re
   const shot = interrupted.step(frame(3, { fire: true }), context(start + 900));
   assert.ok(shot.some(event => event.type === 'shot'), 'The shot goes out');
   assert.equal(interrupted.state.reloadSlot, 0); assert.equal(interrupted.state.mag[0], 3);
+  // A pull that cannot fire yet (the pump is still cycling) leaves the reload running.
+  const cycling = armed(loadout, { mag: [3, 12] });
+  cycling.step(frame(1, { fire: true }), context(start));
+  cycling.step(frame(2, { reload: true }), context(start + TICK));
+  cycling.step(frame(3), context(start + TICK + spec.shellStartMs! + spec.perShellMs! + 10));
+  assert.equal(cycling.state.mag[0], 3, 'a shell went in after the shot');
+  assert.ok(start + TICK + spec.shellStartMs! + spec.perShellMs! + 20 < start + fireIntervalMs(spec), 'the scenario pulls before the pump is ready');
+  assert.deepEqual(cycling.step(frame(4, { fire: true }), context(start + TICK + spec.shellStartMs! + spec.perShellMs! + 20)).filter(event => event.type === 'shot'), []);
+  assert.equal(cycling.state.reloadSlot, 1, 'An early pull does not stop the reload');
 });
 
 test('once a shell is in, a pump reload no longer blocks the trigger, so Simple fire can interrupt it like a manual pull', () => {
@@ -171,10 +202,11 @@ test('firing waits the sprint-to-fire time after a sprint and 1.4 times that aft
     const run = drive(weapon, 30, tick => ({ fire: tick >= 5 }), 50_000, tick => ({ sprinting: tick < 5, dashing: dashed && tick < 5 }));
     const first = shotTicks(run)[0]!;
     const wait = WEAPONS.kr5.sprintToFireMs * (dashed ? DASH_SPRINT_TO_FIRE : 1);
-    assert.equal(first, 5 + Math.ceil(wait / TICK), dashed ? 'after a dash' : 'after a sprint');
+    // Timed from the last tick spent sprinting (tick 4), as on the server.
+    assert.equal(first, 4 + Math.ceil(wait / TICK), dashed ? 'after a dash' : 'after a sprint');
   }
   const sprinting = armed(plain);
-  assert.equal(shotTicks(drive(sprinting, 10, () => ({ fire: true }), 0, () => ({ sprinting: true }))).length, 0, 'No shots while still sprinting');
+  assert.equal(shotTicks(drive(sprinting, 10, tick => ({ fire: tick > 0 }), 0, () => ({ sprinting: true }))).length, 0, 'No shots while still sprinting');
 });
 
 test('a vault blocks fire until 70%, and cooking or knifing block it until they end', () => {
@@ -183,6 +215,7 @@ test('a vault blocks fire until 70%, and cooking or knifing block it until they 
   assert.ok(vault.step(frame(2, { fire: true }), context(1_033, { vaultProgress: VAULT_FIRE_PROGRESS })).some(event => event.type === 'shot'));
   const cook = armed(plain), start = 60_000;
   assert.deepEqual(cook.step(frame(1, { grenade: true }), context(start)), [{ type: 'cook' }]);
+  assert.equal(cook.state.frags, spawnFrags(plain) - 1, 'The frag leaves the belt when the cook starts');
   assert.equal(cook.cook(start + EXPLOSIVES.frag.fuseMs / 2), 0.5);
   assert.deepEqual(cook.step(frame(2, { grenade: true, fire: true }), context(start + 33)), []);
   assert.deepEqual(cook.step(frame(3, { fire: false }), context(start + 66)), [{ type: 'throw', inHand: false }]);

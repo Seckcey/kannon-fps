@@ -186,7 +186,7 @@ export function threatNotices(snapshot: Pick<WorldSnapshot, 'serverTime' | 'dron
   const viewer: Viewer = { id: self.id, team: self.team };
   const hostile = (owner: { ownerId: string; team?: Team }) => relationOf(viewer, mode, { id: owner.ownerId, team: owner.team }) === 'enemy';
   const notices: string[] = [];
-  if (snapshot.mortars?.some(m => hostile(m) && m.impacts.some(at => at >= snapshot.serverTime))) notices.push('Mortar Strike incoming. Keep moving.');
+  if (snapshot.mortars?.some(m => hostile(m) && m.impacts.some(at => at >= snapshot.serverTime))) notices.push('Mortar Volley incoming. Keep moving.');
   if (snapshot.drones?.some(d => hostile(d) && d.until > snapshot.serverTime && d.health > 0)) notices.push('Enemy Attack Drone overhead.');
   if (snapshot.recon?.some(r => hostile(r) && r.until > snapshot.serverTime) && !(self.loadout && hasPerk(self.loadout, 'low-profile'))) notices.push('Enemy Recon Sweep: you show on their map.');
   return notices;

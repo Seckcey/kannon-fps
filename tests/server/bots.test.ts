@@ -512,7 +512,7 @@ test('a rival pressed against a wall with no route planned steps back out instea
   }
 });
 
-test('rewards: Recon Sweep and Attack Drone at once, Mortar Strike on a recently seen opponent', () => {
+test('rewards: Recon Sweep and Attack Drone at once, Mortar Volley on a recently seen opponent', () => {
   const bots = new PracticeBots('normal', 'rewards'), arena = new Arena(bots, 'ffa', false);
   const bot = arena.add(rival(0, { x: -28, z: 0, yaw: Math.PI / 2, rewards: ['mortar', 'drone', 'recon'] }));
   arena.run(3000);

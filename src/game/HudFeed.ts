@@ -1,7 +1,7 @@
 import type { DroneState, GameEvent, GameMode, MortarState, PublicPlayerState, ReconState, Team, Vec3 } from '../../shared/protocol';
 import { RULES } from '../../shared/protocol';
 import { GrenadeTrajectory } from '../../shared/physics';
-import { hasPerk, type WeaponSpec } from '../../shared/weapons';
+import { damageAt, hasPerk, WEAPONS, type WeaponSpec } from '../../shared/weapons';
 import type { DamageArc, GrenadeWarning, HitMarker, HudFrame, HudStore, MinimapBlip } from './hud';
 
 type ShotEvent = Extract<GameEvent, { type: 'shot' }>;
@@ -65,12 +65,21 @@ export function relativeAngle(view: ViewPose, target: { x: number; z: number }):
  * a head contact on any pellet wins. */
 export function shotMarker(event: ShotEvent, localId: string): 'hit' | 'head' | null {
   if (event.playerId !== localId || event.weapon === 'drone') return null;
+  const spec = WEAPONS[event.weapon];
+  // The server's rule: a shot is a headshot on a target only when its head pellets did strictly more
+  // damage there than its torso and its leg pellets, so one stray head pellet is an ordinary hit.
+  const targets = new Map<string, { head: number; torso: number; legs: number }>();
   let kind: 'hit' | null = null;
   for (const trace of event.traces) {
     if (trace.protected) continue;
-    if (trace.kind === 'player') { if (trace.zone === 'head') return 'head'; kind = 'hit'; }
-    else if (trace.kind === 'drone') kind = 'hit';
+    if (trace.kind === 'drone') { kind = 'hit'; continue; }
+    if (trace.kind !== 'player') continue;
+    kind = 'hit';
+    const zone = trace.zone ?? 'torso', sums = targets.get(trace.targetId ?? '') ?? { head: 0, torso: 0, legs: 0 };
+    sums[zone] += damageAt(spec, Math.hypot(trace.to.x - event.from.x, trace.to.y - event.from.y, trace.to.z - event.from.z), zone);
+    targets.set(trace.targetId ?? '', sums);
   }
+  for (const sums of targets.values()) if (sums.head > sums.torso && sums.head > sums.legs) return 'head';
   return kind;
 }
 /** Where someone else's shot passed the listener within `radius` metres, or null (a hit on the

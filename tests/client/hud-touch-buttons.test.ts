@@ -114,7 +114,7 @@ test('every button gets its gesture role or its handler', () => {
   byId('swap').handlers!.onPointerDown(finger());
   for (const spec of specs.filter(item => item.id === 'reward')) spec.handlers!.onPointerDown(finger());
   assert.deepEqual(input.calls, ['aim:toggle', 'crouch:down', 'crouch:up', 'sprint:toggle', 'swap', 'use:recon', 'use:mortar']);
-  assert.deepEqual(specs.filter(spec => spec.id === 'reward').map(spec => [spec.label, spec.ariaLabel]), [['Recon', 'Use Recon Sweep'], ['Mortar', 'Use Mortar Strike']]);
+  assert.deepEqual(specs.filter(spec => spec.id === 'reward').map(spec => [spec.label, spec.ariaLabel]), [['Recon', 'Use Recon Sweep'], ['Mortar', 'Use Mortar Volley']]);
   assert.equal(byId('fire').ariaLabel, 'Fire');
 
   const automatic = touchButtonSpecs({ input, settings: { aimMode: 'toggle', crouchMode: 'toggle', sprintMode: 'auto', firingMode: 'advanced' }, layout: touchLayout({ width: 844, height: 390 }), rewards: [], state: { ...IDLE, motion: 'sprint' } });

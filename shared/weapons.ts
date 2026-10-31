@@ -1,4 +1,4 @@
-import type { HitZone, Loadout, LoadoutPreset, PerkId, PracticeDifficulty, PrimaryWeaponId, SecondaryWeaponId, Slot, StreakId, WeaponId } from './protocol.js';
+import type { HitZone, Loadout, LoadoutPreset, MedalId, PerkId, PracticeDifficulty, PrimaryWeaponId, SecondaryWeaponId, Slot, StreakId, WeaponId } from './protocol.js';
 
 /** One weapon table for the server, client prediction, bots, viewmodel and HUD. Angles are radians,
  * times are milliseconds, distances metres. Numbers are playtest starting points. */
@@ -104,7 +104,7 @@ export const PERKS: Record<PerkId, PerkSpec> = {
   'quiet-step': { id: 'quiet-step', name: 'Quiet Step', slot: 2, description: 'Your footsteps are much harder to hear.' },
   'low-profile': { id: 'low-profile', name: 'Low Profile', slot: 2, description: 'Hidden from Recon Sweeps; firing does not ping the minimap.' },
   'second-wind': { id: 'second-wind', name: 'Second Wind', slot: 3, description: 'Health starts refilling after 2.5 seconds instead of 4.' },
-  'steady-aim': { id: 'steady-aim', name: 'Steady Aim', slot: 3, description: 'Aim down sights 20% faster and flinch 40% less when hit.' },
+  'steady-aim': { id: 'steady-aim', name: 'Cool Head', slot: 3, description: 'Aim down sights 20% faster and flinch 40% less when hit.' },
 };
 export const PERK_SLOTS: ReadonlyArray<readonly [PerkId, PerkId]> = [
   ['quick-hands', 'deep-pockets'], ['quiet-step', 'low-profile'], ['second-wind', 'steady-aim'],
@@ -118,7 +118,7 @@ export const DEEP_POCKETS_EXTRA_MAGS = 2;
 export interface StreakSpec { id: StreakId; name: string; kills: number; description: string }
 export const STREAKS: Record<StreakId, StreakSpec> = {
   recon: { id: 'recon', name: 'Recon Sweep', kills: 3, description: 'Shows enemies on your minimap for 20 seconds.' },
-  mortar: { id: 'mortar', name: 'Mortar Strike', kills: 5, description: 'Pick a spot on the map. Three shells land after a warning whistle.' },
+  mortar: { id: 'mortar', name: 'Mortar Volley', kills: 5, description: 'Pick a spot on the map. Three shells land after a warning whistle.' },
   drone: { id: 'drone', name: 'Attack Drone', kills: 7, description: 'Circles the town for 25 seconds and fires at enemies it can see.' },
 };
 export const STREAK_ORDER: readonly StreakId[] = ['recon', 'mortar', 'drone'];
@@ -147,6 +147,13 @@ export const LOADOUT_PRESETS: Record<Exclude<LoadoutPreset, 'custom'>, Loadout> 
   marksman: { primary: 'longbow', secondary: 'sentry9', lethal: 'frag', perks: ['quick-hands', 'low-profile', 'steady-aim'] },
 };
 export const DEFAULT_LOADOUT: Loadout = LOADOUT_PRESETS.assault;
+export const LOADOUT_PRESET_NAMES: Record<LoadoutPreset, string> = { assault: 'Assault', close: 'Close Quarters', marksman: 'Marksman', custom: 'Custom' };
+/** Player-facing medal names (original wording, never another game's). */
+export const MEDAL_NAMES: Record<MedalId, string> = {
+  'first-strike': 'First Strike', double: 'Double Up', triple: 'Triple Up', headshot: 'Bullseye', 'long-shot': 'Long Range',
+  'even-score': 'Evened Up', blade: 'Quick Blade', grenadier: 'Well Thrown', 'drone-down': 'Drone Down',
+  'streak-3': 'Three Straight', 'streak-5': 'Five Straight', 'streak-7': 'Seven Straight', 'streak-10': 'Ten Straight',
+};
 /** AI rival loadouts: Scout assault, Moxie close quarters, Rook assault (marksman on Challenging). */
 export function botLoadout(id: string, difficulty: PracticeDifficulty): Loadout {
   if (id === 'bot-moxie') return LOADOUT_PRESETS.close;

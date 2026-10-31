@@ -10,12 +10,15 @@ import {
 export interface WeaponState {
   slot: Slot; mag: [number, number]; reserve: [number, number]; frags: number;
   reloadSlot: Slot | 0; reloadingUntil: number; reloadStartedAt: number; reloadEmpty: boolean;
-  /** Shell-by-shell reloads: shells still to insert and when the next one goes in. */
-  shellsLeft: number; nextShellAt: number;
+  /** Shell-by-shell reloads: shells this reload loads in all, shells still to insert and when the next one goes in. */
+  reloadShells: number; shellsLeft: number; nextShellAt: number;
   readyAt: number; meleeUntil: number; cookingSince: number;
-  /** Cadence accumulator and shots in the current trigger pull. */
-  nextFireAt: number; burst: number;
-  wasSprinting: boolean; wasDashing: boolean; sprintEndedAt: number; sprintWasDash: boolean;
+  /** Each slot keeps its own cadence (a swap never skips a bolt or pump), shots in the current
+   * trigger pull, and a semi-automatic press made too early, which fires once allowed while the
+   * trigger stays down. */
+  nextFireAt: [number, number]; burst: number; triggerPending: boolean;
+  /** The last tick spent sprinting, and whether it was the faster dash (sprint-to-fire). */
+  lastSprintAt: number; lastSprintDash: boolean;
 }
 export interface WeaponStepContext {
   /** Predicted server time of the tick that processes this input. */
@@ -120,12 +123,14 @@ const blankState = (loadout: Loadout): WeaponState => {
   const primary = weaponFor(loadout, 1), secondary = weaponFor(loadout, 2);
   return {
     slot: 1, mag: [primary.magazine, secondary.magazine], reserve: [spawnReserve(primary, loadout), spawnReserve(secondary, loadout)], frags: spawnFrags(loadout),
-    reloadSlot: 0, reloadingUntil: 0, reloadStartedAt: 0, reloadEmpty: false, shellsLeft: 0, nextShellAt: 0,
-    readyAt: 0, meleeUntil: 0, cookingSince: 0, nextFireAt: 0, burst: 0,
-    wasSprinting: false, wasDashing: false, sprintEndedAt: -Infinity, sprintWasDash: false,
+    reloadSlot: 0, reloadingUntil: 0, reloadStartedAt: 0, reloadEmpty: false, reloadShells: 0, shellsLeft: 0, nextShellAt: 0,
+    readyAt: 0, meleeUntil: 0, cookingSince: 0, nextFireAt: [-Infinity, -Infinity], burst: 0, triggerPending: false,
+    lastSprintAt: -Infinity, lastSprintDash: false,
   };
 };
-const copy = (state: WeaponState): WeaponState => ({ ...state, mag: [state.mag[0], state.mag[1]], reserve: [state.reserve[0], state.reserve[1]] });
+const copy = (state: WeaponState): WeaponState => ({
+  ...state, mag: [state.mag[0], state.mag[1]], reserve: [state.reserve[0], state.reserve[1]], nextFireAt: [state.nextFireAt[0], state.nextFireAt[1]],
+});
 type Edges = Pick<InputFrame, 'fire' | 'melee' | 'grenade'>;
 interface Entry { seq: number; input: InputFrame; ctx: WeaponStepContext; before: WeaponState; previous: Edges | null }
 
@@ -174,7 +179,7 @@ export class LocalWeapon {
   fireReady(ctx: Pick<WeaponStepContext, 'now' | 'sprinting' | 'vaultProgress'>): boolean {
     const s = this.state, spec = this.spec;
     return (!s.reloadSlot || this.interruptible(ctx.now)) && !ctx.sprinting && ctx.now >= s.readyAt && ctx.now >= s.meleeUntil && !s.cookingSince
-      && ctx.vaultProgress >= VAULT_FIRE_PROGRESS && ctx.now >= s.sprintEndedAt + sprintToFireMs(spec, s.sprintWasDash);
+      && ctx.vaultProgress >= VAULT_FIRE_PROGRESS && ctx.now >= s.lastSprintAt + sprintToFireMs(spec, s.lastSprintDash);
   }
   /** A shell-by-shell reload of the weapon in hand with a shell already in, or one due by `now`
    * (the tick inserts it before the trigger is read). */
@@ -220,7 +225,8 @@ export class LocalWeapon {
       state.shellsLeft = Math.max(1, Math.min(spec.magazine - state.mag[index], state.reserve[index], Math.ceil((self.reloadingUntil - serverTime) / per)));
       state.nextShellAt = self.reloadingUntil - (state.shellsLeft - 1) * per;
       state.reloadEmpty = state.mag[index] === 0;
-      state.reloadStartedAt = self.reloadingUntil - shellReloadMs(spec, Math.max(state.shellsLeft, spec.magazine - state.mag[index]), this.loadout);
+      state.reloadShells = Math.max(state.shellsLeft, spec.magazine - state.mag[index]);
+      state.reloadStartedAt = self.reloadingUntil - shellReloadMs(spec, state.reloadShells, this.loadout);
     } else {
       state.reloadEmpty = state.mag[index] === 0;
       state.reloadStartedAt = self.reloadingUntil - reloadMs(spec, state.reloadEmpty, this.loadout);
@@ -234,7 +240,7 @@ export class LocalWeapon {
     state.reloadSlot = state.slot; state.reloadStartedAt = now; state.reloadEmpty = state.mag[index] === 0; state.burst = 0;
     if (spec.perShellMs) {
       const shells = Math.min(spec.magazine - state.mag[index], state.reserve[index]);
-      state.shellsLeft = shells;
+      state.reloadShells = shells; state.shellsLeft = shells;
       state.nextShellAt = now + shellReloadMs(spec, 1, this.loadout);
       state.reloadingUntil = now + shellReloadMs(spec, shells, this.loadout);
     } else state.reloadingUntil = now + reloadMs(spec, state.reloadEmpty, this.loadout);
@@ -268,47 +274,60 @@ export class LocalWeapon {
     if (this.history.length > HISTORY) this.history.splice(0, this.history.length - HISTORY);
     const s = this.state, now = ctx.now;
     this.previous = { fire: input.fire, melee: input.melee, grenade: input.grenade };
-    if (!ctx.alive) { s.burst = 0; return; }
+    if (!ctx.alive) { s.burst = 0; s.triggerPending = false; return; }
     const pressed = (key: keyof Edges) => input[key] && !(previous?.[key] ?? false);
-    const factor = handlingFactor(this.loadout);
-    if (input.slot !== s.slot && (input.slot === 1 || input.slot === 2)) {
-      s.slot = input.slot; this.cancelReload(s); s.burst = 0;
+    const factor = handlingFactor(this.loadout), slot = input.slot === 1 || input.slot === 2 ? input.slot : s.slot;
+    const firePressed = pressed('fire'), wasFiring = !!previous?.fire, vaulting = ctx.vaultProgress < 1;
+    // The server's order: due shells go in, a press made with the weapon in hand fires before a swap,
+    // the knife and a cook start before moving, then the reload key, then the held trigger.
+    this.progressReload(s, now, events);
+    const early = firePressed && slot === s.slot;
+    if (early) this.tryFire(s, ctx, events, firePressed, wasFiring);
+    if (slot !== s.slot) {
+      s.slot = slot; this.cancelReload(s); s.burst = 0; s.triggerPending = false;
       s.readyAt = Math.max(s.readyAt, now + weaponFor(this.loadout, s.slot).raiseMs * factor);
       events?.push({ type: 'swap', weapon: weaponFor(this.loadout, s.slot).id });
     }
-    this.progressReload(s, now, events);
-    if (pressed('melee') && now >= s.meleeUntil && !s.cookingSince) {
+    if (pressed('melee') && now >= s.meleeUntil && !s.cookingSince && !vaulting) {
       s.meleeUntil = now + RULES.meleeMs; s.readyAt = Math.max(s.readyAt, s.meleeUntil); this.cancelReload(s); s.burst = 0;
       events?.push({ type: 'melee' });
     }
-    if (pressed('grenade') && !s.cookingSince && s.frags > 0 && now >= s.meleeUntil) {
-      s.cookingSince = now; this.cancelReload(s); s.burst = 0;
+    if (pressed('grenade') && !s.cookingSince && s.frags > 0 && now >= s.meleeUntil && !vaulting) {
+      // The frag leaves the belt when the cook starts, as on the server.
+      s.cookingSince = now; s.frags--; this.cancelReload(s); s.burst = 0;
       events?.push({ type: 'cook' });
     } else if (s.cookingSince && (!input.grenade || now >= s.cookingSince + EXPLOSIVES.frag.fuseMs)) {
       events?.push({ type: 'throw', inHand: input.grenade });
-      s.frags = Math.max(0, s.frags - 1); s.cookingSince = 0;
+      s.cookingSince = 0;
     }
-    if (s.wasSprinting && !ctx.sprinting) { s.sprintEndedAt = now; s.sprintWasDash = s.wasDashing; }
-    s.wasSprinting = ctx.sprinting; s.wasDashing = ctx.dashing;
+    if (ctx.sprinting) { s.lastSprintAt = now; s.lastSprintDash = ctx.dashing; }
     const spec = weaponFor(this.loadout, s.slot), index = s.slot - 1;
     if (input.reload && !s.reloadSlot && s.mag[index] < spec.magazine && s.reserve[index] > 0 && !s.cookingSince && now >= s.meleeUntil) this.startReload(s, now, events);
-    const firePressed = pressed('fire');
-    if (spec.auto ? input.fire : firePressed) {
-      // A shell-by-shell reload stops for a shot as soon as one shell is in.
-      if (spec.perShellMs && s.reloadSlot === s.slot && s.mag[index] > 0) this.cancelReload(s);
-      if (s.mag[index] <= 0) {
-        if (s.reserve[index] > 0) { if (!s.reloadSlot && !s.cookingSince && now >= s.meleeUntil) this.startReload(s, now, events); }
-        else if (firePressed) events?.push({ type: 'dry', weapon: spec.id });
-      } else if (this.fireReady(ctx) && now >= s.nextFireAt) {
-        const interval = fireIntervalMs(spec);
-        // Held automatic fire uses an accumulator so 30 Hz ticks keep the true rate, banking at most
-        // one interval of idle time. Press-to-fire weapons keep a strict minimum gap between shots.
-        s.nextFireAt = spec.auto ? Math.max(s.nextFireAt, now - interval) + interval : now + interval;
-        s.mag[index]--;
-        events?.push({ type: 'shot', weapon: spec.id, slot: s.slot, burst: s.burst, kick: recoilKick(spec, s.burst, ctx.ads) });
-        s.burst++;
-      }
+    if (!early && (firePressed || ((spec.auto || s.triggerPending) && input.fire))) this.tryFire(s, ctx, events, firePressed, wasFiring);
+    if (!input.fire) { s.burst = 0; s.triggerPending = false; }
+  }
+
+  /** The server's trigger rules, step for step. */
+  private tryFire(s: WeaponState, ctx: WeaponStepContext, events: WeaponEvent[] | null, firePressed: boolean, wasFiring: boolean) {
+    const now = ctx.now, spec = weaponFor(this.loadout, s.slot), index = s.slot - 1;
+    // Only a shell-by-shell reload with something loaded gives way to the trigger, and only once a shot goes off.
+    if (s.reloadSlot && (!spec.perShellMs || s.mag[index] <= 0)) return;
+    if (s.cookingSince) return;
+    const early = now < s.meleeUntil || now < s.readyAt || ctx.vaultProgress < VAULT_FIRE_PROGRESS
+      || now < s.lastSprintAt + sprintToFireMs(spec, s.lastSprintDash) || now < s.nextFireAt[index];
+    if (early) { if (!spec.auto && s.mag[index] > 0) s.triggerPending = true; return; }
+    if (s.mag[index] <= 0) {
+      if (s.reserve[index] > 0) this.startReload(s, now, events);
+      else if (firePressed) events?.push({ type: 'dry', weapon: spec.id });
+      return;
     }
-    if (!input.fire) s.burst = 0;
+    if (s.reloadSlot) this.cancelReload(s);
+    // Held automatic fire accumulates the interval so 30 Hz ticks keep the true rate; a new pull starts
+    // fresh, so idle time never banks extra shots. Press-to-fire rounds are always a full interval apart.
+    const interval = fireIntervalMs(spec), continuous = spec.auto && wasFiring && now - s.nextFireAt[index] < interval;
+    s.nextFireAt[index] = (continuous ? s.nextFireAt[index] : now) + interval;
+    s.mag[index]--; s.triggerPending = false;
+    events?.push({ type: 'shot', weapon: spec.id, slot: s.slot, burst: s.burst, kick: recoilKick(spec, s.burst, ctx.ads) });
+    s.burst++;
   }
 }

@@ -53,7 +53,7 @@ export function Minimap({ frame, size, range }: { frame: HudFrame; size: number;
   </div>;
 }
 
-/** North-up arena map for choosing where the Mortar Strike lands. */
+/** North-up arena map for choosing where the Mortar Volley lands. */
 export function MortarTargetMap({ frame, touch, onTarget, onCancel }: { frame: HudFrame; touch: boolean; onTarget: (target: { x: number; z: number }) => void; onCancel: () => void }) {
   const svg = useRef<SVGSVGElement>(null);
   const [aim, setAim] = useState<{ x: number; z: number } | null>(null);
@@ -62,9 +62,9 @@ export function MortarTargetMap({ frame, touch, onTarget, onCancel }: { frame: H
     return bounds ? mapToArena(event.clientX - bounds.left, event.clientY - bounds.top, bounds.width, bounds.height) : null;
   };
   const { view } = frame;
-  return <div className="mortar-overlay" role="dialog" aria-modal="true" aria-label="Choose where the Mortar Strike lands">
+  return <div className="mortar-overlay" role="dialog" aria-modal="true" aria-label="Choose where the Mortar Volley lands">
     <div className="mortar-panel">
-      <div className="mortar-heading"><Icon name="mortar" size={26}/><div><strong>Mortar Strike</strong><span>{touch ? 'Tap the map to call it in.' : 'Click the map to call it in. Esc cancels.'}</span></div>
+      <div className="mortar-heading"><Icon name="mortar" size={26}/><div><strong>Mortar Volley</strong><span>{touch ? 'Tap the map to call it in.' : 'Click the map to call it in. Esc cancels.'}</span></div>
         <button type="button" className="button secondary small" onClick={onCancel}>Cancel</button></div>
       <svg ref={svg} className="mortar-map" viewBox={`${-ARENA_MAP.x} ${-ARENA_MAP.z} ${2 * ARENA_MAP.x} ${2 * ARENA_MAP.z}`} role="img" aria-label="Kannon Town map"
         onPointerMove={event => { if (event.pointerType === 'mouse') setAim(pick(event)); }} onPointerLeave={() => setAim(null)}

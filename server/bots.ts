@@ -647,7 +647,7 @@ export class PracticeBots {
     if (brain.random() < settings.slide) brain.slideHold = now + MOVE.slideMs;
   }
 
-  /** Spends earned rewards: Recon Sweep and Attack Drone at once, Mortar Strike on a recently seen opponent. */
+  /** Spends earned rewards: Recon Sweep and Attack Drone at once, Mortar Volley on a recently seen opponent. */
   private useReward(brain: Brain, player: PlayerState, others: readonly PlayerState[], frame: InputFrame, mode: GameMode, now: number, task: Task) {
     if (brain.streakPulse) { brain.streakPulse = false; return; }
     if (!player.rewards.length || now < brain.nextStreak || task === 'throw') return;

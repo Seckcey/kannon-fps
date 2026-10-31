@@ -89,6 +89,8 @@ export interface RemoteFrame {
   buffer: readonly Buffered[]; players: readonly PublicPlayerState[];
   library: WeaponLibrary | null; sunVisibility: SunVisibilityGrid | null;
   sounds: RemoteSounds | null;
+  /** Other players' guns cast real-time shadows (off on phones, where every caster costs). Default on. */
+  weaponShadows?: boolean;
 }
 interface RemoteEntry {
   model: CharacterModel; label: HTMLDivElement; shadow: THREE.Mesh;
@@ -170,7 +172,7 @@ export class RemotePlayers {
       entry.position.set(rendered.x, rendered.y, rendered.z);
       entry.model.root.position.copy(entry.position); entry.model.root.rotation.y = -rendered.yaw;
       entry.model.setAccent(accentColor(state, frame.localTeam, frame.mode));
-      this.arm(entry, rendered.weapon, frame.library);
+      this.arm(entry, rendered.weapon, frame.library, frame.weaponShadows !== false);
       const velocity = entry.locomotion.update(rendered, frame.elapsed, 'remote');
       const grounded = isPlayerGrounded(rendered);
       entry.model.update({ ...rendered, vx: velocity.vx, vz: velocity.vz }, frame.dt, frame.serverNow, false, { aim: rendered.aiming ?? false, grounded });
@@ -203,7 +205,7 @@ export class RemotePlayers {
   }
 
   /** The drawn weapon follows the player's equipped weapon, with its grip on the hand socket. */
-  private arm(entry: RemoteEntry, weapon: WeaponId, library: WeaponLibrary | null) {
+  private arm(entry: RemoteEntry, weapon: WeaponId, library: WeaponLibrary | null, shadows: boolean) {
     if (!library || entry.weaponId === weapon || !weapon) return;
     entry.weapon?.root.removeFromParent();
     try {
@@ -211,7 +213,7 @@ export class RemotePlayers {
       instance.root.updateMatrixWorld(true);
       const grip = instance.root.worldToLocal(instance.anchors.gripRight.getWorldPosition(this.scratch));
       instance.root.position.sub(grip);
-      instance.root.traverse(object => { if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true; } });
+      instance.root.traverse(object => { if (object instanceof THREE.Mesh) { object.castShadow = shadows; object.receiveShadow = true; } });
       entry.model.weaponSocket.add(instance.root);
       entry.weapon = instance; entry.weaponId = weapon;
     } catch { entry.weapon = null; entry.weaponId = weapon; }

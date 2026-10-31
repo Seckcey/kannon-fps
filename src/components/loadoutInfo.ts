@@ -1,12 +1,12 @@
 import type { Loadout, LoadoutPreset, PerkId, PrimaryWeaponId } from '../../shared/protocol';
-import { DEFAULT_LOADOUT, LOADOUT_PRESETS, PERK_SLOTS, damageAt, sanitizeLoadout, type WeaponSpec } from '../../shared/weapons';
+import { DEFAULT_LOADOUT, LOADOUT_PRESET_NAMES, LOADOUT_PRESETS, PERK_SLOTS, damageAt, sanitizeLoadout, type WeaponSpec } from '../../shared/weapons';
 
 export const PRESET_ORDER: readonly LoadoutPreset[] = ['assault', 'close', 'marksman', 'custom'];
 export const PRESET_INFO: Record<LoadoutPreset, { name: string; summary: string }> = {
-  assault: { name: 'Assault', summary: 'A steady carbine for any range.' },
-  close: { name: 'Close Quarters', summary: 'A fast SMG for rooms and corners.' },
-  marksman: { name: 'Marksman', summary: 'A scoped bolt rifle for long lanes.' },
-  custom: { name: 'Custom', summary: 'Pick your own primary and perks.' },
+  assault: { name: LOADOUT_PRESET_NAMES.assault, summary: 'A steady carbine for any range.' },
+  close: { name: LOADOUT_PRESET_NAMES.close, summary: 'A fast SMG for rooms and corners.' },
+  marksman: { name: LOADOUT_PRESET_NAMES.marksman, summary: 'A scoped bolt rifle for long lanes.' },
+  custom: { name: LOADOUT_PRESET_NAMES.custom, summary: 'Pick your own primary and perks.' },
 };
 export const WEAPON_KIND_NAMES: Record<WeaponSpec['kind'], string> = {
   ar: 'Carbine', smg: 'Submachine gun', shotgun: 'Pump shotgun', sniper: 'Bolt rifle', pistol: 'Pistol',

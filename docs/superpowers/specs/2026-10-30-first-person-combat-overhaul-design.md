@@ -220,7 +220,7 @@ collision height follows posture (1.8 / 1.25 / 1.0 m). Prediction replays the sa
 - Classes: three starters (Assault: carbine + pistol + frag; Close Quarters: SMG + pistol + frag;
   Marksman: bolt rifle + pistol + frag) and one custom class: primary, secondary, lethal and
   three perks (one per slot, original names such as Quick Hands, Quiet Step, Second Wind, Low
-  Profile, Steady Aim, Deep Pockets). Chosen before spawning and between lives.
+  Profile, Cool Head, Deep Pockets). Chosen before spawning and between lives.
 - Streak rewards (kills, reset on death): 3 Recon Sweep (enemies on minimap 20 s), 5 Mortar
   Strike (pick a spot on the map; three shells after a warning whistle), 7 Attack Drone (circles
   for 25 s and fires at visible enemies; can be shot down).
