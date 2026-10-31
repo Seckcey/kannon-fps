@@ -51,38 +51,42 @@ export interface HandlingSpec {
 }
 
 const rifleSprint: PoseSpec = { grip: [0.2, -0.245, -0.38], rotation: [-0.55, 0.55, -0.45] };
-const rifleDash: PoseSpec = { grip: [0.21, -0.21, -0.32], rotation: [0.92, 0.3, 0.85] };
+/** Faster sprint: the long gun stands up on the right with the muzzle out of the top of the view,
+ * so the barrel never sweeps across the middle where the player is running. */
+const rifleDash: PoseSpec = { grip: [0.25, -0.2, -0.31], rotation: [1.02, 0.03, 0.48] };
 
 /** Handling for each weapon. Numbers are tuned by eye against the procedural stand-ins and only
- * depend on the anchors, so the exported models inherit them unchanged. */
+ * depend on the anchors, so the exported models inherit them unchanged. Long guns sit a little out
+ * from the eye at the hip, canted in, so the stock leaves the lower right corner and the right hand
+ * shows on the grip. */
 export const HANDLING: Readonly<Record<WeaponId, HandlingSpec>> = {
   kr5: {
-    hip: { grip: [0.155, -0.18, -0.41], rotation: [0.1, 0.04, 0.04] },
+    hip: { grip: [0.15, -0.175, -0.44], rotation: [0.13, 0.1, 0.22] },
     sprint: rifleSprint, dash: rifleDash,
     adsEye: 0.2, swayHz: 3.0, sway: 1, bob: 1,
     kick: { back: 3.0, up: 0.35, pitch: 3.2, roll: 2.4, yaw: 0.8, hz: 7.5, damping: 0.42, adsRotation: 0.35, adsBack: 0.75 },
     pivot: [0, 0.02, 0.17], reload: 'rifle', action: 'charge', shell: 'rifle', actionTravel: 0.07, flash: 1, cycleDelay: 0,
   },
   hornet9: {
-    hip: { grip: [0.145, -0.17, -0.38], rotation: [0.09, 0.045, 0.04] },
+    hip: { grip: [0.14, -0.165, -0.41], rotation: [0.12, 0.1, 0.2] },
     sprint: { grip: [0.19, -0.235, -0.36], rotation: [-0.56, 0.52, -0.44] },
-    dash: { grip: [0.2, -0.2, -0.3], rotation: [0.92, 0.3, 0.85] },
+    dash: { grip: [0.24, -0.19, -0.29], rotation: [1, 0.05, 0.5] },
     adsEye: 0.2, swayHz: 3.4, sway: 0.9, bob: 0.95,
     kick: { back: 3.0, up: 0.3, pitch: 2.8, roll: 3.2, yaw: 1.1, hz: 9, damping: 0.45, adsRotation: 0.35, adsBack: 0.75 },
     pivot: [0, 0.02, 0.13], reload: 'smg', action: 'charge', shell: 'pistol', actionTravel: 0.06, flash: 0.8, cycleDelay: 0,
   },
   breaker12: {
-    hip: { grip: [0.15, -0.18, -0.42], rotation: [0.1, 0.035, 0.04] },
+    hip: { grip: [0.148, -0.175, -0.45], rotation: [0.13, 0.09, 0.2] },
     sprint: { grip: [0.2, -0.25, -0.39], rotation: [-0.55, 0.55, -0.45] },
-    dash: { grip: [0.21, -0.21, -0.33], rotation: [0.92, 0.3, 0.85] },
+    dash: { grip: [0.25, -0.205, -0.32], rotation: [1.02, 0.03, 0.48] },
     adsEye: 0.23, swayHz: 2.6, sway: 1.15, bob: 1.05,
     kick: { back: 3.0, up: 0.6, pitch: 4.5, roll: 2.0, yaw: 1.0, hz: 5, damping: 0.5, adsRotation: 0.45, adsBack: 0.8 },
     pivot: [0, 0.02, 0.2], reload: 'shotgun', action: 'pump', shell: 'hull', actionTravel: 0.085, flash: 1.45, cycleDelay: 0.12,
   },
   longbow: {
-    hip: { grip: [0.155, -0.185, -0.43], rotation: [0.1, 0.035, 0.04] },
+    hip: { grip: [0.15, -0.18, -0.46], rotation: [0.13, 0.09, 0.18] },
     sprint: { grip: [0.2, -0.255, -0.4], rotation: [-0.55, 0.55, -0.45] },
-    dash: { grip: [0.21, -0.22, -0.34], rotation: [0.92, 0.3, 0.85] },
+    dash: { grip: [0.25, -0.21, -0.33], rotation: [1.02, 0.02, 0.46] },
     adsEye: 0.075, swayHz: 2.4, sway: 1.25, bob: 1.1,
     kick: { back: 3.0, up: 0.5, pitch: 4.5, roll: 1.2, yaw: 0.6, hz: 4.5, damping: 0.55, adsRotation: 0.5, adsBack: 0.8 },
     pivot: [0, 0.02, 0.22], reload: 'bolt', action: 'bolt', shell: 'rifle', actionTravel: 0.09, flash: 1.25, cycleDelay: 0.28,

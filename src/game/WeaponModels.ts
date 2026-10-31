@@ -25,7 +25,9 @@ export interface WeaponAnchors {
 }
 export interface WeaponInstance { id: WeaponId; root: THREE.Object3D; anchors: WeaponAnchors }
 export interface WeaponLibrary {
-  /** A new clone. `purpose` lets first-person copies skip shadows and third-person copies use cheaper materials. */
+  /** A new clone. `purpose` lets first-person copies skip shadows and third-person copies use cheaper materials.
+   * An id that is not a weapon (for example a reward id passed by mistake) gives the carbine, with one
+   * warning, rather than throwing; `instance.id` then says which model was given. */
   weapon(id: WeaponId, purpose: 'view' | 'world'): WeaponInstance;
   knife(): THREE.Object3D;
   frag(): THREE.Object3D;
@@ -40,6 +42,12 @@ export interface WeaponLibrary {
 }
 
 export const WEAPON_IDS: readonly WeaponId[] = ['kr5', 'hornet9', 'breaker12', 'longbow', 'sentry9'];
+/** True only for real weapon ids; inherited names such as `toString` or `__proto__` are not weapons. */
+export function isWeaponId(value: unknown): value is WeaponId {
+  return typeof value === 'string' && (WEAPON_IDS as readonly string[]).includes(value);
+}
+/** The model shown for an id that is not a weapon. */
+export const FALLBACK_WEAPON: WeaponId = 'kr5';
 /** Root node names in the weapons GLB (see the plan's Weapons GLB contract). */
 export const WEAPON_NODES: Readonly<Record<WeaponId, string>> = {
   kr5: 'weapon_kr5', hornet9: 'weapon_hornet9', breaker12: 'weapon_breaker12', longbow: 'weapon_longbow', sentry9: 'weapon_sentry9',
@@ -165,11 +173,23 @@ class LibraryCore {
     };
   }
 
-  weapon(id: WeaponId, purpose: 'view' | 'world'): WeaponInstance {
+  weapon(requested: WeaponId, purpose: 'view' | 'world'): WeaponInstance {
+    const id = isWeaponId(requested) ? requested : this.unknownWeapon(requested);
+    const detail: Detail = purpose === 'world' ? 'world' : 'view';
     const asset = this.assets.get(WEAPON_NODES[id]);
-    const template = asset?.root ?? this.standIn(WEAPON_NODES[id], purpose === 'world' ? 'world' : 'view', () => buildWeaponStandIn(id, this.materials(), purpose === 'world' ? 'world' : 'view'));
-    const root = this.instantiate(template, purpose);
+    const template = asset?.root ?? this.standIn(WEAPON_NODES[id], detail, () => buildWeaponStandIn(id, this.materials(), detail));
+    const root = this.instantiate(template, detail);
     return { id, root, anchors: anchorsOf(root, asset?.synthesized ?? {}) };
+  }
+
+  private readonly warned = new Set<string>();
+  private unknownWeapon(requested: unknown): WeaponId {
+    const name = String(requested);
+    if (this.warned.size < 16 && !this.warned.has(name)) {
+      this.warned.add(name);
+      console.warn(`"${name}" is not a weapon model; showing the ${WEAPON_NODES[FALLBACK_WEAPON]} instead.`);
+    }
+    return FALLBACK_WEAPON;
   }
 
   extra(name: string, purpose: 'view' | 'world'): THREE.Object3D {
@@ -187,7 +207,13 @@ class LibraryCore {
   private standIn(name: string, detail: Detail, build: () => THREE.Group): THREE.Group {
     const key = `${name}:${detail}`;
     let template = this.standIns.get(key);
-    if (!template) { template = build(); this.standIns.set(key, template); }
+    if (!template) {
+      const built: unknown = build();
+      // Never cache a failed build: one bad request must not break the shared library for everyone.
+      if (!(built instanceof THREE.Object3D)) throw new Error(`No stand-in model for ${name}.`);
+      template = built as THREE.Group;
+      this.standIns.set(key, template);
+    }
     return template;
   }
 
@@ -240,7 +266,7 @@ class LibraryCore {
     if (this.disposed) return;
     this.disposed = true;
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
-    const collect = (root: THREE.Object3D) => root.traverse(object => {
+    const collect = (root: THREE.Object3D | null | undefined) => root?.traverse(object => {
       if (!(object instanceof THREE.Mesh)) return;
       geometries.add(object.geometry);
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {

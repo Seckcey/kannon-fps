@@ -53,20 +53,25 @@ export class Spring implements SpringState {
 export class PoseSpring {
   readonly x: Spring; readonly y: Spring; readonly z: Spring;
   readonly pitch: Spring; readonly yaw: Spring; readonly roll: Spring;
+  /** Translation channels first, then rotation; built once so per-frame loops never allocate. */
+  private readonly channels: readonly Spring[];
   constructor(frequency: number, damping: number, rotationFrequency = frequency, rotationDamping = damping) {
     this.x = new Spring(frequency, damping); this.y = new Spring(frequency, damping); this.z = new Spring(frequency, damping);
     this.pitch = new Spring(rotationFrequency, rotationDamping); this.yaw = new Spring(rotationFrequency, rotationDamping); this.roll = new Spring(rotationFrequency, rotationDamping);
+    this.channels = [this.x, this.y, this.z, this.pitch, this.yaw, this.roll];
   }
   tune(frequency: number, damping: number, rotationFrequency = frequency, rotationDamping = damping): void {
-    for (const spring of [this.x, this.y, this.z]) { spring.frequency = frequency; spring.damping = damping; }
-    for (const spring of [this.pitch, this.yaw, this.roll]) { spring.frequency = rotationFrequency; spring.damping = rotationDamping; }
+    for (let i = 0; i < 6; i++) {
+      const spring = this.channels[i]!;
+      spring.frequency = i < 3 ? frequency : rotationFrequency;
+      spring.damping = i < 3 ? damping : rotationDamping;
+    }
   }
   /** Relax every channel toward zero. */
-  settle(dt: number): void { for (const spring of this.channels()) spring.update(0, dt); }
-  reset(): void { for (const spring of this.channels()) spring.reset(); }
+  settle(dt: number): void { for (let i = 0; i < 6; i++) this.channels[i]!.update(0, dt); }
+  reset(): void { for (let i = 0; i < 6; i++) this.channels[i]!.reset(); }
   /** Largest absolute offset across channels (metres and radians mixed; only for tests and idling). */
-  magnitude(): number { let max = 0; for (const spring of this.channels()) max = Math.max(max, Math.abs(spring.value)); return max; }
-  private channels(): Spring[] { return [this.x, this.y, this.z, this.pitch, this.yaw, this.roll]; }
+  magnitude(): number { let max = 0; for (let i = 0; i < 6; i++) max = Math.max(max, Math.abs(this.channels[i]!.value)); return max; }
 }
 
 export const clamp01 = (value: number) => value <= 0 ? 0 : value >= 1 ? 1 : value;

@@ -2,6 +2,12 @@ import * as THREE from 'three';
 import { HEMISPHERE, SUN_COLOR, SUN_DIRECTION, SUN_INTENSITY } from '../Atmosphere';
 import { approach } from './spring';
 
+/** Peak muzzle-light intensity (candela) for a flash of strength 1. A glove 0.3 m from it gets a little
+ * less light than direct sun at the peak: a warm flicker on the gun's front, not an orange glare. */
+export const MUZZLE_LIGHT_CANDELA = 0.28;
+/** The light sits this far ahead of the muzzle, in the flame rather than on the hands. */
+export const MUZZLE_LIGHT_LEAD = 0.15;
+
 /** Lights for the camera-space viewmodel scene that match the world: the sun and sky are rotated
  * into camera space every frame, so the gun is lit from where the sun really is as the player turns,
  * reflections come from the world's sky, and stepping into shade dims the sun on the gun too. */
@@ -10,19 +16,31 @@ export class ViewModelLighting {
   readonly sky = new THREE.HemisphereLight(HEMISPHERE.sky, HEMISPHERE.ground, HEMISPHERE.intensity);
   /** A faint camera-relative fill so the shaded side of the weapon still reads. */
   readonly fill = new THREE.DirectionalLight('#d6e2ee', 0.32);
-  /** Muzzle flash light; kept in the scene at zero so toggling it never recompiles shaders. */
-  readonly flash = new THREE.PointLight('#ffb466', 0, 1.6, 2);
+  /** Muzzle flash light. While enabled it stays in the scene at zero between shots, so a shot never
+   * changes the light count (which would recompile every shader); tiers without a muzzle light
+   * leave it out entirely, so their shaders never pay for it. */
+  readonly flash = new THREE.PointLight('#ffb466', 0, 1.2, 2);
   readonly sunDirection = new THREE.Vector3();
   private visibility = 1;
   private targetVisibility = 1;
   private readonly inverse = new THREE.Quaternion();
   private readonly up = new THREE.Vector3();
 
-  constructor(private readonly scene: THREE.Scene) {
+  constructor(private readonly scene: THREE.Scene, flash = true) {
     this.sun.name = 'viewmodel-sun'; this.sky.name = 'viewmodel-sky'; this.fill.name = 'viewmodel-fill'; this.flash.name = 'viewmodel-flash-light';
     this.fill.position.set(0.5, -0.25, 0.7);
-    scene.add(this.sun, this.sun.target, this.sky, this.fill, this.fill.target, this.flash);
+    scene.add(this.sun, this.sun.target, this.sky, this.fill, this.fill.target);
+    this.setFlashEnabled(flash);
     this.follow(new THREE.Quaternion());
+  }
+
+  /** Whether the muzzle light is part of the scene. */
+  get flashEnabled(): boolean { return this.flash.parent === this.scene; }
+  /** Adds or removes the muzzle light; changing it recompiles the viewmodel's shaders once. */
+  setFlashEnabled(enabled: boolean): void {
+    if (enabled === this.flashEnabled) return;
+    this.flash.intensity = 0;
+    if (enabled) this.scene.add(this.flash); else this.flash.removeFromParent();
   }
 
   /** `cameraQuaternion` is the world camera's world rotation. */
@@ -40,10 +58,11 @@ export class ViewModelLighting {
   setSunVisibility(value: number): void { this.targetVisibility = Number.isFinite(value) ? THREE.MathUtils.clamp(value, 0, 1) : 1; }
   get sunVisibility(): number { return this.visibility; }
 
+  /** `flash` is the flash strength this frame (0 = none) and `flashPosition` where it burns. */
   update(dt: number, flash: number, flashPosition: THREE.Vector3 | null): void {
     this.visibility = approach(this.visibility, this.targetVisibility, 5, dt);
     this.sun.intensity = SUN_INTENSITY * (0.08 + 0.92 * this.visibility);
-    this.flash.intensity = flash * 1.4;
+    this.flash.intensity = this.flashEnabled && flash > 0 ? flash * MUZZLE_LIGHT_CANDELA : 0;
     if (flashPosition) this.flash.position.copy(flashPosition);
   }
 

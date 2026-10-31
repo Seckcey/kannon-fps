@@ -10,7 +10,8 @@ const flashVertex = /* glsl */`
   varying vec2 vUv;
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 
-/** Star flash: three crossed flame planes along the barrel plus a petal disc facing the eye. */
+/** Star flash: three crossed flame planes along the barrel plus a petal disc facing the eye.
+ * Additive blending does not depend on draw order, so each material draws both faces in one pass. */
 export class MuzzleFlash {
   readonly group = new THREE.Group();
   private readonly flame: THREE.ShaderMaterial;
@@ -25,7 +26,7 @@ export class MuzzleFlash {
     const uniforms = () => ({ uOpacity: { value: 0 }, uSeed: { value: 0 } });
     this.flame = new THREE.ShaderMaterial({
       uniforms: uniforms(), vertexShader: flashVertex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide, toneMapped: false,
+      side: THREE.DoubleSide, forceSinglePass: true, toneMapped: false,
       fragmentShader: /* glsl */`
         uniform float uOpacity; uniform float uSeed; varying vec2 vUv;
         void main() {
@@ -40,7 +41,7 @@ export class MuzzleFlash {
     });
     this.petals = new THREE.ShaderMaterial({
       uniforms: uniforms(), vertexShader: flashVertex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide, toneMapped: false,
+      side: THREE.DoubleSide, forceSinglePass: true, toneMapped: false,
       fragmentShader: /* glsl */`
         uniform float uOpacity; uniform float uSeed; varying vec2 vUv;
         void main() {
@@ -78,8 +79,7 @@ export class MuzzleFlash {
     this.group.visible = true;
   }
   get active(): boolean { return this.life > 0; }
-  /** 0..1 brightness this frame (for the flash light). */
-  /** Full brightness for the first part of its life, then a quick fade. */
+  /** 0..1 brightness this frame (for the flash light): full for the first part of its life, then a quick fade. */
   get intensity(): number { const left = this.life / this.duration; return this.life > 0 ? left > 0.55 ? 1 : Math.pow(left / 0.55, 1.5) : 0; }
   update(dt: number): void {
     if (this.life <= 0) { this.group.visible = false; return; }
@@ -93,7 +93,8 @@ export class MuzzleFlash {
   dispose(): void { for (const geometry of this.geometries) geometry.dispose(); this.flame.dispose(); this.petals.dispose(); this.group.removeFromParent(); }
 }
 
-interface Puff { position: THREE.Vector3; velocity: THREE.Vector3; life: number; duration: number; size: number; grow: number; opacity: number; spin: number; angle: number }
+/** `opacity` is the puff's base strength; `alpha` is what the last update drew (fade and aim clearance applied). */
+interface Puff { position: THREE.Vector3; velocity: THREE.Vector3; life: number; duration: number; size: number; grow: number; opacity: number; alpha: number; spin: number; angle: number }
 const QUAD_CORNERS = [-1, -1, 1, -1, 1, 1, -1, 1] as const;
 
 /** Soft grey puffs from the muzzle. While aiming they are pushed out of, and faded inside, a small
@@ -110,7 +111,7 @@ export class MuzzleSmoke {
   static readonly CLEAR = 0.08;
 
   constructor(readonly capacity: number) {
-    this.puffs = Array.from({ length: capacity }, () => ({ position: new THREE.Vector3(), velocity: new THREE.Vector3(), life: 0, duration: 1, size: 0, grow: 0, opacity: 0, spin: 0, angle: 0 }));
+    this.puffs = Array.from({ length: capacity }, () => ({ position: new THREE.Vector3(), velocity: new THREE.Vector3(), life: 0, duration: 1, size: 0, grow: 0, opacity: 0, alpha: 0, spin: 0, angle: 0 }));
     this.positions = new Float32Array(capacity * 12);
     this.alpha = new Float32Array(capacity * 4);
     const uv = new Float32Array(capacity * 8), index = new Uint16Array(capacity * 6);
@@ -151,7 +152,7 @@ export class MuzzleSmoke {
       puff.velocity.x += (random() - 0.5) * 0.08; puff.velocity.y += (random() - 0.5) * 0.05;
       puff.duration = puff.life = 0.7 + random() * 0.5;
       puff.size = 0.03 + random() * 0.02; puff.grow = 0.12 + random() * 0.08;
-      puff.opacity = (0.1 + random() * 0.06) * strength;
+      puff.opacity = (0.1 + random() * 0.06) * strength; puff.alpha = 0;
       puff.spin = (random() - 0.5) * 1.5; puff.angle = random() * Math.PI * 2;
     }
   }
@@ -167,10 +168,11 @@ export class MuzzleSmoke {
 
   update(dt: number, ads: number, drift: (point: THREE.Vector3, velocity: THREE.Vector3) => void): void {
     let count = 0;
-    for (const puff of this.puffs) {
+    for (let p = 0; p < this.puffs.length; p++) {
+      const puff = this.puffs[p]!;
       if (puff.life <= 0) continue;
       puff.life -= dt;
-      if (puff.life <= 0) continue;
+      if (puff.life <= 0) { puff.alpha = 0; continue; }
       drift(puff.position, puff.velocity);
       // Push puffs away from the view axis while aiming.
       if (ads > 0) {
@@ -188,6 +190,7 @@ export class MuzzleSmoke {
       const age = 1 - puff.life / puff.duration;
       const size = puff.size + puff.grow * Math.sqrt(age);
       const fade = Math.min(1, age * 6) * (1 - age) * puff.opacity * MuzzleSmoke.clearance(puff.position, ads);
+      puff.alpha = fade;
       const cosine = Math.cos(puff.angle) * size, sine = Math.sin(puff.angle) * size;
       const base = count * 12;
       for (let c = 0; c < 4; c++) {
@@ -203,15 +206,17 @@ export class MuzzleSmoke {
     this.mesh.visible = count > 0;
     if (count) { this.geometry.getAttribute('position').needsUpdate = true; this.geometry.getAttribute('smokeAlpha').needsUpdate = true; }
   }
-  /** Live puffs for tests: position and current clearance-weighted opacity factor. */
+  /** Live puffs for tests and tuning: position and the opacity the last update drew (fade and aim
+   * clearance applied, exactly the value written to the `smokeAlpha` attribute). */
   live(): Array<{ position: THREE.Vector3; opacity: number }> {
-    return this.puffs.filter(puff => puff.life > 0).map(puff => ({ position: puff.position.clone(), opacity: puff.opacity }));
+    return this.puffs.filter(puff => puff.life > 0).map(puff => ({ position: puff.position.clone(), opacity: puff.alpha }));
   }
-  clear(): void { for (const puff of this.puffs) puff.life = 0; this.geometry.setDrawRange(0, 0); this.mesh.visible = false; }
+  clear(): void { for (const puff of this.puffs) { puff.life = 0; puff.alpha = 0; } this.geometry.setDrawRange(0, 0); this.mesh.visible = false; }
   dispose(): void { this.geometry.dispose(); this.material.dispose(); this.mesh.removeFromParent(); }
 }
 
 interface Casing { position: THREE.Vector3; velocity: THREE.Vector3; rotation: THREE.Quaternion; spin: THREE.Vector3; life: number; bounced: boolean }
+const SHELL_KINDS: readonly ShellStyle[] = ['rifle', 'pistol', 'hull'];
 
 /** Spent casings: pooled instanced meshes per casing type. */
 export class CasingEjector {
@@ -248,12 +253,17 @@ export class CasingEjector {
     casing.spin.set((random() - 0.5) * 8, 14 + random() * 10, (random() - 0.5) * 30);
     casing.life = CasingEjector.LIFE * (0.85 + random() * 0.3); casing.bounced = false;
   }
-  get liveCount(): number { let count = 0; for (const pool of Object.values(this.pools)) for (const casing of pool) if (casing.life > 0) count++; return count; }
+  get liveCount(): number {
+    let count = 0;
+    for (let k = 0; k < SHELL_KINDS.length; k++) for (const casing of this.pools[SHELL_KINDS[k]!]) if (casing.life > 0) count++;
+    return count;
+  }
   update(dt: number, gravity: THREE.Vector3, drift: (point: THREE.Vector3, velocity: THREE.Vector3) => void): void {
-    for (const kind of Object.keys(this.pools) as ShellStyle[]) {
-      const mesh = this.meshes[kind];
+    for (let k = 0; k < SHELL_KINDS.length; k++) {
+      const kind = SHELL_KINDS[k]!, mesh = this.meshes[kind], pool = this.pools[kind];
       let count = 0;
-      for (const casing of this.pools[kind]) {
+      for (let i = 0; i < pool.length; i++) {
+        const casing = pool[i]!;
         if (casing.life <= 0) continue;
         casing.life -= dt;
         if (casing.life <= 0) continue;
@@ -270,8 +280,8 @@ export class CasingEjector {
       if (count) mesh.instanceMatrix.needsUpdate = true;
     }
   }
-  clear(): void { for (const pool of Object.values(this.pools)) for (const casing of pool) casing.life = 0; for (const mesh of Object.values(this.meshes)) mesh.count = 0; }
-  dispose(): void { for (const geometry of this.geometries) geometry.dispose(); for (const mesh of Object.values(this.meshes)) mesh.dispose(); this.group.removeFromParent(); }
+  clear(): void { for (const kind of SHELL_KINDS) { for (const casing of this.pools[kind]) casing.life = 0; this.meshes[kind].count = 0; } }
+  dispose(): void { for (const geometry of this.geometries) geometry.dispose(); for (const kind of SHELL_KINDS) this.meshes[kind].dispose(); this.group.removeFromParent(); }
 }
 
 interface Drop { object: THREE.Object3D; velocity: THREE.Vector3; spin: number; life: number }

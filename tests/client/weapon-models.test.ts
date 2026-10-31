@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { CONTRACT_NODES, WEAPON_IDS, WEAPON_NODES, createWeaponLibrary, findNode, loadWeaponModels, matchesNode, type WeaponInstance } from '../../src/game/WeaponModels';
+import type { WeaponId } from '../../shared/protocol';
+import { CONTRACT_NODES, WEAPON_IDS, WEAPON_NODES, createWeaponLibrary, findNode, isWeaponId, loadWeaponModels, matchesNode, type WeaponInstance } from '../../src/game/WeaponModels';
 
 const renderer = {} as THREE.WebGLRenderer;
 
@@ -204,6 +205,33 @@ test('a broken source falls back to stand-ins instead of failing the match', asy
     assert.equal(library.fromAsset, false);
     for (const id of WEAPON_IDS) assertUsableWeapon(library.weapon(id, 'view'));
     library.dispose();
+  } finally { console.warn = warn; }
+});
+
+test('an id that is not a weapon gives the carbine and never breaks the shared library', async () => {
+  for (const id of WEAPON_IDS) assert.ok(isWeaponId(id));
+  for (const bad of ['rpg', 'drone', 'toString', '__proto__', 'constructor', '', undefined, 5]) assert.ok(!isWeaponId(bad), String(bad));
+  const warn = console.warn, warnings: unknown[][] = [];
+  console.warn = (...args: unknown[]) => { warnings.push(args); };
+  try {
+    const library = createWeaponLibrary(null);
+    for (const bad of ['rpg', 'drone', 'toString', '__proto__', 'constructor', 'rpg']) {
+      for (const purpose of ['view', 'world'] as const) {
+        const instance = library.weapon(bad as WeaponId, purpose);
+        assert.equal(instance.id, 'kr5', `"${bad}" gives the carbine`);
+        assert.equal(instance.root.name, WEAPON_NODES.kr5);
+        assertUsableWeapon(instance);
+      }
+    }
+    assert.equal(warnings.length, 5, 'one warning per unknown id');
+    assert.doesNotThrow(() => library.dispose(), 'disposal still frees everything');
+
+    // One holder's bad request leaves the other holder of the same parsed library working.
+    const shared = {} as THREE.WebGLRenderer;
+    const [a, b] = await Promise.all([loadWeaponModels(shared), loadWeaponModels(shared)]);
+    assertUsableWeapon(a.weapon('drone' as WeaponId, 'world'));
+    assertUsableWeapon(b.weapon('sentry9', 'view'));
+    assert.doesNotThrow(() => { a.dispose(); b.dispose(); });
   } finally { console.warn = warn; }
 });
 

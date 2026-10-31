@@ -84,10 +84,13 @@ export class Parts {
     if (facing === '-z') geometry.rotateY(Math.PI);
     return this.push(material, geometry, position);
   }
-  /** Side profile given as [z, y] points (rounded by `corner`), extruded `thickness` across X. */
-  extrude(material: THREE.Material, outline: readonly V2[], thickness: number, position: V3, options: PartOptions & { corner?: number; bevel?: number } = {}): this {
+  /** Side profile given as [z, y] points (rounded by `corner`), extruded `thickness` across X.
+   * `holes` cut windows through it (also [z, y] outlines). */
+  extrude(material: THREE.Material, outline: readonly V2[], thickness: number, position: V3, options: PartOptions & { corner?: number; bevel?: number; holes?: ReadonlyArray<readonly V2[]> } = {}): this {
     const bevel = Math.min(options.bevel ?? 0.002, thickness * 0.3);
-    const shape = roundedShape(outline, options.corner ?? 0.004, this.detail === 'world' ? 1 : 4);
+    const segments = this.detail === 'world' ? 1 : 4;
+    const shape = roundedShape(outline, options.corner ?? 0.004, segments);
+    for (const hole of options.holes ?? []) shape.holes.push(roundedShape(hole, options.corner ?? 0.004, segments));
     const geometry = new THREE.ExtrudeGeometry(shape, {
       depth: Math.max(1e-4, thickness - 2 * bevel), bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel * 0.8,
       bevelSegments: this.detail === 'world' ? 1 : 2, curveSegments: this.detail === 'world' ? 2 : 5,
@@ -196,10 +199,13 @@ function carbine(p: WeaponPalette, detail: Detail): THREE.Group {
   parts.cylinder(p.anodized, 0.0125, 0.0125, 0.055, [0, bore, -0.5775], 'z');
   for (let i = 0; i < 3; i++) parts.box(p.polymer, [0.02, 0.004, 0.006], [0, bore + 0.011, -0.562 - i * 0.012], { segments: 0 });
   parts.disc(p.polymer, 0.0055, [0, bore, -0.6052], '-z');
-  // Buffer tube and skeleton stock.
+  // Buffer tube and an open skeleton stock: a top strut along the tube, a diagonal brace and the
+  // butt, with a window through the middle so it never reads as a solid slab beside the eye.
   parts.cylinder(p.anodized, 0.0155, 0.0155, 0.14, [0, 0.089, 0.14], 'z');
-  parts.extrude(p.polymer, [[0.08, 0.112], [0.235, 0.116], [0.252, 0.1], [0.252, -0.028], [0.232, -0.034], [0.195, 0.022], [0.11, 0.066], [0.08, 0.075]], 0.036, [0, 0, 0], { corner: 0.01, bevel: 0.004 });
-  parts.box(p.rubber, [0.04, 0.152, 0.016], [0, 0.044, 0.258], { radius: 0.005 });
+  parts.extrude(p.polymer, [[0.08, 0.112], [0.235, 0.116], [0.252, 0.1], [0.252, -0.028], [0.232, -0.034], [0.195, 0.022], [0.11, 0.066], [0.08, 0.075]], 0.03, [0, 0, 0], {
+    corner: 0.01, bevel: 0.004, holes: [[[0.13, 0.098], [0.228, 0.1], [0.228, 0], [0.203, 0.036], [0.13, 0.074]]],
+  });
+  parts.box(p.rubber, [0.038, 0.146, 0.016], [0, 0.044, 0.258], { radius: 0.005 });
   // Reflex sight: hood around a square window, glass, and a red dot on the optical axis.
   const sightY = 0.162;
   parts.box(p.anodized, [0.03, 0.01, 0.055], [0, 0.134, -0.075], { radius: 0.002 });
@@ -418,6 +424,7 @@ export function buildWeaponStandIn(id: WeaponId, palette: WeaponPalette, detail:
     case 'breaker12': return pumpShotgun(palette, detail);
     case 'longbow': return boltRifle(palette, detail);
     case 'sentry9': return pistol(palette, detail);
+    default: throw new Error(`No stand-in model for weapon "${String(id)}".`);
   }
 }
 

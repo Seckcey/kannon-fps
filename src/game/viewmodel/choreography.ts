@@ -79,7 +79,9 @@ export function sampleChoreography(choreo: Choreography, t: number, out: ChoreoS
   out.px = sampleTrack(choreo.px, t); out.py = sampleTrack(choreo.py, t); out.pz = sampleTrack(choreo.pz, t);
   out.rx = sampleTrack(choreo.rx, t); out.ry = sampleTrack(choreo.ry, t); out.rz = sampleTrack(choreo.rz, t);
   out.magY = sampleTrack(choreo.magY, t); out.magZ = sampleTrack(choreo.magZ, t); out.magRx = sampleTrack(choreo.magRx, t);
-  out.magVisible = !choreo.magHidden?.some(([start, end]) => t >= start && t < end);
+  out.magVisible = true;
+  const hidden = choreo.magHidden;
+  if (hidden) for (let i = 0; i < hidden.length; i++) if (t >= hidden[i]![0] && t < hidden[i]![1]) out.magVisible = false;
   out.act = clamp01(sampleTrack(choreo.act, t)); out.lift = clamp01(sampleTrack(choreo.lift, t));
   sampleHand(choreo.left, t, out.left); sampleHand(choreo.right, t, out.right);
   return out;
@@ -192,15 +194,19 @@ export interface ShellCycleSample {
   /** Shell travel into the port, 0..1. */
   insert: number;
 }
-/** One shell insert, `u` 0..1. The shell seats at 0.7. */
+/** One shell insert, `u` 0..1. The hand waits at the pouch until `SHELL_PICKUP`, the shell seats at
+ * `SHELL_SEAT`, and the hand leaves the port at `SHELL_RETURN` (back to the pouch, or to the pump
+ * after the last shell). */
 export function shellCycle(u: number, out: ShellCycleSample): ShellCycleSample {
   const t = clamp01(u);
-  out.reach = t < 0.3 ? 0 : t < 0.62 ? smoothstep((t - 0.3) / 0.32) : t < 0.76 ? 1 : 1 - smoothstep((t - 0.76) / 0.24);
+  out.reach = t < SHELL_PICKUP ? 0 : t < 0.62 ? smoothstep((t - SHELL_PICKUP) / (0.62 - SHELL_PICKUP)) : t < SHELL_RETURN ? 1 : 1 - smoothstep((t - SHELL_RETURN) / (1 - SHELL_RETURN));
   out.shellInHand = t >= 0.04 && t < 0.72;
   out.insert = t < 0.6 ? 0 : clamp01((t - 0.6) / 0.12);
   return out;
 }
+export const SHELL_PICKUP = 0.3;
 export const SHELL_SEAT = 0.7;
+export const SHELL_RETURN = 0.76;
 
 /** Pump and bolt cycles after a shot, in seconds from the start of the cycle. */
 export const PUMP_CYCLE = { back: 0.13, hold: 0.02, forward: 0.13, eject: 0.12 } as const;

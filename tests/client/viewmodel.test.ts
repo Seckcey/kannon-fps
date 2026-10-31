@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import type { WeaponId } from '../../shared/protocol';
 import { RULES } from '../../shared/protocol';
-import { WEAPONS } from '../../shared/weapons';
-import { SUN_DIRECTION } from '../../src/game/Atmosphere';
+import { QUICK_HANDS_FACTOR, WEAPONS } from '../../shared/weapons';
+import { SUN_DIRECTION, SUN_INTENSITY } from '../../src/game/Atmosphere';
 import { ViewModel, type ViewModelState } from '../../src/game/ViewModel';
 import { WEAPON_IDS, createWeaponLibrary, findNode, type WeaponLibrary } from '../../src/game/WeaponModels';
 import { HANDLING } from '../../src/game/viewmodel/handling';
 import { KNIFE_MOVE, crossedEvents, reloadChoreography, sampleTrack, shellCycle } from '../../src/game/viewmodel/choreography';
 import { MuzzleSmoke } from '../../src/game/viewmodel/effects';
-import { Spring, stepSpring } from '../../src/game/viewmodel/spring';
+import { Spring, seededRandom, stepSpring } from '../../src/game/viewmodel/spring';
 
 const renderer = {} as THREE.WebGLRenderer;
 const DT = 1 / 60;
@@ -231,24 +231,77 @@ test('an empty reload drops the old magazine', async () => {
   view.dispose();
 });
 
-test('the shotgun loads shell by shell, at the server pace', async () => {
+/** The server's shotgun timeline (weapon table): a start, then one shell per interval, all scaled by the pace. */
+const SHELL_START_MS = WEAPONS.breaker12.shellStartMs ?? 0, PER_SHELL_MS = WEAPONS.breaker12.perShellMs ?? 0;
+const shotgunSeconds = (shells: number, pace = 1) => pace * (SHELL_START_MS + PER_SHELL_MS * shells) / 1000;
+
+test('the shotgun loads shell by shell, carrying each one to the port and returning to the pump', async () => {
+  assert.ok(SHELL_START_MS > 0 && PER_SHELL_MS > 0, 'the weapon table times the shotgun reload');
   const view = await viewModel();
   run(view, state({ weapon: 'breaker12' }), 0.8);
   const pump = anchors(view).action!, pumpRest = pump.position.clone();
-  const shells = 4, total = (350 + 450 * shells) / 1000;
-  let shownFrames = 0, hiddenAfterShown = 0, wasShown = false;
-  run(view, t => {
+  const shells = 4, total = shotgunSeconds(shells);
+  let shownFrames = 0, fetched = 0, wasShown = false;
+  for (let t = 0; t < total + DT; t += DT) {
+    view.update(state({ weapon: 'breaker12', reload: Math.min(1, t / total) }), DT, 0);
     const shown = !!view.props.shell?.visible;
     if (shown) shownFrames++;
-    if (wasShown && !shown) hiddenAfterShown++;
+    if (shown && !wasShown) fetched++;
     wasShown = shown;
-    return state({ weapon: 'breaker12', reload: Math.min(1, t / total) });
-  }, total);
+  }
   assert.ok(shownFrames > 20, 'a shell is carried to the port');
-  assert.ok(hiddenAfterShown >= shells - 1 && hiddenAfterShown <= shells + 1, `about one shell per cycle (${hiddenAfterShown})`);
+  assert.equal(fetched, shells, 'one shell fetched per shell loaded');
+  assert.equal(view.shellsSeated, shells);
+  assert.ok(position(view.arms.left!).distanceTo(position(anchors(view).gripLeft)) < 1e-4, 'after the last shell the hand is back on the pump');
   assert.ok(pump.position.distanceTo(pumpRest) < 1e-6, 'the pump stays forward while loading');
   run(view, state({ weapon: 'breaker12' }), 0.6);
   assert.equal(view.props.shell?.visible, false);
+  view.dispose();
+});
+
+test('shotgun shells stay in step with the server at any pace, frame rate and start offset', async () => {
+  for (const fps of [30, 60]) {
+    const dt = 1 / fps, view = await viewModel();
+    run(view, state({ weapon: 'breaker12' }), 0.8, dt);
+    for (const pace of [1, QUICK_HANDS_FACTOR]) for (const lateMs of [0, 17, 50, 100]) for (const told of [false, true]) {
+      for (let shells = 1; shells <= WEAPONS.breaker12.magazine; shells++) {
+        const total = shotgunSeconds(shells, pace);
+        const label = `${shells} shells at pace ${pace}, ${fps} fps, seen ${lateMs} ms late${told ? ', count given' : ''}`;
+        // The reload began `lateMs` before the first frame that shows it; progress runs over the whole reload.
+        for (let t = lateMs / 1000; t < total + dt; t += dt) {
+          view.update(state({ weapon: 'breaker12', reload: Math.min(1, t / total), ...(told ? { reloadShells: shells } : {}) }), dt, 0);
+          // The server counts a shell when its interval ends; the hand seats it a little before.
+          const loaded = Math.max(0, Math.min(shells, Math.floor((t * 1000 / pace - SHELL_START_MS) / PER_SHELL_MS)));
+          assert.ok(view.shellsSeated >= loaded && view.shellsSeated <= loaded + 1, `${label}: ${view.shellsSeated} seated at ${(t * 1000).toFixed(0)} ms, server has ${loaded}`);
+        }
+        assert.equal(view.shellsSeated, shells, label);
+        run(view, state({ weapon: 'breaker12' }), 0.25, dt);
+      }
+    }
+    view.dispose();
+  }
+});
+
+test('shotgun shells follow the reload progress: when it holds, the hand waits', async () => {
+  const view = await viewModel();
+  run(view, state({ weapon: 'breaker12' }), 0.8);
+  const shells = 4, total = shotgunSeconds(shells), held = 0.45;
+  const reload = (progress: number) => state({ weapon: 'breaker12', reload: Math.min(1, progress), reloadShells: shells });
+  run(view, t => reload(t / total), total * held);
+  view.update(reload(held), DT, 0);
+  const seated = view.shellsSeated, hand = position(view.arms.left!);
+  let fetched = 0, wasShown = view.props.shell!.visible;
+  run(view, () => {
+    const shown = view.props.shell!.visible;
+    if (shown && !wasShown) fetched++;
+    wasShown = shown;
+    return reload(held);
+  }, 1);
+  assert.equal(view.shellsSeated, seated, 'no shell seats while the reload holds');
+  assert.equal(fetched, 0, 'and no new shell is fetched');
+  assert.ok(position(view.arms.left!).distanceTo(hand) < 0.01, 'the hand stays where the reload stands');
+  run(view, t => reload(held + t / total), total * (1 - held) + 0.05);
+  assert.equal(view.shellsSeated, shells, 'the rest follow once it moves again');
   view.dispose();
 });
 
@@ -301,21 +354,43 @@ test('casings fly out to the right and expire', async () => {
 
 test('muzzle smoke never sits over the aim point while aiming', async () => {
   const view = await viewModel();
+  const smoke = view.effects.smoke, geometry = smoke.mesh.geometry, random = seededRandom(7);
+  /** Every quad the smoke draws: its centre's distance from the view axis (as a slope) and the alpha written for it. */
+  const drawn = () => {
+    const corners = geometry.getAttribute('position'), alpha = geometry.getAttribute('smokeAlpha');
+    const quads: Array<{ radial: number; alpha: number }> = [];
+    for (let q = 0; q < geometry.drawRange.count / 6; q++) {
+      const centre = new THREE.Vector3();
+      for (let c = 0; c < 4; c++) centre.add(new THREE.Vector3().fromBufferAttribute(corners, q * 4 + c).multiplyScalar(0.25));
+      for (let c = 1; c < 4; c++) assert.equal(alpha.getX(q * 4 + c), alpha.getX(q * 4), 'one alpha per puff');
+      quads.push({ radial: Math.hypot(centre.x, centre.y) / Math.max(1e-3, -centre.z), alpha: alpha.getX(q * 4) });
+    }
+    return quads;
+  };
+  // A puff blown straight down the sight line, where it would hide the target.
+  const onAxis = () => smoke.emit(new THREE.Vector3(0, 0, -0.5), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0), 1, 1, random);
   run(view, state(), 0.6); run(view, state({ ads: 1 }), 1);
-  let checked = 0;
+  let inside = 0, total = 0;
   for (let shot = 0; shot < 6; shot++) {
-    view.fire();
+    view.fire(); onAxis();
     for (let i = 0; i < 8; i++) {
       view.update(state({ ads: 1 }), DT, 0);
-      for (const puff of view.effects.smoke.live()) {
-        const radial = Math.hypot(puff.position.x, puff.position.y) / Math.max(1e-3, -puff.position.z);
-        if (radial < MuzzleSmoke.CLEAR * 0.5) assert.ok(MuzzleSmoke.clearance(puff.position, 1) < 0.02, 'puffs near the centre are invisible');
-        checked++;
-      }
+      const quads = drawn(), live = smoke.live();
+      assert.equal(quads.length, live.length, 'one quad per live puff');
+      quads.forEach((quad, index) => {
+        assert.ok(Math.abs(quad.alpha - live[index]!.opacity) < 1e-6, 'live() reports the alpha that is drawn');
+        total++;
+        if (quad.radial < MuzzleSmoke.CLEAR * 0.5) { inside++; assert.ok(quad.alpha < 1e-4, `a puff on the aim point is drawn at alpha ${quad.alpha}`); }
+      });
     }
   }
-  assert.ok(checked > 0);
-  assert.equal(MuzzleSmoke.clearance(new THREE.Vector3(0, 0, -1), 0), 1, 'hip fire keeps the smoke');
+  assert.ok(inside >= 6 && total > inside, `checked ${inside} puffs on the aim point among ${total}`);
+  // From the hip the same puff stays visible.
+  run(view, state(), 1.5);
+  smoke.clear(); onAxis();
+  run(view, state(), 6 * DT);
+  const hip = drawn();
+  assert.ok(hip.length === 1 && hip[0]!.radial < MuzzleSmoke.CLEAR && hip[0]!.alpha > 0.01, `hip fire keeps the smoke (${JSON.stringify(hip)})`);
   view.dispose();
 });
 
@@ -479,6 +554,121 @@ test('lighting follows the world sun relative to the camera and copies the sky',
   const lookup = new THREE.Matrix4().makeRotationFromEuler(view.scene.environmentRotation).transpose();
   const cameraSpaceUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion.clone().invert());
   assert.ok(cameraSpaceUp.applyMatrix4(lookup).distanceTo(new THREE.Vector3(0, 1, 0)) < 1e-9);
+  view.dispose();
+});
+
+test('an id that is not a weapon keeps the weapon in hand instead of crashing', async () => {
+  const view = await viewModel();
+  run(view, state({ weapon: 'toString' as WeaponId }), 0.2);
+  assert.equal(view.weapon, 'kr5', 'a bad first id starts on the carbine');
+  run(view, state({ weapon: 'sentry9' }), 0.8);
+  for (const bad of ['rpg', 'drone', 'toString', '__proto__', 'constructor', '']) {
+    run(view, state({ weapon: bad as WeaponId }), 0.2);
+    assert.equal(view.weapon, 'sentry9', `"${bad}" keeps the pistol`);
+    view.fire();
+  }
+  for (const value of root(view).position.toArray()) assert.ok(Number.isFinite(value));
+  assert.doesNotThrow(() => view.dispose());
+});
+
+test('every shader is prepared on the first draw, so the first shot, knife or swap never stalls', async () => {
+  const compiled: THREE.Object3D[] = [];
+  let target: object | null = null, failing = false;
+  const drawing = {
+    toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace,
+    getRenderTarget: () => target,
+    compile: (scene: THREE.Object3D) => { if (failing) throw new Error('context lost'); compiled.push(scene); return new Set(); },
+  } as unknown as THREE.WebGLRenderer;
+  const draw = (view: ViewModel) => (view.scene.onBeforeRender as unknown as (renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) => void)(drawing, view.scene, view.camera);
+
+  const waiting = new ViewModel(renderer, { library: new Promise<WeaponLibrary>(() => {}) });
+  draw(waiting);
+  assert.equal(compiled.length, 0, 'nothing to prepare before the models arrive');
+  waiting.dispose();
+
+  const view = await viewModel();
+  view.update(state(), DT, 0);
+  draw(view);
+  assert.equal(compiled.length, 1);
+  assert.equal(compiled[0], view.scene, 'the whole viewmodel scene is compiled, hidden parts included');
+  // Hidden until used: the flash, smoke, casings, knife, grenade, loading shell and the weapons not in hand.
+  for (const name of ['flash-flame', 'flash-petals', 'viewmodel-smoke', 'casings-rifle', 'casings-hull', 'loading-shell', 'knife', 'frag', ...WEAPON_IDS.map(id => `weapon_${id}`)]) {
+    assert.ok(view.scene.getObjectByName(name), `${name} is in the scene when it compiles`);
+  }
+  draw(view); view.update(state(), DT, 0); draw(view);
+  assert.equal(compiled.length, 1, 'later frames with the same settings compile nothing');
+  target = {};
+  draw(view); draw(view);
+  assert.equal(compiled.length, 2, 'a post-processing target gets its own shader variants, once');
+  const world = new THREE.Scene(); world.environment = new THREE.Texture();
+  view.setWorld(new THREE.PerspectiveCamera(), world); view.update(state(), DT, 0);
+  draw(view);
+  assert.equal(compiled.length, 3, 'the world sky changes every lit shader');
+  view.setQuality({ muzzleLight: false });
+  draw(view);
+  assert.equal(compiled.length, 4, 'so does removing the muzzle light');
+  failing = true; (drawing as { toneMapping: THREE.ToneMapping }).toneMapping = THREE.AgXToneMapping;
+  const warn = console.warn; let warned = 0; console.warn = () => { warned++; };
+  try { assert.doesNotThrow(() => draw(view), 'a failed early compile never breaks the frame'); } finally { console.warn = warn; }
+  assert.equal(warned, 1);
+  failing = false;
+  view.dispose();
+  target = null; draw(view);
+  assert.equal(compiled.length, 4, 'a disposed view model prepares nothing');
+});
+
+test('the muzzle light is left out on phones and kept off the hands on desktop', async () => {
+  const pointLights = (view: ViewModel) => { let count = 0; view.scene.traverse(object => { if (object instanceof THREE.PointLight) count++; }); return count; };
+  const phone = new ViewModel(renderer, { library: createWeaponLibrary(null), effects: 'phone', muzzleLight: false });
+  await phone.ready;
+  assert.equal(pointLights(phone), 0, 'phones never shade for a muzzle light');
+  phone.setQuality({ muzzleLight: true }); assert.equal(pointLights(phone), 1);
+  phone.setQuality({ muzzleLight: false }); assert.equal(pointLights(phone), 0);
+  run(phone, state(), 0.5); phone.fire(); run(phone, state(), 0.1);
+  phone.dispose();
+
+  const view = await viewModel();
+  assert.equal(pointLights(view), 1);
+  const light = view.scene.getObjectByName('viewmodel-flash-light') as THREE.PointLight;
+  for (const id of WEAPON_IDS) {
+    run(view, state({ weapon: id }), 0.8);
+    assert.equal(light.intensity, 0, `${id}: dark between shots`);
+    view.fire(); view.update(state({ weapon: id }), DT, 0);
+    assert.ok(light.intensity > 0, `${id}: the shot lights the gun`);
+    const burning = position(light), muzzle = position(anchors(view).muzzle);
+    for (const arm of [view.arms.left!, view.arms.right!]) {
+      const hand = position(arm);
+      assert.ok(hand.distanceTo(burning) > hand.distanceTo(muzzle), `${id}: the light burns ahead of the muzzle, away from the hands`);
+      const lit: number = light.intensity / hand.distanceToSquared(burning);
+      assert.ok(lit < SUN_INTENSITY, `${id}: a glove gets ${lit.toFixed(2)} at the flash peak, under direct sun (${SUN_INTENSITY})`);
+    }
+    run(view, state({ weapon: id }), 0.3);
+    assert.equal(light.intensity, 0, `${id}: and goes dark again`);
+  }
+  view.dispose();
+});
+
+test('the faster sprint keeps long barrels out of the middle of the view', async () => {
+  const view = await viewModel();
+  view.setProjection(58.7, 16 / 9);
+  for (const id of ['kr5', 'hornet9', 'breaker12', 'longbow'] as WeaponId[]) {
+    run(view, state({ weapon: id }), 0.8);
+    const dash = state({ weapon: id, sprint: 1, dash: true, speed: 8.2 });
+    run(view, dash, 1);
+    let leftmost = Infinity;
+    // Through a whole stride, every on-screen point along the bore stays right of the centre.
+    for (let frame = 0; frame < 60; frame++) {
+      view.update(dash, DT, 0);
+      const { root: gun, anchors: points } = view.instance!;
+      gun.updateMatrixWorld(true);
+      const muzzle = points.muzzle.position;
+      for (let k = 0; k <= 20; k++) {
+        const point = new THREE.Vector3(0, muzzle.y, -0.05 + (muzzle.z + 0.05) * k / 20).applyMatrix4(gun.matrixWorld).applyMatrix4(view.camera.projectionMatrix);
+        if (Math.abs(point.x) <= 1 && Math.abs(point.y) <= 1) leftmost = Math.min(leftmost, point.x);
+      }
+    }
+    assert.ok(leftmost > 0.1, `${id}: the barrel reaches ${leftmost.toFixed(2)} across the view`);
+  }
   view.dispose();
 });
 

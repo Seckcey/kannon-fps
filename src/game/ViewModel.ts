@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import type { Posture, WeaponId } from '../../shared/protocol';
-import { WEAPONS } from '../../shared/weapons';
-import { createWeaponLibrary, findNode, loadWeaponModels, type WeaponInstance, type WeaponLibrary } from './WeaponModels';
+import { QUICK_HANDS_FACTOR, WEAPONS } from '../../shared/weapons';
+import { FALLBACK_WEAPON, WEAPON_IDS, createWeaponLibrary, findNode, isWeaponId, loadWeaponModels, type WeaponInstance, type WeaponLibrary } from './WeaponModels';
 import { HANDLING, type HandlingSpec, type PoseSpec } from './viewmodel/handling';
 import { PoseSpring, Spring, approach, clamp, clamp01, easeInOutSine, finite, lerp, seededRandom, smoothstep } from './viewmodel/spring';
 import {
-  BOLT_CYCLE, COOK_POSE, KNIFE_MOVE, PUMP_CYCLE, SHELL_SEAT, THROW_MOVE, THROW_RELEASE, VAULT_MOVE,
+  BOLT_CYCLE, COOK_POSE, KNIFE_MOVE, PUMP_CYCLE, SHELL_PICKUP, SHELL_RETURN, SHELL_SEAT, THROW_MOVE, THROW_RELEASE, VAULT_MOVE,
   boltCycle, boltDuration, crossedEvents, emptySample, pumpDuration, pumpTravel, reloadChoreography, sampleChoreography, sampleTrack, shellCycle,
   type ChoreoEventKind, type Choreography, type HandMove, type HandTarget,
 } from './viewmodel/choreography';
 import { CasingEjector, DroppedMagazines, MuzzleFlash, MuzzleSmoke } from './viewmodel/effects';
-import { ViewModelLighting } from './viewmodel/lighting';
+import { MUZZLE_LIGHT_LEAD, ViewModelLighting } from './viewmodel/lighting';
 
 /** Everything the first-person arms and weapon react to, sampled each frame by GameView. */
 export interface ViewModelState {
@@ -42,7 +42,8 @@ export interface ViewModelState {
   stamina?: number;
   /** Optional: the magazine is empty, so the pistol slide locks back. */
   magEmpty?: boolean;
-  /** Optional: shells this shotgun reload loads, when known; otherwise estimated from the progress rate. */
+  /** Optional but recommended: shells this shotgun reload loads. With it the shells follow `reload`
+   * exactly; without it the count is read from how fast `reload` moves. */
   reloadShells?: number;
 }
 
@@ -66,6 +67,8 @@ interface Rig {
   /** Hand target on the magazine and the action, in their own frames. */
   magHold: THREE.Vector3; knob: THREE.Vector3;
   load: THREE.Object3D | null;
+  /** Shell-by-shell reload timing at the normal pace, from the weapon table, and the most shells one reload loads. */
+  shellStartMs: number; perShellMs: number; shellCapacity: number;
 }
 interface Offset { x: number; y: number; z: number; rx: number; ry: number; rz: number }
 const zeroOffset = (): Offset => ({ x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 });
@@ -79,7 +82,8 @@ const IDLE = -10;
 const EQUIP_SECONDS = 0.3;
 /** Share of a game-driven raise spent putting the old weapon away. */
 const SWAP_SHARE = 0.3;
-const SHELL_START_MS = 350, SHELL_MS = 450;
+/** Shotgun reload paces the server can run: normal, and faster with Quick Hands. */
+const SHELL_PACES: readonly number[] = [1, QUICK_HANDS_FACTOR];
 /** Shoulders (camera space) and arm segment lengths for the elbow solve. */
 const SHOULDER = { right: new THREE.Vector3(0.23, -0.22, 0.1), left: new THREE.Vector3(-0.2, -0.25, 0.1) } as const;
 /** Elbows point out and down: the right one well out to the side, so the forearm crosses the lower right. */
@@ -113,7 +117,8 @@ export class ViewModel {
   private readonly drops = new DroppedMagazines();
   private readonly casingMaterials: THREE.Material[] = [];
   private readonly random = seededRandom(0x5eed);
-  private muzzleLight: boolean;
+  /** Render settings the shaders were already compiled for (see `prepareShaders`). */
+  private readonly compiledFor: Array<{ target: number; toneMapping: number; colorSpace: string; environment: THREE.Texture | null; flashLight: boolean }> = [];
   private worldCamera: THREE.Camera | null = null;
   private worldScene: THREE.Scene | null = null;
 
@@ -182,10 +187,18 @@ export class ViewModel {
   private reloadLast = 0;
   private reloadEmpty = false;
   private reloadChoreo: Choreography | null = null;
-  private shotgunElapsed = 0;
-  private shotgunFactor = 1;
+  /** Shotgun: frame clock (s) since the reload was first seen, the shells it loads (0 = not known
+   * yet), whether that count is settled, and where the reload stands in normal-pace ms. */
+  private shotgunClock = 0;
+  private shotgunShells = 0;
   private shotgunLocked = false;
+  private shotgunMs = 0;
+  /** Running sums for a least-squares line through (clock, progress) at the frames where progress
+   * moved; its slope is the reload's pace. `last` is the previous frame's progress. */
+  private readonly paceFit = { n: 0, t: 0, p: 0, tt: 0, tp: 0, last: -1 };
+  /** Index of the last shell seated in this reload (-1 = none yet). */
   private shellSeated = -1;
+  private readonly onReloadEvent = (kind: ChoreoEventKind) => { if (this.current) this.reloadEvent(kind, this.current); };
   private readonly sample = emptySample();
   private readonly shell = { reach: 0, shellInHand: false, insert: 0 };
   private readonly bolt = { act: 0, lift: 0, hand: 0 };
@@ -196,9 +209,11 @@ export class ViewModel {
   private readonly v2 = new THREE.Vector3();
   private readonly v3 = new THREE.Vector3();
   private readonly v4 = new THREE.Vector3();
+  private readonly v5 = new THREE.Vector3();
   private readonly q1 = new THREE.Quaternion();
   private readonly q2 = new THREE.Quaternion();
   private readonly q3 = new THREE.Quaternion();
+  private readonly q4 = new THREE.Quaternion();
   private readonly euler = new THREE.Euler(0, 0, 0, 'YXZ');
   private readonly rootPosition = new THREE.Vector3();
   private readonly rootQuaternion = new THREE.Quaternion();
@@ -214,9 +229,9 @@ export class ViewModel {
   constructor(renderer: THREE.WebGLRenderer, options: ViewModelOptions = {}) {
     this.scene.name = 'viewmodel';
     this.camera.name = 'viewmodel-camera';
-    this.muzzleLight = options.muzzleLight ?? true;
     const phone = options.effects === 'phone';
-    this.lighting = new ViewModelLighting(this.scene);
+    this.lighting = new ViewModelLighting(this.scene, options.muzzleLight ?? true);
+    this.scene.onBeforeRender = (drawing: THREE.WebGLRenderer, _scene: THREE.Scene, camera: THREE.Camera) => this.prepareShaders(drawing, camera);
     this.smoke = new MuzzleSmoke(phone ? 10 : 24);
     const brass = new THREE.MeshStandardMaterial({ color: '#b8893e', metalness: 0.95, roughness: 0.3 });
     const hull = new THREE.MeshStandardMaterial({ color: '#8e1d18', metalness: 0, roughness: 0.55 });
@@ -244,6 +259,8 @@ export class ViewModel {
   /** Muzzle effects, exposed for tests and tuning. */
   get effects(): { flash: MuzzleFlash; smoke: MuzzleSmoke; casings: CasingEjector; drops: DroppedMagazines } { return { flash: this.flash, smoke: this.smoke, casings: this.casings, drops: this.drops }; }
   get sunDirection(): THREE.Vector3 { return this.lighting.sunDirection; }
+  /** Shells pushed into the tube so far in the current (or last) shotgun reload; for tests and tuning. */
+  get shellsSeated(): number { return this.shellSeated + 1; }
 
   /** Vertical field of view (degrees) and aspect follow the world camera. */
   setProjection(fov: number, aspect: number) { this.camera.fov = fov; this.camera.aspect = aspect; this.camera.updateProjectionMatrix(); }
@@ -253,14 +270,18 @@ export class ViewModel {
   setWorld(camera: THREE.Camera | null, scene: THREE.Scene | null = null): void { this.worldCamera = camera; this.worldScene = scene; }
   /** 0 in full shade .. 1 in direct sun, from the same grid that shades the characters. */
   setSunVisibility(value: number): void { this.lighting.setSunVisibility(value); }
-  setQuality(quality: { muzzleLight?: boolean }): void { if (quality.muzzleLight !== undefined) this.muzzleLight = quality.muzzleLight; }
+  /** Turning the muzzle light off removes it from the scene (one shader recompile), so phones never pay for it. */
+  setQuality(quality: { muzzleLight?: boolean }): void { if (quality.muzzleLight !== undefined) this.lighting.setFlashEnabled(quality.muzzleLight); }
 
   update(state: ViewModelState, dt: number, _time: number) {
     if (this.disposed) return;
-    dt = clamp(finite(dt, 0), 0, 0.1);
+    // The reload clock keeps real frame time (a hitch must not skew the shotgun's pace); motion is clamped.
+    const frame = clamp(finite(dt, 0), 0, 1);
+    dt = Math.min(frame, 0.1);
     this.clock += dt;
     this.frameDt = dt;
-    this.frameVelocity = state.velocity && [state.velocity.right, state.velocity.up, state.velocity.forward].every(Number.isFinite) ? state.velocity : null;
+    const velocity = state.velocity;
+    this.frameVelocity = velocity && Number.isFinite(velocity.right) && Number.isFinite(velocity.up) && Number.isFinite(velocity.forward) ? velocity : null;
     this.syncLighting(dt);
     if (!this.library) return;
     this.updateWeapon(state, dt);
@@ -270,7 +291,7 @@ export class ViewModel {
     const ads = clamp01(finite(state.ads, 0));
     const lookYaw = finite(state.lookDelta?.yaw, 0), lookPitch = finite(state.lookDelta?.pitch, 0);
     this.updateWeights(state, dt);
-    this.updateReload(state, rig, dt);
+    this.updateReload(state, rig, dt, frame);
     this.updateMoves(dt);
     const busy = Math.max(clamp01(this.reloadWeight.value), this.moveEnvelope(KNIFE_MOVE, this.meleeTime), clamp01(this.cookWeight.value),
       this.throwTime >= 0 ? 1 : 0, this.moveEnvelope(VAULT_MOVE, this.vaultTime) * 0.6);
@@ -284,7 +305,8 @@ export class ViewModel {
     // Fully scoped, the HUD draws the scope: nothing of the viewmodel may show through its lens.
     const visible = !state.scoped;
     rig.instance.root.visible = visible;
-    for (const arm of [this.armLeft, this.armRight]) if (arm) arm.visible = visible;
+    if (this.armLeft) this.armLeft.visible = visible;
+    if (this.armRight) this.armRight.visible = visible;
     this.casings.group.visible = visible; this.drops.group.visible = visible;
     this.smoke.mesh.visible &&= visible;
     if (this.shellProp) this.shellProp.visible &&= visible;
@@ -387,6 +409,9 @@ export class ViewModel {
     this.shellProp = new THREE.Mesh(shellGeometry, new THREE.MeshStandardMaterial({ color: '#8e1d18', roughness: 0.55 }));
     this.shellProp.name = 'loading-shell'; this.shellProp.visible = false;
     this.scene.add(this.shellProp);
+    // Every weapon waits hidden in the scene (clones share geometry and materials), so the first
+    // draw prepares all their shaders and a first swap never stalls.
+    for (const id of WEAPON_IDS) this.rig(id);
   }
 
   private rig(id: WeaponId): Rig {
@@ -399,6 +424,7 @@ export class ViewModel {
     const rest = (node: THREE.Object3D | null): Rest | null => node ? { position: node.position.clone(), quaternion: node.quaternion.clone() } : null;
     const magazine = instance.anchors.magazine, action = instance.anchors.action;
     const knobNode = action ? findNode(action, 'knob') : null;
+    const spec = WEAPONS[id];
     rig = {
       id, instance, handling: HANDLING[id],
       grip: local(instance.anchors.gripRight), sight: local(instance.anchors.sight),
@@ -406,6 +432,10 @@ export class ViewModel {
       magHold: magazine ? holdPoint(magazine) : new THREE.Vector3(),
       knob: knobNode ? knobNode.position.clone() : action ? actionHandle(action, HANDLING[id].action) : new THREE.Vector3(),
       load: findNode(root, 'load'),
+      // The weapon table is the single source shared with the server; a weapon without shell timing
+      // (never shotgun-style today) would load everything in one step.
+      shellStartMs: Math.max(0, spec.shellStartMs ?? 0), perShellMs: Math.max(1, spec.perShellMs ?? spec.reloadMs),
+      shellCapacity: Math.max(1, spec.magazine),
     };
     root.visible = false;
     this.scene.add(root);
@@ -440,7 +470,8 @@ export class ViewModel {
    * rest raises the new one, so the gun is up exactly when the server lets it fire. Otherwise fixed
    * timings are used. */
   private updateWeapon(state: ViewModelState, dt: number) {
-    const wanted = WEAPONS[state.weapon] ? state.weapon : this.current?.id ?? 'kr5';
+    // Only real weapon ids: an unknown or inherited name (`toString`) keeps the weapon in hand.
+    const wanted = isWeaponId(state.weapon) ? state.weapon : this.current?.id ?? FALLBACK_WEAPON;
     const raise = clamp01(finite(state.raise, 1));
     if (!this.current) { this.equip(wanted); return; }
     if (this.current.id !== wanted) {
@@ -485,24 +516,29 @@ export class ViewModel {
     }
   }
 
-  private updateReload(state: ViewModelState, rig: Rig, dt: number) {
+  /** `frame` is the unclamped frame time, used only for the shotgun's pace. */
+  private updateReload(state: ViewModelState, rig: Rig, dt: number, frame: number) {
     const progress = finite(state.reload, -1);
     const reloading = progress >= 0;
     const style = rig.handling.reload;
     if (reloading) {
-      const restarted = this.reloadProgress >= 0 && progress < this.reloadProgress - 0.5;
-      if (this.reloadProgress < 0 || restarted || !this.reloadChoreo) {
+      const t = clamp01(progress);
+      const restarted = this.reloadProgress >= 0 && t < this.reloadProgress - 0.5;
+      const fresh = this.reloadProgress < 0 || restarted || !this.reloadChoreo;
+      if (fresh) {
         this.reloadEmpty = !!state.reloadEmpty;
         this.reloadChoreo = reloadChoreography(style, this.reloadEmpty);
-        this.reloadLast = clamp01(progress);
-        this.shotgunElapsed = 0; this.shotgunLocked = false; this.shotgunFactor = 1; this.shellSeated = -1;
+        this.reloadLast = t;
+        this.shotgunClock = 0; this.shotgunShells = 0; this.shotgunLocked = false; this.shotgunMs = 0;
+        this.paceFit.n = this.paceFit.t = this.paceFit.p = this.paceFit.tt = this.paceFit.tp = 0; this.paceFit.last = -1;
+        this.shellSeated = -1;
         this.cycleTime = IDLE; this.pendingEject = false;
       }
-      const t = clamp01(progress);
-      if (style !== 'shotgun') crossedEvents(this.reloadChoreo, this.reloadLast, t, kind => this.reloadEvent(kind, rig));
+      if (style !== 'shotgun') crossedEvents(this.reloadChoreo!, this.reloadLast, t, this.onReloadEvent);
       this.reloadLast = t;
       this.reloadProgress = t;
-      if (style === 'shotgun') this.trackShotgun(state, t, dt, rig);
+      // The first frame only anchors the pace: its time passed before the reload was seen.
+      if (style === 'shotgun') this.trackShotgun(state, t, fresh ? 0 : frame, rig);
     } else if (this.reloadProgress >= 0) {
       // Finished or interrupted: keep the last pose while it blends away.
       if (style === 'shotgun' && this.reloadEmpty && this.reloadLast > 0.2) { this.cycleTime = 0; this.pendingEject = false; }
@@ -512,28 +548,37 @@ export class ViewModel {
     if (this.reloadWeight.value < 1e-3 && !reloading) { this.reloadWeight.reset(0); this.reloadChoreo = null; }
   }
 
-  /** Shell timing follows the server's (start plus one shell per interval, faster with Quick Hands):
-   * once a little of the reload has played, find the shell count and speed that match its rate. */
-  private trackShotgun(state: ViewModelState, progress: number, dt: number, rig: Rig) {
-    this.shotgunElapsed += dt;
-    if (!this.shotgunLocked && this.shotgunElapsed >= 0.12 && progress > 0.004) {
-      const total = this.shotgunElapsed / progress * 1000;
-      const known = finite(state.reloadShells, 0);
-      if (known >= 1) this.shotgunFactor = clamp(total / (SHELL_START_MS + SHELL_MS * Math.round(known)), 0.55, 1.4);
-      else {
-        let best = 1, error = Infinity;
-        for (const factor of [1, 0.75]) for (let shells = 1; shells <= 8; shells++) {
-          const candidate = factor * (SHELL_START_MS + SHELL_MS * shells), miss = Math.abs(total - candidate) / candidate;
-          if (miss < error) { error = miss; best = factor; }
-        }
-        this.shotgunFactor = error < 0.15 ? best : 1;
-      }
+  /** The shotgun loads like the server: a start of `shellStartMs`, then one shell every `perShellMs`
+   * (both shorter with Quick Hands). Progress runs over the whole reload, so once the shell count is
+   * known, progress alone says where the reload stands, at any pace and frame rate. Without
+   * `reloadShells`, the count comes from the pace of progress: a least-squares line through the
+   * frames where progress moved since the reload was first seen (a late or offset start cancels out,
+   * frame jitter averages away, and progress that arrives in steps is timed by when each step lands).
+   * The count settles when the hand starts carrying the first shell up; until then the hand waits at
+   * the pouch, so a corrected count never shows as a jump. */
+  private trackShotgun(state: ViewModelState, progress: number, frame: number, rig: Rig) {
+    const startMs = rig.shellStartMs, perMs = rig.perShellMs;
+    this.shotgunClock += frame;
+    const known = finite(state.reloadShells, 0);
+    const fit = this.paceFit, moved = progress !== fit.last;
+    fit.last = progress;
+    if (known >= 1) {
+      this.shotgunShells = Math.min(rig.shellCapacity, Math.round(known));
       this.shotgunLocked = true;
+    } else if (!this.shotgunLocked && moved && progress < 1) {
+      const t = this.shotgunClock;
+      fit.n++; fit.t += t; fit.p += progress; fit.tt += t * t; fit.tp += t * progress;
+      const spread = fit.n * fit.tt - fit.t * fit.t;
+      const pace = fit.n >= 2 && spread > 1e-12 ? (fit.n * fit.tp - fit.t * fit.p) / spread : 0;
+      if (pace > 1e-6) this.shotgunShells = matchShellCount(1000 / pace, rig);
     }
-    const ms = this.shotgunElapsed * 1000 / this.shotgunFactor - SHELL_START_MS;
-    if (ms < 0) return;
-    const index = Math.floor(ms / SHELL_MS), u = (ms - index * SHELL_MS) / SHELL_MS;
-    if (u >= SHELL_SEAT && this.shellSeated !== index) { this.shellSeated = index; this.reloadEvent('shellIn', rig); }
+    const shells = this.shotgunShells || provisionalShells(rig);
+    this.shotgunMs = progress * (startMs + perMs * shells);
+    if (this.shotgunShells && this.shotgunMs >= startMs + SHELL_PICKUP * perMs) this.shotgunLocked = true;
+    const into = this.shotgunMs - startMs;
+    if (into < 0) return;
+    const index = Math.min(shells - 1, Math.floor(into / perMs)), u = (into - index * perMs) / perMs;
+    if (u >= SHELL_SEAT && index > this.shellSeated) { this.shellSeated = index; this.reloadEvent('shellIn', rig); }
   }
 
   private reloadEvent(kind: ChoreoEventKind, rig: Rig) {
@@ -804,11 +849,9 @@ export class ViewModel {
     }
     const cook = clamp01(this.cookWeight.value);
     if (cook > 1e-4) this.handToward(left, COOK_POSE.hx, COOK_POSE.hy, COOK_POSE.hz, COOK_POSE.hrx, COOK_POSE.hry, COOK_POSE.hrz, cook);
-    for (const [move, time] of [[VAULT_MOVE, this.vaultTime], [THROW_MOVE, this.throwTime], [KNIFE_MOVE, this.meleeTime]] as const) {
-      if (time < 0) continue;
-      const t = time / move.duration, w = clamp01(sampleTrack(move.hw, t)) * (move === THROW_MOVE ? this.throwBlend() : 1);
-      if (w > 1e-4) this.handToward(left, sampleTrack(move.hx, t), sampleTrack(move.hy, t), sampleTrack(move.hz, t), sampleTrack(move.hrx, t), sampleTrack(move.hry, t), sampleTrack(move.hrz, t), w);
-    }
+    this.moveHand(left, VAULT_MOVE, this.vaultTime, 1);
+    this.moveHand(left, THROW_MOVE, this.throwTime, this.throwBlend());
+    this.moveHand(left, KNIFE_MOVE, this.meleeTime, 1);
     const dash = clamp01(this.dashWeight.value) * clamp01(this.sprintWeight.value) * (1 - reloadW);
     if (dash > 1e-4 && this.meleeTime < 0 && this.throwTime < 0 && cook < 1e-3) {
       const swing = Math.sin(this.bobPhase);
@@ -826,20 +869,37 @@ export class ViewModel {
     position.lerp(this.v3, mix); rotation.slerp(this.q3, mix);
   }
 
-  /** Shotgun: the hand dips to the shell pouch and pushes a shell into the loading port each cycle. */
+  /** Shotgun, driven by the reload position from `trackShotgun`: the hand drops to the shell pouch
+   * during the start, then for each shell carries one up into the loading port; after the last shell
+   * it goes back to the pump. `position` and `rotation` arrive holding the pump grip. */
   private shotgunHand(rig: Rig, position: THREE.Vector3, rotation: THREE.Quaternion) {
-    const ms = this.shotgunElapsed * 1000 / this.shotgunFactor;
+    const startMs = rig.shellStartMs, perMs = rig.perShellMs, ms = this.shotgunMs;
     this.resolveTarget(rig, 'pouch', 'left', this.v3, this.q3);
-    if (ms < SHELL_START_MS) {
-      const k = smoothstep(ms / (SHELL_START_MS * 0.8));
+    if (ms < startMs) {
+      const k = smoothstep(ms / Math.max(1, startMs * 0.8));
       position.lerp(this.v3, k); rotation.slerp(this.q3, k);
       this.shell.reach = 0; this.shell.shellInHand = false; this.shell.insert = 0;
       return;
     }
-    const u = ((ms - SHELL_START_MS) % SHELL_MS) / SHELL_MS;
+    const shells = this.shotgunShells || provisionalShells(rig);
+    const index = Math.min(shells - 1, Math.floor((ms - startMs) / perMs));
+    const u = clamp01((ms - startMs - index * perMs) / perMs);
     shellCycle(u, this.shell);
+    this.v5.copy(position); this.q4.copy(rotation);
     this.resolveTarget(rig, 'load', 'left', position, rotation);
-    position.lerpVectors(this.v3, position, this.shell.reach); rotation.slerpQuaternions(this.q3, rotation, this.shell.reach);
+    if (index >= shells - 1 && u >= SHELL_RETURN) {
+      const back = smoothstep((u - SHELL_RETURN) / (1 - SHELL_RETURN));
+      position.lerp(this.v5, back); rotation.slerp(this.q4, back);
+    } else {
+      position.lerpVectors(this.v3, position, this.shell.reach); rotation.slerpQuaternions(this.q3, rotation, this.shell.reach);
+    }
+  }
+
+  /** A timed move's pull on the left hand. */
+  private moveHand(arm: THREE.Object3D, move: HandMove, time: number, blend: number) {
+    if (time < 0) return;
+    const t = time / move.duration, w = clamp01(sampleTrack(move.hw, t)) * blend;
+    if (w > 1e-4) this.handToward(arm, sampleTrack(move.hx, t), sampleTrack(move.hy, t), sampleTrack(move.hz, t), sampleTrack(move.hrx, t), sampleTrack(move.hry, t), sampleTrack(move.hrz, t), w);
   }
 
   private handToward(arm: THREE.Object3D, x: number, y: number, z: number, rx: number, ry: number, rz: number, weight: number) {
@@ -913,11 +973,12 @@ export class ViewModel {
     this.casings.update(dt, this.gravity, this.drift);
     this.drops.update(dt, this.gravity, this.drift);
     let light = 0;
-    if (this.muzzleLight && this.flash.active) {
+    if (this.lighting.flashEnabled && this.flash.active) {
       light = this.flash.intensity * rig.handling.flash;
+      // Burn in the flame ahead of the muzzle, not back on the hands.
       rig.instance.anchors.muzzle.updateWorldMatrix(true, false);
-      this.flashPosition.setFromMatrixPosition(rig.instance.anchors.muzzle.matrixWorld);
-      this.flashPosition.z += 0.05;
+      this.flashPosition.setFromMatrixPosition(rig.instance.anchors.muzzle.matrixWorld)
+        .addScaledVector(this.v2.set(0, 0, -1).applyQuaternion(rig.instance.root.quaternion), MUZZLE_LIGHT_LEAD);
     }
     this.lighting.update(0, light, light > 0 ? this.flashPosition : null);
   }
@@ -932,6 +993,27 @@ export class ViewModel {
     }
     const v = this.frameVelocity;
     if (v) { point.x -= v.right * this.frameDt; point.y -= v.up * this.frameDt; point.z += v.forward * this.frameDt; }
+  }
+
+  /** Compiles every viewmodel shader the first time the scene is drawn with new render settings
+   * (target, tone mapping, sky, muzzle light), including the flash, smoke, casings and props that
+   * start hidden. Otherwise the first shot, knife or grenade of a match would stall while they
+   * compile. It runs from the scene's own before-render hook, so it compiles exactly the variants
+   * the real pass (screen or post-processing target) uses; later frames only compare a few values. */
+  private prepareShaders(renderer: THREE.WebGLRenderer, camera: THREE.Camera) {
+    if (this.disposed || !this.library || !this.current || typeof renderer?.compile !== 'function') return;
+    const current = typeof renderer.getRenderTarget === 'function' ? renderer.getRenderTarget() : null;
+    const target = current === null ? 0 : (current as { isXRRenderTarget?: boolean }).isXRRenderTarget ? 2 : 1;
+    const toneMapping = renderer.toneMapping, colorSpace = renderer.outputColorSpace;
+    const environment = this.scene.environment, flashLight = this.lighting.flashEnabled;
+    for (let i = 0; i < this.compiledFor.length; i++) {
+      const seen = this.compiledFor[i]!;
+      if (seen.target === target && seen.toneMapping === toneMapping && seen.colorSpace === colorSpace && seen.environment === environment && seen.flashLight === flashLight) return;
+    }
+    if (this.compiledFor.length >= 8) this.compiledFor.length = 0;
+    this.compiledFor.push({ target, toneMapping, colorSpace, environment, flashLight });
+    try { renderer.compile(this.scene, camera); }
+    catch (error) { console.warn('The first-person shaders could not be prepared early; they will compile on first use.', error); }
   }
 
   private syncLighting(dt: number) {
@@ -964,6 +1046,20 @@ export class ViewModel {
     return target.applyMatrix4(worldCamera.matrixWorld);
   }
 }
+
+/** The shell count (at either pace) whose reload length is closest to `totalMs`. */
+function matchShellCount(totalMs: number, rig: Rig): number {
+  let best = 1, error = Infinity;
+  for (let p = 0; p < SHELL_PACES.length; p++) {
+    for (let shells = 1; shells <= rig.shellCapacity; shells++) {
+      const miss = Math.abs(Math.log(totalMs / (SHELL_PACES[p]! * (rig.shellStartMs + rig.perShellMs * shells))));
+      if (miss < error) { error = miss; best = shells; }
+    }
+  }
+  return best;
+}
+/** Used only until the reload has moved far enough to read its pace (normally one frame). */
+const provisionalShells = (rig: Rig) => Math.ceil(rig.shellCapacity / 2);
 
 /** Root transform for a pose that puts the right grip at `pose.grip`. */
 function poseRoot(pose: PoseSpec, grip: THREE.Vector3, position: THREE.Vector3, quaternion: THREE.Quaternion, euler: THREE.Euler, scratch: THREE.Vector3) {
