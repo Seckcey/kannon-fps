@@ -1,15 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  BOT_SETTINGS, BotNavigation, FRAG_COOK_MS, FRAG_COOKS_MS, FRAG_COOLDOWN_MS, FRAG_RANGE, FRAG_RELEASE_GRACE_MS, fragLanding, PracticeBots, PRACTICE_RIVALS,
-  RECOVERED_HEALTH, RETREAT_HEALTH, SECONDARY_RANGE,
+  BOT_SETTINGS, BotNavigation, FRAG_CLEARANCE, FRAG_COOK_MS, FRAG_COOKS_MS, FRAG_COOLDOWN_MS, FRAG_RANGE, FRAG_RELEASE_GRACE_MS, FRAG_SAFE_LANDING,
+  FRAG_SIMULATIONS_PER_TICK, FragPlanner, fragLanding, planFrag, PracticeBots, PRACTICE_RIVALS, RECOVERED_HEALTH, RETREAT_HEALTH, SECONDARY_RANGE,
 } from '../../server/bots.js';
 import { OBSTACLES, SPAWNS } from '../../shared/map.js';
 import {
-  directionFromAngles, eyePosition, grenadeLaunch, grenadePosition, hitboxes, moveDefaults, movePlayer, normalize, PLAYER_RADIUS, POSTURE_HEIGHT, raycastMap, rayHitboxes, subtract,
+  directionFromAngles, EYE_HEIGHT, eyePosition, grenadeLaunch, grenadePosition, GrenadeTrajectory, hitboxes, moveDefaults, movePlayer, normalize, PLAYER_RADIUS, POSTURE_HEIGHT,
+  raycastMap, rayHitboxes, subtract,
 } from '../../shared/physics.js';
 import { RULES, type GameMode, type HitZone, type InputFrame, type PlayerState, type PracticeDifficulty, type StreakId, type Vec3 } from '../../shared/protocol.js';
-import { botLoadout, damageAt, EXPLOSIVES, fireIntervalMs, LOADOUT_PRESETS, STREAK_ORDER, weaponFor, WEAPONS } from '../../shared/weapons.js';
+import { botLoadout, damageAt, EXPLOSIVES, explosionDamage, fireIntervalMs, LOADOUT_PRESETS, STREAK_ORDER, weaponFor, WEAPONS } from '../../shared/weapons.js';
 
 const DIFFICULTIES = ['easy', 'normal', 'hard'] as const;
 const TICK = 1000 / 30;
@@ -53,7 +54,7 @@ const pitchTo = (shooter: PlayerState, target: Vec3) => { const eye = eyePositio
 function assertFrame(frame: InputFrame, now: number, seq: number) {
   assert.equal(frame.seq, seq); assert.equal(frame.viewTime, now);
   for (const key of ['moveX', 'moveZ', 'yaw', 'pitch'] as const) assert.ok(Number.isFinite(frame[key]), `${key} must be finite`);
-  assert.ok(Math.abs(frame.moveX) <= 1 + 1e-9 && Math.abs(frame.moveZ) <= 1 + 1e-9 && Math.abs(frame.pitch) <= 1.3);
+  assert.ok(Math.abs(frame.moveX) <= 1 && Math.abs(frame.moveZ) <= 1 && Math.abs(frame.pitch) <= 1.3, `stick ${frame.moveX}, ${frame.moveZ}`);
   for (const key of ['fire', 'aim', 'jump', 'sprint', 'reload', 'crouch', 'dash', 'melee', 'grenade'] as const) assert.equal(typeof frame[key], 'boolean', key);
   assert.ok(frame.slot === 1 || frame.slot === 2); assert.equal(frame.jump, false, 'Rivals never jump.');
   assert.ok(frame.streak === null || STREAK_ORDER.includes(frame.streak));
@@ -61,16 +62,23 @@ function assertFrame(frame: InputFrame, now: number, seq: number) {
   else assert.notEqual(frame.streak, 'mortar');
 }
 
+type Cause = 'bullet' | 'melee' | 'frag';
 /** A small stand-in for MatchEngine built only from the shared rules, so these tests exercise the
- * controller against the real physics and weapon table while the engine is rewritten alongside. */
+ * controller against the real physics and weapon table while the engine is rewritten alongside.
+ * Thrown frags fly on the shared grenade simulation and burst like the engine's (thrower included). */
 class Arena {
   readonly players: PlayerState[] = [];
   readonly frames = new Map<string, InputFrame[]>();
   readonly log = {
-    shots: [] as Array<{ by: string; at: number; slot: number }>, kills: [] as Array<{ by: string; of: string }>, hits: [] as Array<{ by: string; of: string; amount: number }>,
+    shots: [] as Array<{ by: string; at: number; slot: number }>, kills: [] as Array<{ by: string; of: string; cause: Cause }>,
+    hits: [] as Array<{ by: string; of: string; amount: number; cause: Cause }>,
     throws: [] as Array<{ by: string; at: number; yaw: number; pitch: number; cookedMs: number; eye: Vec3 }>, rewards: [] as Array<{ by: string; reward: StreakId; target?: { x: number; z: number } }>,
     melee: [] as Array<{ by: string; at: number }>, slides: 0, offTarget: 0,
+    /** Every frag burst, with how far its thrower stood from it, and every cook with the cook's speed at that moment. */
+    blasts: [] as Array<{ by: string; at: number; position: Vec3; ownerDistance: number }>, cooks: [] as Array<{ by: string; at: number; speed: number }>,
   };
+  /** Frags in the air, each with the point where it will burst. */
+  readonly grenades: Array<{ owner: PlayerState; trajectory: GrenadeTrajectory; thrownAt: number; explodeAt: number; burst: Vec3 }> = [];
   now = 6000;
   /** Frozen players never act or take damage (a fixed target). Pinned rivals decide and aim but stay put. */
   readonly frozen = new Set<string>();
@@ -94,7 +102,28 @@ class Arena {
       this.apply(p, frame, previous, now, dt, shots);
     }
     for (const { shooter, frame } of shots) this.resolve(shooter, frame, now);
+    this.explosives(now);
     for (const p of this.players) if (p.health > 0 && p.health < RULES.health && now - p.lastDamageAt >= RULES.regenDelayMs) p.health = Math.min(RULES.health, p.health + RULES.regenPerSecond * dt);
+  }
+  private explosives(now: number) {
+    for (const p of this.players) if (p.health > 0 && p.cookingSince && now >= p.cookingSince + EXPLOSIVES.frag.fuseMs) { p.cookingSince = 0; this.burst(p, eyePosition(p), now); }
+    for (let i = 0; i < this.grenades.length; i++) {
+      const grenade = this.grenades[i]!;
+      grenade.trajectory.advanceTo(Math.min(now, grenade.explodeAt) - grenade.thrownAt);
+      if (now < grenade.explodeAt) continue;
+      this.grenades.splice(i--, 1); this.burst(grenade.owner, grenade.trajectory.position, now);
+    }
+  }
+  /** Engine rules: full damage near the blast fading to the edge, only with a clear line to the torso; the
+   * thrower can be hurt, teammates cannot. */
+  private burst(owner: PlayerState, position: Vec3, now: number) {
+    this.log.blasts.push({ by: owner.id, at: now, position, ownerDistance: horizontal(owner, position) });
+    const origin = { x: position.x, y: position.y + 0.1, z: position.z };
+    for (const target of this.players) {
+      if (target.health <= 0 || !target.connected || target.protectedUntil > now || (target !== owner && this.allies(owner, target))) continue;
+      const torso = zoneCentre(target, 'torso'), distance = Math.hypot(torso.x - origin.x, torso.y - origin.y, torso.z - origin.z);
+      if (distance <= EXPLOSIVES.frag.radius && clear(origin, torso)) this.damage(target, owner, Math.round(explosionDamage('frag', distance)), now, 'frag');
+    }
   }
   run(ms: number, each?: () => void) { const end = this.now + ms; while (this.now < end - 1e-6) { this.tick(); each?.(); } }
   private apply(p: PlayerState, frame: InputFrame, previous: InputFrame | undefined, now: number, dt: number, shots: Array<{ shooter: PlayerState; frame: InputFrame }>) {
@@ -110,10 +139,15 @@ class Arena {
     if (frame.melee && !previous?.melee && now >= p.meleeUntil) {
       p.meleeUntil = now + RULES.meleeMs; this.log.melee.push({ by: p.id, at: now });
       const target = this.players.find(o => o !== p && o.health > 0 && !this.allies(p, o) && horizontal(o, p) <= RULES.meleeLungeRange);
-      if (target) this.damage(target, p, RULES.meleeDamage, now);
+      if (target) this.damage(target, p, RULES.meleeDamage, now, 'melee');
     }
-    if (frame.grenade && !previous?.grenade && !p.cookingSince && p.frags > 0) p.cookingSince = now;
-    if (!frame.grenade && p.cookingSince) { p.frags--; this.log.throws.push({ by: p.id, at: now, yaw: frame.yaw, pitch: frame.pitch, cookedMs: now - p.cookingSince, eye: eyePosition(p) }); p.cookingSince = 0; }
+    if (frame.grenade && !previous?.grenade && !p.cookingSince && p.frags > 0) { p.cookingSince = now; this.log.cooks.push({ by: p.id, at: now, speed: Math.hypot(p.vx, p.vz) }); }
+    if (!frame.grenade && p.cookingSince) {
+      p.frags--; this.log.throws.push({ by: p.id, at: now, yaw: frame.yaw, pitch: frame.pitch, cookedMs: now - p.cookingSince, eye: eyePosition(p) });
+      const launch = grenadeLaunch(eyePosition(p), frame.yaw, frame.pitch, p, EXPLOSIVES.frag.throwSpeed, EXPLOSIVES.frag.throwLift), explodeAt = p.cookingSince + EXPLOSIVES.frag.fuseMs;
+      this.grenades.push({ owner: p, trajectory: new GrenadeTrajectory(launch.from, launch.velocity), thrownAt: now, explodeAt, burst: grenadePosition(launch.from, launch.velocity, explodeAt - now) });
+      p.cookingSince = 0;
+    }
     if (frame.streak && frame.streak !== previous?.streak) {
       const index = p.rewards.indexOf(frame.streak);
       if (index >= 0) { p.rewards.splice(index, 1); this.log.rewards.push({ by: p.id, reward: frame.streak, ...(frame.streakTarget ? { target: frame.streakTarget } : {}) }); }
@@ -136,10 +170,13 @@ class Arena {
     }
     if (best && best.target.protectedUntil <= now) this.damage(best.target, shooter, Math.round(damageAt(spec, best.distance, best.zone)), now);
   }
-  damage(target: PlayerState, attacker: PlayerState, amount: number, now: number) {
+  damage(target: PlayerState, attacker: PlayerState, amount: number, now: number, cause: Cause = 'bullet') {
     if (target.health <= 0 || amount <= 0 || this.frozen.has(target.id)) return;
-    target.health = Math.max(0, target.health - amount); target.lastDamageAt = now; this.log.hits.push({ by: attacker.id, of: target.id, amount });
-    if (target.health <= 0) { target.deaths++; attacker.kills++; target.respawnAt = now + RULES.respawnMs; target.vx = 0; target.vz = 0; this.log.kills.push({ by: attacker.id, of: target.id }); }
+    target.health = Math.max(0, target.health - amount); target.lastDamageAt = now; this.log.hits.push({ by: attacker.id, of: target.id, amount, cause });
+    if (target.health <= 0) {
+      target.deaths++; if (attacker !== target) attacker.kills++; target.respawnAt = now + RULES.respawnMs; target.vx = 0; target.vz = 0; target.cookingSince = 0;
+      this.log.kills.push({ by: attacker.id, of: target.id, cause });
+    }
   }
   private respawn(p: PlayerState) {
     const living = this.players.filter(o => o !== p && o.health > 0 && !this.allies(p, o));
@@ -387,6 +424,94 @@ test('frag use stays bounded by the cooldown when an opponent keeps ducking in a
   }
 });
 
+test('a rival stops before planning a frag, lets go only of one that bursts clear of itself, and waits out the blast', t => {
+  let throws = 0;
+  for (const difficulty of ['normal', 'hard'] as const) for (let i = 0; i < 30; i++) {
+    // Not pinned: the rival is closing in when the opponent ducks behind the house wall, then may chase.
+    const arena = new Arena(new PracticeBots(difficulty, `own-frag-${i}`), 'ffa', false);
+    const bot = arena.add(rival(0, { x: -28, z: 12, frags: 3 })), enemy = arena.add(makePlayer('human', { x: -9, z: 7 }));
+    arena.frozen.add(enemy.id);
+    arena.run(1200 + (i % 4) * 300); enemy.z = 5.5;
+    // While one of its frags is in the air, the rival stays outside the blast of where it will burst.
+    arena.run(9000, () => {
+      for (const grenade of arena.grenades) if (grenade.owner === bot) {
+        assert.ok(horizontal(bot, grenade.burst) > EXPLOSIVES.frag.radius || Math.abs(bot.y - grenade.burst.y) > 2.5,
+          `${difficulty} ${i}: ${horizontal(bot, grenade.burst).toFixed(2)} m from its own live frag`);
+      }
+    });
+    for (const cook of arena.log.cooks.filter(c => c.by === bot.id)) assert.ok(cook.speed <= 0.1, `cooked while moving at ${cook.speed.toFixed(2)} m/s`);
+    for (const blast of arena.log.blasts.filter(b => b.by === bot.id)) {
+      throws++;
+      assert.ok(blast.ownerDistance > EXPLOSIVES.frag.radius, `${difficulty} ${i}: burst ${blast.ownerDistance.toFixed(2)} m from its thrower`);
+    }
+    assert.deepEqual(arena.log.hits.filter(h => h.of === bot.id), [], `${difficulty} ${i}: the rival hurt itself`);
+  }
+  t.diagnostic(`${throws} frags thrown by moving rivals`);
+  assert.ok(throws >= 6, `Only ${throws} throws: the scenario no longer exercises frags.`);
+  // The check before letting go uses the shared simulation from the real eye, view and remaining fuse.
+  const eye = { x: -28, y: EYE_HEIGHT.stand, z: 12 }, flight = EXPLOSIVES.frag.fuseMs - FRAG_COOK_MS;
+  const launch = grenadeLaunch(eye, 1.2, 0.4, { vx: 2, vz: -1 }, EXPLOSIVES.frag.throwSpeed, EXPLOSIVES.frag.throwLift);
+  assert.ok(horizontal(fragLanding(eye, 1.2, 0.4, flight, { vx: 2, vz: -1 }), grenadePosition(launch.from, launch.velocity, flight)) < 1e-9);
+  assert.ok(FRAG_SAFE_LANDING > EXPLOSIVES.frag.radius && FRAG_CLEARANCE > EXPLOSIVES.frag.radius);
+});
+
+test('frag planning spreads over frames: no rival frame runs more than a few grenade simulations', t => {
+  const advance = GrenadeTrajectory.prototype.advanceTo, input = PracticeBots.prototype.input;
+  const runs = new Set<object>();
+  let inside = false, worst = 0;
+  t.mock.method(GrenadeTrajectory.prototype, 'advanceTo', function (this: GrenadeTrajectory, elapsedMs: number) { if (inside) runs.add(this); return advance.call(this, elapsedMs); });
+  t.mock.method(PracticeBots.prototype, 'input', function (this: PracticeBots, ...args: Parameters<PracticeBots['input']>) {
+    inside = true; runs.clear();
+    try { return input.apply(this, args); } finally { inside = false; worst = Math.max(worst, runs.size); }
+  });
+  let throws = 0;
+  for (let i = 0; i < 30; i++) throws += fragTrial('hard', `budget-${i}`).arena.log.throws.length;
+  t.diagnostic(`${throws} throws; at most ${worst} grenade simulations in one frame`);
+  assert.ok(throws >= 4, `throws ${throws}`);
+  assert.ok(worst >= 1 && worst <= FRAG_SIMULATIONS_PER_TICK, `A single frame ran ${worst} grenade simulations.`);
+  // The whole search is bounded, and spreading it over frames picks the same throw as running it at once.
+  for (const [eye, target] of [[{ x: -28, y: EYE_HEIGHT.stand, z: 12 }, { x: -9, y: 0, z: 7 }], [{ x: 0, y: EYE_HEIGHT.stand, z: -20 }, { x: 13, y: 0, z: -2 }], [{ x: 20, y: EYE_HEIGHT.stand, z: 18 }, { x: 4, y: 0, z: 9 }]] as const) {
+    const planner = new FragPlanner(eye, target);
+    let frames = 0;
+    while (!planner.step(FRAG_SIMULATIONS_PER_TICK)) frames++;
+    assert.ok(planner.simulations <= 64 && frames <= Math.ceil(64 / FRAG_SIMULATIONS_PER_TICK), `${planner.simulations} simulations over ${frames} frames`);
+    assert.deepEqual(planner.result, planFrag(eye, target));
+    if (planner.result) assert.ok(horizontal(planner.result.landing, eye) >= FRAG_SAFE_LANDING);
+  }
+});
+
+test('a rival boxed in a doorway keeps moving through a fight instead of standing still', () => {
+  // The teal front door: the jambs leave no room to side-step, so the rival backs off through the door instead.
+  for (const difficulty of DIFFICULTIES) {
+    const arena = new Arena(new PracticeBots(difficulty, `door-${difficulty}`), 'ffa', false);
+    const bot = arena.add(rival(0, { x: -10, z: -2.25, yaw: Math.PI / 2 })), enemy = arena.add(makePlayer('human', { x: -6, z: -2.25 }));
+    arena.frozen.add(enemy.id);
+    assert.ok(sees(bot, enemy));
+    let still = 0, longest = 0, last = { x: bot.x, z: bot.z }, fought = 0;
+    arena.run(8000, () => {
+      assert.ok(!penetrates(bot), `clipped at ${JSON.stringify({ x: bot.x, z: bot.z })}`);
+      if (arena.last(bot.id)!.aim) fought++;
+      still = Math.hypot(bot.x - last.x, bot.z - last.z) < 0.005 ? still + 1 : 0; longest = Math.max(longest, still); last = { x: bot.x, z: bot.z };
+    });
+    assert.ok(fought > 30 * 3, `${difficulty}: the rival should fight (${fought} aimed frames)`);
+    assert.ok(longest < 30 * 1.5, `${difficulty}: stood still for ${(longest / 30).toFixed(1)} s`);
+  }
+});
+
+test('a rival pressed against a wall with no route planned steps back out instead of freezing', t => {
+  t.mock.method(BotNavigation.prototype, 'findPath', () => []);
+  const nav = new BotNavigation(), sandbags = OBSTACLES.find(b => b.id === 'west-lane-sandbags')!;
+  for (const [side, yaw] of [[-1, 0], [1, Math.PI]] as const) {
+    const arena = new Arena(new PracticeBots('normal', `no-route-${side}`), 'ffa', false);
+    // Resting against the sandbags at exact contact, as the physics leaves a body that walked into them.
+    const bot = arena.add(rival(0, { x: sandbags.x, z: sandbags.z + side * (sandbags.d / 2 + PLAYER_RADIUS), yaw }));
+    assert.equal(nav.isWalkable(bot), false);
+    let freedAt = -1;
+    arena.run(2000, () => { assert.ok(!penetrates(bot)); if (freedAt < 0 && nav.isWalkable(bot)) freedAt = arena.now; });
+    assert.ok(freedAt > 0 && freedAt - 6000 < 1000, `still pressed against the sandbags at ${JSON.stringify({ x: bot.x, z: bot.z })}`);
+  }
+});
+
 test('rewards: Recon Sweep and Attack Drone at once, Mortar Strike on a recently seen opponent', () => {
   const bots = new PracticeBots('normal', 'rewards'), arena = new Arena(bots, 'ffa', false);
   const bot = arena.add(rival(0, { x: -28, z: 0, yaw: Math.PI / 2, rewards: ['mortar', 'drone', 'recon'] }));
@@ -463,8 +588,10 @@ test('three rivals play full rounds at every difficulty under the shared rules w
     const started = performance.now();
     arena.run(120_000, () => { for (const p of rivals) if (p.health > 0) assert.ok(!penetrates(p), `${p.id} clipped at ${JSON.stringify({ x: p.x, y: p.y, z: p.z })}`); });
     const elapsed = performance.now() - started, kills = arena.log.kills;
-    t.diagnostic(`${mode} ${difficulty}: ${elapsed.toFixed(0)} ms; ${arena.log.shots.length} shots (${arena.log.offTarget} off target); ${kills.length} eliminations; ${arena.log.throws.length} frags; ${arena.log.slides} slides; ${arena.log.melee.length} knife swings`);
+    const fragKills = kills.filter(k => k.cause === 'frag' && k.by !== k.of).length;
+    t.diagnostic(`${mode} ${difficulty}: ${elapsed.toFixed(0)} ms; ${arena.log.shots.length} shots (${arena.log.offTarget} off target); ${kills.length} eliminations; ${arena.log.throws.length} frags (${fragKills} eliminations); ${arena.log.slides} slides; ${arena.log.melee.length} knife swings`);
     assert.ok(elapsed < 15_000);
+    assert.deepEqual(arena.log.hits.filter(h => h.cause === 'frag' && h.by === h.of), [], 'Rivals never hurt themselves with their own frags.');
     assert.ok(arena.log.hits.some(h => h.of === human.id), 'Practice must challenge the player.');
     if (mode === 'ffa') assert.ok(kills.some(k => k.by !== human.id && k.of !== human.id), 'Rivals compete with each other too.');
     assert.ok(arena.log.offTarget <= arena.log.shots.length * 0.03, 'Shots point at an enemy, never only at a teammate.');

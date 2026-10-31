@@ -1,6 +1,9 @@
 import { BotNavigation } from './navigation.js';
 import { ARENA_LIMITS } from '../shared/map.js';
-import { clamp, EYE_HEIGHT, eyePosition, GRENADE, grenadeLaunch, GrenadeTrajectory, hitboxes, MOVE, normalize, raycastMap, subtract } from '../shared/physics.js';
+import {
+  clamp, EYE_HEIGHT, eyePosition, GRENADE, grenadeLaunch, GrenadeTrajectory, hitboxes, MOVE, moveDefaults, movePlayer, normalize, raycastMap, subtract,
+  type MoveState,
+} from '../shared/physics.js';
 import { RULES, type GameMode, type InputFrame, type Loadout, type PlayerState, type Posture, type PracticeDifficulty, type Profile, type Slot, type StreakId, type Team, type Vec3 } from '../shared/protocol.js';
 import { botLoadout, EXPLOSIVES, fireIntervalMs, hasPerk, STEADY_AIM_ADS_FACTOR, weaponFor, type WeaponSpec } from '../shared/weapons.js';
 
@@ -55,8 +58,20 @@ export const FRAG_RANGE = { min: 8, max: 25 } as const;
 export const FRAG_COOLDOWN_MS = 8000;
 /** The shortest cook before a rival lets go of a frag. */
 export const FRAG_COOK_MS = 700;
-/** A rival always lets go this long after its planned cook, whatever its aim (well inside the fuse). */
+/** A rival lets go this long after its planned cook even if its aim is not lined up yet (well inside the fuse),
+ * as long as the frag would still burst clear of itself. */
 export const FRAG_RELEASE_GRACE_MS = 900;
+/** A rival only lets go of a frag that will burst at least this far (metres) from where it stands. */
+export const FRAG_SAFE_LANDING = 7;
+/** A rival keeps at least this far (metres) from its own live frag until it bursts (blast radius plus a margin). */
+export const FRAG_CLEARANCE = EXPLOSIVES.frag.radius + 0.5;
+/** Grenade simulations one rival may run while making one frame. Planning a throw takes several frames, so a
+ * plan never holds up the shared 30 Hz tick. */
+export const FRAG_SIMULATIONS_PER_TICK = 5;
+/** A rival stops before planning a throw, waiting at most this long (ms) to come to rest. */
+const FRAG_SETTLE_MS = 600;
+/** Whatever happens, a cooked frag leaves the hand this long (ms) before its fuse ends. */
+const FRAG_LAST_RELEASE_MS = 450;
 const SENSE_MS = 100;
 const INVESTIGATE_MS = 2200;
 const CALLOUT_MS = 2500;
@@ -70,6 +85,8 @@ const MAX_AIM_PITCH = 1.25;
 const BRAKE = 22;
 /** Stairs are walked down slowly enough to land on every tread. */
 const DESCENT_SPEED = 3;
+/** Walking pace for stepping out of a wall's padding when no route is planned. */
+const ESCAPE_SPEED = 1.5;
 
 const horizontalDistance = (a: Vec3, b: Vec3) => Math.hypot(a.x - b.x, a.z - b.z);
 const sameHeight = (a: Vec3, b: Vec3) => Math.abs(a.y - b.y) < 0.06;
@@ -118,10 +135,35 @@ function preferredDistance(spec: WeaponSpec, settings: BotSettings): number {
     default: return settings.distance;
   }
 }
+const handlingFactors = new Map<string, number>();
+/** How the shared movement rules scale walking speed for a weapon, at the hip or aimed. Measured once from
+ * `movePlayer` itself, so the stick maths stays exact however the physics combines a weapon's hip and aimed
+ * factors. */
+function handlingFactor(spec: WeaponSpec, aim: boolean): number {
+  const key = `${spec.moveFactor}/${spec.adsMoveFactor}/${aim}`;
+  let factor = handlingFactors.get(key);
+  if (factor === undefined) {
+    // An open stretch of the north street; the body is put back after every step, so it never meets cover.
+    const at = { x: 0, y: 0, z: -20 };
+    const body: MoveState = { ...at, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, ...moveDefaults() };
+    const input: InputFrame = {
+      seq: 0, moveX: 0, moveZ: 1, yaw: 0, pitch: 0, fire: false, aim, jump: false, sprint: false, reload: false, slot: 1,
+      crouch: false, dash: false, melee: false, grenade: false, streak: null, viewTime: 0,
+    };
+    for (let i = 0; i < 30; i++) {
+      movePlayer(body, input, { now: i * 1000 / 30, dt: 1 / 30, jumpPressed: false, crouchPressed: false, moveFactor: spec.moveFactor, adsFactor: spec.adsMoveFactor, canSprint: false });
+      Object.assign(body, at);
+    }
+    factor = Math.hypot(body.vx, body.vz) / MOVE.walk;
+    handlingFactors.set(key, factor);
+  }
+  return factor;
+}
+
 /** Where one throw would explode after each of `flightsMs` (ascending), from a single run of the same
  * deterministic `GrenadeTrajectory` the server and clients use. */
-function fragPath(eye: Vec3, yaw: number, pitch: number, flightsMs: readonly number[]): Vec3[] {
-  const { from, velocity } = grenadeLaunch(eye, yaw, pitch, { vx: 0, vz: 0 }, EXPLOSIVES.frag.throwSpeed, EXPLOSIVES.frag.throwLift);
+function fragPath(eye: Vec3, yaw: number, pitch: number, flightsMs: readonly number[], carrier: { vx: number; vz: number } = { vx: 0, vz: 0 }): Vec3[] {
+  const { from, velocity } = grenadeLaunch(eye, yaw, pitch, carrier, EXPLOSIVES.frag.throwSpeed, EXPLOSIVES.frag.throwLift);
   const trajectory = new GrenadeTrajectory(from, velocity), points: Vec3[] = [];
   let at = 0, resting = false, last = trajectory.position;
   for (const flight of flightsMs) {
@@ -137,50 +179,107 @@ function fragPath(eye: Vec3, yaw: number, pitch: number, flightsMs: readonly num
   }
   return points;
 }
-/** Where a frag thrown now would explode `flightMs` after leaving the hand. */
-export function fragLanding(eye: Vec3, yaw: number, pitch: number, flightMs: number): Vec3 {
-  return fragPath(eye, yaw, pitch, [flightMs])[0]!;
+/** Where a frag thrown now would explode `flightMs` after leaving the hand (thrown standing still unless a
+ * carrier velocity is given, as the engine adds half of it). */
+export function fragLanding(eye: Vec3, yaw: number, pitch: number, flightMs: number, carrier: { vx: number; vz: number } = { vx: 0, vz: 0 }): Vec3 {
+  return fragPath(eye, yaw, pitch, [flightMs], carrier)[0]!;
 }
 /** Cook lengths a rival may choose; a longer cook bursts the frag before it rolls away. */
 export const FRAG_COOKS_MS = [FRAG_COOK_MS, 1200, 1700] as const;
-/** A view and cook that lob a frag onto `target`, or null when no arc explodes within 3 m of it.
- * Searches pitch, small sideways angles (to bank around cover) and cook length; at most ~80 short
- * simulations, stopping early once an arc lands within a metre. */
-export function planFrag(eye: Vec3, target: Vec3): { yaw: number; pitch: number; cookMs: number; landing: Vec3 } | null {
-  const base = bearing(eye, target), flights = [...FRAG_COOKS_MS].reverse().map(cook => EXPLOSIVES.frag.fuseMs - cook);
-  interface Arc { yaw: number; pitch: number; cookMs: number; landing: Vec3; error: number; score: number }
-  const evaluate = (yaw: number, pitch: number): Arc => {
-    const points = fragPath(eye, yaw, pitch, flights);
-    let pick: Arc | undefined;
-    for (let i = 0; i < points.length; i++) {
-      const landing = points[i]!, cookMs = EXPLOSIVES.frag.fuseMs - flights[i]!;
-      const error = horizontalDistance(landing, target) + 2 * Math.abs(landing.y - GRENADE.radius - target.y);
-      // Prefer straight throws and short cooks when they land about as well.
-      const score = error + 2 * Math.abs(angleDelta(yaw, base)) + 0.3 * cookMs / 1000;
-      if (!pick || score < pick.score) pick = { yaw, pitch, cookMs, landing, error, score };
+export interface FragArc { yaw: number; pitch: number; cookMs: number; landing: Vec3 }
+interface ScoredArc extends FragArc { error: number; score: number }
+const COARSE_PITCHES = [-0.3, -0.1, 0.1, 0.3, 0.5, 0.7, 0.9, 1.1] as const;
+/** Sideways angles tried in turn when straight throws miss, to bank a frag around cover. */
+const ARC_OFFSETS = [[0], [-0.08, 0.08], [-0.16, 0.16]] as const;
+const REFINE_PITCH = [0.1, 0.05, 0.025] as const;
+/** Searches for a throw that bursts on `target`: coarse pitch steps first, then finer steps around the best arc,
+ * and small sideways angles only when straight throws miss. Each candidate is one run of the shared grenade
+ * simulation covering all cook lengths. `step` runs a few at a time so a search can spread over frames; at most
+ * 64 runs in all, and it stops as soon as an arc lands within half a metre. Arcs that would burst within
+ * FRAG_SAFE_LANDING of the thrower are never chosen. */
+export class FragPlanner {
+  simulations = 0;
+  private best: ScoredArc | null = null;
+  private queue: Array<readonly [number, number]> = [];
+  private round = 0; private pass = 0; private finished = false;
+  private readonly base: number; private readonly flights: number[];
+  constructor(private readonly eye: Vec3, private readonly target: Vec3, private readonly thrower: Vec3 = eye) {
+    this.base = bearing(eye, target);
+    this.flights = [...FRAG_COOKS_MS].reverse().map(cook => EXPLOSIVES.frag.fuseMs - cook);
+    this.startRound();
+  }
+  get done(): boolean { return this.finished; }
+  /** The chosen throw once done; null when nothing bursts within 3 m of the target and clear of the thrower. */
+  get result(): FragArc | null {
+    const best = this.best;
+    return this.finished && best && best.error <= 3 ? { yaw: wrap(best.yaw), pitch: best.pitch, cookMs: best.cookMs, landing: best.landing } : null;
+  }
+  /** Runs up to `budget` more simulations; true once the search is over. */
+  step(budget = Infinity): boolean {
+    while (!this.finished && budget > 0) {
+      const next = this.queue.shift();
+      if (!next) { this.advance(); continue; }
+      budget--; this.evaluate(next[0], next[1]);
+      if (this.best && this.best.error < 0.5) this.finished = true;
     }
-    return pick!;
-  };
-  let best: Arc | undefined;
-  for (const offset of [0, -0.08, 0.08, -0.16, 0.16]) {
-    for (let pitch = -0.3; pitch <= 1.1001; pitch += 0.1) { const arc = evaluate(base + offset, pitch); if (!best || arc.score < best.score) best = arc; }
-    if (best && best.error < 1) break;
+    return this.finished;
   }
-  if (!best) return null;
-  const coarse = best;
-  for (const [yaw, pitch] of [[0, -0.05], [0, 0.05], [0, -0.025], [0, 0.025], [-0.04, 0], [0.04, 0]] as const) {
-    const arc = evaluate(coarse.yaw + yaw, coarse.pitch + pitch); if (arc.score < best.score) best = arc;
+  private startRound() {
+    this.pass = 0;
+    this.queue = ARC_OFFSETS[this.round]!.flatMap(offset => COARSE_PITCHES.map(pitch => [this.base + offset, pitch] as const));
   }
-  return best.error <= 3 ? { yaw: wrap(best.yaw), pitch: best.pitch, cookMs: best.cookMs, landing: best.landing } : null;
+  private advance() {
+    const best = this.best;
+    if (best && this.pass < REFINE_PITCH.length) {
+      const d = REFINE_PITCH[this.pass]!, pitch = (p: number) => clamp(p, -0.45, 1.2);
+      this.queue = [[best.yaw, pitch(best.pitch - d)], [best.yaw, pitch(best.pitch + d)]];
+      if (this.pass === REFINE_PITCH.length - 1) this.queue.push([best.yaw - 0.04, best.pitch], [best.yaw + 0.04, best.pitch]);
+      this.pass++;
+    } else if ((!best || best.error >= 1) && this.round + 1 < ARC_OFFSETS.length) {
+      this.round++; this.startRound();
+    } else this.finished = true;
+  }
+  private evaluate(yaw: number, pitch: number) {
+    this.simulations++;
+    const points = fragPath(this.eye, yaw, pitch, this.flights);
+    for (let i = 0; i < points.length; i++) {
+      const landing = points[i]!, cookMs = EXPLOSIVES.frag.fuseMs - this.flights[i]!;
+      if (horizontalDistance(landing, this.thrower) < FRAG_SAFE_LANDING) continue;
+      const error = horizontalDistance(landing, this.target) + 2 * Math.abs(landing.y - GRENADE.radius - this.target.y);
+      // Prefer straight throws and short cooks when they land about as well.
+      const score = error + 2 * Math.abs(angleDelta(yaw, this.base)) + 0.3 * cookMs / 1000;
+      if (!this.best || score < this.best.score) this.best = { yaw, pitch, cookMs, landing, error, score };
+    }
+  }
+}
+/** A view and cook that lob a frag onto `target` from a thrower standing at `eye`, or null when no arc explodes
+ * within 3 m of it (searched all at once; rivals spread the same search over frames). */
+export function planFrag(eye: Vec3, target: Vec3): FragArc | null {
+  const planner = new FragPlanner(eye, target);
+  planner.step();
+  return planner.result;
 }
 
 interface Sighting extends Vec3 { id: string; vx: number; vz: number; posture: Posture; at: number }
 const sighting = (p: PlayerState, at: number): Sighting => ({ id: p.id, x: p.x, y: p.y, z: p.z, vx: p.vx, vz: p.vz, posture: p.posture, at });
-interface ThrowPlan { yaw: number; pitch: number; cookMs: number; pressedAt: number; releaseBy: number }
+interface ThrowPlan {
+  /** Where the opponent was last seen. */
+  target: Vec3; since: number;
+  /** Runs once the rival has stopped, a few simulations per frame. */
+  planner: FragPlanner | null;
+  arc: FragArc | null;
+  /** When the grenade button went down (0 before), and when to let go at the latest if not lined up. */
+  pressedAt: number; releaseBy: number;
+  /** The planned throw turned out unsafe at the last check: getting rid of the frag far away instead. */
+  bail: boolean;
+}
+/** Where our own thrown frag will burst, and when. */
+interface Blast extends Vec3 { until: number }
+const inBlast = (blast: Vec3, p: Vec3) => horizontalDistance(p, blast) < FRAG_CLEARANCE && Math.abs(p.y - blast.y) < 2.5;
 /** A wished world-space direction (unit), the speed wanted along it, and how far the route runs straight ahead. */
 interface Motion { x: number; z: number; speed: number; straight: number; remaining: number }
 const STILL: Motion = { x: 0, z: 0, speed: 0, straight: 0, remaining: 0 };
-type Task = 'throw' | 'fight' | 'retreat' | 'hold' | 'chase' | 'roam';
+type Task = 'throw' | 'evade' | 'fight' | 'retreat' | 'hold' | 'chase' | 'roam';
 interface Brain {
   random: () => number; lastNow: number; lastPos: Vec3;
   // Perception: an opponent's coordinates are sampled only while seen.
@@ -196,7 +295,7 @@ interface Brain {
   progressFrom: Vec3; progressAt: number; windowTicks: number; movingTicks: number;
   // Actions.
   lastMag: [number, number]; lastSlot: Slot; lastShotAt: number; firePulse: boolean; reloadPulse: boolean; meleePulse: boolean;
-  slideHold: number; nextSlide: number; throwPlan: ThrowPlan | null; nextFragRoll: number;
+  slideHold: number; nextSlide: number; throwPlan: ThrowPlan | null; nextFragRoll: number; blast: Blast | null; refuge: Vec3 | null;
   streakPulse: boolean; nextStreak: number; reconSent: { at: number; count: number } | null; reconUntil: number; radar: Sighting | null; radarAt: number;
 }
 function createBrain(random: () => number, player: PlayerState, now: number): Brain {
@@ -211,7 +310,7 @@ function createBrain(random: () => number, player: PlayerState, now: number): Br
     retreat: null, nextCover: 0, recovering: false, recoverSince: 0, dashing: false,
     progressFrom: point(player), progressAt: now + 2000, windowTicks: 0, movingTicks: 0,
     lastMag: [player.mag[0], player.mag[1]], lastSlot: player.slot, lastShotAt: -Infinity, firePulse: false, reloadPulse: false, meleePulse: false,
-    slideHold: 0, nextSlide: 0, throwPlan: null, nextFragRoll: 0,
+    slideHold: 0, nextSlide: 0, throwPlan: null, nextFragRoll: 0, blast: null, refuge: null,
     streakPulse: false, nextStreak: 0, reconSent: null, reconUntil: 0, radar: null, radarAt: 0,
   };
 }
@@ -243,7 +342,9 @@ export class PracticeBots {
     }
     this.observe(brain, player, loadout, now, settings);
     this.sense(brain, player, others, now, mode, settings);
-    if (brain.damaged) {
+    if (brain.blast && now >= brain.blast.until) { brain.blast = null; brain.refuge = null; }
+    const hurt = brain.damaged;
+    if (hurt) {
       brain.damaged = false;
       // Like a damage arc on screen: turn toward whoever could have hit us.
       const yaw = brain.visible ? null : this.attackerBearing(player, others, mode);
@@ -257,6 +358,8 @@ export class PracticeBots {
 
     const cooking = player.cookingSince > 0, reloading = player.reloadingUntil > now;
     if (brain.lostSight) { brain.lostSight = false; this.considerFrag(brain, player, settings, now, reloading || cooking); }
+    // A frag not yet in hand is called off when an opponent shows up or someone hits us.
+    if (brain.throwPlan && !brain.throwPlan.pressedAt && (visible || hurt)) brain.throwPlan = null;
     // Never swap weapons with a grenade in hand.
     const slot = brain.throwPlan || cooking ? player.slot : this.chooseSlot(player, visible, distance, now);
     frame.slot = slot;
@@ -265,7 +368,10 @@ export class PracticeBots {
 
     let task: Task;
     const atRetreat = () => !!brain.retreat && horizontalDistance(player, brain.retreat) < 1 && sameHeight(player, brain.retreat);
+    const blast = brain.blast;
     if (brain.throwPlan) task = 'throw';
+    // Our own frag is about to burst nearby (it bounced back, or we were pushed toward it): get clear first.
+    else if (blast && inBlast(blast, player)) task = 'evade';
     else if (visible && brain.recovering && distance > 7) {
       if (now >= brain.nextCover && (!brain.retreat || !hiddenFrom(eyePosition({ ...seen!, posture: 'stand' }), brain.retreat))) {
         brain.retreat = this.cover(player, seen!, nav); brain.nextCover = now + 600; brain.route = []; brain.routeGoal = null;
@@ -280,11 +386,27 @@ export class PracticeBots {
     const eye = eyePosition(player);
     let motion = STILL, look: { yaw: number; pitch: number } | null = null, wantSprint = false, wantDash = false, wantFire = false;
     if (task === 'throw') {
-      look = brain.throwPlan!;
+      // Face the throw while stopping and planning; then turn onto the planned arc.
+      const plan = brain.throwPlan!;
+      look = plan.arc ? { yaw: plan.arc.yaw, pitch: plan.arc.pitch } : { yaw: bearing(eye, plan.target), pitch: 0.35 };
+    } else if (task === 'evade') {
+      if (!brain.refuge || inBlast(blast!, brain.refuge)) {
+        // A new way out is planned at once; the old route may lead into the blast.
+        brain.refuge = this.refuge(player, blast!, nav); brain.route = []; brain.routeGoal = null; brain.nextRoute = now;
+      }
+      motion = brain.refuge ? this.follow(brain, player, brain.refuge, now, nav, false) : this.awayFrom(player, blast!);
+      wantSprint = true;
     } else if (task === 'fight') {
       const target = seen!, preferred = preferredDistance(spec, settings);
-      if (distance > preferred + 2 || nav.requiresAscent(player, target) || !nav.isWalkable(player)) motion = this.follow(brain, player, target, now, nav, false);
-      else { brain.route = []; brain.routeGoal = null; motion = this.strafe(brain, player, target, distance, preferred, now, nav); }
+      const approach = distance > preferred + 2 || nav.requiresAscent(player, target) || !nav.isWalkable(player);
+      if (approach) motion = this.follow(brain, player, target, now, nav, false);
+      // Close enough, or no way to close in from here: keep moving around the opponent.
+      if (!approach || (motion === STILL && nav.isWalkable(player))) {
+        brain.route = []; brain.routeGoal = null;
+        motion = this.strafe(brain, player, target, distance, preferred, now, nav);
+        // Boxed in on every side: push toward the opponent rather than stand still.
+        if (motion === STILL && !approach) motion = this.follow(brain, player, target, now, nav, false);
+      }
       if (now >= brain.nextError) {
         brain.yawError = (brain.random() * 2 - 1) * settings.error; brain.pitchError = (brain.random() * 2 - 1) * settings.error * 0.6;
         brain.headAim = brain.random() < settings.headChance; brain.nextError = now + 230 + brain.random() * 170;
@@ -315,7 +437,10 @@ export class PracticeBots {
       if (task === 'roam') brain.patrol = null;
       else if (task === 'retreat') brain.retreat = null;
       else if (task === 'chase') brain.seen = null;
+      else if (task === 'evade') brain.refuge = null;
     }
+    // Wait for our own frag to go off rather than walk into it.
+    if (blast && task !== 'evade' && task !== 'throw') motion = this.keepClear(player, blast, motion);
     // Hit by someone unseen: look that way (but keep running if already retreating).
     if ((task === 'hold' || task === 'chase' || task === 'roam') && now < brain.lookUntil) look = { yaw: brain.lookYaw, pitch: 0 };
     if (!look) look = motion.speed > 0.5 ? { yaw: Math.atan2(motion.x, -motion.z), pitch: 0 } : { yaw: brain.aimYaw, pitch: 0 };
@@ -328,8 +453,7 @@ export class PracticeBots {
     if (frame.aim && (!brain.aiming || swapping)) brain.aimSince = now;
     brain.aiming = frame.aim;
 
-    if (task === 'throw') this.throwFrag(brain, player, frame, now, cooking);
-    else if (task === 'fight') {
+    if (task === 'fight') {
       const target = seen!, closeEnough = Math.abs(target.y - player.y) < 1 && distance <= RULES.meleeRange;
       if (closeEnough && now >= brain.reactAt && now >= player.meleeUntil && !cooking && Math.abs(angleDelta(bearing(player, target), brain.aimYaw)) < 0.45) {
         frame.melee = !brain.meleePulse;
@@ -352,6 +476,8 @@ export class PracticeBots {
     frame.yaw = wrap(brain.aimYaw + brain.kickYaw);
     frame.pitch = clamp(brain.aimPitch + brain.kickPitch, -MAX_PITCH, MAX_PITCH);
     brain.sentYaw = frame.yaw; brain.sentPitch = frame.pitch;
+    // Grenade decisions come last: the release check uses this frame's final view.
+    if (task === 'throw') this.throwFrag(brain, player, frame, now, cooking);
 
     frame.crouch = now < brain.slideHold;
     if (wantSprint && reloading) wantSprint = false;
@@ -361,7 +487,7 @@ export class PracticeBots {
     // Reload when empty, when out of sight with a low magazine (not mid-retreat, which would stop the sprint),
     // and top up while waiting in cover.
     const wantReload = mag < spec.magazine && reserve > 0 && !reloading && !swapping && !cooking && task !== 'throw'
-      && (mag === 0 || (!visible && task !== 'retreat' && mag < Math.ceil(spec.magazine * 0.6)) || task === 'hold');
+      && (mag === 0 || (!visible && task !== 'retreat' && task !== 'evade' && mag < Math.ceil(spec.magazine * 0.6)) || task === 'hold');
     frame.reload = wantReload && !brain.reloadPulse;
     brain.reloadPulse = frame.reload;
     this.useReward(brain, player, others, frame, mode, now, task);
@@ -450,31 +576,64 @@ export class PracticeBots {
     return 1;
   }
 
-  /** Each time a fight breaks line of sight is one opportunity: a single roll, then a cooldown. */
+  /** Each time a fight breaks line of sight is one opportunity: a single roll, then a cooldown. A successful roll
+   * starts a throw: the rival stops, plans the arc from where it stands, then cooks and throws. */
   private considerFrag(brain: Brain, player: PlayerState, settings: BotSettings, now: number, busy: boolean) {
     const seen = brain.seen;
-    if (!seen || settings.frag <= 0 || player.frags <= 0 || brain.throwPlan || busy || brain.recovering || now < brain.nextFragRoll || player.posture !== 'stand') return;
+    if (!seen || settings.frag <= 0 || player.frags <= 0 || brain.throwPlan || brain.blast || busy || brain.recovering || now < brain.nextFragRoll || player.posture !== 'stand') return;
     const distance = horizontalDistance(player, seen);
     if (distance < FRAG_RANGE.min || distance > FRAG_RANGE.max) return;
     brain.nextFragRoll = now + FRAG_COOLDOWN_MS;
     if (brain.random() >= settings.frag) return;
-    const plan = planFrag(eyePosition(player), seen);
-    if (plan && horizontalDistance(plan.landing, player) > EXPLOSIVES.frag.radius + 1) {
-      brain.throwPlan = { yaw: plan.yaw, pitch: plan.pitch, cookMs: plan.cookMs, pressedAt: now, releaseBy: now + plan.cookMs + FRAG_RELEASE_GRACE_MS };
-    }
+    brain.throwPlan = { target: point(seen), since: now, planner: null, arc: null, pressedAt: 0, releaseBy: 0, bail: false };
   }
 
-  /** Hold the grenade while turning onto the planned arc; let go once cooked and on target. */
+  /** Stop, plan from the eye the frag will really leave from (a few simulations per frame), hold the grenade while
+   * turning onto the arc, and let go once cooked and lined up. Just before letting go, one more simulation from
+   * the real eye, view and remaining fuse checks it bursts clear of the rival; if not, the rival turns to get rid
+   * of it far away instead. Afterwards the rival remembers where and when it will burst. */
   private throwFrag(brain: Brain, player: PlayerState, frame: InputFrame, now: number, cooking: boolean) {
-    const plan = brain.throwPlan!;
-    const aligned = Math.abs(angleDelta(plan.yaw, brain.aimYaw)) < 0.03 && Math.abs(plan.pitch - brain.aimPitch) < 0.03;
+    const plan = brain.throwPlan!, fuse = EXPLOSIVES.frag.fuseMs;
+    if (!plan.pressedAt) {
+      if (!plan.planner) {
+        if (Math.hypot(player.vx, player.vz) > 0.05 && now - plan.since < FRAG_SETTLE_MS) return;
+        plan.planner = new FragPlanner(eyePosition(player), plan.target, point(player));
+      }
+      if (!plan.planner.step(FRAG_SIMULATIONS_PER_TICK)) return;
+      const arc = plan.planner.result;
+      if (!arc || cooking || player.frags <= 0 || player.posture !== 'stand') { brain.throwPlan = null; return; }
+      plan.arc = arc; plan.pressedAt = now; plan.releaseBy = now + arc.cookMs + FRAG_RELEASE_GRACE_MS;
+      frame.grenade = true;
+      return;
+    }
     if (!cooking) {
       // The server did not start cooking (no frag, or busy): give up instead of holding the button.
       if (now - plan.pressedAt > 200) brain.throwPlan = null; else frame.grenade = true;
       return;
     }
-    if ((now - player.cookingSince >= plan.cookMs && aligned) || now >= plan.releaseBy) brain.throwPlan = null;
-    else frame.grenade = true;
+    const arc = plan.arc!, cooked = now - player.cookingSince, lastChance = player.cookingSince + fuse - FRAG_LAST_RELEASE_MS;
+    const aligned = Math.abs(angleDelta(arc.yaw, frame.yaw)) < 0.03 && Math.abs(arc.pitch - frame.pitch) < 0.03;
+    if (now < lastChance && now < plan.releaseBy && !(aligned && (plan.bail || cooked >= arc.cookMs))) { frame.grenade = true; return; }
+    const eye = eyePosition(player), flight = player.cookingSince + fuse - now;
+    const landing = fragLanding(eye, frame.yaw, frame.pitch, flight, player);
+    if (horizontalDistance(landing, player) < FRAG_SAFE_LANDING && now < lastChance) {
+      if (!plan.bail) { plan.bail = true; plan.arc = this.dumpArc(eye, frame.yaw, flight, player); plan.releaseBy = lastChance; }
+      frame.grenade = true;
+      return;
+    }
+    // Let go (the button is released this frame) and stay clear of where it will burst.
+    brain.throwPlan = null;
+    brain.blast = { x: landing.x, y: landing.y, z: landing.z, until: player.cookingSince + fuse + 150 };
+  }
+  /** The farthest of four lobs (ahead, both sides, behind) for a cooked frag whose planned throw turned unsafe. */
+  private dumpArc(eye: Vec3, yaw: number, flight: number, player: PlayerState): FragArc {
+    let best: (FragArc & { away: number }) | null = null;
+    for (const turn of [0, Math.PI / 2, -Math.PI / 2, Math.PI]) {
+      const arc = { yaw: wrap(yaw + turn), pitch: 0.6, cookMs: 0 }, landing = fragLanding(eye, arc.yaw, arc.pitch, flight, player);
+      const away = horizontalDistance(landing, player);
+      if (!best || away > best.away) best = { ...arc, landing, away };
+    }
+    return best!;
   }
 
   /** Challenging rivals sometimes slide when a fight starts at a sprint, if the way ahead is clear. */
@@ -562,6 +721,30 @@ export class PracticeBots {
     }
     return best ? point(best.spot) : null;
   }
+  /** A nearby spot well outside the blast of our own frag, favouring ones farther from it. */
+  private refuge(player: PlayerState, blast: Vec3, nav: BotNavigation): Vec3 | null {
+    let best: { spot: Vec3; score: number } | null = null;
+    for (const spot of nav.patrolPoints) {
+      const away = horizontalDistance(spot, blast);
+      if (away < FRAG_CLEARANCE + 1.5 && Math.abs(spot.y - blast.y) < 2.5) continue;
+      const distance = horizontalDistance(player, spot);
+      if (distance > 15) continue;
+      const score = distance - 0.5 * Math.min(away, 12) + (sameHeight(spot, player) ? 0 : 4);
+      if (!best || score < best.score) best = { spot, score };
+    }
+    return best ? point(best.spot) : null;
+  }
+  /** Straight away from a blast point at full pace (no refuge in reach). */
+  private awayFrom(player: PlayerState, blast: Vec3): Motion {
+    const dx = player.x - blast.x, dz = player.z - blast.z, length = Math.hypot(dx, dz);
+    return length > 1e-3 ? { x: dx / length, z: dz / length, speed: Infinity, straight: 0, remaining: 0 } : { x: 0, z: 1, speed: Infinity, straight: 0, remaining: 0 };
+  }
+  /** Stops a move that would carry the rival into the blast of its own live frag. */
+  private keepClear(player: PlayerState, blast: Blast, motion: Motion): Motion {
+    if (motion.speed <= 0.01) return motion;
+    const ahead = { x: player.x + motion.x * 1.5, y: player.y, z: player.z + motion.z * 1.5 };
+    return inBlast(blast, ahead) && horizontalDistance(ahead, blast) < horizontalDistance(player, blast) ? STILL : motion;
+  }
   private attackerBearing(player: PlayerState, others: readonly PlayerState[], mode: GameMode): number | null {
     const chest = zoneCentre(player, 'torso');
     let best: { other: PlayerState; distance: number } | null = null;
@@ -578,18 +761,25 @@ export class PracticeBots {
     if (now >= brain.nextRoute && (!brain.routeGoal || horizontalDistance(goal, brain.routeGoal) > 2 || !sameHeight(goal, brain.routeGoal) || !brain.route.length)) {
       brain.route = nav.findPath(player, goal); brain.routeGoal = point(goal); brain.nextRoute = now + 600; brain.routeFailed = !brain.route.length;
     }
-    if (nav.isWalkable(player)) {
-      while (brain.route.length) {
-        const next = brain.route[0]!, after = brain.route[1];
-        const reached = horizontalDistance(player, next) < 0.3 && (after ? Math.abs(player.y - next.y) < 0.4 : sameHeight(player, next));
-        // Stair treads are passed rather than hit exactly; flat floors may skip ahead along a clear line.
-        const beyond = !!after && Math.abs(player.y - next.y) < 0.7 && passed(player, next, after);
-        if (reached || beyond || (!!after && nav.clearSegment(player, after))) brain.route.shift();
-        else break;
+    const walkable = nav.isWalkable(player);
+    while (brain.route.length) {
+      const next = brain.route[0]!, after = brain.route[1], close = horizontalDistance(player, next);
+      let done: boolean;
+      if (!after) done = close < 0.3 && sameHeight(player, next) && (walkable || close < 0.06);
+      else if (!sameHeight(next, after) || !sameHeight(player, next)) {
+        // Stair treads and the truck ramp are passed rather than hit exactly.
+        done = walkable && ((close < 0.3 && Math.abs(player.y - next.y) < 0.4) || (Math.abs(player.y - next.y) < 0.7 && passed(player, next, after)));
+      } else {
+        // On one floor a corner is reached, or skipped once the next leg is in clear view. Cutting it short
+        // would scrape the wall and can leave the body pressed against it.
+        done = close < 0.06 || (walkable && nav.clearSegment(player, after));
       }
+      if (!done) break;
+      brain.route.shift();
     }
     const next = brain.route[0];
-    if (!next) return STILL;
+    // Pressed into a wall's padding with no route (yet): step straight back out toward open floor.
+    if (!next) return walkable ? STILL : this.escape(player, nav);
     const dx = next.x - player.x, dz = next.z - player.z, d = Math.hypot(dx, dz);
     if (d < 1e-5) return STILL;
     let speed = Infinity, remaining = d;
@@ -604,20 +794,32 @@ export class PracticeBots {
     } else if (arrive) speed = Math.min(speed, Math.sqrt(2 * BRAKE * Math.max(0, d - 0.05)));
     return { x: dx / d, z: dz / d, speed, straight: d, remaining };
   }
-  /** Side-steps around a close opponent, backing off when too close (or stepping in to knife at arm's
-   * length), never off the current floor. */
+  /** Walks straight out of a wall's padding (or toward the nearest waypoint when off the floor graph). */
+  private escape(player: PlayerState, nav: BotNavigation): Motion {
+    const way = nav.escapeDirection(player);
+    return way ? { x: way.x, z: way.z, speed: ESCAPE_SPEED, straight: 0, remaining: 0 } : STILL;
+  }
+  /** Side-steps around a close opponent, backing off when too close (or stepping in to knife at arm's length),
+   * never off the current floor. With both side steps blocked (a doorway, a window) it backs off at an angle or
+   * straight, and only then steps in; STILL only when every way is blocked. */
   private strafe(brain: Brain, player: PlayerState, target: Vec3, distance: number, preferred: number, now: number, nav: BotNavigation): Motion {
     if (now >= brain.nextStrafe) { brain.strafe *= -1; brain.nextStrafe = now + 1300 + brain.random() * 1500; }
     const dx = (target.x - player.x) / Math.max(0.01, distance), dz = (target.z - player.z) / Math.max(0.01, distance);
-    const advance = distance < KNIFE_CLOSE_IN ? 0.8 : distance < preferred * 0.45 ? -0.65 : 0;
-    const wish = () => ({ x: dx * advance - dz * brain.strafe * 0.8, z: dz * advance + dx * brain.strafe * 0.8 });
-    let w = wish();
-    if (!nav.clearSegment(player, { x: player.x + w.x, y: player.y, z: player.z + w.z })) {
-      brain.strafe *= -1; w = wish();
-      if (!nav.clearSegment(player, { x: player.x + w.x, y: player.y, z: player.z + w.z })) return STILL;
+    const advance = distance < KNIFE_CLOSE_IN ? 0.8 : distance < preferred * 0.45 ? -0.65 : 0, side = brain.strafe * 0.8;
+    const back = Math.min(advance, -0.5), ahead = Math.max(advance, 0.5);
+    // [toward the opponent, sideways, flips the strafe side]
+    const options: ReadonlyArray<readonly [number, number, boolean]> = [
+      [advance, side, false], [advance, -side, true], [back, side * 0.7, false], [back, -side * 0.7, true], [-0.8, 0, false],
+      [ahead, side * 0.7, false], [ahead, -side * 0.7, true], [0.8, 0, false],
+    ];
+    for (const [forward, sideways, flips] of options) {
+      const w = { x: dx * forward - dz * sideways, z: dz * forward + dx * sideways };
+      if (!nav.clearSegment(player, { x: player.x + w.x, y: player.y, z: player.z + w.z })) continue;
+      if (flips) brain.strafe *= -1;
+      const length = Math.hypot(w.x, w.z);
+      return { x: w.x / length, z: w.z / length, speed: 3 * length, straight: 0, remaining: 0 };
     }
-    const length = Math.hypot(w.x, w.z);
-    return length > 1e-6 ? { x: w.x / length, z: w.z / length, speed: 3 * length, straight: 0, remaining: 0 } : STILL;
+    return STILL;
   }
   /** Replans when the bot has wanted to move for two seconds without getting anywhere. */
   private unstick(brain: Brain, player: PlayerState, motion: Motion, now: number, task: Task) {
@@ -625,29 +827,30 @@ export class PracticeBots {
     if (now < brain.progressAt) return;
     const moved = horizontalDistance(player, brain.progressFrom) + Math.abs(player.y - brain.progressFrom.y);
     if (brain.windowTicks > 10 && brain.movingTicks >= brain.windowTicks * 0.8 && moved < 0.5) {
-      brain.route = []; brain.routeGoal = null; brain.nextRoute = now; brain.patrol = null; brain.retreat = null;
+      brain.route = []; brain.routeGoal = null; brain.nextRoute = now; brain.patrol = null; brain.retreat = null; brain.refuge = null;
       if (task === 'chase') brain.seen = null;
     }
     brain.progressFrom = point(player); brain.progressAt = now + 2000; brain.windowTicks = 0; brain.movingTicks = 0;
   }
-  /** Converts a world-space wish into this frame's stick, choosing walk, sprint or dash so the shared physics moves at the wanted speed. */
+  /** Converts a world-space wish into this frame's stick, choosing walk, sprint or dash so the shared physics moves
+   * at the wanted speed. Stick values never leave [-1, 1]. */
   private drive(frame: InputFrame, player: PlayerState, spec: WeaponSpec, motion: Motion, wantSprint: boolean, wantDash: boolean) {
     if (motion.speed <= 0.01) return;
     const cos = Math.cos(frame.yaw), sin = Math.sin(frame.yaw);
     const lx = motion.x * cos + motion.z * sin, lz = motion.x * sin - motion.z * cos;
     const crouched = frame.crouch || player.posture === 'crouch';
     let walk = crouched ? MOVE.crouch : lz >= 0 ? MOVE.strafe + (MOVE.walk - MOVE.strafe) * lz : MOVE.strafe + (MOVE.back - MOVE.strafe) * -lz;
-    walk *= spec.moveFactor * (frame.aim ? spec.adsMoveFactor : 1);
+    walk *= handlingFactor(spec, frame.aim);
     if (wantSprint && !frame.aim && !frame.fire && !crouched && player.posture === 'stand' && lz > 0.35 && Math.abs(lx) <= lz * 1.2) {
       const sprint = MOVE.sprint * spec.moveFactor;
       if (motion.speed >= sprint * 0.98) {
         const dash = (MOVE.sprint + (MOVE.dash - MOVE.sprint) * Math.min(1, player.stamina / MOVE.dashFadeStamina)) * spec.moveFactor;
         frame.sprint = true; frame.dash = wantDash && player.stamina > 0 && motion.speed >= dash * 0.98;
-        frame.moveX = lx; frame.moveZ = lz;
+        frame.moveX = clamp(lx, -1, 1); frame.moveZ = clamp(lz, -1, 1);
         return;
       }
     }
     const amount = clamp(motion.speed / Math.max(0.1, walk), 0, 1);
-    frame.moveX = lx * amount; frame.moveZ = lz * amount;
+    frame.moveX = clamp(lx * amount, -1, 1); frame.moveZ = clamp(lz * amount, -1, 1);
   }
 }

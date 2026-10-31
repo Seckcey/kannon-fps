@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { BOT_SETTINGS, BotNavigation, PracticeBots, PRACTICE_RIVALS } from '../../server/bots.js';
 import * as engineModule from '../../server/engine.js';
 import { ARENA_LIMITS, OBSTACLES, SPAWNS, STAIR_ROUTES } from '../../shared/map.js';
-import { moveDefaults, movePlayer, MOVE, PLAYER_RADIUS, POSTURE_HEIGHT, supportHeight, type MoveState } from '../../shared/physics.js';
+import { moveDefaults, movePlayer, MOVE, PLAYER_RADIUS, POSTURE_HEIGHT, spaceFree, supportHeight, type MoveState } from '../../shared/physics.js';
 import {
   RULES, type GameEvent, type GameMode, type InputFrame, type Phase, type PlayerState, type PracticeDifficulty, type Profile, type Team, type Vec3, type WorldSnapshot,
 } from '../../shared/protocol.js';
@@ -26,7 +26,17 @@ const frame = (patch: Partial<InputFrame> = {}): InputFrame => ({
 });
 const body = (p: Vec3): MoveState => ({ x: p.x, y: p.y, z: p.z, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, ...moveDefaults() });
 const rifle = WEAPONS.kr5;
-const SPEED = { aim: MOVE.walk * rifle.moveFactor * rifle.adsMoveFactor, walk: MOVE.walk * rifle.moveFactor, sprint: MOVE.sprint * rifle.moveFactor } as const;
+/** Top speed of a full forward stick with the rifle, measured from the shared movement itself (on open street,
+ * put back after every step), so these limits hold however the physics scales aimed speed. */
+function topSpeed(patch: Partial<InputFrame>): number {
+  const at = { x: 0, y: 0, z: -20 }, p = body(at);
+  for (let i = 0; i < 30; i++) {
+    movePlayer(p, frame({ moveZ: 1, ...patch }), { now: i * TICK, dt: 1 / 30, jumpPressed: false, crouchPressed: false, moveFactor: rifle.moveFactor, adsFactor: rifle.adsMoveFactor, canSprint: true });
+    Object.assign(p, at);
+  }
+  return Math.hypot(p.vx, p.vz);
+}
+const SPEED = { aim: topSpeed({ aim: true }), walk: topSpeed({}), sprint: topSpeed({ sprint: true }) } as const;
 /** Walks a navigation route with ordinary inputs, braking into each waypoint, and checks it never clips. */
 function traverse(nav: BotNavigation, from: Vec3, to: Vec3, mode: keyof typeof SPEED, dt = 1 / 30) {
   const route = nav.findPath(from, to), p = body(from);
@@ -123,6 +133,24 @@ test('routes pass around the checkpoint sandbags and barriers instead of through
     assert.ok(!nav.nodes.some(p => p.y < 0.5 && Math.abs(p.x - box.x) < box.w / 2 + PLAYER_RADIUS && Math.abs(p.z - box.z) < box.d / 2 + PLAYER_RADIUS), `${id} must hold no waypoint`);
     traverse(nav, from, to, 'sprint'); traverse(nav, to, from, 'walk');
   }
+});
+test('a rival resting against any wall, counter, stair side or vehicle has a route away that ordinary movement can walk', () => {
+  // The physics leaves a body that walked into something touching it, at the body radius or a few millimetres off.
+  // Every such spot on the ground, the truck bed and the upper floors needs a way out, including the narrow alley
+  // beside the outside stairs and the pocket behind the kitchen counter.
+  assert.ok(SPEED.aim < SPEED.walk && SPEED.walk < SPEED.sprint);
+  const nav = new BotNavigation();
+  let starts = 0;
+  for (const level of [0, 0.36, 3.2]) for (const b of OBSTACLES) {
+    if (b.y - b.h / 2 > level + 1.7 || b.y + b.h / 2 < level + 0.5) continue;
+    for (const gap of [1e-9, 0.003]) for (const [sx, sz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]] as const) {
+      const p = { x: sx ? b.x + sx * (b.w / 2 + PLAYER_RADIUS + gap) : b.x, y: level, z: sz ? b.z + sz * (b.d / 2 + PLAYER_RADIUS + gap) : b.z };
+      if (!spaceFree(p, POSTURE_HEIGHT.stand) || Math.abs(supportHeight(p) - level) > 1e-6 || nav.isWalkable(p)) continue;
+      starts++;
+      traverse(nav, p, level > 1 ? { x: Math.sign(p.x) * 13, y: 3.2, z: 0 } : { x: 0, y: 0, z: -20 }, 'walk');
+    }
+  }
+  assert.ok(starts > 1000, `only ${starts} resting spots were checked`);
 });
 test('navigation cannot climb walls, cross the stairwell void, leave a balcony or route onto a bus roof', () => {
   const nav = new BotNavigation();
@@ -262,6 +290,8 @@ function playRound(t: TestContext, sink: ReturnType<typeof recordFrames>, diffic
   assert.equal(engine.phase, 'finished'); assert.ok(elapsed < 15_000, 'One practice room must fit comfortably in a 30 Hz budget.');
   assert.ok(frames.count > 1000);
   assert.ok(travel.every(n => n > 30), 'Every rival roams the town.'); assert.ok(longest.every(n => n < 300), 'No living rival stalls for ten seconds.');
+  const ownFrags = round.events.filter(e => e.type === 'damage' && e.cause === 'frag' && e.playerId === e.attackerId);
+  assert.deepEqual(ownFrags, [], 'Rivals never hurt themselves with their own frags.');
   return round;
 }
 
@@ -272,8 +302,9 @@ test('rivals play full practice rounds through MatchEngine at every difficulty w
     bots.forEach(bot => assert.deepEqual(bot.loadout, botLoadout(bot.id, difficulty), `${bot.name} plays its fixed loadout`));
     assert.equal(bots.find(b => b.id === 'bot-rook')!.loadout.primary, difficulty === 'hard' ? 'longbow' : 'kr5');
     for (const event of events) if (event.type === 'shot' && event.playerId.startsWith('bot-')) {
+      // An Attack Drone's shots are reported under its owner, with the weapon 'drone'.
       const loadout = botLoadout(event.playerId, difficulty);
-      assert.ok(event.weapon === loadout.primary || event.weapon === loadout.secondary, `${event.playerId} fired ${event.weapon}`);
+      assert.ok(event.weapon === loadout.primary || event.weapon === loadout.secondary || event.weapon === 'drone', `${event.playerId} fired ${event.weapon}`);
     }
     assert.ok(events.some(e => e.type === 'damage' && e.playerId === human.id), 'Practice must challenge the player.');
     assert.ok(events.some(e => e.type === 'elimination' && e.playerId !== human.id && e.attackerId !== human.id), 'Rivals compete with each other too.');
