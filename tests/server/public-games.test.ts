@@ -24,7 +24,8 @@ test('the public directory exposes only joinable opted-in lobbies, without priva
   const rankedRoom = await peers[1]!.command({ type: 'create', ranked: true, crewId: crew.id }, 'room');
   const soloRoom = await peers[2]!.command({ type: 'create', ranked: false, practice: true }, 'room');
   const publicRoom = await peers[3]!.command({ type: 'create', ranked: false, visibility: 'public', fillBots: true, botDifficulty: 'easy' }, 'room');
-  assert.deepEqual(await getGames(), [{ id: publicRoom.room.id, hostName: 'Public', humanCount: 1, botCount: 3, maxPlayers: 8, fillBots: true, botDifficulty: 'easy' }]);
+  assert.deepEqual(await getGames(), [{ id: publicRoom.room.id, hostName: 'Public', humanCount: 1, botCount: 3, maxPlayers: 8, mode: 'ffa', fillBots: true, botDifficulty: 'easy' }]);
+  assert.equal(publicRoom.room.mode, 'ffa'); assert.ok(publicRoom.room.players.every(player => player.team === undefined), 'Free-for-all has no teams.');
   for (const room of [privateRoom, rankedRoom, soloRoom]) {
     await peers[4]!.command({ type: 'join-public', roomId: room.room.id }, 'error', message => message.code === 'PUBLIC_GAME_UNAVAILABLE');
   }
@@ -77,6 +78,31 @@ test('invalid public and bot settings cannot publish practice, enable ranked bot
   assert.deepEqual(await (await f.request('/api/games')).json(), { games: [] });
   const fresh = await f.connect();
   await fresh.command({ type: 'join-public', roomId: created.room.id }, 'error', message => /Sign in/.test(message.message));
+});
+
+test('team deathmatch rooms list their mode, seat even teams in the lobby, and ranked or unknown modes are refused', async t => {
+  const f = await fixture(t);
+  const [hostIdentity, guestIdentity, rankedIdentity] = await Promise.all(['Team host', 'Team guest', 'Ranked host'].map(name => f.profile(name)));
+  const host = await f.connect(hostIdentity.token), guest = await f.connect(guestIdentity.token), ranked = await f.connect(rankedIdentity.token);
+  const created = await host.command({ type: 'create', ranked: false, visibility: 'public', fillBots: true, mode: 'tdm' }, 'room');
+  assert.equal(created.room.mode, 'tdm');
+  const listed = (await (await f.request('/api/games')).json() as { games: AvailableGame[] }).games;
+  assert.deepEqual(listed.map(game => [game.id, game.mode]), [[created.room.id, 'tdm']]);
+  const joined = await guest.command({ type: 'join-public', roomId: created.room.id }, 'room', message => message.room.players.length === 4);
+  const team = (id: string) => joined.room.players.find(player => player.id === id)!.team;
+  assert.ok(team(hostIdentity.profile.id) && team(guestIdentity.profile.id)); assert.notEqual(team(hostIdentity.profile.id), team(guestIdentity.profile.id), 'The two humans are split.');
+  assert.deepEqual(['teal', 'gold'].map(side => joined.room.players.filter(player => player.team === side).length), [2, 2]);
+  const crew = (await (await f.request('/api/crews', { token: rankedIdentity.token, body: { name: 'No team ranked' } })).json()).crew;
+  const refused = await ranked.command({ type: 'create', ranked: true, crewId: crew.id, mode: 'tdm' }, 'error');
+  assert.match(refused.message, /free-for-all/i);
+  const unknown = await ranked.command({ type: 'create', ranked: false, mode: 'capture' as never }, 'error');
+  assert.match(unknown.message, /Free-for-all or Team Deathmatch/);
+  const rankedRoom = await ranked.command({ type: 'create', ranked: true, crewId: crew.id }, 'room');
+  assert.equal(rankedRoom.room.mode, 'ffa');
+  const preparing = await host.command({ type: 'start' }, 'room', message => message.room.phase === 'preparing');
+  const world = await host.wait('snapshot', message => message.snapshot.phase === 'preparing' && message.snapshot.roundId === preparing.room.preparation!.id);
+  assert.deepEqual([world.snapshot.mode, world.snapshot.scoreLimit, world.snapshot.teamScores], ['tdm', RULES.tdmScoreLimit, { teal: 0, gold: 0 }]);
+  for (const player of world.snapshot.players) assert.ok(player.team === 'teal' ? player.x < 0 : player.x > 0, 'Each team starts on its own side.');
 });
 
 test('public-directory polling has its own rate limit and cannot exhaust profile and crew requests', async t => {

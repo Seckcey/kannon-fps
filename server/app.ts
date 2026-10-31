@@ -6,11 +6,18 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { MatchEngine, sanitizeInput } from './engine.js';
 import { PRACTICE_RIVALS } from './bots.js';
 import { GameStore } from './store.js';
-import { hasMatchOpponents, RULES, WORLD_VERSION, type AvailableGame, type ClientMessage, type GameEvent, type PracticeDifficulty, type Profile, type RoomSnapshot, type RoomVisibility, type ServerMessage } from '../shared/protocol.js';
+import { hasMatchOpponents, RULES, WORLD_VERSION, type AvailableGame, type ClientMessage, type GameEvent, type GameMode, type Loadout, type PracticeDifficulty, type Profile, type RoomSnapshot, type RoomVisibility, type ServerMessage } from '../shared/protocol.js';
+import { sanitizeLoadout } from '../shared/weapons.js';
 
-export interface ServerOptions { port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[] }
-interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; alive: boolean; supportsReadiness: boolean }
-interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; practiceDifficulty?: PracticeDifficulty; visibility: RoomVisibility; fillBots: boolean; botDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null; preparation?: { id: string; expiresAt: number; ready: Set<string> } }
+export interface ServerOptions {
+  port?: number; host?: string; dbPath?: string; staticDir?: string; allowedOrigins?: string[];
+  /** Compress WebSocket messages (permessage-deflate; env WS_COMPRESSION=1). An 8-player snapshot drops from about
+   * 5.5 KB to under 0.5 KB. Off by default until it has been checked on real iPhones. */
+  compression?: boolean;
+}
+/** `loadout` is the player's last valid choice on this connection; it follows them into any room they join. */
+interface Connection { socket: WebSocket; profile: Profile | null; roomId: string | null; connectedAt: number; bucketAt: number; messages: number; controlAt: number; controls: number; loadoutAt: number; loadouts: number; loadout: Loadout | null; alive: boolean; supportsReadiness: boolean }
+interface Room { id: string; code: string; hostId: string; ranked: boolean; practice: boolean; mode: GameMode; practiceDifficulty?: PracticeDifficulty; visibility: RoomVisibility; fillBots: boolean; botDifficulty?: PracticeDifficulty; crewId?: string; expiresAt: number; engine: MatchEngine; sockets: Map<string, Connection>; disconnected: Map<string, number>; abandoned: boolean; phase: string; emptySince: number; resultEvent: Extract<GameEvent, { type: 'match-end' }> | null; preparation?: { id: string; expiresAt: number; ready: Set<string> } }
 class HttpError extends Error { constructor(public readonly status: number, message: string) { super(message); } }
 class ProtocolError extends Error { constructor(public readonly code: string, message: string) { super(message); } }
 const ROOM_LIFETIME = 2 * 60 * 60 * 1000;
@@ -125,7 +132,10 @@ export function createGameServer(options: ServerOptions = {}) {
     }
   });
   server.requestTimeout = 15_000; server.headersTimeout = 10_000;
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: false });
+  // Only messages over 1 KB (snapshots, rooms) are compressed, at the fastest level; each socket keeps its context,
+  // so a snapshot mostly refers back to the one before. maxPayload still bounds what a client's message inflates to.
+  const compression = options.compression ?? process.env.WS_COMPRESSION === '1';
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096, perMessageDeflate: compression ? { threshold: 1024, zlibDeflateOptions: { level: 1 } } : false });
   server.on('upgrade', (req, socket, head) => {
     try {
       if (req.url !== '/ws') throw new Error('Not found');
@@ -140,13 +150,13 @@ export function createGameServer(options: ServerOptions = {}) {
     connection.socket.send(JSON.stringify(message));
   }
   function roomSnapshot(room: Room): RoomSnapshot {
-    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, visibility: room.visibility, fillBots: room.fillBots, ...(room.fillBots ? { botDifficulty: room.botDifficulty } : {}), ...(room.practice ? { practiceDifficulty: room.practiceDifficulty } : {}), ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}), ...(room.preparation ? { ready: !!p.bot || (p.connected && room.preparation.ready.has(p.id)) } : {}) })), expiresAt: room.expiresAt, ...(room.preparation ? { preparation: { id: room.preparation.id, expiresAt: room.preparation.expiresAt } } : {}) };
+    return { id: room.id, code: room.code, hostId: room.hostId, ranked: room.ranked, practice: room.practice, mode: room.mode, visibility: room.visibility, fillBots: room.fillBots, ...(room.fillBots ? { botDifficulty: room.botDifficulty } : {}), ...(room.practice ? { practiceDifficulty: room.practiceDifficulty } : {}), ...(room.crewId ? { crewId: room.crewId } : {}), phase: room.engine.phase, players: [...room.engine.players.values()].map((p) => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, ...(p.bot ? { bot: true } : {}), ...(p.team ? { team: p.team } : {}), ...(room.preparation ? { ready: !!p.bot || (p.connected && room.preparation.ready.has(p.id)) } : {}) })), expiresAt: room.expiresAt, ...(room.preparation ? { preparation: { id: room.preparation.id, expiresAt: room.preparation.expiresAt } } : {}) };
   }
   function availableGame(room: Room, now: number): AvailableGame | null {
     if (room.visibility !== 'public' || room.ranked || room.practice || room.engine.phase !== 'waiting' || room.expiresAt <= now || !room.sockets.size) return null;
     const players = [...room.engine.players.values()], humanCount = players.filter(p => !p.bot).length;
     if (humanCount >= RULES.maxPlayers) return null;
-    return { id: room.id, hostName: room.engine.players.get(room.hostId)!.name, humanCount, botCount: players.filter(p => p.bot).length, maxPlayers: RULES.maxPlayers, fillBots: room.fillBots, ...(room.fillBots ? { botDifficulty: room.botDifficulty } : {}) };
+    return { id: room.id, hostName: room.engine.players.get(room.hostId)!.name, humanCount, botCount: players.filter(p => p.bot).length, maxPlayers: RULES.maxPlayers, mode: room.mode, fillBots: room.fillBots, ...(room.fillBots ? { botDifficulty: room.botDifficulty } : {}) };
   }
   function syncLobbyBots(room: Room) {
     if (room.engine.phase !== 'waiting' && room.engine.phase !== 'finished') return;
@@ -159,13 +169,16 @@ export function createGameServer(options: ServerOptions = {}) {
   }
   function broadcast(room: Room, message: ServerMessage) { for (const connection of room.sockets.values()) send(connection, message); }
   function broadcastRoom(room: Room) { room.phase = room.engine.phase; broadcast(room, { type: 'room', room: roomSnapshot(room) }); }
+  /** Each player receives their own world view: everyone's public state plus their own full state. */
+  function sendSnapshot(connection: Connection, room: Room, now = Date.now()) { send(connection, { type: 'snapshot', snapshot: room.engine.snapshot(now, connection.profile?.id) }); }
+  function broadcastSnapshot(room: Room, now = Date.now()) { for (const connection of room.sockets.values()) sendSnapshot(connection, room, now); }
   function electConnectedHost(room: Room) {
     if (!room.sockets.has(room.hostId) && room.sockets.size) room.hostId = room.sockets.keys().next().value!;
   }
   function cancelPreparation(room: Room, code: string, message: string) {
     if (!room.preparation) return;
     room.preparation = undefined; room.engine.cancelPreparation(); room.abandoned = false; syncLobbyBots(room);
-    broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot() });
+    broadcastRoom(room); broadcastSnapshot(room);
     // The client clears prior errors on room transitions, so the lobby's reason
     // must follow its final room state and survive the next unchanged tick.
     broadcast(room, { type: 'error', code, message });
@@ -187,7 +200,7 @@ export function createGameServer(options: ServerOptions = {}) {
     // grace expiry. Their old acknowledgment cannot start a round without them.
     if (!humans.every(p => p.connected && room.sockets.has(p.id) && preparation.ready.has(p.id))) return;
     room.engine.beginPreparedCountdown(now); room.preparation = undefined;
-    broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot(now) });
+    broadcastRoom(room); broadcastSnapshot(room, now);
   }
   function finishRoom(room: Room, reason: string) {
     let ranked = false; let finalReason = reason;
@@ -200,9 +213,9 @@ export function createGameServer(options: ServerOptions = {}) {
         ranked = result.recorded; finalReason = `${reason} ${result.reason}`;
       } catch { finalReason = `${reason} The result could not be saved. Please contact the server owner.`; console.error('Could not persist match result', room.engine.id); }
     }
-    room.resultEvent = { type: 'match-end', winnerIds: [...room.engine.winnerIds], ranked, reason: finalReason, at: room.engine.endedAt };
+    room.resultEvent = { type: 'match-end', winnerIds: [...room.engine.winnerIds], ...(room.engine.winningTeam ? { winningTeam: room.engine.winningTeam } : {}), ranked, reason: finalReason, at: room.engine.endedAt };
     broadcast(room, { type: 'event', event: room.resultEvent });
-    broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot() });
+    broadcastRoom(room); broadcastSnapshot(room);
   }
   function destroyRoom(room: Room) {
     for (const connection of room.sockets.values()) { connection.roomId = null; send(connection, { type: 'error', code: 'ROOM_EXPIRED', message: 'This room has expired. Create a new match.' }); }
@@ -238,15 +251,16 @@ export function createGameServer(options: ServerOptions = {}) {
     leaveRoom(connection);
     connection.roomId = room.id; room.sockets.set(profile.id, connection); room.disconnected.delete(profile.id); room.emptySince = 0; room.preparation?.ready.delete(profile.id);
     room.engine.addPlayer(profile); electConnectedHost(room); syncLobbyBots(room);
+    if (connection.loadout) room.engine.setLoadout(profile.id, connection.loadout);
     if (room.preparation) {
       advancePreparation(room, Date.now());
       if (!room.preparation) return; // Cancellation already published the final lobby and reason.
     }
-    broadcastRoom(room); send(connection, { type: 'snapshot', snapshot: room.engine.snapshot() });
+    broadcastRoom(room); sendSnapshot(connection, room);
     if (room.engine.phase === 'finished' && room.resultEvent) send(connection, { type: 'event', event: room.resultEvent });
   }
   wss.on('connection', (socket) => {
-    const connection: Connection = { socket, profile: null, roomId: null, connectedAt: Date.now(), bucketAt: Date.now(), messages: 0, controlAt: Date.now(), controls: 0, alive: true, supportsReadiness: false }; connections.add(connection);
+    const connection: Connection = { socket, profile: null, roomId: null, connectedAt: Date.now(), bucketAt: Date.now(), messages: 0, controlAt: Date.now(), controls: 0, loadoutAt: Date.now(), loadouts: 0, loadout: null, alive: true, supportsReadiness: false }; connections.add(connection);
     socket.on('pong', () => { connection.alive = true; });
     socket.on('message', (data, binary) => {
       try {
@@ -275,6 +289,17 @@ export function createGameServer(options: ServerOptions = {}) {
           const input = sanitizeInput(message.input); if (!input) throw new Error('Invalid player input.');
           room.engine.acceptInput(connection.profile.id, input, now); return;
         }
+        if (message.type === 'loadout') {
+          // Players flick through classes in menus, so loadouts have their own small allowance.
+          if (now - connection.loadoutAt >= 10_000) { connection.loadoutAt = now; connection.loadouts = 0; }
+          if (++connection.loadouts > 20) throw new Error('Slow down a little before changing your loadout again.');
+          const loadout = sanitizeLoadout(message.loadout);
+          if (!loadout) throw new ProtocolError('INVALID_LOADOUT', 'That loadout is not allowed. Pick one main weapon, one sidearm and one perk from each row.');
+          connection.loadout = loadout;
+          const room = connection.roomId ? rooms.get(connection.roomId) : undefined;
+          if (room) room.engine.setLoadout(connection.profile.id, loadout);
+          return;
+        }
         if (now - connection.controlAt >= 10_000) { connection.controlAt = now; connection.controls = 0; }
         if (++connection.controls > 24) throw new Error('Slow down a little before changing rooms again.');
         if (message.type === 'create') {
@@ -283,8 +308,11 @@ export function createGameServer(options: ServerOptions = {}) {
           if (message.visibility !== undefined && !['private', 'public'].includes(message.visibility)) throw new Error('Choose Public or Private for your match.');
           if (message.fillBots !== undefined && typeof message.fillBots !== 'boolean') throw new Error('Choose whether to fill the room with bots.');
           if (message.botDifficulty !== undefined && !['easy', 'normal', 'hard'].includes(message.botDifficulty)) throw new Error('Choose a valid bot difficulty.');
+          if (message.mode !== undefined && message.mode !== 'ffa' && message.mode !== 'tdm') throw new Error('Choose Free-for-all or Team Deathmatch.');
           if (rooms.size >= 64) throw new Error('The server is busy. Please try again shortly.');
           const practice = message.practice ?? false; const ranked = message.ranked && !practice;
+          if (ranked && message.mode === 'tdm') throw new Error('Ranked crew matches are free-for-all only. Pick Free-for-all or turn ranked off.');
+          const mode: GameMode = message.mode ?? 'ffa';
           const practiceDifficulty = practice ? message.practiceDifficulty ?? 'normal' : undefined;
           const visibility = message.visibility ?? 'private';
           const fillBots = !practice && (message.fillBots ?? false);
@@ -295,8 +323,8 @@ export function createGameServer(options: ServerOptions = {}) {
           leaveRoom(connection);
           const id = randomUUID(); let code = '';
           do { code = randomBytes(10).toString('hex').toUpperCase(); } while (codes.has(code));
-          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, visibility, fillBots, ...(fillBots ? { botDifficulty } : {}), ...(practice ? { practiceDifficulty } : {}), ...(message.crewId && ranked ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0, resultEvent: null };
-          room.engine = new MatchEngine({ practice, practiceDifficulty, fillBots, botDifficulty, onEvent: (event) => broadcast(room, { type: 'event', event }), onFinish: (reason) => finishRoom(room, reason) });
+          const room: Room = { id, code, hostId: connection.profile.id, ranked, practice, mode, visibility, fillBots, ...(fillBots ? { botDifficulty } : {}), ...(practice ? { practiceDifficulty } : {}), ...(message.crewId && ranked ? { crewId: message.crewId } : {}), expiresAt: now + ROOM_LIFETIME, engine: null as unknown as MatchEngine, sockets: new Map(), disconnected: new Map(), abandoned: false, phase: 'waiting', emptySince: 0, resultEvent: null };
+          room.engine = new MatchEngine({ practice, practiceDifficulty, fillBots, botDifficulty, mode, onEvent: (event) => broadcast(room, { type: 'event', event }), onFinish: (reason) => finishRoom(room, reason) });
           rooms.set(id, room); codes.set(code, id); attach(connection, room);
           return;
         }
@@ -338,7 +366,7 @@ export function createGameServer(options: ServerOptions = {}) {
           room.engine.prepare(now);
           room.abandoned = false; room.resultEvent = null;
           room.preparation = { id: room.engine.id, expiresAt: now + PREPARATION_TIMEOUT, ready: new Set() };
-          broadcastRoom(room); broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot(now) }); return;
+          broadcastRoom(room); broadcastSnapshot(room, now); return;
         }
         throw new Error('Unknown game message.');
       } catch (error) { send(connection, { type: 'error', message: error instanceof Error ? error.message : 'The server could not complete that action.', ...(error instanceof ProtocolError ? { code: error.code } : {}) }); }
@@ -366,7 +394,7 @@ export function createGameServer(options: ServerOptions = {}) {
       if (room.preparation) advancePreparation(room, now);
       room.engine.step(now, dt);
       if (room.phase !== room.engine.phase) { room.phase = room.engine.phase; broadcastRoom(room); }
-      if (snapshotTick % 2 === 0 && room.sockets.size) broadcast(room, { type: 'snapshot', snapshot: room.engine.snapshot(now) });
+      if (snapshotTick % 2 === 0 && room.sockets.size) broadcastSnapshot(room, now);
     }
     snapshotTick++;
   }, 1000 / 30);

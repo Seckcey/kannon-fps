@@ -17,22 +17,23 @@ function engineFixture(practice = false) {
 test('preparation resets the visible round and freezes full match time, human actions and all three bots', () => {
   for (const practice of [false, true]) {
     const { engine, host, events, finishes } = engineFixture(practice);
-    Object.assign(host, { kills: 7, deaths: 4, health: 15, shield: 0, ammoAR: 2, ammoShotgun: 0, heals: 0, slot: 3, healingUntil: 99_000, reloadingUntil: 99_000, vx: 6, vy: 2 });
+    Object.assign(host, { kills: 7, deaths: 4, assists: 2, score: 900, streak: 4, rewards: ['recon'], health: 15, mag: [2, 0], reserve: [0, 0], frags: 0, slot: 2, cookingSince: 900, reloadingUntil: 99_000, posture: 'crouch', vx: 6, vy: 2 });
     engine.prepare(1000);
-    const before = engine.snapshot(1000);
+    const before = engine.snapshot(1000, host.id);
     assert.equal(before.roundId, engine.id);
     assert.equal(before.phase, 'preparing'); assert.equal(before.timeRemaining, RULES.matchSeconds);
     for (const p of before.players) {
-      assert.equal(p.health, 100); assert.equal(p.shield, 50); assert.equal(p.ammoAR, 30); assert.equal(p.ammoShotgun, 6);
-      assert.equal(p.heals, 2); assert.equal(p.slot, 1); assert.equal(p.kills, 0); assert.equal(p.deaths, 0);
-      assert.equal(p.healingUntil, 0); assert.equal(p.reloadingUntil, 0); assert.equal(p.protectedUntil, 0);
+      assert.deepEqual([p.health, p.slot, p.kills, p.deaths, p.assists, p.score, p.streak, p.posture], [100, 1, 0, 0, 0, 0, 0, 'stand']);
+      assert.deepEqual([p.cookingSince, p.reloadingUntil, p.protectedUntil, p.vx, p.vy], [0, 0, 0, 0, 0]);
     }
+    assert.deepEqual([before.self!.mag, before.self!.reserve, before.self!.frags, before.self!.rewards], [[30, 12], [180, 72], 2, []]);
+    assert.deepEqual([before.drones, before.recon, before.mortars], [[], [], []]);
     for (let now = 1033; now < 46_000; now += 33) {
-      assert.equal(engine.acceptInput(host.id, { ...idleInput(now), moveX: 1, jump: true, fire: true, reload: true, sprint: true, aim: true }, now), false);
+      assert.equal(engine.acceptInput(host.id, { ...idleInput(now), moveX: 1, jump: true, fire: true, reload: true, sprint: true, aim: true, crouch: true, melee: true, grenade: true, viewTime: now }, now), false);
       engine.step(now, 1 / 30);
     }
-    const after = engine.snapshot(46_000);
-    assert.deepEqual(after.players, before.players); assert.equal(after.timeRemaining, RULES.matchSeconds);
+    const after = engine.snapshot(46_000, host.id);
+    assert.deepEqual(after.players, before.players); assert.deepEqual(after.self, before.self); assert.equal(after.timeRemaining, RULES.matchSeconds);
     assert.equal(engine.startedAt, 0); assert.equal(engine.countdownUntil, 0); assert.equal(engine.endedAt, 0);
     assert.deepEqual(events, []); assert.deepEqual(finishes, []);
   }
@@ -47,14 +48,15 @@ test('prepared countdown starts with a fresh full duration, preserved positions 
   assert.equal(engine.countdownUntil, 23_000);
   assert.equal(engine.snapshot().roundId, roundId);
   assert.deepEqual(engine.snapshot().players.map(({ id, x, y, z }) => ({ id, x, y, z })), positions);
-  assert.ok([...engine.players.values()].every(player => player.protectedUntil === 25_000));
+  assert.ok([...engine.players.values()].every(player => player.protectedUntil === 23_000 + RULES.protectionMs));
   assert.equal(engine.acceptInput(host.id, { ...idleInput(1), fire: true, jump: true, moveZ: 1 }, 22_999), false);
   engine.step(22_999, 1 / 30); assert.equal(engine.phase, 'countdown'); assert.equal(engine.startedAt, 0);
   engine.step(23_000, 1 / 30); assert.equal(engine.phase, 'playing'); assert.equal(engine.startedAt, 23_000);
-  assert.equal(engine.snapshot(23_000).timeRemaining, 300); assert.equal(host.ammoAR, 30); assert.equal(host.y, 0);
+  assert.equal(engine.snapshot(23_000).timeRemaining, 300); assert.equal(host.mag[0], 30); assert.equal(host.y, 0);
   assert.deepEqual(events, []);
-  assert.equal(engine.acceptInput(host.id, { ...idleInput(1), fire: true }, 23_001), true);
-  engine.step(23_001, 0); assert.equal(host.ammoAR, 29);
+  assert.equal(engine.acceptInput(host.id, { ...idleInput(1), fire: true, viewTime: 23_001 }, 23_001), true);
+  engine.step(23_001, 0); assert.equal(host.mag[0], 29, 'Weapons are up as soon as play begins.');
+  assert.equal(host.protectedUntil, 0, 'Firing ends spawn protection.');
 });
 
 test('cancel and retry create a fresh score-neutral round without finish callbacks, and direct start retains its API', () => {
