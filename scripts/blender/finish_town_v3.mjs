@@ -4,8 +4,9 @@
  *  node scripts/blender/finish_town_v3.mjs --input in.glb --lightmaps lm.json --out out.glb [--tier full|phone] [--manifest out.json]
  *
  *  Same pipeline as finish_town_v2.mjs, plus: alpha-blended materials named by the sidecar
- *  (window glass, smoke), and a texture pass for the original v3 textures (V3_*), which tile at
- *  sack and canvas scale and stay sharper than the Poly Haven props.
+ *  (window glass, smoke), a texture pass for the original v3 textures (V3_*), which tile at
+ *  sack and canvas scale and stay sharper than the Poly Haven props, and each lightmap's shade
+ *  level in its alpha channel (see shadedAtlas).
  *
  *  Needs KTX-Software's `ktx` executable. Set KTX_BIN to its bin folder; the default is the
  *  extracted install at C:\it\tools\ktx\bin. */
@@ -13,7 +14,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { NodeIO, PropertyType } from '@gltf-transform/core';
+import { NodeIO, PropertyType, TextureChannel } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, meshopt, prune } from '@gltf-transform/functions';
 import { Mode, toktx } from '@gltf-transform/cli';
@@ -44,20 +45,45 @@ const document = await io.read(input);
 const lightmaps = JSON.parse(readFileSync(lightmapsPath, 'utf8'));
 const extension = document.createExtension(KannonLightmap);
 
+/** The lightmap at this tier's size, with its shade level as the alpha channel: one minus the
+ *  sun share the bake measured (LM_*_sun.png), so the share of each texel's baked light that
+ *  remains where a character's shadow blocks the sun. Stored this way round, a lost alpha reads
+ *  as 1 and removes nothing. Colour and shade are resized separately: an alpha-aware resize
+ *  premultiplies and would darken the colour wherever the alpha is low. */
+async function shadedAtlas(colourPng, sunSharePng, limit) {
+  const { width, height } = await sharp(colourPng).metadata();
+  const size = [Math.min(width, limit), Math.min(height, limit)];
+  const colour = await sharp(colourPng).removeAlpha().resize(size[0], size[1], { fit: 'fill' }).raw().toBuffer({ resolveWithObject: true });
+  const raw = { width: size[0], height: size[1] };
+  if (!sunSharePng) return sharp(colour.data, { raw: { ...raw, channels: 3 } }).png().toBuffer();
+  // Mitchell rather than Lanczos: no ringing along the sharp edges of baked shadows.
+  const shade = await sharp(sunSharePng).extractChannel(0).negate().resize(size[0], size[1], { fit: 'fill', kernel: 'mitchell' }).raw().toBuffer({ resolveWithObject: true });
+  if (colour.info.channels !== 3 || shade.info.channels !== 1) throw new Error('Unexpected lightmap channel layout');
+  return sharp(colour.data, { raw: { ...raw, channels: 3 } }).joinChannel(shade.data, { raw: { ...raw, channels: 1 } }).png().toBuffer();
+}
+
 const atlases = new Map();
 for (const [name, file] of Object.entries(lightmaps.atlases ?? {})) {
-  const bytes = readFileSync(resolve(dirname(lightmapsPath), file));
-  atlases.set(name, document.createTexture(name).setImage(new Uint8Array(bytes)).setMimeType('image/png'));
+  const colour = readFileSync(resolve(dirname(lightmapsPath), file));
+  const shareFile = lightmaps.sunMasks?.[name];
+  const bytes = await shadedAtlas(colour, shareFile ? readFileSync(resolve(dirname(lightmapsPath), shareFile)) : null, BUDGET.lightmap);
+  atlases.set(name, { texture: document.createTexture(name).setImage(new Uint8Array(bytes)).setMimeType('image/png'), shadeAlpha: !!shareFile });
 }
 const materialsByName = new Map(document.getRoot().listMaterials().map(material => [material.getName(), material]));
 const missing = [];
+const { R, G, B, A } = TextureChannel;
 for (const [materialName, entry] of Object.entries(lightmaps.materials ?? {})) {
   const material = materialsByName.get(materialName);
   if (!material) { missing.push(materialName); continue; }
   const atlas = atlases.get(entry.atlas);
   if (!atlas) throw new Error(`Material ${materialName} references unknown atlas ${entry.atlas}`);
-  const lightmap = extension.createLightmap().setIntensity(entry.intensity ?? 1).setTexture(atlas);
+  const lightmap = extension.createLightmap().setIntensity(entry.intensity ?? 1).setTexture(atlas.texture);
   lightmap.getTextureInfo().setTexCoord(1);
+  if (atlas.shadeAlpha) {
+    // Declare the alpha channel in use, or the KTX2 encoder drops it as unused.
+    lightmap.setRef('texture', atlas.texture, { channels: R | G | B | A });
+    lightmap.setExtras({ shadeAlpha: true });
+  }
   material.setExtension(LIGHTMAP_EXTENSION, lightmap);
 }
 if (missing.length) throw new Error(`Lightmap sidecar names materials not in the GLB: ${missing.join(', ')}`);
@@ -92,9 +118,10 @@ await document.transform(
   dedup({ propertyTypes: [PropertyType.ACCESSOR, PropertyType.MESH, PropertyType.TEXTURE, PropertyType.MATERIAL] }),
   prune({ keepAttributes: true, keepExtras: true }),
   // Everything is ETC1S (the smallest GPU format). Six passes with disjoint name patterns:
-  // lightmaps, the original v3 normal/roughness maps, the other v3 textures, environment colour
-  // (2k sets), environment normal/roughness, and props.
-  toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^LM_/, resize: square(BUDGET.lightmap), quality: 200 }),
+  // lightmaps (already at the tier's size, see shadedAtlas), the original v3 normal/roughness
+  // maps, the other v3 textures, environment colour (2k sets), environment normal/roughness, and
+  // props.
+  toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^LM_/, quality: 200 }),
   toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^V3_.*_(nor|arm)$/, resize: square(BUDGET.v3Detail), quality: 190 }),
   toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^V3_/, resize: square(BUDGET.v3), quality: 190 }),
   toktx({ mode: Mode.ETC1S, encoder: sharp, pattern: /^(?!LM_|V3_).*_(Diffuse|diff|col_1)_2k/, resize: square(BUDGET.colour), quality: 170 }),
@@ -113,6 +140,7 @@ const manifest = {
   materials: document.getRoot().listMaterials().length,
   textures,
   lightmapped: document.getRoot().listMaterials().filter(material => material.getExtension(LIGHTMAP_EXTENSION)).map(material => material.getName()),
+  shadeAlpha: [...atlases].filter(([, atlas]) => atlas.shadeAlpha).map(([name]) => name).sort(),
   breakables: document.getRoot().listNodes().map(node => node.getName()).filter(name => /^Breakable_/.test(name)).sort(),
   restoredBaseColors: restored.sort(),
   calibration: lightmaps.calibration ?? null,

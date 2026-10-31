@@ -3,7 +3,15 @@
     "LM_arch": "LM_arch.png",
     "LM_ground": "LM_ground.png",
     "LM_foliage": "LM_foliage.png",
-    "LM_props": "LM_props.png"
+    "LM_props": "LM_props.png",
+    "LM_pots": "LM_pots.png"
+  },
+  "sunMasks": {
+    "LM_arch": "LM_arch_sun.png",
+    "LM_ground": "LM_ground_sun.png",
+    "LM_foliage": "LM_foliage_sun.png",
+    "LM_props": "LM_props_sun.png",
+    "LM_pots": "LM_pots_sun.png"
   },
   "materials": {
     "V2_Bark": {
@@ -78,27 +86,11 @@
       "atlas": "LM_props",
       "intensity": 6.760000000000001
     },
-    "Prop_barrel_steel_Barrel_02": {
-      "atlas": "LM_props",
-      "intensity": 6.760000000000001
-    },
-    "Prop_barrel_wood_wooden_barrels_01_barrel01": {
-      "atlas": "LM_props",
-      "intensity": 6.760000000000001
-    },
     "Prop_bench_painted_wooden_bench": {
       "atlas": "LM_props",
       "intensity": 6.760000000000001
     },
     "Prop_cardboard_box_cardboard_box_01": {
-      "atlas": "LM_props",
-      "intensity": 6.760000000000001
-    },
-    "Prop_compost_bags_compost_bags": {
-      "atlas": "LM_props",
-      "intensity": 6.760000000000001
-    },
-    "Prop_crate_wooden_crate_02": {
       "atlas": "LM_props",
       "intensity": 6.760000000000001
     },
@@ -147,10 +139,6 @@
       "intensity": 6.760000000000001
     },
     "Prop_planter_planter_box_02": {
-      "atlas": "LM_props",
-      "intensity": 6.760000000000001
-    },
-    "Prop_plastic_crate_plastic_crate_03": {
       "atlas": "LM_props",
       "intensity": 6.760000000000001
     },
@@ -246,11 +234,11 @@
       "atlas": "LM_props",
       "intensity": 6.760000000000001
     },
-    "V3_Paint": {
+    "V3_Cone": {
       "atlas": "LM_props",
       "intensity": 6.760000000000001
     },
-    "V3_Pot": {
+    "V3_Paint": {
       "atlas": "LM_props",
       "intensity": 6.760000000000001
     },
@@ -297,6 +285,10 @@
     "Vehicle_WheelSteel": {
       "atlas": "LM_props",
       "intensity": 6.760000000000001
+    },
+    "V3_Pot": {
+      "atlas": "LM_pots",
+      "intensity": 6.760000000000001
     }
   },
   "alphaMask": [
@@ -338,14 +330,14 @@
       1.4357
     ],
     "openStreetHorizontal": [
-      2.3586,
-      1.9241,
-      2.012
+      2.3582,
+      1.9239,
+      2.0117
     ],
     "groundBounceDown": [
-      0.256,
-      0.2007,
-      0.1807
+      0.2555,
+      0.2004,
+      0.1806
     ],
     "normaliser": 1.6552114081557117,
     "lightMapIntensity": 6.760000000000001

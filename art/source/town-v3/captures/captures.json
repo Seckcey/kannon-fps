@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-31T04:59:24.682Z",
+  "capturedAt": "2026-10-31T07:59:17.370Z",
   "url": "http://127.0.0.1:5194/graphics-test.html",
   "note": "Before = Kannon Town v2 under v2 exposure, fog and daylight; After = v3 under the golden-hour light. Both sides share the v3 sky dome.",
   "captures": [
@@ -64,8 +64,8 @@
           "static": true
         }
       },
-      "drawCalls": 98,
-      "triangles": 363706
+      "drawCalls": 96,
+      "triangles": 362964
     },
     {
       "file": "town-v3-checkpoint-north-after-desktop.jpg",
@@ -128,8 +128,8 @@
           "static": true
         }
       },
-      "drawCalls": 124,
-      "triangles": 441038
+      "drawCalls": 115,
+      "triangles": 417952
     },
     {
       "file": "town-v3-checkpoint-south-before-desktop.jpg",
@@ -192,8 +192,8 @@
           "static": true
         }
       },
-      "drawCalls": 97,
-      "triangles": 363124
+      "drawCalls": 94,
+      "triangles": 361465
     },
     {
       "file": "town-v3-checkpoint-south-after-desktop.jpg",
@@ -256,8 +256,8 @@
           "static": true
         }
       },
-      "drawCalls": 126,
-      "triangles": 442748
+      "drawCalls": 111,
+      "triangles": 409953
     },
     {
       "file": "town-v3-truck-before-desktop.jpg",
@@ -320,8 +320,8 @@
           "static": true
         }
       },
-      "drawCalls": 96,
-      "triangles": 355071
+      "drawCalls": 94,
+      "triangles": 354329
     },
     {
       "file": "town-v3-truck-after-desktop.jpg",
@@ -384,8 +384,8 @@
           "static": true
         }
       },
-      "drawCalls": 121,
-      "triangles": 415991
+      "drawCalls": 111,
+      "triangles": 392737
     },
     {
       "file": "town-v3-burnt-car-before-desktop.jpg",
@@ -448,8 +448,8 @@
           "static": true
         }
       },
-      "drawCalls": 85,
-      "triangles": 324457
+      "drawCalls": 83,
+      "triangles": 323715
     },
     {
       "file": "town-v3-burnt-car-after-desktop.jpg",
@@ -512,8 +512,8 @@
           "static": true
         }
       },
-      "drawCalls": 92,
-      "triangles": 363862
+      "drawCalls": 81,
+      "triangles": 337452
     },
     {
       "file": "town-v3-barrier-before-desktop.jpg",
@@ -576,8 +576,8 @@
           "static": true
         }
       },
-      "drawCalls": 89,
-      "triangles": 347427
+      "drawCalls": 87,
+      "triangles": 346685
     },
     {
       "file": "town-v3-barrier-after-desktop.jpg",
@@ -640,8 +640,8 @@
           "static": true
         }
       },
-      "drawCalls": 105,
-      "triangles": 424244
+      "drawCalls": 93,
+      "triangles": 395334
     },
     {
       "file": "town-v3-yard-sandbags-before-desktop.jpg",
@@ -704,8 +704,8 @@
           "static": true
         }
       },
-      "drawCalls": 68,
-      "triangles": 244657
+      "drawCalls": 65,
+      "triangles": 242998
     },
     {
       "file": "town-v3-yard-sandbags-after-desktop.jpg",
@@ -768,8 +768,8 @@
           "static": true
         }
       },
-      "drawCalls": 85,
-      "triangles": 331012
+      "drawCalls": 75,
+      "triangles": 309255
     },
     {
       "file": "town-v3-teal-shadow-before-desktop.jpg",
@@ -832,8 +832,8 @@
           "static": true
         }
       },
-      "drawCalls": 95,
-      "triangles": 351489
+      "drawCalls": 92,
+      "triangles": 349830
     },
     {
       "file": "town-v3-teal-shadow-after-desktop.jpg",
@@ -896,8 +896,8 @@
           "static": true
         }
       },
-      "drawCalls": 122,
-      "triangles": 428833
+      "drawCalls": 110,
+      "triangles": 401818
     },
     {
       "file": "town-v3-street-before-desktop.jpg",
@@ -960,8 +960,8 @@
           "static": true
         }
       },
-      "drawCalls": 97,
-      "triangles": 358624
+      "drawCalls": 94,
+      "triangles": 356965
     },
     {
       "file": "town-v3-street-after-desktop.jpg",
@@ -1024,8 +1024,8 @@
           "static": true
         }
       },
-      "drawCalls": 125,
-      "triangles": 436248
+      "drawCalls": 113,
+      "triangles": 409233
     },
     {
       "file": "town-v3-teal-front-before-desktop.jpg",
@@ -1088,8 +1088,8 @@
           "static": true
         }
       },
-      "drawCalls": 94,
-      "triangles": 352535
+      "drawCalls": 92,
+      "triangles": 351793
     },
     {
       "file": "town-v3-teal-front-after-desktop.jpg",
@@ -1152,8 +1152,8 @@
           "static": true
         }
       },
-      "drawCalls": 116,
-      "triangles": 411932
+      "drawCalls": 106,
+      "triangles": 388678
     },
     {
       "file": "town-v3-teal-room-before-desktop.jpg",
@@ -1216,8 +1216,8 @@
           "static": true
         }
       },
-      "drawCalls": 91,
-      "triangles": 344792
+      "drawCalls": 89,
+      "triangles": 344050
     },
     {
       "file": "town-v3-teal-room-after-desktop.jpg",
@@ -1280,8 +1280,8 @@
           "static": true
         }
       },
-      "drawCalls": 110,
-      "triangles": 404093
+      "drawCalls": 99,
+      "triangles": 377839
     },
     {
       "file": "town-v3-yellow-upstairs-before-desktop.jpg",
@@ -1344,8 +1344,8 @@
           "static": true
         }
       },
-      "drawCalls": 95,
-      "triangles": 351489
+      "drawCalls": 92,
+      "triangles": 349830
     },
     {
       "file": "town-v3-yellow-upstairs-after-desktop.jpg",
@@ -1408,8 +1408,8 @@
           "static": true
         }
       },
-      "drawCalls": 123,
-      "triangles": 429113
+      "drawCalls": 111,
+      "triangles": 402098
     },
     {
       "file": "town-v3-bus-gameplay-before-desktop.jpg",
@@ -1419,9 +1419,9 @@
       "label": "desktop",
       "camera": {
         "position": [
-          -7,
+          -7.75,
           1.62,
-          -13
+          -14.4
         ],
         "quaternion": [
           0.0030415307188599396,
@@ -1472,8 +1472,8 @@
           "static": true
         }
       },
-      "drawCalls": 96,
-      "triangles": 356571
+      "drawCalls": 95,
+      "triangles": 357828
     },
     {
       "file": "town-v3-bus-gameplay-after-desktop.jpg",
@@ -1483,9 +1483,9 @@
       "label": "desktop",
       "camera": {
         "position": [
-          -7,
+          -7.75,
           1.62,
-          -13
+          -14.4
         ],
         "quaternion": [
           0.0030415307188599396,
@@ -1536,8 +1536,520 @@
           "static": true
         }
       },
-      "drawCalls": 123,
-      "triangles": 417783
+      "drawCalls": 114,
+      "triangles": 396684
+    },
+    {
+      "file": "town-v3-yard-crates-before-desktop.jpg",
+      "title": "Back-yard crate stack",
+      "view": "yard-crates",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -22.6,
+          1.62,
+          -11.6
+        ],
+        "quaternion": [
+          -0.08131044051283483,
+          0.4389557044996065,
+          0.039926669650388526,
+          0.893930849004268
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 47,
+      "triangles": 190951
+    },
+    {
+      "file": "town-v3-yard-crates-after-desktop.jpg",
+      "title": "Back-yard crate stack",
+      "view": "yard-crates",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -22.6,
+          1.62,
+          -11.6
+        ],
+        "quaternion": [
+          -0.08131044051283483,
+          0.4389557044996065,
+          0.039926669650388526,
+          0.893930849004268
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 55,
+      "triangles": 256648
+    },
+    {
+      "file": "town-v3-broken-window-before-desktop.jpg",
+      "title": "Broken upstairs window",
+      "view": "broken-window",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -5.5,
+          1.62,
+          3
+        ],
+        "quaternion": [
+          0.2522696889808764,
+          0.4411031352737023,
+          -0.1307150536563493,
+          0.8512940754056847
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 87,
+      "triangles": 340048
+    },
+    {
+      "file": "town-v3-broken-window-after-desktop.jpg",
+      "title": "Broken upstairs window",
+      "view": "broken-window",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -5.5,
+          1.62,
+          3
+        ],
+        "quaternion": [
+          0.2522696889808764,
+          0.4411031352737023,
+          -0.1307150536563493,
+          0.8512940754056847
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 99,
+      "triangles": 377849
+    },
+    {
+      "file": "town-v3-sun-shadow-before-desktop.jpg",
+      "title": "Player in the sun: real-time shadow",
+      "view": "sun-shadow",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          0.4,
+          2.4,
+          -10.4
+        ],
+        "quaternion": [
+          -0.13289400643165525,
+          -0.3787036998288544,
+          -0.05504649982208892,
+          0.9142716082476897
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 99,
+      "triangles": 375703
+    },
+    {
+      "file": "town-v3-sun-shadow-after-desktop.jpg",
+      "title": "Player in the sun: real-time shadow",
+      "view": "sun-shadow",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          0.4,
+          2.4,
+          -10.4
+        ],
+        "quaternion": [
+          -0.13289400643165525,
+          -0.3787036998288544,
+          -0.05504649982208892,
+          0.9142716082476897
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 101,
+      "triangles": 414180
+    },
+    {
+      "file": "town-v3-shade-shadow-before-desktop.jpg",
+      "title": "Player in house shade: no phantom shadow",
+      "view": "shade-shadow",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3.1,
+          2.4,
+          1.6
+        ],
+        "quaternion": [
+          -0.1606918703487675,
+          0.2834915283958323,
+          0.04824779836357703,
+          0.9441836823863657
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 102,
+      "triangles": 383271
+    },
+    {
+      "file": "town-v3-shade-shadow-after-desktop.jpg",
+      "title": "Player in house shade: no phantom shadow",
+      "view": "shade-shadow",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3.1,
+          2.4,
+          1.6
+        ],
+        "quaternion": [
+          -0.1606918703487675,
+          0.2834915283958323,
+          0.04824779836357703,
+          0.9441836823863657
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 112,
+      "triangles": 433192
     },
     {
       "file": "town-v3-checkpoint-north-before-phone.jpg",
@@ -1600,8 +2112,8 @@
           "static": true
         }
       },
-      "drawCalls": 76,
-      "triangles": 356272
+      "drawCalls": 74,
+      "triangles": 355530
     },
     {
       "file": "town-v3-checkpoint-north-after-phone.jpg",
@@ -1664,8 +2176,8 @@
           "static": true
         }
       },
-      "drawCalls": 96,
-      "triangles": 435416
+      "drawCalls": 91,
+      "triangles": 406962
     },
     {
       "file": "town-v3-teal-shadow-before-phone.jpg",
@@ -1728,8 +2240,8 @@
           "static": true
         }
       },
-      "drawCalls": 72,
-      "triangles": 341055
+      "drawCalls": 69,
+      "triangles": 339396
     },
     {
       "file": "town-v3-teal-shadow-after-phone.jpg",
@@ -1792,8 +2304,8 @@
           "static": true
         }
       },
-      "drawCalls": 97,
-      "triangles": 420319
+      "drawCalls": 84,
+      "triangles": 387548
     },
     {
       "file": "town-v3-teal-room-before-phone.jpg",
@@ -1856,8 +2368,8 @@
           "static": true
         }
       },
-      "drawCalls": 67,
-      "triangles": 330858
+      "drawCalls": 65,
+      "triangles": 330116
     },
     {
       "file": "town-v3-teal-room-after-phone.jpg",
@@ -1920,8 +2432,8 @@
           "static": true
         }
       },
-      "drawCalls": 86,
-      "triangles": 390383
+      "drawCalls": 75,
+      "triangles": 364129
     },
     {
       "file": "town-v3-bus-gameplay-before-phone.jpg",
@@ -1931,9 +2443,9 @@
       "label": "phone",
       "camera": {
         "position": [
-          -7,
+          -7.75,
           1.62,
-          -13
+          -14.4
         ],
         "quaternion": [
           0.0030415307188599396,
@@ -1984,8 +2496,8 @@
           "static": true
         }
       },
-      "drawCalls": 73,
-      "triangles": 344636
+      "drawCalls": 71,
+      "triangles": 343894
     },
     {
       "file": "town-v3-bus-gameplay-after-phone.jpg",
@@ -1995,9 +2507,9 @@
       "label": "phone",
       "camera": {
         "position": [
-          -7,
+          -7.75,
           1.62,
-          -13
+          -14.4
         ],
         "quaternion": [
           0.0030415307188599396,
@@ -2048,8 +2560,136 @@
           "static": true
         }
       },
-      "drawCalls": 94,
-      "triangles": 405672
+      "drawCalls": 89,
+      "triangles": 382694
+    },
+    {
+      "file": "town-v3-shade-shadow-before-phone.jpg",
+      "title": "Player in house shade: no phantom shadow",
+      "view": "shade-shadow",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -3.1,
+          2.4,
+          1.6
+        ],
+        "quaternion": [
+          -0.1606918703487675,
+          0.2834915283958323,
+          0.04824779836357703,
+          0.9441836823863657
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 78,
+      "triangles": 369337
+    },
+    {
+      "file": "town-v3-shade-shadow-after-phone.jpg",
+      "title": "Player in house shade: no phantom shadow",
+      "view": "shade-shadow",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -3.1,
+          2.4,
+          1.6
+        ],
+        "quaternion": [
+          -0.1606918703487675,
+          0.2834915283958323,
+          0.04824779836357703,
+          0.9441836823863657
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 87,
+      "triangles": 419202
     }
   ],
   "desktopErrors": [],

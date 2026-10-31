@@ -14,6 +14,11 @@ html,body,#root{margin:0;width:100%;height:100%;overflow:hidden;background:#121c
 .review-reticle{position:absolute;top:50%;left:50%;pointer-events:none;color:white;font-size:24px}
 .walking .review-footer{pointer-events:none}.walking .review-footer button{pointer-events:auto}
 .vehicle-review .touch-fire,.vehicle-review [data-touch=reload],.vehicle-review .touch-mode-hint{display:none}.portrait-note{display:none}
+.review-touch{position:absolute;inset:0;z-index:40;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.review-touch-look{position:absolute;left:38%;right:0;top:18%;bottom:0;pointer-events:auto;touch-action:none}
+.review-touch-stick{position:absolute;left:max(24px,env(safe-area-inset-left));bottom:28px;width:120px;height:120px;border-radius:50%;border:2px solid #f3f6ec75;background:#08233842;display:grid;place-items:center;pointer-events:auto;touch-action:none}
+.review-touch-knob{width:46px;height:46px;border-radius:50%;background:#e1f4e995;border:2px solid #f6fffacb;pointer-events:none}
+.review-touch-jump{position:absolute;right:max(24px,env(safe-area-inset-right));bottom:36px;width:64px;height:64px;border-radius:50%;border:1.5px solid #f1ffefa6;background:#0a294e58;color:#fff;font:600 12px Arial,sans-serif;pointer-events:auto;touch-action:none}
 @media(max-width:1000px){.review-toolbar{gap:7px;padding:8px 10px}.review-title{display:none}.review-toolbar button,.review-toolbar select{padding:7px 8px;font-size:12px}.review-caption{top:78px;left:10px;padding:7px 9px;font-size:11px;gap:5px}.review-footer{padding:7px 10px}.review-footer span{font-size:10px}.walking .review-footer{display:none}}
 @media(max-width:600px){.review-toolbar{gap:6px}.review-toolbar label{flex:1;min-width:110px}.review-toolbar a{max-width:none}.review-caption{top:154px;max-width:250px}.review-footer{flex-wrap:wrap;gap:5px}.review-footer span{flex-basis:100%}.review-footer button{padding:6px;font-size:11px;min-height:30px}.review-footer output{font-size:11px}}
 @media(orientation:portrait){.portrait-note{display:block}}

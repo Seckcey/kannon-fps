@@ -28,8 +28,10 @@ const VIEWS = {
   'burnt-car': 'Burnt-out car and ammo crates', barrier: 'Concrete barrier', 'yard-sandbags': 'Back-yard sandbags',
   'teal-shadow': 'Long shadows across the street', street: 'Main street', 'teal-front': 'Teal house front',
   'teal-room': 'Teal house ground floor', 'yellow-upstairs': 'Yellow house upstairs window', 'bus-gameplay': 'Bus, player view',
+  'yard-crates': 'Back-yard crate stack', 'broken-window': 'Broken upstairs window',
+  'sun-shadow': 'Player in the sun: real-time shadow', 'shade-shadow': 'Player in house shade: no phantom shadow',
 };
-const PHONE_VIEWS = new Set(['checkpoint-north', 'teal-shadow', 'teal-room', 'bus-gameplay']);
+const PHONE_VIEWS = new Set(['checkpoint-north', 'teal-shadow', 'teal-room', 'bus-gameplay', 'shade-shadow']);
 const manifest = { capturedAt: new Date().toISOString(), url: url.href, note: 'Before = Kannon Town v2 under v2 exposure, fog and daylight; After = v3 under the golden-hour light. Both sides share the v3 sky dome.', captures: [] };
 const api = (page, name, value) => page.evaluate(async ({ name, value }) => await window.vehicleTest[name](value), { name, value });
 const browser = await chromium.launch({ executablePath: values['executable-path'], headless: true, args: ['--enable-webgl', '--ignore-gpu-blocklist'] });

@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-10-31T05:02:35.285Z",
+  "startedAt": "2026-10-31T08:05:26.095Z",
   "status": "passed",
   "url": "http://127.0.0.1:5194/graphics-test.html",
   "purpose": "Kannon Town v3 (checkpoint dressing, golden-hour bake) versus Kannon Town v2 at identical camera, canvas and quality settings.",
@@ -38,21 +38,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -115,22 +115,22 @@
             "static": true
           }
         },
-        "drawCalls": 126,
-        "triangles": 441052,
+        "drawCalls": 115,
+        "triangles": 417952,
         "memory": {
-          "geometries": 90,
-          "textures": 175
+          "geometries": 88,
+          "textures": 161
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -3,
           "y": 0,
-          "z": -13,
-          "yaw": 2.65,
-          "pitch": -0.04,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
           "vx": 0,
           "vy": 0,
           "vz": 0,
@@ -157,7 +157,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 21,
+          "lastInputSeq": 16,
           "mag": [
             30,
             12
@@ -186,28 +186,28 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
       "models": [
         {
           "path": "/models/environment-v3.glb",
-          "contentLength": 25733708
+          "contentLength": 25302388
         },
         {
           "path": "/models/environment-v2.glb",
@@ -236,21 +236,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -313,22 +313,22 @@
             "static": true
           }
         },
-        "drawCalls": 99,
-        "triangles": 435442,
+        "drawCalls": 91,
+        "triangles": 406962,
         "memory": {
-          "geometries": 88,
-          "textures": 151
+          "geometries": 86,
+          "textures": 137
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -3,
           "y": 0,
-          "z": -13,
-          "yaw": 2.65,
-          "pitch": -0.04,
+          "z": -21,
+          "yaw": 2.8,
+          "pitch": -0.03,
           "vx": 0,
           "vy": 0,
           "vz": 0,
@@ -355,7 +355,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 11,
+          "lastInputSeq": 14,
           "mag": [
             30,
             12
@@ -384,32 +384,32 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
       "models": [
         {
-          "path": "/models/environment-v3-phone.glb",
-          "contentLength": 13500260
-        },
-        {
           "path": "/models/environment-v2-phone.glb",
           "contentLength": 12399132
+        },
+        {
+          "path": "/models/environment-v3-phone.glb",
+          "contentLength": 13396220
         },
         {
           "path": "/models/operator-v1.glb",
@@ -435,21 +435,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -465,9 +465,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -512,20 +512,20 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 356571,
+        "drawCalls": 95,
+        "triangles": 357828,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -554,7 +554,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 224,
+          "lastInputSeq": 206,
           "mag": [
             30,
             12
@@ -583,21 +583,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -615,21 +615,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -645,9 +645,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -692,20 +692,20 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 356571,
+        "drawCalls": 95,
+        "triangles": 357828,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -734,7 +734,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 830,
+          "lastInputSeq": 812,
           "mag": [
             30,
             12
@@ -763,41 +763,41 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ],
-        "elapsedMs": 20014.90000000596,
-        "sampleFrames": 1199,
-        "fps": 59.93861166378388,
+        "elapsedMs": 20023.60000000894,
+        "sampleFrames": 1198,
+        "fps": 59.838665367997805,
         "frameMs": {
           "p50": 16.700000000000728,
           "p95": 16.799999999999272,
           "p99": 16.80000000000291,
-          "over33Percent": 0
+          "over33Percent": 0.1669449081803005
         },
         "cpuSubmitMs": {
-          "p50": 1.7999999970197678,
-          "p95": 2.3999999910593033
+          "p50": 0.7000000029802322,
+          "p95": 1.1000000089406967
         },
         "gpuMs": {
-          "samples": 1197,
+          "samples": 1196,
           "disjointEvents": 0,
-          "p50": 15.47277,
-          "p95": 17.28043
+          "p50": 15.7,
+          "p95": 17.22391
         }
       },
       "after": {
@@ -814,21 +814,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -844,9 +844,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -891,20 +891,20 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 356571,
+        "drawCalls": 95,
+        "triangles": 357828,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -933,7 +933,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 831,
+          "lastInputSeq": 813,
           "mag": [
             30,
             12
@@ -962,21 +962,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -998,21 +998,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -1028,9 +1028,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -1075,20 +1075,20 @@
             "static": true
           }
         },
-        "drawCalls": 123,
-        "triangles": 417783,
+        "drawCalls": 114,
+        "triangles": 396684,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -1117,7 +1117,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1044,
+          "lastInputSeq": 1025,
           "mag": [
             30,
             12
@@ -1146,21 +1146,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -1178,21 +1178,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -1208,9 +1208,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -1255,20 +1255,20 @@
             "static": true
           }
         },
-        "drawCalls": 123,
-        "triangles": 417783,
+        "drawCalls": 114,
+        "triangles": 396684,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -1297,7 +1297,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1650,
+          "lastInputSeq": 1632,
           "mag": [
             30,
             12
@@ -1326,41 +1326,41 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ],
-        "elapsedMs": 20001.29999999702,
-        "sampleFrames": 1199,
-        "fps": 59.938611663783874,
+        "elapsedMs": 20046.5,
+        "sampleFrames": 1166,
+        "fps": 58.19176332022437,
         "frameMs": {
           "p50": 16.69999999999709,
           "p95": 16.80000000000291,
-          "p99": 16.80000000000291,
-          "over33Percent": 0
+          "p99": 33.400000000001455,
+          "over33Percent": 1.8867924528301887
         },
         "cpuSubmitMs": {
-          "p50": 1.2000000029802322,
-          "p95": 2.2000000029802322
+          "p50": 0.7000000029802322,
+          "p95": 1.1000000089406967
         },
         "gpuMs": {
-          "samples": 1197,
+          "samples": 1160,
           "disjointEvents": 0,
-          "p50": 14.88697,
-          "p95": 17.38814
+          "p50": 16.34895,
+          "p95": 17.40946
         }
       },
       "after": {
@@ -1377,21 +1377,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -1407,9 +1407,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -1454,20 +1454,20 @@
             "static": true
           }
         },
-        "drawCalls": 123,
-        "triangles": 417783,
+        "drawCalls": 114,
+        "triangles": 396684,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -1496,7 +1496,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1650,
+          "lastInputSeq": 1633,
           "mag": [
             30,
             12
@@ -1525,21 +1525,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -1561,21 +1561,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -1591,9 +1591,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -1638,20 +1638,20 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 356571,
+        "drawCalls": 95,
+        "triangles": 357828,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -1680,7 +1680,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1863,
+          "lastInputSeq": 1846,
           "mag": [
             30,
             12
@@ -1709,21 +1709,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -1741,21 +1741,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -1771,9 +1771,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -1818,20 +1818,20 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 356571,
+        "drawCalls": 95,
+        "triangles": 357828,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -1860,7 +1860,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 2469,
+          "lastInputSeq": 2452,
           "mag": [
             30,
             12
@@ -1889,26 +1889,26 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ],
-        "elapsedMs": 20005.09999999404,
-        "sampleFrames": 1199,
-        "fps": 59.938611663783874,
+        "elapsedMs": 20000.90000000596,
+        "sampleFrames": 1198,
+        "fps": 59.93866043598121,
         "frameMs": {
           "p50": 16.69999999999709,
           "p95": 16.80000000000291,
@@ -1916,14 +1916,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 1.8999999910593033,
-          "p95": 2.5999999940395355
+          "p50": 0.7000000029802322,
+          "p95": 1.1000000089406967
         },
         "gpuMs": {
-          "samples": 1197,
+          "samples": 1196,
           "disjointEvents": 0,
-          "p50": 15.54715,
-          "p95": 17.07595
+          "p50": 15.42408,
+          "p95": 17.43051
         }
       },
       "after": {
@@ -1940,21 +1940,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -1970,9 +1970,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -2017,20 +2017,20 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 356571,
+        "drawCalls": 95,
+        "triangles": 357828,
         "memory": {
-          "geometries": 156,
-          "textures": 295
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -2059,7 +2059,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 2469,
+          "lastInputSeq": 2452,
           "mag": [
             30,
             12
@@ -2088,21 +2088,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -2124,21 +2124,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -2201,11 +2201,11 @@
             "static": true
           }
         },
-        "drawCalls": 98,
-        "triangles": 363706,
+        "drawCalls": 96,
+        "triangles": 362964,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -2243,7 +2243,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 2682,
+          "lastInputSeq": 2665,
           "mag": [
             30,
             12
@@ -2272,21 +2272,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -2304,21 +2304,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -2381,11 +2381,11 @@
             "static": true
           }
         },
-        "drawCalls": 98,
-        "triangles": 363706,
+        "drawCalls": 96,
+        "triangles": 362964,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -2423,7 +2423,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 3288,
+          "lastInputSeq": 3271,
           "mag": [
             30,
             12
@@ -2452,26 +2452,26 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ],
-        "elapsedMs": 20004.69999998808,
-        "sampleFrames": 1199,
-        "fps": 59.93861166378392,
+        "elapsedMs": 20000.90000000596,
+        "sampleFrames": 1198,
+        "fps": 59.93836055075249,
         "frameMs": {
           "p50": 16.69999999999709,
           "p95": 16.80000000000291,
@@ -2479,14 +2479,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 1.8999999910593033,
-          "p95": 2.7999999970197678
+          "p50": 0.7000000029802322,
+          "p95": 1
         },
         "gpuMs": {
-          "samples": 1197,
+          "samples": 1196,
           "disjointEvents": 0,
-          "p50": 15.4222,
-          "p95": 17.30612
+          "p50": 15.00739,
+          "p95": 17.45894
         }
       },
       "after": {
@@ -2503,21 +2503,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -2580,11 +2580,11 @@
             "static": true
           }
         },
-        "drawCalls": 98,
-        "triangles": 363706,
+        "drawCalls": 96,
+        "triangles": 362964,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -2622,7 +2622,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 3288,
+          "lastInputSeq": 3271,
           "mag": [
             30,
             12
@@ -2651,21 +2651,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -2687,21 +2687,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -2764,11 +2764,11 @@
             "static": true
           }
         },
-        "drawCalls": 124,
-        "triangles": 441038,
+        "drawCalls": 115,
+        "triangles": 417952,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -2806,7 +2806,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 3501,
+          "lastInputSeq": 3484,
           "mag": [
             30,
             12
@@ -2835,21 +2835,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -2867,21 +2867,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -2944,11 +2944,11 @@
             "static": true
           }
         },
-        "drawCalls": 124,
-        "triangles": 441038,
+        "drawCalls": 115,
+        "triangles": 417952,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -2986,7 +2986,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4107,
+          "lastInputSeq": 4090,
           "mag": [
             30,
             12
@@ -3015,26 +3015,26 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ],
-        "elapsedMs": 20001.90000000596,
-        "sampleFrames": 1199,
-        "fps": 59.938611663783874,
+        "elapsedMs": 20001.79999999702,
+        "sampleFrames": 1198,
+        "fps": 59.938660435981234,
         "frameMs": {
           "p50": 16.69999999999709,
           "p95": 16.80000000000291,
@@ -3042,14 +3042,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 1.2999999970197678,
-          "p95": 2.4000000059604645
+          "p50": 0.7999999970197678,
+          "p95": 1.0999999940395355
         },
         "gpuMs": {
-          "samples": 1198,
+          "samples": 1196,
           "disjointEvents": 0,
-          "p50": 15.2852,
-          "p95": 16.39997
+          "p50": 14.88252,
+          "p95": 17.90456
         }
       },
       "after": {
@@ -3066,21 +3066,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -3143,11 +3143,11 @@
             "static": true
           }
         },
-        "drawCalls": 124,
-        "triangles": 441038,
+        "drawCalls": 115,
+        "triangles": 417952,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -3185,7 +3185,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4107,
+          "lastInputSeq": 4090,
           "mag": [
             30,
             12
@@ -3214,21 +3214,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -3250,21 +3250,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -3327,11 +3327,11 @@
             "static": true
           }
         },
-        "drawCalls": 98,
-        "triangles": 363706,
+        "drawCalls": 96,
+        "triangles": 362964,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -3369,7 +3369,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4320,
+          "lastInputSeq": 4303,
           "mag": [
             30,
             12
@@ -3398,21 +3398,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -3430,21 +3430,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -3507,11 +3507,11 @@
             "static": true
           }
         },
-        "drawCalls": 98,
-        "triangles": 363706,
+        "drawCalls": 96,
+        "triangles": 362964,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -3549,7 +3549,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4926,
+          "lastInputSeq": 4909,
           "mag": [
             30,
             12
@@ -3578,26 +3578,26 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ],
-        "elapsedMs": 20009.5,
+        "elapsedMs": 20005.19999998808,
         "sampleFrames": 1199,
-        "fps": 59.93861166378383,
+        "fps": 59.93861166378392,
         "frameMs": {
           "p50": 16.699999999982538,
           "p95": 16.79999999998836,
@@ -3605,14 +3605,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 1,
-          "p95": 1.699999988079071
+          "p50": 0.7000000029802322,
+          "p95": 1.2999999970197678
         },
         "gpuMs": {
           "samples": 1197,
           "disjointEvents": 0,
-          "p50": 15.11964,
-          "p95": 15.6708
+          "p50": 15.2082,
+          "p95": 17.43536
         }
       },
       "after": {
@@ -3629,21 +3629,21 @@
         ],
         "qualityScale": 1,
         "tier": "desktop-high",
-        "meshes": 176,
-        "casting": 30,
-        "lightmapped": 147,
+        "meshes": 172,
+        "casting": 17,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -3706,11 +3706,11 @@
             "static": true
           }
         },
-        "drawCalls": 98,
-        "triangles": 363706,
+        "drawCalls": 96,
+        "triangles": 362964,
         "memory": {
-          "geometries": 158,
-          "textures": 300
+          "geometries": 157,
+          "textures": 289
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -3748,7 +3748,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4926,
+          "lastInputSeq": 4909,
           "mag": [
             30,
             12
@@ -3777,21 +3777,21 @@
             "transferSize": 25469164,
             "encodedBodySize": 25468864,
             "decodedBodySize": 25468864,
-            "durationMs": 586.5
+            "durationMs": 414.79999999701977
           },
           {
             "name": "/models/environment-v3.glb",
-            "transferSize": 25734008,
-            "encodedBodySize": 25733708,
-            "decodedBodySize": 25733708,
-            "durationMs": 600.5
+            "transferSize": 25302688,
+            "encodedBodySize": 25302388,
+            "decodedBodySize": 25302388,
+            "durationMs": 85.79999999701977
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 33
+            "durationMs": 19.299999997019768
           }
         ]
       },
@@ -3813,21 +3813,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -3843,9 +3843,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -3890,20 +3890,20 @@
             "static": true
           }
         },
-        "drawCalls": 73,
-        "triangles": 344636,
+        "drawCalls": 71,
+        "triangles": 343894,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -3932,7 +3932,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 218,
+          "lastInputSeq": 193,
           "mag": [
             30,
             12
@@ -3961,21 +3961,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -3993,21 +3993,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -4023,9 +4023,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -4070,20 +4070,20 @@
             "static": true
           }
         },
-        "drawCalls": 73,
-        "triangles": 344636,
+        "drawCalls": 71,
+        "triangles": 343894,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -4112,7 +4112,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 824,
+          "lastInputSeq": 800,
           "mag": [
             30,
             12
@@ -4141,41 +4141,41 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ],
-        "elapsedMs": 20010.20000000298,
-        "sampleFrames": 1192,
-        "fps": 59.538972553133036,
+        "elapsedMs": 20003.29999999702,
+        "sampleFrames": 1189,
+        "fps": 59.438409510145526,
         "frameMs": {
           "p50": 16.700000000000728,
           "p95": 16.799999999999272,
           "p99": 16.80000000000291,
-          "over33Percent": 0.25167785234899326
+          "over33Percent": 0.2523128679562658
         },
         "cpuSubmitMs": {
-          "p50": 0.7000000029802322,
-          "p95": 1.0999999940395355
+          "p50": 1.3999999910593033,
+          "p95": 1.9000000059604645
         },
         "gpuMs": {
-          "samples": 1191,
+          "samples": 1188,
           "disjointEvents": 0,
-          "p50": 4.37552,
-          "p95": 4.81095
+          "p50": 4.15192,
+          "p95": 5.40432
         }
       },
       "after": {
@@ -4192,21 +4192,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -4222,9 +4222,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -4269,20 +4269,20 @@
             "static": true
           }
         },
-        "drawCalls": 73,
-        "triangles": 344636,
+        "drawCalls": 71,
+        "triangles": 343894,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -4311,7 +4311,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 824,
+          "lastInputSeq": 800,
           "mag": [
             30,
             12
@@ -4340,21 +4340,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -4376,21 +4376,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -4406,9 +4406,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -4453,20 +4453,20 @@
             "static": true
           }
         },
-        "drawCalls": 94,
-        "triangles": 405672,
+        "drawCalls": 89,
+        "triangles": 382694,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -4495,7 +4495,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1037,
+          "lastInputSeq": 1012,
           "mag": [
             30,
             12
@@ -4524,21 +4524,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -4556,21 +4556,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -4586,9 +4586,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -4633,20 +4633,20 @@
             "static": true
           }
         },
-        "drawCalls": 94,
-        "triangles": 405672,
+        "drawCalls": 89,
+        "triangles": 382694,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -4675,7 +4675,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1644,
+          "lastInputSeq": 1619,
           "mag": [
             30,
             12
@@ -4704,26 +4704,26 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ],
-        "elapsedMs": 20009.20000000298,
-        "sampleFrames": 1199,
-        "fps": 59.93831202915431,
+        "elapsedMs": 20003.5,
+        "sampleFrames": 1198,
+        "fps": 59.93836055075249,
         "frameMs": {
           "p50": 16.69999999999709,
           "p95": 16.80000000000291,
@@ -4731,14 +4731,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 1,
-          "p95": 2
+          "p50": 1.1000000089406967,
+          "p95": 1.7999999970197678
         },
         "gpuMs": {
           "samples": 1197,
           "disjointEvents": 0,
-          "p50": 4.29088,
-          "p95": 4.93799
+          "p50": 4.854,
+          "p95": 5.37384
         }
       },
       "after": {
@@ -4755,21 +4755,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -4785,9 +4785,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -4832,20 +4832,20 @@
             "static": true
           }
         },
-        "drawCalls": 94,
-        "triangles": 405672,
+        "drawCalls": 89,
+        "triangles": 382694,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -4874,7 +4874,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1645,
+          "lastInputSeq": 1619,
           "mag": [
             30,
             12
@@ -4903,21 +4903,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -4939,21 +4939,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -4969,9 +4969,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -5016,20 +5016,20 @@
             "static": true
           }
         },
-        "drawCalls": 73,
-        "triangles": 344636,
+        "drawCalls": 71,
+        "triangles": 343894,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -5058,7 +5058,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 1857,
+          "lastInputSeq": 1832,
           "mag": [
             30,
             12
@@ -5087,21 +5087,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -5119,21 +5119,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -5149,9 +5149,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -5196,20 +5196,20 @@
             "static": true
           }
         },
-        "drawCalls": 73,
-        "triangles": 344636,
+        "drawCalls": 71,
+        "triangles": 343894,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -5238,7 +5238,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 2463,
+          "lastInputSeq": 2438,
           "mag": [
             30,
             12
@@ -5267,26 +5267,26 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ],
-        "elapsedMs": 20003.5,
+        "elapsedMs": 20003.09999999404,
         "sampleFrames": 1199,
-        "fps": 59.938611663783874,
+        "fps": 59.93891130140925,
         "frameMs": {
           "p50": 16.69999999999709,
           "p95": 16.80000000000291,
@@ -5294,14 +5294,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 0.7999999970197678,
-          "p95": 1
+          "p50": 1.2999999970197678,
+          "p95": 1.7999999970197678
         },
         "gpuMs": {
           "samples": 1198,
           "disjointEvents": 0,
-          "p50": 4.39486,
-          "p95": 4.87986
+          "p50": 4.16044,
+          "p95": 5.40156
         }
       },
       "after": {
@@ -5318,21 +5318,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -5348,9 +5348,9 @@
         "pixelRatio": 1,
         "camera": {
           "position": [
-            -7,
+            -7.75,
             1.62,
-            -13
+            -14.4
           ],
           "quaternion": [
             0.0030415307188599396,
@@ -5395,20 +5395,20 @@
             "static": true
           }
         },
-        "drawCalls": 73,
-        "triangles": 344636,
+        "drawCalls": 71,
+        "triangles": 343894,
         "memory": {
-          "geometries": 154,
-          "textures": 273
+          "geometries": 152,
+          "textures": 259
         },
         "gpuTimerAvailable": true,
         "player": {
           "id": "vehicle-review",
           "name": "Graphics review",
           "color": "#64bdda",
-          "x": -7,
+          "x": -7.75,
           "y": 0,
-          "z": -13,
+          "z": -14.4,
           "yaw": 2.65,
           "pitch": -0.025,
           "vx": 0,
@@ -5437,7 +5437,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 2464,
+          "lastInputSeq": 2438,
           "mag": [
             30,
             12
@@ -5466,21 +5466,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -5502,21 +5502,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -5579,11 +5579,11 @@
             "static": true
           }
         },
-        "drawCalls": 76,
-        "triangles": 356272,
+        "drawCalls": 74,
+        "triangles": 355530,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -5621,7 +5621,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 2677,
+          "lastInputSeq": 2650,
           "mag": [
             30,
             12
@@ -5650,21 +5650,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -5682,21 +5682,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -5759,11 +5759,11 @@
             "static": true
           }
         },
-        "drawCalls": 76,
-        "triangles": 356272,
+        "drawCalls": 74,
+        "triangles": 355530,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -5801,7 +5801,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 3283,
+          "lastInputSeq": 3257,
           "mag": [
             30,
             12
@@ -5830,26 +5830,26 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ],
-        "elapsedMs": 20008.29999999702,
-        "sampleFrames": 1200,
-        "fps": 59.938562972952724,
+        "elapsedMs": 20003.09999999404,
+        "sampleFrames": 1199,
+        "fps": 59.938611663783874,
         "frameMs": {
           "p50": 16.69999999999709,
           "p95": 16.80000000000291,
@@ -5857,14 +5857,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 0.9000000059604645,
-          "p95": 1.7999999970197678
+          "p50": 1.300000011920929,
+          "p95": 1.9000000059604645
         },
         "gpuMs": {
-          "samples": 1199,
+          "samples": 1198,
           "disjointEvents": 0,
-          "p50": 4.43444,
-          "p95": 4.90052
+          "p50": 4.3414,
+          "p95": 5.62824
         }
       },
       "after": {
@@ -5881,21 +5881,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -5958,11 +5958,11 @@
             "static": true
           }
         },
-        "drawCalls": 76,
-        "triangles": 356272,
+        "drawCalls": 74,
+        "triangles": 355530,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -6000,7 +6000,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 3284,
+          "lastInputSeq": 3257,
           "mag": [
             30,
             12
@@ -6029,21 +6029,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -6065,21 +6065,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -6142,11 +6142,11 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 435416,
+        "drawCalls": 91,
+        "triangles": 406962,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -6184,7 +6184,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 3497,
+          "lastInputSeq": 3470,
           "mag": [
             30,
             12
@@ -6213,21 +6213,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -6245,21 +6245,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -6322,11 +6322,11 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 435416,
+        "drawCalls": 91,
+        "triangles": 406962,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -6364,7 +6364,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4103,
+          "lastInputSeq": 4076,
           "mag": [
             30,
             12
@@ -6393,24 +6393,24 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ],
-        "elapsedMs": 20008.40000000596,
+        "elapsedMs": 20002.69999998808,
         "sampleFrames": 1199,
         "fps": 59.93861166378392,
         "frameMs": {
@@ -6420,14 +6420,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 1,
-          "p95": 1.300000011920929
+          "p50": 1.4000000059604645,
+          "p95": 2.0999999940395355
         },
         "gpuMs": {
           "samples": 1198,
           "disjointEvents": 0,
-          "p50": 4.76505,
-          "p95": 5.27442
+          "p50": 4.89224,
+          "p95": 6.118
         }
       },
       "after": {
@@ -6444,21 +6444,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": false,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": true,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -6521,11 +6521,11 @@
             "static": true
           }
         },
-        "drawCalls": 96,
-        "triangles": 435416,
+        "drawCalls": 91,
+        "triangles": 406962,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -6563,7 +6563,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4104,
+          "lastInputSeq": 4076,
           "mag": [
             30,
             12
@@ -6592,21 +6592,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -6628,21 +6628,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -6705,11 +6705,11 @@
             "static": true
           }
         },
-        "drawCalls": 76,
-        "triangles": 356272,
+        "drawCalls": 74,
+        "triangles": 355530,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -6747,7 +6747,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4317,
+          "lastInputSeq": 4289,
           "mag": [
             30,
             12
@@ -6776,21 +6776,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -6808,21 +6808,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -6885,11 +6885,11 @@
             "static": true
           }
         },
-        "drawCalls": 76,
-        "triangles": 356272,
+        "drawCalls": 74,
+        "triangles": 355530,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -6927,7 +6927,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4924,
+          "lastInputSeq": 4895,
           "mag": [
             30,
             12
@@ -6956,26 +6956,26 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ],
-        "elapsedMs": 20010.89999999106,
+        "elapsedMs": 20002.60000000894,
         "sampleFrames": 1199,
-        "fps": 59.93861166378392,
+        "fps": 59.93861166378383,
         "frameMs": {
           "p50": 16.699999999982538,
           "p95": 16.79999999998836,
@@ -6983,14 +6983,14 @@
           "over33Percent": 0
         },
         "cpuSubmitMs": {
-          "p50": 0.8999999910593033,
-          "p95": 1.2000000029802322
+          "p50": 1.0999999940395355,
+          "p95": 1.7999999970197678
         },
         "gpuMs": {
           "samples": 1198,
           "disjointEvents": 0,
-          "p50": 4.41385,
-          "p95": 4.86921
+          "p50": 4.32156,
+          "p95": 5.63248
         }
       },
       "after": {
@@ -7007,21 +7007,21 @@
         ],
         "qualityScale": 1,
         "tier": "phone",
-        "meshes": 174,
-        "casting": 28,
-        "lightmapped": 147,
+        "meshes": 170,
+        "casting": 15,
+        "lightmapped": 143,
         "roots": {
           "VehicleTestTown": {
             "visible": true,
             "meshes": 73,
             "triangles": 367921,
-            "casting": 4
+            "casting": 1
           },
           "TownVariant_improved": {
             "visible": false,
-            "meshes": 91,
-            "triangles": 422561,
-            "casting": 15
+            "meshes": 87,
+            "triangles": 415953,
+            "casting": 5
           }
         },
         "gpu": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x000013C0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
@@ -7084,11 +7084,11 @@
             "static": true
           }
         },
-        "drawCalls": 76,
-        "triangles": 356272,
+        "drawCalls": 74,
+        "triangles": 355530,
         "memory": {
-          "geometries": 157,
-          "textures": 281
+          "geometries": 155,
+          "textures": 267
         },
         "gpuTimerAvailable": true,
         "player": {
@@ -7126,7 +7126,7 @@
           "protectedUntil": 0,
           "reloadingUntil": 0,
           "cookingSince": 0,
-          "lastInputSeq": 4924,
+          "lastInputSeq": 4895,
           "mag": [
             30,
             12
@@ -7155,21 +7155,21 @@
             "transferSize": 12399432,
             "encodedBodySize": 12399132,
             "decodedBodySize": 12399132,
-            "durationMs": 55
+            "durationMs": 85.8999999910593
           },
           {
             "name": "/models/environment-v3-phone.glb",
-            "transferSize": 13500560,
-            "encodedBodySize": 13500260,
-            "decodedBodySize": 13500260,
-            "durationMs": 57.69999998807907
+            "transferSize": 13396520,
+            "encodedBodySize": 13396220,
+            "decodedBodySize": 13396220,
+            "durationMs": 89.5
           },
           {
             "name": "/models/operator-v1.glb",
             "transferSize": 2144076,
             "encodedBodySize": 2143776,
             "decodedBodySize": 2143776,
-            "durationMs": 13.700000002980232
+            "durationMs": 18.5
           }
         ]
       },
@@ -7179,5 +7179,5 @@
   "errors": [],
   "warnings": [],
   "browserVersion": "156.0.4314.50",
-  "finishedAt": "2026-10-31T05:08:07.109Z"
+  "finishedAt": "2026-10-31T08:10:56.539Z"
 }

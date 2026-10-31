@@ -9,42 +9,16 @@ import { EXPOSURE, FOG, HEMISPHERE, SUN_COLOR, SUN_INTENSITY } from '../game/Atm
 import { movePlayer, moveDefaults } from '../../shared/physics';
 import { DEFAULT_LOADOUT } from '../../shared/weapons';
 import type { InputFrame, PlayerState, PublicPlayerState, WorldSnapshot } from '../../shared/protocol';
+import { ReviewTouch } from './ReviewTouch';
+import { TOWN_VIEWS, VEHICLE_VIEWS, type ReviewView } from './views';
 import '../styles.css';
 import './review.css';
 
 type Variant = 'current' | 'improved';
 type Quality = 'auto' | 'high' | 'low';
-type Vec = [number, number, number];
-const views: Record<string, { label: string; player: Vec; yaw: number; pitch: number; camera?: Vec; target?: Vec }> = {
-  'bus-close': { label: 'Bus · close detail', player: [-7, 0, -13], yaw: 2.65, pitch: -.04, camera: [-8.2, 3.1, -14.3], target: [-2.4, 1.5, -6.2] },
-  'bus-gameplay': { label: 'Bus · player view', player: [-7, 0, -13], yaw: 2.65, pitch: -.025 },
-  'bus-detail': { label: 'Bus · wheel and panel detail', player: [-7, 0, -13], yaw: 2.65, pitch: -.025, camera: [-6.1, 1.8, -10.6], target: [-3.0, 1.25, -8.0] },
-  'south-close': { label: 'South car · close detail', player: [-7, 0, 20.7], yaw: .6, pitch: -.04, camera: [-7.5, 2.3, 19.3], target: [-3.9, .95, 16.2] },
-  'south-gameplay': { label: 'South car · player view', player: [-7, 0, 20.7], yaw: .6, pitch: -.06 },
-  'south-detail': { label: 'South car · wheel and panel detail', player: [-7, 0, 20.7], yaw: .6, pitch: -.06, camera: [-5.7, 1.25, 18.7], target: [-4.7, .68, 16.65] },
-  'north-close': { label: 'North car · close detail', player: [0, 0, -12.5], yaw: .686, pitch: -.04, camera: [.2, 2.3, -14.2], target: [4, .95, -17.4] },
-  'north-gameplay': { label: 'North car · player view', player: [0, 0, -12.5], yaw: .686, pitch: -.06 },
-};
 const params = new URLSearchParams(location.search);
 const townMode = location.pathname.endsWith('/graphics-test.html');
-if (townMode) Object.assign(views, {
-  'street': { label: 'Main street · architecture', player: [0, 0, 17], yaw: 0, pitch: -.04, camera: [3.5, 3.8, 19.5], target: [-6, 2.2, -3] },
-  'teal-front': { label: 'Teal house · siding and windows', player: [-5, 0, -9], yaw: -1, pitch: 0, camera: [-3.5, 3, -11.5], target: [-11, 3.3, -.5] },
-  'yellow-front': { label: 'Yellow house · facade and garage', player: [5, 0, 16], yaw: 2, pitch: 0, camera: [4.2, 3.4, 18.8], target: [12, 3, 3.5] },
-  'roof-detail': { label: 'Roof · ridge and gutter detail', player: [-7, 0, -13], yaw: 0, pitch: 0, camera: [-9, 7.6, -13.7], target: [-16, 6.8, -3.5] },
-  'teal-room': { label: 'Teal house · ground floor', player: [-13, 0, 0], yaw: 0, pitch: 0, camera: [-10.7, 1.75, 4.8], target: [-16.4, 1.2, -3.1] },
-  'yellow-upstairs': { label: 'Yellow house · upstairs', player: [13, 3.2, 1], yaw: 0, pitch: 0, camera: [14, 4.9, 4.8], target: [9.5, 4.6, -.2] },
-  'yard': { label: 'Backyard · fence and trees', player: [-28, 0, -18.5], yaw: 1.57, pitch: -.04, camera: [-25.5, 2, -16], target: [-32.5, 2.4, -10] },
-  'spawn-gameplay': { label: 'Spawn · player view', player: [-28, 0, -18.5], yaw: Math.PI/2, pitch: -.04 },
-  // Kannon Town v3: the checkpoint, at standing eye height (1.62 m) like the first-person game.
-  'checkpoint-north': { label: 'Checkpoint · from the north end', player: [-3, 0, -21], yaw: 2.8, pitch: -.03, camera: [-3, 1.62, -21], target: [2, 0.9, -9] },
-  'checkpoint-south': { label: 'Checkpoint · from the south end', player: [-1, 0, 21], yaw: 0, pitch: -.03, camera: [-1.5, 1.62, 21], target: [1.5, 1.0, 6] },
-  'truck': { label: 'Cargo truck · cab and canvas', player: [5.5, 0, -5.5], yaw: 2.8, pitch: -.03, camera: [6.2, 1.62, -6.2], target: [2.6, 1.4, 2.0] },
-  'burnt-car': { label: 'Burnt-out car and ammo crates', player: [8.5, 0, -13], yaw: -2.4, pitch: -.05, camera: [8.5, 1.62, -12.5], target: [3.5, 0.7, -17.4] },
-  'barrier': { label: 'Concrete barrier · east lane', player: [3, 0, -6], yaw: 2.4, pitch: -.1, camera: [3.2, 1.62, -6.2], target: [6.6, 0.5, -9.5] },
-  'yard-sandbags': { label: 'Back yard · sandbag wall', player: [-21, 0, 12], yaw: -1.2, pitch: -.05, camera: [-21.5, 1.62, 12.5], target: [-26.6, 0.6, 8.6] },
-  'teal-shadow': { label: 'Street · long shadows', player: [6, 0, 14], yaw: -.4, pitch: -.03, camera: [6.5, 1.62, 15], target: [-2, 1.2, -6] },
-});
+const views: Record<string, ReviewView> = { ...VEHICLE_VIEWS, ...(townMode ? TOWN_VIEWS : {}) };
 const original = params.get('original') === '1';
 // ?graphics=v2 compares the refined town (Before) with Kannon Town v2 (After);
 // ?graphics=v3 compares Kannon Town v2 (Before) with the v3 checkpoint at golden hour (After).
@@ -58,6 +32,11 @@ const LIGHT = {
   current: { exposure: 1.0, fog: { color: '#b2cbd0', near: 100, far: 460 }, sun: { color: '#fff4e4', intensity: 3.3 }, hemisphere: { sky: '#d9edff', ground: '#8e7357', intensity: 0.8 } },
   improved: { exposure: EXPOSURE, fog: FOG, sun: { color: SUN_COLOR, intensity: SUN_INTENSITY }, hemisphere: HEMISPHERE },
 } as const;
+/** GameView's options as this page passes them. `hud` is spelled out because the contract adds it
+ *  to GameViewOptions in the first-person overhaul; everything else, graphicsTest included, is
+ *  checked against GameView's own type, so a rename there breaks this build instead of silently
+ *  dropping the artwork and light overrides. */
+type ReviewOptions = ConstructorParameters<typeof GameView>[1] & { hud: HudStore };
 type TestApi = {
   ready: boolean; selectView: (name: string) => void; setVariant: (variant: Variant) => void;
   setQuality: (quality: Quality) => void; walk: () => void;
@@ -92,7 +71,8 @@ function Review() {
     const requireIdle = () => { if (sampleActive) throw new Error('Wait for the current measurement to finish.'); };
     const frames: number[] = [], cpu: number[] = [], gpu: number[] = [];
     const player: PlayerState = {
-      id: 'vehicle-review', name: 'Graphics review', color: '#64bdda', x: -7, y: 0, z: -13, yaw: 2.65, pitch: -.04, vx: 0, vy: 0, vz: 0,
+      id: 'vehicle-review', name: 'Graphics review', color: '#64bdda', x: views[activeView].player[0], y: views[activeView].player[1], z: views[activeView].player[2],
+      yaw: views[activeView].yaw, pitch: views[activeView].pitch, vx: 0, vy: 0, vz: 0,
       health: 100, slot: 1, weapon: DEFAULT_LOADOUT.primary, loadout: DEFAULT_LOADOUT, kills: 0, deaths: 0, assists: 0, score: 0, streak: 0,
       connected: true, respawnAt: 0, protectedUntil: 0, reloadingUntil: 0, cookingSince: 0, lastInputSeq: 0,
       mag: [30, 12], reserve: [120, 48], frags: 1, rewards: [], reloadSlot: 0, readyAt: 0, meleeUntil: 0, lastDamageAt: 0,
@@ -142,10 +122,11 @@ function Review() {
           if (!free && preset.camera) {
             c.position.fromArray(preset.camera); c.lookAt(new THREE.Vector3().fromArray(preset.target!)); c.fov = 68; c.updateProjectionMatrix();
           }
-          // The actual character stays visible in normal player-view captures.
+          // Player views leave the character to GameView (which hides it around a first-person
+          // camera); fixed cameras hide it unless the view asks to show it (shadow checks).
           for (const obj of s.children) if (obj instanceof THREE.Group && obj !== s.getObjectByName('VehicleTestTown')) {
             let skinned = false; obj.traverse(child => { if (child instanceof THREE.SkinnedMesh) skinned = true; });
-            if (skinned && !free && preset.camera) obj.visible = false;
+            if (skinned && !free && preset.camera) obj.visible = !!preset.showPlayer;
           }
           s.getObjectByName('VehicleVariant_current')?.traverse(obj => { if (obj.name === 'VehicleVariant_current') obj.visible = activeVariant === 'current'; });
           s.getObjectByName('VehicleVariant_improved')?.traverse(obj => { if (obj.name === 'VehicleVariant_improved') obj.visible = activeVariant === 'improved'; });
@@ -173,8 +154,7 @@ function Review() {
           if (sampleActive) { frames.push(frameMs); cpu.push(submitMs); }
         },
       },
-    };
-    // A variable, not a literal: GameView's option list grows with the first-person overhaul.
+    } satisfies ReviewOptions;
     const view = new GameView(container.current, options);
     const selectView = (name: string) => {
       requireIdle();
@@ -253,8 +233,9 @@ function Review() {
     </header>
     <div className="review-caption"><b>{original ? 'ORIGINAL UNSPLIT' : variant === 'improved' ? 'AFTER' : 'BEFORE'}</b><span>{walking ? 'Walk-around · combat is in Full practice match' : views[selected].label}</span><small>{quality.toUpperCase()} · fixed quality · {stats.fps} FPS · {stats.drawCalls} draws</small><small className="portrait-note">Landscape shows more of each scene.</small></div>
     {(!ready || error) && <div className="review-loading" role="status">{error || 'Loading both versions and the game renderer…'}</div>}
+    {walking && input.isTouch && <ReviewTouch input={input}/>}
     {walking && <div className="review-reticle">+</div>}
-    <footer className="review-footer"><span>{walking ? 'WASD · mouse to look · Space to jump · C to crouch · Esc releases the mouse. Combat is in Full practice match.' : 'Switch Before / After without moving the camera. Player views keep the normal game camera.'}</span>
+    <footer className="review-footer"><span>{walking ? 'WASD or the stick to move · mouse or drag to look · Space or Jump to jump · C to crouch · Esc releases the mouse. Combat is in Full practice match.' : 'Switch Before / After without moving the camera. Player views keep the normal game camera.'}</span>
       <button disabled={!ready || measuring || walking} onClick={async () => { setResult('Measuring 20 seconds…'); try { const r = await api.current!.sample(20000); setResult(`${Number(r.fps).toFixed(1)} FPS · p95 ${(r.frameMs as { p95: number }).p95.toFixed(1)} ms`); } catch (e) { setResult(e instanceof Error ? e.message : 'Measurement failed.'); } }}>{measuring ? 'Measuring…' : 'Measure 20 s'}</button><output>{result}</output>
     </footer>
   </main>;

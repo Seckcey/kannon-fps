@@ -15,6 +15,7 @@ interface Calibration {
 }
 const sidecar = JSON.parse(readFileSync(new URL('../../art/source/town-v3/town-v3-lightmaps.json', import.meta.url), 'utf8')) as {
   calibration: Calibration; materials: Record<string, { atlas: string; intensity: number }>; alphaBlend: string[];
+  atlases: Record<string, string>; sunMasks: Record<string, string>;
 };
 const calibration = sidecar.calibration;
 const luminance = ([r, g, b]: readonly number[]) => 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
@@ -81,4 +82,14 @@ test('every lightmapped material uses the calibrated intensity, and open sun is 
   assert.ok(Math.abs(calibration.lightMapIntensity - calibration.normaliser * calibration.blenderToRuntime * Math.PI) < 1e-6);
   assert.ok(luminance(calibration.openStreetHorizontal) > 1.5 * luminance(calibration.skyUp), 'sunlit ground clearly outshines the shade');
   for (const name of ['V3_WindowGlass', 'V3_Smoke']) assert.ok(sidecar.alphaBlend.some(entry => entry.startsWith(name)), `${name} blends`);
+});
+
+test('every atlas has its sun share baked beside it, and the pots bake on their own', () => {
+  // The finish script turns each sun-share image into the lightmap's shade-level alpha, so a
+  // character's real-time shadow takes away the baked sun and nothing else.
+  assert.deepEqual(Object.keys(sidecar.sunMasks).sort(), Object.keys(sidecar.atlases).sort());
+  for (const [atlas, file] of Object.entries(sidecar.sunMasks)) assert.equal(file, `${atlas}_sun.png`);
+  // Pots are invisible to every other group's bake: no baked shadow is left when one shatters.
+  assert.equal(sidecar.materials.V3_Pot?.atlas, 'LM_pots');
+  assert.ok(Object.entries(sidecar.materials).every(([name, entry]) => (entry.atlas === 'LM_pots') === name.startsWith('V3_Pot')));
 });

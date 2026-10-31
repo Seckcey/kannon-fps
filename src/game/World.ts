@@ -3,7 +3,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { ktx2Loader } from './Ktx2';
 import { environmentAssetUrl, getArenaAssetBuffer, type TextureTier } from './assets';
-import { LightmapPlugin, applyLightmapShading } from './Lightmaps';
+import { LightmapPlugin, applyLightmapShading, lightmapHasShadeAlpha } from './Lightmaps';
+import { applyVertexSunVisibility } from './SunVisibility';
 import { createAtmosphere, SKY_LIGHT_INTENSITY } from './Atmosphere';
 
 export interface ArenaWorld {
@@ -29,6 +30,75 @@ export const DECAL_MATERIAL = /^V3_Decals/;
 export const SMOKE_MATERIAL = /^V3_Smoke/;
 /** Breakable window panes: thin, see-through and reflective. */
 export const WINDOW_GLASS_MATERIAL = /^V3_WindowGlass/;
+/** Concertina wire: strands thinner than a shadow-map texel, not lightmapped. Its colour
+ *  attribute's alpha carries sun visibility measured in Blender (see applyVertexSunVisibility). */
+export const WIRE_MATERIAL = /^V3_Wire/;
+/** Unbaked surfaces lit by the real-time sun through per-vertex sun visibility: wire, grass cards. */
+export const UNBAKED_SUN_MATERIAL = /^V3_Wire|GrassCard/i;
+const GROUND_MATERIAL = /GroundGrass|GroundAsphalt|Cliff/i;
+const HORIZON_NODE = /Horizon|Exterior/i;
+/** Pots are baked without casting into the lightmaps, so their shadow must leave with them. */
+const BREAKABLE_POT = /^Breakable_Pot_/;
+
+/** Whether an environment mesh draws into the real-time sun shadow map. Decided per mesh, never
+ *  per material, because meshes share materials (six panes share one glass, the truck shares its
+ *  paint with the props). Lightmapped surfaces already carry their shadows in the bake, and the
+ *  shade level lets a real-time shadow remove only baked sun, so the casters left are the pots,
+ *  whose shadows are deliberately not baked, and unbaked decoration such as grass cards. Glass
+ *  never hides what is behind it; wire, decals and smoke are too thin or not solid. */
+export function castsRealtimeShadow(object: THREE.Object3D): boolean {
+  if (!(object instanceof THREE.Mesh)) return false;
+  const names: string[] = [];
+  for (let current: THREE.Object3D | null = object; current; current = current.parent) names.push(current.name);
+  if (names.some(name => HORIZON_NODE.test(name))) return false;
+  const materials: THREE.Material[] = Array.isArray(object.material) ? object.material : [object.material];
+  if (materials.some(material => [DECAL_MATERIAL, SMOKE_MATERIAL, WINDOW_GLASS_MATERIAL, WIRE_MATERIAL].some(pattern => pattern.test(material.name)))) return false;
+  if (materials.every(material => GROUND_MATERIAL.test(material.name))) return false;
+  if (names.some(name => BREAKABLE_POT.test(name))) return true;
+  return !materials.some(material => !!(material as THREE.MeshStandardMaterial).lightMap);
+}
+
+/** Wind is computed in world metres. Meshopt stores positions as normalised integers scaled by
+ *  the node (the smoke node is scaled 187 times), so the raw `position` attribute cannot drive it.
+ *  The world offset goes back into the node's local space through its uniform scale. */
+function worldSway(offset: string): string {
+  return `#include <begin_vertex>
+	vec3 kannonWorld = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
+	vec3 kannonOffset = ${offset};
+	transformed += ( kannonOffset * mat3( modelMatrix ) ) / dot( modelMatrix[ 0 ].xyz, modelMatrix[ 0 ].xyz );`;
+}
+const glsl = (value: number) => value.toFixed(4);
+
+/** Distant smoke: column bases sit at y = -8 and tops at 66 to 104 m; the tops drift metres. */
+export const SMOKE_SWAY = { riseFrom: -8, riseTo: 100, amplitude: { x: 3, z: 2 }, speed: { x: 0.11, z: 0.08 } } as const;
+/** Bushes, tree canopies and grass cards: a few centimetres, more the higher the leaf. */
+export const FOLIAGE_SWAY = { riseFrom: 0.15, riseTo: 1.6, amplitude: { x: 0.045, z: 0.025 }, speed: { x: 1.15, z: 0.8 } } as const;
+type Sway = typeof SMOKE_SWAY | typeof FOLIAGE_SWAY;
+
+/** The offset the sway shaders add, in world metres, for a vertex at `world` at time `time`. */
+export function swayOffset(sway: Sway, world: { x: number; y: number; z: number }, time: number): { x: number; z: number } {
+  const t = Math.min(1, Math.max(0, (world.y - sway.riseFrom) / (sway.riseTo - sway.riseFrom)));
+  const rise = t * t * (3 - 2 * t);
+  const phase = sway === SMOKE_SWAY
+    ? { x: world.y * 0.035 + world.z * 0.01, z: world.y * 0.03 + world.x * 0.01 }
+    : { x: world.z * 0.35 + world.y * 0.85, z: world.x * 0.3 };
+  return { x: Math.sin(time * sway.speed.x + phase.x) * sway.amplitude.x * rise, z: Math.cos(time * sway.speed.z + phase.z) * sway.amplitude.z * rise };
+}
+
+function swayGlsl(sway: Sway): string {
+  const phase = sway === SMOKE_SWAY
+    ? { x: 'kannonWorld.y * 0.035 + kannonWorld.z * 0.01', z: 'kannonWorld.y * 0.03 + kannonWorld.x * 0.01' }
+    : { x: 'kannonWorld.z * 0.35 + kannonWorld.y * 0.85', z: 'kannonWorld.x * 0.3' };
+  return `vec3( sin( uWindTime * ${glsl(sway.speed.x)} + ${phase.x} ) * ${glsl(sway.amplitude.x)}, 0.0, cos( uWindTime * ${glsl(sway.speed.z)} + ${phase.z} ) * ${glsl(sway.amplitude.z)} ) * smoothstep( ${glsl(sway.riseFrom)}, ${glsl(sway.riseTo)}, kannonWorld.y )`;
+}
+
+/** Vertex patch for any material swaying with the shared wind clock. */
+export function patchSwayVertex(vertexShader: string, sway: Sway): string {
+  if (vertexShader.includes('kannonWorld')) return vertexShader;
+  return vertexShader
+    .replace('#include <common>', '#include <common>\nuniform float uWindTime;')
+    .replace('#include <begin_vertex>', worldSway(swayGlsl(sway)));
+}
 
 const FOG_TOWARD_WHITE = `#ifdef USE_FOG
   #ifdef FOG_EXP2
@@ -55,14 +125,9 @@ export function createSmokeMaterial(map: THREE.Texture | null, time: { value: nu
   material.name = 'V3_Smoke_unlit';
   material.onBeforeCompile = shader => {
     shader.uniforms.uWindTime = time;
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uWindTime;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-        float kannonRise = smoothstep( 0.0, 110.0, position.y );
-        transformed.x += sin( uWindTime * 0.11 + position.y * 0.035 + position.z * 0.01 ) * 3.0 * kannonRise;
-        transformed.z += cos( uWindTime * 0.08 + position.y * 0.03 ) * 2.0 * kannonRise;`);
+    shader.vertexShader = patchSwayVertex(shader.vertexShader, SMOKE_SWAY);
   };
-  material.customProgramCacheKey = () => 'kannon-smoke-v1';
+  material.customProgramCacheKey = () => 'kannon-smoke-v2';
   return material;
 }
 
@@ -89,10 +154,6 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
   // KTX2 textures stay GPU-compressed; the Basis transcoder is bundled from this origin.
   const ktx2 = ktx2Loader(renderer);
   const loader = () => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2).register(parser => new LightmapPlugin(parser));
-  const isHorizon = (object: THREE.Object3D) => {
-    for (let current: THREE.Object3D | null = object; current; current = current.parent) if (/Horizon|Exterior/i.test(current.name)) return true;
-    return false;
-  };
   const load = async () => {
     if (!artwork) return loader().parseAsync(await getArenaAssetBuffer(environmentAssetUrl(textureTier)), '/models/');
     const assets = [{ name: 'VehicleTestTown', url: artwork.environmentUrl, visible: artwork.environmentVisible ?? true }, ...(artwork.vehicles ?? [])];
@@ -136,7 +197,8 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
       }
       if (materials.some(material => /GrassCard/i.test(material.name))) grassCards.push(object);
       if (/^Breakable/i.test(object.name)) breakables.push(object);
-      object.castShadow = !isHorizon(object) && !materials.every(material => /GroundGrass|GroundAsphalt|Cliff/i.test(material.name));
+      // Per mesh, outside the per-material setup below: several meshes share each material.
+      object.castShadow = castsRealtimeShadow(object);
       object.receiveShadow = true;
       for (const material of materials) {
         if (configured.has(material)) continue;
@@ -152,20 +214,15 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
         }
         if (/Vehicle_.*(?:Metallic|Enamel|Aluminium|Steel|Glass)|RefinedArchitecturalGlass|V2_Glass|V3_WindowGlass/.test(material.name)) reflectiveMaterials.add(material);
         material.envMapIntensity = /Petrol|Bronze/i.test(material.name) ? 1.05 : 0.75;
-        if (WINDOW_GLASS_MATERIAL.test(material.name)) {
-          // Breakable panes stay see-through from both sides and never hide what is behind them.
-          material.transparent = true; material.depthWrite = false; object.castShadow = false;
-        }
+        // Breakable panes stay see-through from both sides and never hide what is behind them.
+        if (WINDOW_GLASS_MATERIAL.test(material.name)) { material.transparent = true; material.depthWrite = false; }
         if (/Leaves|Flower|GrassCard/i.test(material.name)) {
           material.side = THREE.DoubleSide;
           material.onBeforeCompile = shader => {
             shader.uniforms.uWindTime = windTime;
-            shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWindTime;');
-            shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-              transformed.x += sin(uWindTime*1.15+position.z*.35+position.y*.85)*.045*smoothstep(1.,7.,position.y);
-              transformed.z += cos(uWindTime*.8+position.x*.3)*.025*smoothstep(1.,7.,position.y);`);
+            shader.vertexShader = patchSwayVertex(shader.vertexShader, FOLIAGE_SWAY);
           };
-          material.customProgramCacheKey = () => 'sunbreak-foliage-v2';
+          material.customProgramCacheKey = () => 'sunbreak-foliage-v3';
         }
         if (diffuseSky && !material.lightMap && /Ground|Limestone|Cliff|Bark|Leaves|Flower/i.test(material.name)) {
           const configureWind = material.onBeforeCompile;
@@ -186,13 +243,16 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
                   return getIBLIrradiance(normal)/PI;
                 }`);
           };
-          material.customProgramCacheKey = () => /Leaves|Flower/i.test(material.name) ? 'sunbreak-leaf-diffuse-sky-v2' : 'sunbreak-stone-diffuse-sky-v2';
+          material.customProgramCacheKey = () => /Leaves|Flower/i.test(material.name) ? 'sunbreak-leaf-diffuse-sky-v3' : 'sunbreak-stone-diffuse-sky-v2';
         }
+        // Wire and grass cards are not baked: their vertex alpha says where the low sun reaches.
+        // Chained after the wind patch, which sets onBeforeCompile outright.
+        if (UNBAKED_SUN_MATERIAL.test(material.name)) applyVertexSunVisibility(material);
         if (material.lightMap) {
-          // Baked sun and sky: no real-time sun, reflections only on glass and metal, no shadow casting.
-          applyLightmapShading(material);
+          // Baked sun and sky: no real-time sun, reflections only on glass and metal. A shade level
+          // in the lightmap's alpha (v3) limits real-time shadows to the baked sun they block.
+          applyLightmapShading(material, { shadeAlpha: lightmapHasShadeAlpha(material) });
           material.envMapIntensity = /Glass|Metal|Vehicle_/i.test(material.name) ? 0.8 : 0.2;
-          object.castShadow = false;
         }
       }
     });

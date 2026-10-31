@@ -43,6 +43,31 @@ export function patchSunVisibilityFragment(fragmentShader: string): string {
     .replace('#include <lights_fragment_begin>', begin);
 }
 
+/** Unbaked environment geometry (the checkpoint wire and the grass cards) carries its sun
+ *  visibility per vertex, measured in Blender against the whole town and stored in the colour
+ *  attribute's alpha. It scales the real-time sun, so wire and grass in a house's shade are lit by
+ *  the sky alone; the colour's RGB stays the albedo tint. Without an alpha channel three.js reads
+ *  1, full sun, as before. */
+export function patchVertexSunVisibilityFragment(fragmentShader: string): string {
+  if (fragmentShader.includes('kannonVertexSun')) return fragmentShader;
+  const begin = THREE.ShaderChunk.lights_fragment_begin
+    .replace('getDirectionalLightInfo( directionalLight, directLight );', 'getDirectionalLightInfo( directionalLight, directLight );\n\t\tdirectLight.color *= kannonVertexSun;');
+  return fragmentShader
+    .replace('#include <color_fragment>', '#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )\n\tdiffuseColor.rgb *= vColor.rgb;\n\tfloat kannonVertexSun = vColor.a;\n#else\n\tfloat kannonVertexSun = 1.0;\n#endif')
+    .replace('#include <lights_fragment_begin>', begin);
+}
+
+export function applyVertexSunVisibility(material: THREE.MeshStandardMaterial): void {
+  material.vertexColors = true;
+  const previous = material.onBeforeCompile;
+  material.onBeforeCompile = (shader, renderer) => {
+    previous.call(material, shader, renderer);
+    shader.fragmentShader = patchVertexSunVisibilityFragment(shader.fragmentShader);
+  };
+  const previousKey = material.customProgramCacheKey;
+  material.customProgramCacheKey = () => `${previousKey.call(material)}|kannon-vertex-sun-v1`;
+}
+
 export function applySunVisibility(material: THREE.Material, uniform: { value: number }): void {
   const previous = material.onBeforeCompile;
   material.onBeforeCompile = (shader, renderer) => {

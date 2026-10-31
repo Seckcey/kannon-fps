@@ -5,10 +5,16 @@ Built on generate_town_v2.py (same CC0 materials, props, grass, bushes and light
 v3 adds render geometry for the eight checkpoint cover boxes in shared/map.ts (stacked sandbag
 walls and concrete barriers, exactly on their collision boxes), re-skins the box truck as a
 canvas-covered military cargo truck and the school bus as a dusty evacuation bus in their own
-footprints, burns out the north car, stacks ammunition crates under a tarp, boards up windows,
-strings wire along the boundary fences, adds breakable window panes (Breakable_Glass_*) and
-plant pots (Breakable_Pot_*), ground decals and distant smoke columns, and bakes a low, warm
-sun with long shadows across the street and cool sky light in the shade.
+footprints, burns out the north car, stacks ammunition crates under tarps in the three prop
+cover boxes, boards up windows, strings wire along the boundary fences, adds breakable window
+panes (Breakable_Glass_*, two of them already broken) and plant pots (Breakable_Pot_*), traffic
+cones, rubble, splinters and spent cases, ground decals and distant smoke columns, and bakes a
+low, warm sun with long shadows across the street and cool sky light in the shade.
+
+Every lightmap carries a sun mask in a companion image (the share of each texel's baked light
+that is direct sun), so the runtime can let a character's shadow take away the baked sun and
+nothing else. The pots are baked in their own atlas and are invisible to the other groups'
+bakes: their shadows are real-time and leave with them when they shatter.
 
 Stages (run in order, or --stage all):
   prepare  open art/source/kannon-town-graphics.blend, retexture, place props, dress the
@@ -16,9 +22,12 @@ Stages (run in order, or --stage all):
            art/source/town-v3/kannon-town-v3.blend (ignored by git)
   uv       lightmap-unwrap the four atlas groups into a 'Lightmap' UV layer and save
   preview  render Cycles viewpoints at low samples to art/source/town-v3/preview-*.png
-  bake     calibrate against the real-time sun, bake diffuse direct+indirect per atlas, write
-           LM_*.png and the finish-script sidecar art/source/town-v3/town-v3-lightmaps.json
+  bake     calibrate against the real-time sun, bake diffuse direct+indirect per atlas and the
+           direct sun alone, write LM_*.png, the LM_*_sun.png masks and the finish-script
+           sidecar art/source/town-v3/town-v3-lightmaps.json
   export   write art/source/town-v3/town-v3-raw.glb (uncompressed; finish_town_v3.mjs compresses)
+  shade    (optional) re-measure the wire's and grass cards' sun visibility in the working file;
+           prepare already does it, and it does not affect the bake
 
 node scripts/blender/run_blender.mjs --python scripts/blender/generate_town_v3.py -- --stage all [--samples 128] [--atlas 2048]
 
@@ -32,7 +41,7 @@ from pathlib import Path
 
 import bpy, bmesh
 import numpy as np
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'art/source'
@@ -513,8 +522,11 @@ def build_materials():
         'barrier': texture_material('V3_Barrier', barrier_file('_diff_'), barrier_file('_nor_gl_'), barrier_file('_arm_'),
                                     provenance='Poly Haven concrete_road_barrier textures (CC0 1.0) on original geometry.'),
         'boards': pbr_material('V3_Boards', 'wood_floor_deck', 1.4, rotation=90),
+        # The wire's vertex colour is not albedo: it carries the sun visibility shade_wire()
+        # measures, which the runtime uses to take the real-time sun off wire in shade.
         'wire': plain_material('V3_Wire', (0.30, 0.30, 0.29), 0.48, 0.85, vertex_color=False),
         'pot': plain_material('V3_Pot', (1.0, 1.0, 1.0), 0.86),
+        'cone': plain_material('V3_Cone', (1.0, 1.0, 1.0), 0.6),
         'window_glass': plain_material('V3_WindowGlass', (0.30, 0.38, 0.40), 0.06, 0.0, vertex_color=False),
         'decals': texture_material('V3_Decals', decal_texture(), vertex_color=False, roughness=1.0),
         'smoke': texture_material('V3_Smoke', smoke_texture(), vertex_color=False, double_sided=True, alpha=True, roughness=1.0),
@@ -847,8 +859,11 @@ PROPS = {
 # Procedural leaf-cluster bushes (game x, z, radius, height); foliage may be walked through.
 BUSHES = []
 
-# Props whose natural pose is not how they are used: the tyre lies flat.
-PRE_ROTATE = {'tyre': (math.radians(90), 0.0, 0.0), 'wheel_rim': (math.radians(90), 0.0, 0.0)}
+# Props whose imported pose is not how they are used: the tyre imports standing on its tread and
+# lies flat on top of the yard crate stacks. Applied to the mesh itself after import (the glTF
+# importer uses quaternion rotation, so an Euler rotation set on the object was ignored; v2's
+# entries here never took effect, which is why the wheel rim keeps its upright v2 pose).
+PRE_ROTATE = {'tyre': (math.radians(90), 0.0, 0.0)}
 
 # (prop, x, y, z, yaw degrees, scale) in game coordinates; y is the base height.
 # Solid props sit inside existing collision boxes, against walls, beyond the fences or on
@@ -863,14 +878,10 @@ def place(prop, x, y, z, yaw=0.0, scale=1.0):
 def plan_placements():
     for side in (-1, 1):
         s = side
-        # Yard cover boxes (±27, 0.6, -15; 3.5 x 1.2 x 1.3): barrels and crates instead of plain wood.
-        if side < 0:
-            place('barrel_wood', -28.0, 0, -15.0, 20); place('barrel_steel', -27.1, 0, -15.1, 0)
-            place('crate', -25.9, 0, -15.0, 90); place('tyre', -25.9, 0.45, -15.0, 90, 1.0)
-        else:
-            place('compost_bags', 27.15, 0, -15.0, -90); place('crate', 26.0, 0, -15.0, 90)
-            place('plastic_crate', 26.0, 0.45, -15.0, 15); place('barrel_steel', 28.2, 0, -15.0, 0)
-            place('tyre', 27.2, 0.7, -15.1, 0)
+        # Yard cover boxes (±27, 0.6, -15; 3.5 x 1.2 x 1.3): v3 fills each with a crate stack that
+        # reaches every face of the box (build_crate_stacks); v2's barrels and bags left gaps that
+        # blocked shots. A spare tyre lies on the end the tarp leaves bare.
+        place('tyre', s * 25.95, 1.2, -15.0, 90 if s < 0 else 0)
         # Sheds (±28, 1.3, 16; 4.2 x 2.6 x 3.5): utility box in the unreachable gap by the fence,
         # generator and propane against the shed's north face.
         place('utility_box', s * 30.45, 0, 15.2, 90 if s > 0 else -90)
@@ -944,9 +955,9 @@ def import_prop(key):
     obj.name = f'PropSrc_{key}'
     if obj.data.shape_keys:
         obj.shape_key_clear()
-    if key in PRE_ROTATE:
-        obj.rotation_euler = PRE_ROTATE[key]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if key in PRE_ROTATE:
+        obj.data.transform(Euler(PRE_ROTATE[key]).to_matrix().to_4x4())
     # Base-centre origin.
     mesh = obj.data
     xs = [v.co.x for v in mesh.vertices]; ys = [v.co.y for v in mesh.vertices]; zs = [v.co.z for v in mesh.vertices]
@@ -1317,9 +1328,15 @@ def add_sack(b, centre, length, width, height, yaw, colour, r, mat=0, tile=0.5, 
                     b.indexed(ids, uvs, colour, mat)
 
 
+# Inside the 3 cm the validator leaves at each face edge, so every sampled ray meets the core.
+SANDBAG_CORE_INSET = 0.025
+
+
 def build_sandbags(M):
     """Six sandbag walls, seven courses of three rows, laid in a broken bond with the bulge of
-    every outer sack 1.5 cm proud of its collision face. Hidden inner sacks are skipped."""
+    every outer sack 1.5 cm proud of its collision face. Hidden inner sacks are skipped; a core
+    block of packed sacking 2.5 cm inside the collision faces fills the wall, so the seams
+    between sacks are never deeper than the core and never show daylight through the wall."""
     b = MeshBuilder(); r = np.random.default_rng(4101); sacks = 0
     for o in MAP['obstacles']:
         if o.get('surface') != 'sandbag':
@@ -1364,6 +1381,10 @@ def build_sandbags(M):
                     add_sack(b, game(centre_a + jitter[0], depth + jitter[2] * 0.5, y + jitter[1]), (a1 - a0) * 1.03 + 0.03,
                              sack_w, ch * 1.2, yaw, colour, r)
                     sacks += 1
+        inset = SANDBAG_CORE_INSET
+        core = (L - 2 * inset, H - inset, D - 2 * inset)
+        add_box(b, game(0.0, 0.0, base + core[1] / 2), core if along_x else (core[2], core[1], core[0]),
+                tuple(c * 0.42 for c in SANDBAG_KHAKI), tile=0.5, skip=((0, -1, 0),))
     obj = b.build('Prop_sandbags', [M['burlap']], smooth=True)
     log(f'sandbags: {sacks} sacks, {len(obj.data.polygons)} faces')
     return obj
@@ -1425,6 +1446,14 @@ def build_barriers(M):
                 a = a0 + (a1 - a0) * f
                 loop = [game(a - 0.06, 0.0, H - 0.01), game(a - 0.06, 0.0, H + 0.05), game(a + 0.06, 0.0, H + 0.05), game(a + 0.06, 0.0, H - 0.01)]
                 add_tube(b, loop, 0.008, 4, (0.32, 0.19, 0.12), mat=1)
+        # A filler in the 12 mm joint between the two units closes it: the joint shows shadow,
+        # never daylight. It follows the profile a few centimetres inside the faces (a narrower
+        # piece under the top chamfer) and stays a millimetre clear of both unit ends, so no face
+        # is shared and nothing flickers.
+        for y0, y1, depth in ((0.0, H - 0.05, D - 0.056), (H - 0.05, H - 0.015, 0.5 * D / 0.6)):
+            slab = (0.010, y1 - y0, depth)
+            add_box(b, game(joint, 0.0, (y0 + y1) / 2), slab if along_x else (slab[2], slab[1], slab[0]), (0.3, 0.3, 0.29),
+                    tile=8.0, skip=((0, -1, 0),))
     obj = b.build('Prop_barriers', [M['barrier'], M['paint']])
     log(f'barriers: {len(obj.data.polygons)} faces')
     return obj
@@ -1465,76 +1494,146 @@ def build_truck_details(M):
     return obj
 
 
-AMMO_CRATE = (0.72, 0.36, 0.40)  # length, height, width
+CRATE_SIDES = (('-x', (-1, 0, 0)), ('+x', (1, 0, 0)), ('-z', (0, 0, -1)), ('+z', (0, 0, 1)))
 
 
-def add_crate(b, x, y, z, yaw, colour, mat=0):
-    L, H, W = AMMO_CRATE
+def add_crate(b, x, y, z, yaw, colour, size, mat=0, stripe=False, exposed=('-x', '+x', '-z', '+z', 'top')):
+    """An ammunition crate standing at height y: a body, a lid that overhangs 8 mm, rope handles
+    on the ends, latches and corner battens on the long sides and an optional stencil band.
+    `size` is (length, height, width), length along the local x axis. Only the `exposed` faces
+    and their fittings are built; the rest are pressed against other crates."""
+    L, H, W = size
     R = rot_y(yaw)
     lid = tuple(c * 0.82 for c in colour)
-    add_box(b, (x, y + (H - 0.04) / 2, z), (L, H - 0.04, W), colour, mat, rot=R, uv_offset=(x, z))
-    add_box(b, (x, y + H - 0.02, z), (L + 0.02, 0.04, W + 0.02), lid, mat, rot=R, uv_offset=(z, x))
-    for end in (-1, 1):
-        centre = np.array([x, y + H * 0.6, z]) + R @ np.array([end * (L / 2 + 0.015), 0, 0])
-        add_box(b, tuple(centre), (0.03, 0.04, 0.16), (0.05, 0.05, 0.045), mat, rot=R)
-    for side in (-1, 1):
-        for along in (-0.22, 0.22):
-            centre = np.array([x, y + H - 0.07, z]) + R @ np.array([along, 0, side * (W / 2 + 0.006)])
-            add_box(b, tuple(centre), (0.06, 0.05, 0.012), (0.12, 0.12, 0.1), mat, rot=R)
+    hidden = tuple(normal for key, normal in CRATE_SIDES if key not in exposed)
+    add_box(b, (x, y + (H - 0.04) / 2, z), (L, H - 0.04, W), colour, mat, rot=R, uv_offset=(x, z), skip=hidden + ((0, 1, 0), (0, -1, 0)))
+    add_box(b, (x, y + H - 0.02, z), (L + 0.016, 0.04, W + 0.016), lid, mat, rot=R, uv_offset=(z, x),
+            skip=hidden + ((0, -1, 0),) + (() if 'top' in exposed else ((0, 1, 0),)))
+    for end, key in ((-1, '-x'), (1, '+x')):
+        if key in exposed:
+            centre = np.array([x, y + H * 0.6, z]) + R @ np.array([end * (L / 2 + 0.012), 0, 0])
+            add_box(b, tuple(centre), (0.024, 0.04, min(0.16, W * 0.45)), (0.05, 0.05, 0.045), mat, rot=R, skip=((-end, 0, 0),))
+    for side, key in ((-1, '-z'), (1, '+z')):
+        if key not in exposed:
+            continue
+        flush = ((0, 0, -side),)
+        for along in (-0.3 * L, 0.3 * L):
+            centre = np.array([x, y + H - 0.07, z]) + R @ np.array([along, 0, side * (W / 2 + 0.005)])
+            add_box(b, tuple(centre), (0.06, 0.05, 0.01), (0.12, 0.12, 0.1), mat, rot=R, skip=flush)
+        if stripe:
+            # A faded yellow stencil band across the long side.
+            centre = np.array([x, y + H * 0.45, z]) + R @ np.array([0.0, 0, side * (W / 2 + 0.0015)])
+            add_box(b, tuple(centre), (L * 0.62, 0.035, 0.003), (0.42, 0.33, 0.07), mat, rot=R, skip=flush)
+        for end in (-1, 1):
+            # Darker corner battens make the crate read as a timber box, not a carton.
+            centre = np.array([x, y + (H - 0.04) / 2, z]) + R @ np.array([end * (L / 2 - 0.02), 0, side * (W / 2 + 0.002)])
+            add_box(b, tuple(centre), (0.04, H - 0.05, 0.006), tuple(c * 0.7 for c in colour), mat, rot=R, skip=flush)
 
 
-def build_ammo_crates(M):
-    """Ammunition crates stacked four high in the north cover box, half under a tarp."""
-    o = OBSTACLES['north-mail-crates']
-    r = np.random.default_rng(4301)
-    b = MeshBuilder()
-    x0, z0 = o['x'] - o['w'] / 2, o['z'] - o['d'] / 2
-    L, H, W = AMMO_CRATE
-    cols, rows = 3, 5
-    gx, gz = (o['w'] - cols * L) / cols, (o['d'] - rows * W) / rows
-    removed = {1: {(2, 0), (0, 4)}, 2: {(2, 0), (2, 1), (0, 4), (1, 4)}, 3: {(c, rw) for c in range(3) for rw in range(5) if c == 2 or rw in (0, 4)}}
-    heights = {}
-    for layer in range(4):
-        for c in range(cols):
+# The three prop cover boxes become stacks of ammunition crates that fill each box to within a
+# centimetre of its faces, so no part of a box blocks shots without something visible there.
+# (box id, cells along x, cells along z, layers, tarp x-extent as box fractions, seed)
+CRATE_STACKS = [
+    ('north-mail-crates', 3, 5, 4, (0.16, 1.0), 4301),
+    ('teal-yard-cover', 5, 3, 3, (0.0, 0.62), 4311),
+    ('yellow-yard-cover', 5, 3, 3, (0.38, 1.0), 4321),
+]
+CRATE_COLOURS = (OLIVE_PAINT, (0.13, 0.16, 0.09), (0.24, 0.2, 0.12))
+
+
+def drape_tarp(t, o, x_from, x_to, r):
+    """A canvas sheet over part of a crate stack: across the top between x_from and x_to (box
+    fractions) and down the north and south faces to a wavy hem, always 1.5 to 4 cm proud of the
+    crates so it never sinks into them and never stands far from the collision face."""
+    W, H, D = o['w'], o['h'], o['d']
+    top = o['y'] + H / 2
+    zn, zs = o['z'] - D / 2, o['z'] + D / 2
+    xa = o['x'] - W / 2 + x_from * W + 0.01
+    xb = o['x'] - W / 2 + x_to * W - 0.01
+    radius, gap = 0.035, 0.016
+    nx, nt = max(10, int((xb - xa) / 0.06)), 36
+    hem_s = periodic_noise(64, 5, int(r.integers(1, 1 << 30)))[0]
+    hem_n = periodic_noise(64, 5, int(r.integers(1, 1 << 30)))[0]
+    wrinkle = periodic_noise(64, 2.5, int(r.integers(1, 1 << 30)))
+    rows = []
+    for i in range(nx + 1):
+        x = xa + (xb - xa) * i / nx
+        k = int(i / nx * 63)
+        drop_s = H * min(0.85, max(0.25, 0.55 + 0.12 * float(hem_s[k])))
+        drop_n = H * min(0.85, max(0.25, 0.5 + 0.12 * float(hem_n[k])))
+        # Cross-section path (z, y, outward normal): south face up, over the rounded edge, across
+        # the top, over the far edge and down the north face.
+        path = [(zs + gap, top - drop_s, (1.0, 0.0)), (zs + gap, top - radius, (1.0, 0.0))]
+        for a in np.linspace(0, math.pi / 2, 5)[1:]:
+            path.append((zs - radius + (radius + gap) * math.cos(a), top - radius + (radius + gap) * math.sin(a), (math.cos(a), math.sin(a))))
+        path.append((zn + radius, top + gap, (0.0, 1.0)))
+        for a in np.linspace(math.pi / 2, math.pi, 5)[1:]:
+            path.append((zn + radius + (radius + gap) * math.cos(a), top - radius + (radius + gap) * math.sin(a), (math.cos(a), math.sin(a))))
+        path.append((zn - gap, top - drop_n, (-1.0, 0.0)))
+        lengths = [0.0]
+        for p, q in zip(path, path[1:]):
+            lengths.append(lengths[-1] + math.hypot(q[0] - p[0], q[1] - p[1]))
+        fold = lengths[5]  # path[5] is where the top begins: texture seams run straight across it
+        row = []
+        for j in range(nt + 1):
+            s = lengths[-1] * j / nt
+            seg = max(0, min(len(path) - 2, int(np.searchsorted(lengths, s, side='right')) - 1))
+            f = (s - lengths[seg]) / max(lengths[seg + 1] - lengths[seg], 1e-9)
+            (z0, y0, n0), (z1, y1, n1) = path[seg], path[seg + 1]
+            z, y = z0 + (z1 - z0) * f, y0 + (y1 - y0) * f
+            nz, ny = n0[0] + (n1[0] - n0[0]) * f, n0[1] + (n1[1] - n0[1]) * f
+            norm = math.hypot(nz, ny) or 1.0
+            # Folds only ever push outward; the hem flares a little. Never more than 4.4 cm from
+            # the crates, so the tarp stays part of the cover rather than the walkway.
+            hem = max(0.0, 1.0 - min(s, lengths[-1] - s) / 0.12)
+            lift = min(0.028, 0.012 * max(0.0, float(wrinkle[j % 64, k])) + 0.008 * hem)
+            row.append((t.vertex((x, y + ny / norm * lift, z + nz / norm * lift)), s - fold))
+        rows.append(row)
+    for i in range(nx):
+        for j in range(nt):
+            corners = [(i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1)]
+            ids = [rows[a][c][0] for a, c in corners]
+            uvs = [(xa + (xb - xa) * a / nx, rows[a][c][1]) for a, c in corners]
+            t.indexed(ids, uvs, TARP_GREEN)
+
+
+def build_crate_stacks(M):
+    """Ammunition crates stacked in the three prop cover boxes, each partly under a tarp. Long
+    crates span two cells so seams do not line up; hidden inner crates are skipped and a dark
+    core 5 cm inside the faces closes the gaps between crates."""
+    b, t = MeshBuilder(), MeshBuilder()
+    crates = 0
+    for box_id, cols, rows, layers, (tarp_from, tarp_to), seed in CRATE_STACKS:
+        o = OBSTACLES[box_id]
+        r = np.random.default_rng(seed)
+        W, H, D = o['w'], o['h'], o['d']
+        x0, y0, z0 = o['x'] - W / 2, o['y'] - H / 2, o['z'] - D / 2
+        cw, ch, cd = W / cols, H / layers, D / rows
+        gap = 0.012
+        for layer in range(layers):
             for rw in range(rows):
-                if (c, rw) in removed.get(layer, set()):
-                    continue
-                if layer and heights.get((c, rw), 0) < layer * H - 1e-6:
-                    continue
-                x = x0 + gx / 2 + L / 2 + c * (L + gx) + r.uniform(-0.015, 0.015)
-                z = z0 + gz / 2 + W / 2 + rw * (W + gz) + r.uniform(-0.012, 0.012)
-                tone = r.uniform(0.85, 1.08)
-                colour = tuple(v * tone for v in (OLIVE_PAINT if r.random() > 0.2 else (0.36, 0.32, 0.2)))
-                add_crate(b, x, layer * H, z, r.uniform(-0.03, 0.03), colour)
-                heights[(c, rw)] = (layer + 1) * H
-    crates = b.build('Prop_ammo_crates', [M['paint']])
-
-    # Tarp: a height field draped over the top of the stack and blurred so it falls over edges.
-    t = MeshBuilder()
-    nx, nz = 46, 40
-    xs = np.linspace(o['x'] - o['w'] / 2 + 0.02, o['x'] + o['w'] / 2 - 0.42, nx)
-    zs = np.linspace(o['z'] - o['d'] / 2 + 0.02, o['z'] + o['d'] / 2 - 0.02, nz)
-    field = np.zeros((nz, nx))
-    for j, z in enumerate(zs):
-        for i, x in enumerate(xs):
-            c = int((x - x0) // (L + gx)); rw = int((z - z0) // (W + gz))
-            field[j, i] = heights.get((min(c, cols - 1), min(rw, rows - 1)), 0.0)
-    stack = field.copy()
-    for _ in range(5):
-        p = np.pad(field, 1, mode='edge')
-        blurred = (p[:-2, 1:-1] + p[2:, 1:-1] + p[1:-1, :-2] + p[1:-1, 2:] + 4 * field) / 8
-        field = np.maximum(blurred, stack)  # drapes over drops, never sinks into a crate
-    wrinkle = periodic_noise(64, 3, 4302)[:nz, :nx] * 0.012
-    field = field + 0.018 + wrinkle
-    ids = [[t.vertex((xs[i], field[j, i], zs[j])) for i in range(nx)] for j in range(nz)]
-    for j in range(nz - 1):
-        for i in range(nx - 1):
-            corners = [(j, i), (j + 1, i), (j + 1, i + 1), (j, i + 1)]
-            uvs = [(xs[ii], zs[jj]) for jj, ii in corners]
-            t.indexed([ids[jj][ii] for jj, ii in corners], uvs, TARP_GREEN)
+                spans, c = [], 0
+                while c < cols:
+                    n = 2 if c + 1 < cols and r.random() < 0.35 else 1
+                    spans.append((c, n)); c += n
+                for c, n in spans:
+                    if not (c == 0 or c + n == cols or rw in (0, rows - 1) or layer == layers - 1):
+                        continue
+                    pick = r.random()
+                    base = CRATE_COLOURS[0] if pick < 0.7 else CRATE_COLOURS[1] if pick < 0.9 else CRATE_COLOURS[2]
+                    tone = r.uniform(0.82, 1.06)
+                    exposed = [key for key, out in (('-x', c == 0), ('+x', c + n == cols), ('-z', rw == 0), ('+z', rw == rows - 1), ('top', layer == layers - 1)) if out]
+                    add_crate(b, x0 + cw * (c + n / 2), y0 + ch * layer, z0 + cd * (rw + 0.5), r.uniform(-0.006, 0.006) / n,
+                              tuple(v * tone for v in base), (cw * n - gap, ch, cd - gap), stripe=r.random() < 0.4, exposed=exposed)
+                    crates += 1
+        inset = 0.05
+        add_box(b, (o['x'], y0 + (H - inset) / 2, o['z']), (W - 2 * inset, H - inset, D - 2 * inset), (0.05, 0.055, 0.04),
+                tile=1.0, skip=((0, -1, 0),))
+        drape_tarp(t, o, tarp_from, tarp_to, r)
+    stack = b.build('Prop_ammo_crates', [M['paint']])
     tarp = t.build('Prop_tarp', [M['canvas']], smooth=True)
-    log(f'ammo crates: {len(crates.data.polygons)} faces; tarp {len(tarp.data.polygons)} faces')
-    return crates, tarp
+    log(f'crate stacks: {crates} crates, {len(stack.data.polygons)} faces; tarps {len(tarp.data.polygons)} faces')
+    return stack, tarp
 
 
 def reskin_bus(M):
@@ -1632,19 +1731,63 @@ UPSTAIRS_PANES = [(-3.335, -1.14), (-1.06, 1.06), (1.14, 3.335)]
 UPSTAIRS_PANE_Y = (4.215, 5.785)
 
 
+# Panes already broken when the match starts: a jagged hole with shards left in the frame. They
+# stay Breakable_Glass_* nodes, so a shot still knocks the remaining shards out.
+BROKEN_PANES = {1: 4801, 3: 4803}
+
+
+def add_broken_pane(b, height, width, seed, thickness=0.008):
+    """A pane in the local y-z plane with a jagged hole: radial strips between the frame and a
+    spiky inner outline, front, back and the broken edge between them."""
+    r = np.random.default_rng(seed)
+    n = 28
+    hy, hz = height / 2, width / 2
+    centre = (r.uniform(-0.12, 0.05) * height, r.uniform(-0.15, 0.15) * width)  # hole a little low, off centre
+    # Where the remaining glass begins, as a share of the way from the hole centre to the frame: an
+    # uneven edge, a few long shards reaching in (small values) and stretches broken out to the frame.
+    edge = np.clip(0.7 + 0.12 * periodic_noise(64, 3, seed)[0][:n] + r.uniform(-0.06, 0.06, n), 0.5, 0.92)
+    edge[r.choice(n, 5, replace=False)] = r.uniform(0.25, 0.45, 5)
+    edge[r.choice(n, 4, replace=False)] = 0.97
+    outer, inner = [], []
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        dy, dz = math.sin(a), math.cos(a)
+        # Distance from the hole centre to the frame along this direction.
+        limits = [((hz - centre[1]) if dz > 0 else (hz + centre[1])) / abs(dz) if abs(dz) > 1e-6 else 1e9,
+                  ((hy - centre[0]) if dy > 0 else (hy + centre[0])) / abs(dy) if abs(dy) > 1e-6 else 1e9]
+        reach = min(limits)
+        outer.append((centre[0] + dy * reach, centre[1] + dz * reach))
+        f = min(float(edge[k]), 1.0 - 0.012 / max(reach, 0.012))
+        inner.append((centre[0] + dy * reach * f, centre[1] + dz * reach * f))
+    white = (1.0, 1.0, 1.0)
+    front = [(b.vertex((thickness / 2, y, z)), b.vertex((thickness / 2, iy, iz))) for (y, z), (iy, iz) in zip(outer, inner)]
+    back = [(b.vertex((-thickness / 2, y, z)), b.vertex((-thickness / 2, iy, iz))) for (y, z), (iy, iz) in zip(outer, inner)]
+    for k in range(n):
+        k2 = (k + 1) % n
+        # The outline runs clockwise seen from +x (z points left there). Front faces +x, back
+        # faces -x, and the broken edge faces into the hole.
+        b.indexed([front[k][0], front[k][1], front[k2][1], front[k2][0]], [(0, 0)] * 4, white)
+        b.indexed([back[k][0], back[k2][0], back[k2][1], back[k][1]], [(0, 0)] * 4, white)
+        b.indexed([front[k][1], back[k][1], back[k2][1], front[k2][1]], [(0, 0)] * 4, white)
+
+
 def build_breakable_glass(M):
-    """Separate, named panes so the runtime can hide and shatter each one."""
+    """Separate, named panes so the runtime can hide and shatter each one; two start broken."""
     panes = []
     for s in (-1, 1):
         for z0, z1 in UPSTAIRS_PANES:
             b = MeshBuilder()
             y0, y1 = UPSTAIRS_PANE_Y
-            add_box(b, (0.0, 0.0, 0.0), (0.008, y1 - y0, z1 - z0), (1.0, 1.0, 1.0))
-            obj = b.build(f'Breakable_Glass_{len(panes)}', [M['window_glass']])
+            index = len(panes)
+            if index in BROKEN_PANES:
+                add_broken_pane(b, y1 - y0, z1 - z0, BROKEN_PANES[index])
+            else:
+                add_box(b, (0.0, 0.0, 0.0), (0.008, y1 - y0, z1 - z0), (1.0, 1.0, 1.0))
+            obj = b.build(f'Breakable_Glass_{index}', [M['window_glass']])
             obj.location = gb(s * 9.75, (y0 + y1) / 2, (z0 + z1) / 2)
             obj['breakable'] = 'glass'
             panes.append(obj)
-    log(f'breakable glass: {len(panes)} panes')
+    log(f'breakable glass: {len(panes)} panes, {len(BROKEN_PANES)} already broken')
     return panes
 
 
@@ -1681,6 +1824,213 @@ def build_breakable_pots(M):
         pots.append(obj)
     log(f'breakable pots: {len(pots)}')
     return pots
+
+
+# Faces of an eight-corner box listed bottom ring then top ring, each ring (-x-z, +x-z, +x+z,
+# -x+z): top, bottom and four sides, counter-clockwise seen from outside.
+BOX_FACES = ((4, 7, 6, 5), (0, 1, 2, 3), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0))
+CONE_ORANGE, CONE_WHITE, CONE_BASE = (0.72, 0.12, 0.025), (0.75, 0.75, 0.72), (0.025, 0.025, 0.025)
+# Traffic cones (x, z, yaw degrees, lying on its side). Small street furniture like the trash cans
+# and hydrants: walk-through, kept to the edges of the lanes beside the checkpoint cover.
+CONES = [
+    (8.75, -9.2, 10, False), (8.6, -10.05, 40, False), (4.85, -9.65, 0, False),
+    (-4.85, 9.6, 25, False), (-8.75, 9.25, 0, False), (-8.6, 10.1, 60, False),
+    (2.25, -13.95, 15, False), (-1.05, 14.45, 0, False), (6.85, -15.4, 70, True),
+]
+# Spare cones stacked three deep on the north crate stack's tarp.
+CONE_STACKS = [(-4.95, 1.43, -16.25)]
+
+
+def add_cone(b, x, y, z, yaw, tipped=False, stack=1):
+    """A 70 cm traffic cone on a square rubber base: faded orange with two white reflective bands,
+    grimy toward the ground. `stack` nests that many cones, 6 cm apart."""
+    sides = 16
+    ring_heights = [0.03, 0.30, 0.36, 0.43, 0.50, 0.56, 0.63, 0.70]
+    band = lambda h0, h1: (0.36 <= h0 < 0.43) or (0.50 <= h0 < 0.56)  # noqa: E731
+    radius = lambda h: 0.155 - (0.155 - 0.028) * (h - 0.03) / 0.67  # noqa: E731
+    # A fallen cone lies on the line from its base plate's edge to its tip: axis 12 deg past level.
+    R = rot_y(math.radians(yaw)) @ (rot_z(math.radians(-102)) if tipped else np.eye(3))
+    plate = [(sx * 0.18, h, sz * 0.18) for h in (0.0, 0.03) for sx, sz in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+    tip = [(0.028 * math.cos(2 * math.pi * k / sides), 0.70, 0.028 * math.sin(2 * math.pi * k / sides)) for k in range(sides)]
+    lift = -min(float((R @ np.array(p))[1]) for p in plate + tip)
+
+    def at(p):
+        q = R @ np.array(p, float)
+        return (x + q[0], y + q[1] + lift, z + q[2])
+
+    def grime(h, colour):
+        f = 0.72 + 0.28 * float(smoothstep(0.0, 0.32, np.array(h)))
+        return tuple(c * f for c in colour)
+
+    for level in range(stack):
+        dy = 0.06 * level
+        if level == 0:
+            ids = [b.vertex(at(c)) for c in plate]
+            for f in BOX_FACES:
+                b.indexed([ids[i] for i in f], [(0, 0)] * 4, CONE_BASE)
+        rings = [[b.vertex(at((radius(h) * math.cos(2 * math.pi * k / sides), h + dy, radius(h) * math.sin(2 * math.pi * k / sides))))
+                  for k in range(sides)] for h in ring_heights]
+        for j in range(len(ring_heights) - 1):
+            h0, h1 = ring_heights[j], ring_heights[j + 1]
+            colour = grime(h0, CONE_WHITE if band(h0, h1) else CONE_ORANGE)
+            for k in range(sides):
+                k2 = (k + 1) % sides
+                b.indexed([rings[j][k], rings[j + 1][k], rings[j + 1][k2], rings[j][k2]], [(k / sides, h0), (k / sides, h1), (k2 / sides, h1), (k2 / sides, h0)], colour)
+        cap = [b.vertex(at((0.028 * math.cos(2 * math.pi * k / sides), 0.70 + dy, 0.028 * math.sin(2 * math.pi * k / sides)))) for k in range(sides)]
+        b.indexed(list(reversed(cap)), [(0, 0)] * sides, grime(0.7, CONE_ORANGE))
+
+
+def build_cones(M):
+    b = MeshBuilder()
+    for x, z, yaw, tipped in CONES:
+        add_cone(b, x, 0.0, z, yaw, tipped)
+    for x, y, z in CONE_STACKS:
+        add_cone(b, x, y, z, 0.0, stack=3)
+    obj = b.build('Prop_cones', [M['cone']], smooth=True)
+    log(f'cones: {len(CONES)} standing or fallen, {len(CONE_STACKS)} stacks, {len(obj.data.polygons)} faces')
+    return obj
+
+
+def ground_is_free(x, z, pad=0.03):
+    """True where a pebble on the ground would not sit inside any collision box."""
+    return not any(abs(x - o['x']) <= o['w'] / 2 + pad and abs(z - o['z']) <= o['d'] / 2 + pad and o['y'] - o['h'] / 2 < 0.12
+                   for o in MAP['obstacles'])
+
+
+def add_chunk(b, x, z, size, yaw, colour, r, mat=0, uv_region=(0.3, 0.6, 0.78, 0.93)):
+    """A rough lump of rubble resting on the ground: a box with its corners pulled about."""
+    sx, sy, sz = size
+    R = rot_y(yaw)
+    corners = []
+    for cy in (0.0, 1.0):
+        for cx, cz in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+            jitter = r.uniform(0.65, 1.0) if cy else r.uniform(0.85, 1.1)
+            local = np.array([cx * sx / 2 * jitter, cy * sy * r.uniform(0.7, 1.0), cz * sz / 2 * jitter])
+            q = R @ local
+            corners.append(b.vertex((x + q[0], max(0.0, q[1]) + 0.002, z + q[2])))
+    u0, u1, v0, v1 = uv_region
+    uvs = [(u0 + (u1 - u0) * a, v0 + (v1 - v0) * c) for a, c in ((0.1, 0.1), (0.9, 0.1), (0.9, 0.9), (0.1, 0.9))]
+    for f in BOX_FACES[:1] + BOX_FACES[2:]:  # no underside
+        b.indexed([corners[i] for i in f], uvs, colour, mat)
+
+
+def build_debris(M):
+    """Rubble, splinters, scrap and spent cases on the ground, all under 10 cm tall so players
+    walk over them: concrete chips by the barriers and sandbags, plaster and glazing-bar
+    splinters under the broken panes and boarded windows, charred scrap round the burnt car."""
+    b = MeshBuilder(); r = np.random.default_rng(4901)
+    CONCRETE, SCRAP, BOARDS = 0, 1, 2
+    placed = {'chunks': 0, 'splinters': 0, 'scrap': 0, 'cases': 0}
+
+    def scatter(cx, cz, spread_x, spread_z, count, kind):
+        for _ in range(count):
+            x, z = cx + r.uniform(-spread_x, spread_x), cz + r.uniform(-spread_z, spread_z)
+            # A quarter metre clear of every box: chips never read as part of the cover they lie by.
+            if not ground_is_free(x, z, pad=0.25) or abs(x) > 30.6 or abs(z) > 22.6:
+                continue
+            yaw = r.uniform(0, math.tau)
+            if kind == 'concrete':
+                s = r.uniform(0.03, 0.11)
+                tone = r.uniform(0.7, 1.0)
+                add_chunk(b, x, z, (s, min(0.09, s * r.uniform(0.4, 0.8)), s * r.uniform(0.6, 1.0)), yaw, (tone, tone * 0.98, tone * 0.95), r, CONCRETE)
+                placed['chunks'] += 1
+            elif kind == 'plaster':
+                s = r.uniform(0.02, 0.07)
+                add_chunk(b, x, z, (s, s * 0.35, s * r.uniform(0.5, 1.0)), yaw, (1.0, 0.99, 0.96), r, CONCRETE)
+                placed['chunks'] += 1
+            elif kind == 'splinter':
+                length = r.uniform(0.12, 0.42)
+                add_box(b, (x, 0.008, z), (length, 0.014, r.uniform(0.018, 0.045)), (0.7, 0.62, 0.5), BOARDS, tile=1.0, rot=rot_y(yaw), uv_offset=(x, z))
+                placed['splinters'] += 1
+            elif kind == 'scrap':
+                add_box(b, (x, 0.004, z), (r.uniform(0.08, 0.26), 0.006, r.uniform(0.06, 0.2)), (0.045, 0.04, 0.035), SCRAP, tile=1.0, rot=rot_y(yaw) @ rot_z(r.uniform(-0.04, 0.04)))
+                placed['scrap'] += 1
+            elif kind == 'case':
+                start = np.array([x, 0.0057, z]); along = rot_y(yaw) @ np.array([0.045, 0.0, 0.0])
+                add_tube(b, [tuple(start), tuple(start + along)], 0.0055, 6, (0.62, 0.42, 0.12), SCRAP, tile=0.05, caps=True)
+                placed['cases'] += 1
+
+    # Concrete chipped off the barriers and the kerbs near the checkpoint.
+    for o in MAP['obstacles']:
+        if o.get('surface') == 'barrier':
+            for end in (-1, 1):
+                scatter(o['x'] + end * (o['w'] / 2 + 0.35), o['z'], 0.3, 0.6, 7, 'concrete')
+        if o.get('surface') == 'sandbag':
+            # Spent cases behind each wall on the street side it is fought from.
+            along_x = o['w'] >= o['d']
+            back = 0.75 if o['z'] < 0 else -0.75
+            if along_x:
+                scatter(o['x'], o['z'] + back, o['w'] / 2, 0.3, 10, 'case')
+            else:
+                scatter(o['x'] + (0.75 if o['x'] < 0 else -0.75), o['z'], 0.3, o['d'] / 2, 10, 'case')
+            scatter(o['x'], o['z'], o['w'] / 2 + 0.4, o['d'] / 2 + 0.4, 6, 'concrete')
+    # Under the two broken upstairs panes: plaster and glazing-bar splinters on the path.
+    for index in BROKEN_PANES:
+        s = -1 if index < 3 else 1
+        z0, z1 = UPSTAIRS_PANES[index % 3]
+        scatter(s * 9.35, (z0 + z1) / 2, 0.4, (z1 - z0) / 2, 14, 'plaster')
+        scatter(s * 9.35, (z0 + z1) / 2, 0.4, (z1 - z0) / 2, 6, 'splinter')
+    # Below the boarded ground-floor windows on the north walls.
+    for s in (-1, 1):
+        for xa, xb in ((11.91, 13.49), (18.61, 20.19)):
+            scatter(s * (xa + xb) / 2, -6.75, 0.8, 0.3, 4, 'splinter')
+    # Charred scrap and chips round the burnt-out car.
+    car = OBSTACLES['north-car']
+    scatter(car['x'], car['z'], car['w'] / 2 + 1.2, car['d'] / 2 + 1.0, 26, 'scrap')
+    scatter(car['x'], car['z'], car['w'] / 2 + 1.4, car['d'] / 2 + 1.2, 16, 'concrete')
+    obj = b.build('Prop_debris', [M['barrier'], M['paint'], M['boards']])
+    log(f'debris: {placed}, {len(obj.data.polygons)} faces')
+    return obj
+
+
+SUN_SHADED = ('Checkpoint_Wire', 'GrassCards')  # unbaked, lit through per-vertex sun visibility
+
+
+def shade_unbaked():
+    """Store in the colour attribute's alpha whether each vertex of the wire and the grass cards
+    sees the low sun (1) or lies in the shade of the houses, trees or hills (0). Neither can be
+    lightmapped (the wire is too thin, the cards come and go with the graphics setting); the
+    runtime uses the alpha to take the real-time sun off them in shade. RGB stays the albedo
+    tint (white for the wire)."""
+    from mathutils.bvhtree import BVHTree
+    targets = [bpy.data.objects[name] for name in SUN_SHADED if name in bpy.data.objects]
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    verts, tris, offset = [], [], 0
+    for o in bpy.data.objects:
+        if o.type != 'MESH' or o in targets or o.hide_render or o.name in UNBAKED or o.name.startswith(('PropSrc_', 'Breakable_Glass_', 'CalibrationPlane')):
+            continue
+        if any(c.name == 'Props_Library' or c.name.startswith('Guides_') for c in o.users_collection):
+            continue
+        evaluated = o.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        mesh.calc_loop_triangles()
+        co = np.empty(len(mesh.vertices) * 3, np.float32); mesh.vertices.foreach_get('co', co)
+        m = np.array(o.matrix_world, np.float64)
+        verts.append(co.reshape(-1, 3) @ m[:3, :3].T + m[:3, 3])
+        ids = np.empty(len(mesh.loop_triangles) * 3, np.int64); mesh.loop_triangles.foreach_get('vertices', ids)
+        tris.append(ids.reshape(-1, 3) + offset)
+        offset += len(mesh.vertices)
+        evaluated.to_mesh_clear()
+    tree = BVHTree.FromPolygons(np.concatenate(verts).tolist(), np.concatenate(tris).tolist())
+    sun = gb(*SUN_DIRECTION_GAME).normalized()
+    lift = Vector((0.0, 0.0, 0.02))  # grass roots sit on the ground: start the ray just above it
+    for obj in targets:
+        mesh, world = obj.data, obj.matrix_world
+        visible = [0.0 if tree.ray_cast(world @ v.co + sun * 0.01 + lift, sun, 3000.0)[0] is not None else 1.0 for v in mesh.vertices]
+        colors = mesh.color_attributes.get('Color') or mesh.color_attributes.new(name='Color', type='FLOAT_COLOR', domain='CORNER')
+        for li, loop in enumerate(mesh.loops):
+            c = colors.data[li].color
+            rgb = (1.0, 1.0, 1.0) if obj.name == 'Checkpoint_Wire' else (c[0], c[1], c[2])
+            colors.data[li].color = (*rgb, visible[loop.vertex_index])
+        log(f'{obj.name} sun visibility: {100 * (1 - sum(visible) / max(1, len(visible))):.1f}% of {len(visible)} vertices in shade')
+
+
+def stage_shade():
+    """Re-measure the unbaked surfaces' sun visibility in a prepared (or baked) working file. Its
+    result does not change the bake, so a re-export picks it up without baking again."""
+    bpy.ops.wm.open_mainfile(filepath=str(WORK_BLEND))
+    shade_unbaked()
+    bpy.ops.wm.save_mainfile()
 
 
 # Distant smoke columns (x, z, height, top width) far beyond the hills' near slopes.
@@ -1759,13 +2109,15 @@ def dress_checkpoint(M):
     build_sandbags(M)
     build_barriers(M)
     build_truck_details(M)
-    build_ammo_crates(M)
+    build_crate_stacks(M)
     reskin_bus(M)
     burn_car(M)
     build_window_boards(M)
     build_wire(M)
     build_breakable_glass(M)
     build_breakable_pots(M)
+    build_cones(M)
+    build_debris(M)
     build_smoke(M)
 
 
@@ -1832,6 +2184,7 @@ def stage_prepare():
     guides.build(MAP)
     build_interior_lights()
     configure_light()
+    shade_unbaked()
     # Prepare-time sky strength; the bake recalibrates it against SKY_FRACTION.
     bpy.data.worlds[bpy.context.scene.world.name].node_tree.nodes['Background'].inputs['Strength'].default_value = 1.0
     for o in bpy.data.objects:
@@ -1847,13 +2200,16 @@ LIGHTMAP_GROUPS = {
     'LM_arch': lambda o: o.name in ('Town_siding', 'Refined_siding', 'Town_trim', 'Refined_trim', 'Town_roof', 'Refined_roof', 'Refined_concrete', 'Refined_glass', 'Refined_metal', 'Town_metal', 'Town_wood', 'Refined_wood', 'Refined_fabric'),
     'LM_ground': lambda o: o.name in ('Town_asphalt', 'Town_grass', 'Town_concrete', 'Refined_markings'),
     'LM_foliage': lambda o: o.name == 'Bushes',
-    'LM_props': lambda o: o.name.startswith(('Prop_', 'Vehicle_', 'Breakable_Pot_')) or o.name in ('Town_paint', 'Town_rubber', 'Town_glass'),
+    'LM_props': lambda o: o.name.startswith(('Prop_', 'Vehicle_')) or o.name in ('Town_paint', 'Town_rubber', 'Town_glass'),
+    # The breakable pots bake on their own and are invisible to every other group's bake, so no
+    # baked shadow is left behind when one shatters; the runtime gives them a real-time shadow.
+    'LM_pots': lambda o: o.name.startswith('Breakable_Pot_'),
 }
 # Never lightmapped: the wire, window glass, decals (multiply-blended) and the smoke columns.
 UNBAKED = ('Checkpoint_Wire', 'Decals', 'Smoke')
 # Foliage cards only need a soft per-card light level, so they share a quarter-size atlas.
 # The architecture group carries the most surface (both wall faces, trim, fences), so it bakes at twice the size.
-ATLAS_SCALE = {'LM_arch': 2, 'LM_ground': 1, 'LM_props': 1, 'LM_foliage': 0.25}
+ATLAS_SCALE = {'LM_arch': 2, 'LM_ground': 1, 'LM_props': 1, 'LM_foliage': 0.25, 'LM_pots': 0.125}
 
 
 def group_objects(name):
@@ -1920,7 +2276,9 @@ def stage_uv():
             pack_objects(objects)
         else:
             bpy.ops.uv.average_islands_scale()
-            bpy.ops.uv.pack_islands(udim_source='ACTIVE_UDIM', rotate=True, rotate_method='CARDINAL', scale=True, margin_method='FRACTION', margin=0.003, shape_method='CONCAVE' if name != 'LM_arch' else 'AABB')
+            # The small pots atlas needs a wider margin in its own pixels.
+            margin = 0.02 if name == 'LM_pots' else 0.003
+            bpy.ops.uv.pack_islands(udim_source='ACTIVE_UDIM', rotate=True, rotate_method='CARDINAL', scale=True, margin_method='FRACTION', margin=margin, shape_method='CONCAVE' if name != 'LM_arch' else 'AABB')
             bpy.ops.object.mode_set(mode='OBJECT')
         for o in objects:
             o.data.uv_layers.active = o.data.uv_layers['UVMap']
@@ -2158,11 +2516,11 @@ def remove_bake_nodes():
                 mat.node_tree.nodes.remove(node)
 
 
-def bake(objects, image, samples):
+def bake(objects, image, samples, passes=('DIRECT', 'INDIRECT')):
     configure_cycles(samples)
     scene = bpy.context.scene
-    scene.render.bake.use_pass_direct = True
-    scene.render.bake.use_pass_indirect = True
+    scene.render.bake.use_pass_direct = 'DIRECT' in passes
+    scene.render.bake.use_pass_indirect = 'INDIRECT' in passes
     scene.render.bake.use_pass_color = False
     scene.render.bake.margin = 8
     scene.render.bake.use_clear = True
@@ -2176,14 +2534,37 @@ def bake(objects, image, samples):
         layer.active_render = True
         o.select_set(True)
     bpy.context.view_layer.objects.active = objects[0]
-    bpy.ops.object.bake(type='DIFFUSE', pass_filter={'DIRECT', 'INDIRECT'}, margin=8, use_clear=True, uv_layer='Lightmap')
+    bpy.ops.object.bake(type='DIFFUSE', pass_filter=set(passes), margin=8, use_clear=True, uv_layer='Lightmap')
     for o in objects:
         o.data.uv_layers['UVMap'].active_render = True
 
 
-def soften(rgb):
-    """One-texel weighted blur that ignores empty (black) texels, so island edges do not bleed."""
-    weight = (rgb.sum(axis=2) > 1e-5).astype(np.float32)
+def bake_sun_only(objects, image, samples):
+    """Direct light from the sun lamp alone: no sky, no interior fills, no bounces."""
+    background = bpy.context.scene.world.node_tree.nodes['Background'].inputs['Strength']
+    fills = [o for o in bpy.data.objects if o.type == 'LIGHT' and o.get('bakeOnly')]
+    strength, hidden = background.default_value, [o.hide_render for o in fills]
+    background.default_value = 0.0
+    for o in fills:
+        o.hide_render = True
+    try:
+        bake(objects, image, samples, passes=('DIRECT',))
+    finally:
+        background.default_value = strength
+        for o, h in zip(fills, hidden):
+            o.hide_render = h
+
+
+def set_ray_visibility(objects, visible):
+    """Hide objects from every kind of ray (shadow, bounce, reflection) while other objects bake."""
+    for o in objects:
+        o.visible_diffuse = o.visible_glossy = o.visible_transmission = o.visible_volume_scatter = o.visible_shadow = visible
+
+
+def soften(rgb, weight=None):
+    """One-texel weighted blur that ignores empty (black) texels, so island edges do not bleed.
+    `weight` marks the texels that hold data when the values themselves can be zero."""
+    weight = ((rgb.sum(axis=2) > 1e-5) if weight is None else weight).astype(np.float32)
     padded = np.pad(rgb, ((1, 1), (1, 1), (0, 0)), mode='edge')
     padded_w = np.pad(weight, ((1, 1), (1, 1)), mode='edge')
     total = np.zeros_like(rgb); total_w = np.zeros_like(weight)
@@ -2297,37 +2678,56 @@ def calibrate_light(samples):
     return calibration
 
 
+def save_png(name, values, srgb):
+    """Write an H x W x 3 array in [0, 1] (row 0 at the bottom) as an 8-bit PNG under OUT."""
+    size_y, size_x = values.shape[:2]
+    out = bpy.data.images.new(f'{name}_png', size_x, size_y, alpha=False)
+    out.colorspace_settings.name = 'sRGB' if srgb else 'Non-Color'
+    out.pixels.foreach_set(np.concatenate([values, np.ones((size_y, size_x, 1), np.float32)], axis=2).ravel())
+    path = OUT / f'{name}.png'
+    out.filepath_raw = str(path); out.file_format = 'PNG'; out.save()
+    bpy.data.images.remove(out)
+    return path.name
+
+
 def stage_bake(samples, atlas):
     bpy.ops.wm.open_mainfile(filepath=str(WORK_BLEND))
     started = time.time()
     hidden = [o for o in bpy.data.objects if o.name in UNBAKED or o.name.startswith('Breakable_Glass_')]
     for o in hidden:
         o.hide_render = True
+    pots = [o for o in bpy.data.objects if o.name.startswith('Breakable_Pot_')]
     calibration = calibrate_light(samples)
     k = calibration['blenderToRuntime']
     normaliser = LIGHTMAP_HEADROOM * SUN_STRENGTH / BAKE_TO_IRRADIANCE  # baked value stored as 1.0
     intensity = k * BAKE_TO_IRRADIANCE * normaliser                      # runtime irradiance = stored * intensity
     calibration.update({'normaliser': normaliser, 'lightMapIntensity': intensity})
-    sidecar = {'atlases': {}, 'materials': {}, 'alphaMask': [], 'doubleSided': [], 'alphaBlend': [], 'calibration': calibration}
+    sidecar = {'atlases': {}, 'sunMasks': {}, 'materials': {}, 'alphaMask': [], 'doubleSided': [], 'alphaBlend': [], 'calibration': calibration}
     for name in LIGHTMAP_GROUPS:
         objects = group_objects(name)
         size = int(atlas * ATLAS_SCALE[name])
+        # The pots only take part in their own bake (see LIGHTMAP_GROUPS).
+        set_ray_visibility(pots, name == 'LM_pots')
         image = bpy.data.images.new(name, size, size, float_buffer=True)
         image.colorspace_settings.name = 'Non-Color'
+        sun_image = bpy.data.images.new(f'{name}_sun', size, size, float_buffer=True)
+        sun_image.colorspace_settings.name = 'Non-Color'
         group_started = time.time()
         bake(objects, image, samples)
+        bake_sun_only(objects, sun_image, max(32, samples // 2))
         pixels = image_pixels(image)
-        rgb = np.clip(pixels[:, :, :3] / normaliser, 0, 1)
-        rgb = soften(rgb)
+        total, sun = pixels[:, :, :3], image_pixels(sun_image)[:, :, :3]
+        filled = total.sum(axis=2) > 1e-5
+        rgb = soften(np.clip(total / normaliser, 0, 1))
         # Store in sRGB 8-bit PNG; the runtime decodes sRGB and multiplies by lightMapIntensity.
         encoded = np.where(rgb <= 0.0031308, rgb * 12.92, 1.055 * np.power(rgb, 1 / 2.4) - 0.055)
-        out = bpy.data.images.new(f'{name}_png', size, size, alpha=False)
-        out.colorspace_settings.name = 'sRGB'
-        rgba = np.concatenate([encoded, np.ones((size, size, 1), np.float32)], axis=2)
-        out.pixels.foreach_set(rgba.ravel())
-        path = OUT / f'{name}.png'
-        out.filepath_raw = str(path); out.file_format = 'PNG'; out.save()
-        sidecar['atlases'][name] = f'{name}.png'
+        sidecar['atlases'][name] = save_png(name, encoded, srgb=True)
+        # Sun mask: the share of the baked light that is direct sun. A character's real-time
+        # shadow may take that share away and nothing else (src/game/Lightmaps.ts).
+        total_luma, sun_luma = luminance(np.moveaxis(total, 2, 0)), luminance(np.moveaxis(sun, 2, 0))
+        share = np.where(total_luma > 1e-4, np.clip(sun_luma / np.maximum(total_luma, 1e-4), 0, 1), 0.0)
+        share = soften(np.repeat(share[..., None], 3, axis=2), filled)
+        sidecar['sunMasks'][name] = save_png(f'{name}_sun', share, srgb=False)
         materials = set()
         for o in objects:
             for slot in o.material_slots:
@@ -2335,8 +2735,11 @@ def stage_bake(samples, atlas):
                     materials.add(slot.material.name)
         for material in sorted(materials):
             sidecar['materials'][material] = {'atlas': name, 'intensity': intensity}
-        log(f'{name}: baked {len(objects)} objects in {time.time() - group_started:.0f}s; max {pixels[:, :, :3].max():.3f}, mean {pixels[:, :, :3].mean():.3f}')
-        bpy.data.images.remove(image); bpy.data.images.remove(out)
+        sunny = share[..., 0][filled]
+        log(f'{name}: baked {len(objects)} objects in {time.time() - group_started:.0f}s; max {total.max():.3f}, mean {total.mean():.3f}; '
+            f'sun share mean {sunny.mean() if sunny.size else 0:.3f}, {100 * (sunny > 0.5).mean() if sunny.size else 0:.1f}% of texels mostly sun')
+        bpy.data.images.remove(image); bpy.data.images.remove(sun_image)
+    set_ray_visibility(pots, True)
     remove_bake_nodes()
     for mat in bpy.data.materials:
         if mat.name in ('V2_GrassCard', 'V2_Leaves') or mat.name.startswith('Prop_shrub') or mat.name.startswith('Prop_potted_plant'):
@@ -2379,6 +2782,11 @@ PREVIEW_VIEWS = {
     'barrier': ((3.0, 1.65, -6.0), (6.6, 0.5, -9.5)),
     'south': ((-5.0, 1.65, 4.5), (1.0, 0.9, 16.0)),
     'skyline': ((0.0, 4.8, 18.0), (-30.0, 8.0, -40.0)),
+    'crates': ((-8.2, 1.65, -13.9), (-4.8, 0.8, -17.0)),
+    'yard-stack': ((-22.6, 1.65, -11.6), (-27.0, 0.6, -15.0)),
+    'broken': ((-5.5, 1.9, 3.0), (-9.75, 5.0, 0.0)),
+    'cones': ((1.6, 1.65, -5.6), (6.6, 0.3, -9.8)),
+    'sandbag-close': ((-5.0, 1.25, -11.2), (-7.2, 0.6, -12.9)),
 }
 
 
@@ -2500,6 +2908,7 @@ def main():
         elif stage == 'uv': stage_uv()
         elif stage == 'preview': stage_preview(args.preview_samples, args.views)
         elif stage == 'bake': stage_bake(args.samples, args.atlas)
+        elif stage == 'shade': stage_shade()
         elif stage == 'export': stage_export()
         else: raise SystemExit(f'unknown stage {stage}')
         log(f'stage {stage} done in {time.time() - started:.0f}s')
