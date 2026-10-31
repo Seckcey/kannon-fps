@@ -961,8 +961,9 @@ export class ViewModel {
     this.v1.setFromMatrixPosition(anchors.eject.matrixWorld);
     const r = this.random;
     const hull = rig.handling.shell === 'hull';
-    this.v2.set(1.5 + r() * 0.7, 0.9 + r() * 0.6, 0.35 + r() * 0.35);
-    if (hull) this.v2.set(1.1 + r() * 0.5, 0.6 + r() * 0.4, 0.2 + r() * 0.2);
+    // Out to the right and up, barely back: a casing thrown toward the eye sails past the camera at full size.
+    this.v2.set(1.5 + r() * 0.7, 0.75 + r() * 0.45, -0.05 + r() * 0.2);
+    if (hull) this.v2.set(1.1 + r() * 0.5, 0.5 + r() * 0.3, -0.05 + r() * 0.15);
     this.v2.applyQuaternion(root.quaternion);
     this.casings.eject(rig.handling.shell, this.v1, this.v2, root.quaternion, r);
   }

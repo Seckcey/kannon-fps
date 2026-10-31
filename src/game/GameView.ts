@@ -19,6 +19,7 @@ import { DeferredRespawns } from './DeferredRespawns';
 import { LocalPrediction, vaultProgress } from './MovementPrediction';
 import { AutomaticFire, reticleTarget } from './AutomaticFire';
 import { ViewModel } from './ViewModel';
+import { THROW_MOVE, THROW_RELEASE } from './viewmodel/choreography';
 import { loadWeaponModels, type WeaponLibrary } from './WeaponModels';
 import type { HudStore } from './hud';
 import { blastFeedback, FirstPersonCamera, FirstPersonMotion, flinchKick, LandingFilter, verticalFov } from './FirstPersonCamera';
@@ -102,6 +103,10 @@ export class GameView {
   private readonly hudFeed: HudFeed;
   private readonly grenades = new GrenadeTracker();
   private readonly whistled = new Set<string>();
+  /** When the first-person hand lets go of the latest throw (performance.now() ms). */
+  private throwReleaseAt = 0;
+  /** My own thrown grenades stay hidden until the hand lets go, so there are never two at once. */
+  private readonly heldGrenades = new Map<string, number>();
   private settings: GameSettings;
   private snapshot: WorldSnapshot | null = null;
   private snapshotBuffer: Buffered[] = [];
@@ -328,7 +333,7 @@ export class GameView {
       case 'dry': this.audio.dryFire(); break;
       case 'melee': this.viewModel.melee(); break;
       case 'cook': this.audio.grenadePin(); break;
-      case 'throw': this.viewModel.throwGrenade(); break;
+      case 'throw': this.viewModel.throwGrenade(); if (!event.inHand) this.throwReleaseAt = performance.now() + THROW_RELEASE * THROW_MOVE.duration * 1000; break;
       case 'reload': this.reloadMark = 0; break;
     }
   }
@@ -361,7 +366,10 @@ export class GameView {
       return;
     }
     // A grenade still in flight matters even when its throw event is a little old.
-    if (event.type === 'grenade') { if (!document.hidden) this.grenades.add(event, serverNow); return; }
+    if (event.type === 'grenade') {
+      if (!document.hidden && this.grenades.add(event, serverNow) && event.playerId === localId && this.throwReleaseAt > now) this.heldGrenades.set(event.id, this.throwReleaseAt);
+      return;
+    }
     // A hidden tab must not collect old flashes, audio or per-shot GPU objects.
     if (document.hidden || !fresh) return;
     if (event.type === 'shot') this.shotEvent(event, localId, now);
@@ -489,6 +497,7 @@ export class GameView {
     this.renderQuality.resetTiming();
     this.effects.clear(); this.respawns.clear(); this.remotes.resetMotion();
     for (const id of this.grenades.clear()) this.effects.grenade(id, null);
+    this.heldGrenades.clear();
   };
 
   private receiveSnapshot(snapshot: WorldSnapshot, now: number) {
@@ -498,6 +507,7 @@ export class GameView {
     if (roundReset) {
       this.effects.clear(); this.respawns.clear(); this.localRespawnAt = 0; this.remotes.resetMotion(); this.hudFeed.reset();
       for (const id of this.grenades.clear()) this.effects.grenade(id, null);
+      this.heldGrenades.clear();
       this.whistled.clear();
     }
     const localId = this.options.getPlayerId(), input = this.options.input;
@@ -727,8 +737,14 @@ export class GameView {
   /** Grenades follow the shared deterministic trajectory; mortar shells whistle before landing. */
   private updateWorldObjects(serverNow: number) {
     const { bounces, expired } = this.grenades.advance(serverNow);
-    for (const id of expired) this.effects.grenade(id, null);
-    for (const grenade of this.grenades.positions) this.effects.grenade(grenade.id, grenade);
+    for (const id of expired) { this.effects.grenade(id, null); this.heldGrenades.delete(id); }
+    const now = performance.now();
+    for (const grenade of this.grenades.positions) {
+      const heldUntil = this.heldGrenades.get(grenade.id);
+      if (heldUntil !== undefined && now < heldUntil) { this.effects.grenade(grenade.id, null); continue; }
+      if (heldUntil !== undefined) this.heldGrenades.delete(grenade.id);
+      this.effects.grenade(grenade.id, grenade);
+    }
     const whistles = dueWhistles(this.snapshot?.mortars ?? [], serverNow, this.whistled);
     if (document.hidden) return;
     for (const bounce of bounces) this.audio.grenadeBounce(bounce.position, bounce.impact);
