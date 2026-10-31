@@ -15,13 +15,14 @@ import { SettingsDialog } from './SettingsDialog';
 import { LoadoutDialog, LoadoutSummary } from './Loadout';
 import { MODE_INFO, TEAM_NAMES } from './labels';
 import { PRESET_INFO } from './loadoutInfo';
-import { CombatHud } from './hud/CombatHud';
+import { InputPacer, RespawnWatch, holdTabForScores, sendInputFrames } from './gameInput';
+import { CombatHud, ScopeLayer } from './hud/CombatHud';
 import { CombatCallouts, KillFeed, ScoreBar } from './hud/MatchHud';
 import { Scoreboard } from './hud/Scoreboard';
 import { crosshairReach } from './hud/combat';
 import { useHudValue, useSafeArea, useViewport } from './hud/hooks';
 import { clock, eliminatedBy, killFeed, matchResult, nameLookup, recentMedals, rewardReady, scoreboard, scorePopups, scoreSummary, threatNotices, topScorer, type Viewer } from './hud/match';
-import { FEED_GAP, FEED_ROW, minimapSpec, touchHudLayout, touchLayout } from './hud/touchLayout';
+import { feedStyle, minimapSpec, touchHudLayout, touchLayout } from './hud/touchLayout';
 
 export default function GameScreen({ connection, settings, setSettings, player, onLeave, onLoadoutDone }: {
   connection: ArenaConnection; settings: Settings; setSettings: (value: Settings) => void; player: PlayerSession; onLeave: () => void;
@@ -110,23 +111,29 @@ export default function GameScreen({ connection, settings, setSettings, player, 
         onError: message => { if (!active) return; availability.current.error = true; synchronize(); setLoadError(message); setLoading(false); } });
       game.current = view; setInput(controller);
     } catch { availability.current.error = true; synchronize(); setLoadError('This device could not start 3D graphics. Try an up-to-date browser with hardware acceleration enabled.'); controller.dispose(); setLoading(false); }
-    const send = setInterval(() => {
-      if (!view || connection.getSnapshot().status !== 'connected') return;
-      setAutoTarget(view.prepareAutomaticFire());
-      const frame = controller.current(); connection.send({ type: 'input', input: frame }); view.recordInput(frame);
-    }, 1000 / 30);
+    // Input goes out on a 30 Hz wall-clock grid (see InputPacer), and only while the view is live: frames
+    // sent while dead would turn the new life to face where the player fell, with the old weapon.
+    const pacer = new InputPacer();
+    let sendTimer: ReturnType<typeof setTimeout> | undefined;
+    const sendInputs = () => {
+      if (!active) return;
+      const now = performance.now(), due = pacer.take(now);
+      sendTimer = setTimeout(sendInputs, pacer.wait(now));
+      if (!due || !view || connection.getSnapshot().status !== 'connected') return;
+      setAutoTarget(sendInputFrames(due, view, () => controller.current(), input => connection.send({ type: 'input', input })));
+    };
+    sendInputs();
     const time = setInterval(() => setLocalNow(Date.now()), 150);
+    const stopScores = holdTabForScores(window, document, menuOpen, setTabScore);
     const down = (e: KeyboardEvent) => {
-      if (e.code === 'Tab') { e.preventDefault(); setTabScore(true); }
       // While waiting to respawn, L opens the loadout picker (gameplay keys are inactive then).
       if (e.code === 'KeyL' && !e.repeat && !menuOpen()) {
         const current = connection.getSnapshot();
         if (current.snapshot?.players.some(p => p.id === current.playerId && p.health <= 0) && current.room?.phase === 'playing') { availability.current.loadout = true; synchronize(); setShowLoadout(true); }
       }
     };
-    const up = (e: KeyboardEvent) => { if (e.code === 'Tab') setTabScore(false); };
-    window.addEventListener('keydown', down); window.addEventListener('keyup', up);
-    return () => { active = false; unsubscribe(); ready.dispose(); gyroscope.dispose(); preparation.current = null; syncControls.current = () => {}; clearInterval(send); clearInterval(time); window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); view?.dispose(); controller.dispose(); hud.clear(); game.current = null; };
+    window.addEventListener('keydown', down);
+    return () => { active = false; unsubscribe(); ready.dispose(); gyroscope.dispose(); preparation.current = null; syncControls.current = () => {}; clearTimeout(sendTimer); clearInterval(time); stopScores(); window.removeEventListener('keydown', down); view?.dispose(); controller.dispose(); hud.clear(); game.current = null; };
   }, [connection, hud]);
   useEffect(() => { game.current?.setSettings(settings); input?.setSettings(settings); }, [settings, input]);
   useEffect(() => {
@@ -144,6 +151,13 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     // Preparing needs its own explicit acknowledgement; countdown/playing can recapture without changing the round.
     if (!touch && connection.getSnapshot().room?.phase !== 'preparing') void input?.requestPointerLock();
   };
+  // A loadout picker opened while waiting to respawn closes when the player is back in: the open picker
+  // pauses the controls, and the server does not wait. One opened from the pause menu stays with it.
+  const [respawnWatch] = useState(() => new RespawnWatch());
+  const localHealth = me?.health;
+  useEffect(() => {
+    if (respawnWatch.respawned(localHealth) && showLoadout && !paused) loadoutOpen(false);
+  }, [localHealth]);
 
   const feed = state.feed;
   const lookup = nameLookup(snapshot?.players, state.room?.players);
@@ -159,7 +173,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const hudLayout = layout ? touchHudLayout({ ...viewport, safe, controls: layout, minimapSize: minimap.size, reach }) : null;
   const hudStyle: Record<string, string> = { '--minimap-size': `${minimap.size}px` };
   if (hudLayout) for (const [side, value] of Object.entries(hudLayout.edges)) hudStyle[`--edge-${side}`] = `${value}px`;
-  const feedStyle = hudLayout ? { left: hudLayout.feed.x, top: hudLayout.feed.y, maxWidth: hudLayout.feed.w, ['--feed-row' as string]: `${FEED_ROW}px`, ['--feed-gap' as string]: `${FEED_GAP}px` } as CSSProperties : undefined;
+  const feedPlacement = hudLayout ? feedStyle(hudLayout.feed) as CSSProperties : undefined;
   // On a phone the standings panel replaces the feed and messages while it is open.
   const entries = touch && standingsOpen ? [] : killFeed(feed, lookup, viewer, mode, serverNow, 6000, hudLayout ? hudLayout.feed.rows : 5);
   const killer = dead ? eliminatedBy(feed, lookup, viewer, mode) : null;
@@ -176,6 +190,8 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   return <main className={`game-screen ${touch ? 'touch-game' : 'desktop-game'} ${damaged ? 'taking-damage' : ''}`}>
     <div ref={container} className="game-canvas" aria-label="Kannon Town 3D arena"/>
     {(loading || loadError) && <div className="game-cover"><h2>{loadError ? 'Graphics unavailable' : 'Entering Kannon Town…'}</h2><p>{loadError || 'Preparing the arena and your loadout.'}</p><button className={`button ${loadError ? 'primary' : 'secondary'}`} onClick={onLeave}>Back to menu</button></div>}
+    {/* Before the HUD layer and under the touch controls, so the buttons stay visible through a scope. */}
+    <ScopeLayer hud={hud} live={live && !menu}/>
     <div className="game-hud tactical-hud" style={hudStyle as CSSProperties}>
       <CombatHud hud={hud} input={input} touch={touch} live={live && !menu} status={mapVisible && !dead} autoTarget={autoTarget}
         streak={me?.streak ?? 0} loadout={me?.loadout} minimap={minimap} statusRect={layout?.status}/>
@@ -186,7 +202,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
         {touch && <button className="icon-button" aria-label="Match standings" aria-pressed={touchScores} onClick={() => setTouchScores(open => !open)}><Icon name="list"/></button>}
         <button className="icon-button" aria-label="Pause menu" onClick={pause}><Icon name="pause"/></button>
       </div>
-      <KillFeed entries={entries} style={feedStyle}/>
+      <KillFeed entries={entries} style={feedPlacement}/>
       {live && !(touch && standingsOpen) && <CombatCallouts touch={touch} region={hudLayout?.callouts} offset={Math.max(86, reach + 16)} callouts={{
         popups: scorePopups(feed, state.playerId, serverNow, 2400, touch ? 2 : 4), medals: recentMedals(feed, state.playerId, serverNow, 3200, touch ? 1 : 2),
         reward: rewardReady(feed, state.playerId, serverNow), notices: threatNotices(snapshot, self, mode) }}/>}
@@ -227,6 +243,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     </Scoreboard>}
     {paused && !finished && !showSettings && !showLoadout && <div className="pause-cover"><div className="pause-panel"><h2>Take a breath.</h2><p>{preparing ? 'The match waits until everyone is ready.' : 'The match keeps running while your menu is open.'}</p><button className="button primary full-width" onClick={resume}><Icon name="play"/> Resume game</button><button className="button secondary full-width" onClick={() => loadoutOpen(true)}><Icon name="class"/> Loadout</button><button className="button secondary full-width" onClick={() => settingsOpen(true)}><Icon name="settings"/> Settings</button><button className="text-button" onClick={onLeave}>Leave match</button><span className="muted small-type">{stats.fps ? `${Math.round(stats.fps)} FPS · ` : ''}{state.latency} ms round trip</span></div></div>}
     {showSettings && <SettingsDialog settings={settings} onChange={setSettings} player={player} onPlayer={() => {}} onClose={() => settingsOpen(false)} onTestSound={() => { void game.current?.testSound(); }} inGame touch={touch}/>}
-    {showLoadout && <LoadoutDialog value={settings} onChange={choice => setSettings({ ...settings, ...choice })} onClose={() => loadoutOpen(false)} inGame/>}
+    {showLoadout && <LoadoutDialog value={settings} onChange={choice => setSettings({ ...settings, ...choice })} onClose={() => loadoutOpen(false)} inGame
+      respawn={dead && playing ? { seconds: respawnIn, closes: !paused } : undefined}/>}
   </main>;
 }

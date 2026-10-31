@@ -85,6 +85,9 @@
   .modal-heading h2 { font-size: 37px; }
   .modal-heading .icon-button { width: 32px; height: 32px; }
   .modal-intro { color: #c4d2d2; margin-bottom: 23px; font-size: 16px; }
+  .loadout-respawn { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin: -8px 0 14px; color: var(--objective); font: 600 16px/1.2 var(--hud); letter-spacing: 1px; text-transform: uppercase; }
+  .loadout-respawn strong { font: 700 22px/1 var(--hud); font-variant-numeric: tabular-nums; }
+  .loadout-respawn small { color: #c4d2d2; font: 500 14px/1.2 var(--body); letter-spacing: 0; text-transform: none; }
   .modal form > .button:last-child, .modal > .button:last-child { margin-top: 24px; }
   .match-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .match-choice button { display: flex; align-items: flex-start; flex-direction: column; padding: 18px; border: 1px solid var(--line); border-radius: 3px; gap: 9px; text-align: left; }
@@ -474,7 +477,9 @@
 
   /* Full-screen layers. */
   .health-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 46%, #78080669 76%, #460000c7 100%); transition: opacity .3s; }
-  .scope-overlay { --scope: 44vmin; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 50%, transparent 0 calc(var(--scope) - 1px), #000000f0 var(--scope)); }
+  /* Its own layer before the HUD: under the touch controls (4) and the touch HUD (5); on desktop the HUD
+     (also 3) comes later in the page, so it still draws over the scope. */
+  .scope-overlay { --scope: 44vmin; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(circle at 50% 50%, transparent 0 calc(var(--scope) - 1px), #000000f0 var(--scope)); }
   .scope-lens { position: absolute; left: 50%; top: 50%; width: calc(var(--scope) * 2); height: calc(var(--scope) * 2); transform: translate(-50%, -50%); border-radius: 50%; overflow: hidden; box-shadow: inset 0 0 50px 14px #0000008c; }
   .scope-line { position: absolute; background: #000000d9; }
   .scope-h { left: 0; right: 0; top: 50%; height: 1px; }
@@ -654,6 +659,7 @@
     .modal-heading { margin-bottom: 8px; }
     .modal-heading h2 { font-size: 28px; }
     .modal-intro { margin-bottom: 12px; font-size: 14px; }
+    .loadout-respawn { margin: -2px 0 8px; }
     .class-tabs button { padding: 6px 8px; gap: 2px; }
     .class-tabs button svg { width: 24px; height: 24px; }
     .loadout-picker { gap: 10px; }

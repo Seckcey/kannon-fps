@@ -12,7 +12,7 @@ export interface Settings {
   /** Horizontal field of view in degrees. */
   fov: number;
   aimMode: HoldOrToggle; crouchMode: HoldOrToggle; sprintMode: SprintMode;
-  /** Turns off head bob and softens camera roll and shake. */
+  /** Turns off head bob and softens camera roll and shake. Starts from the device's reduce-motion setting. */
   reduceMotion: boolean;
   /** The class used at the next spawn; `custom` uses `customLoadout`. */
   loadoutPreset: LoadoutPreset; customLoadout: Loadout;
@@ -26,6 +26,8 @@ const SETTINGS_KEY = 'kannon.settings.v1';
 const PRESETS: readonly LoadoutPreset[] = ['assault', 'close', 'marksman', 'custom'];
 /** Coarse pointer or touch points: the device plays with on-screen controls. */
 export const isTouchDevice = () => typeof matchMedia === 'function' && (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0);
+/** The device asks for less motion (an accessibility setting the HUD styles already follow). */
+const prefersReducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const copyLoadout = (loadout: Loadout): Loadout => ({ ...loadout, perks: [...loadout.perks] as Loadout['perks'] });
 
 /** Touch play starts with a narrower view, tap-to-aim and stick sprinting; desktop holds to aim and sprint. */
@@ -33,7 +35,7 @@ export function defaultSettings(touch = isTouchDevice()): Settings {
   return {
     sensitivity: 1, volume: 0.45, quality: 'auto', invertY: false, firingMode: 'simple', gyroscope: false, gyroSensitivity: 1,
     adsSensitivity: 1, fov: touch ? 80 : 90, aimMode: touch ? 'toggle' : 'hold', crouchMode: 'toggle', sprintMode: touch ? 'auto' : 'hold',
-    reduceMotion: false, loadoutPreset: 'assault', customLoadout: copyLoadout(DEFAULT_LOADOUT),
+    reduceMotion: prefersReducedMotion(), loadoutPreset: 'assault', customLoadout: copyLoadout(DEFAULT_LOADOUT),
   };
 }
 
@@ -60,7 +62,8 @@ export function sanitizeSettings(value: unknown, touch = isTouchDevice()): Setti
     aimMode: oneOf(v.aimMode, ['hold', 'toggle'] as const, base.aimMode),
     crouchMode: oneOf(v.crouchMode, ['hold', 'toggle'] as const, base.crouchMode),
     sprintMode: oneOf(v.sprintMode, ['hold', 'toggle', 'auto'] as const, base.sprintMode),
-    reduceMotion: v.reduceMotion === true,
+    // A missing value follows the device; the player's own choice, either way, is kept.
+    reduceMotion: typeof v.reduceMotion === 'boolean' ? v.reduceMotion : base.reduceMotion,
     loadoutPreset: oneOf(v.loadoutPreset, PRESETS, base.loadoutPreset),
     customLoadout: sanitizeLoadout(v.customLoadout) ?? base.customLoadout,
   };

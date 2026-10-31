@@ -40,12 +40,14 @@ test('the kill feed shows recent eliminations with weapon, headshot and team col
   assert.equal(entries.length, 5, 'old eliminations and earned rewards stay out');
   const [frag, sniped, own, mortar, notice] = entries;
   assert.ok(frag?.kind === 'elimination' && frag.icon === 'grenade' && frag.weapon === 'Frag grenade' && frag.attacker?.relation === 'enemy' && frag.victim.relation === 'friend');
-  assert.ok(sniped?.kind === 'elimination' && sniped.headshot && sniped.icon === 'sniper' && sniped.weapon === 'Longbow' && sniped.attacker?.name === 'Cy' && sniped.victim.relation === 'self');
+  assert.ok(sniped?.kind === 'elimination' && sniped.headshot && sniped.icon === 'sniper' && sniped.weapon === 'Heron 7' && sniped.attacker?.name === 'Cy' && sniped.victim.relation === 'self');
   assert.ok(own?.kind === 'elimination' && own.attacker === null, 'a self-elimination has no attacker');
   assert.ok(mortar?.kind === 'message' && mortar.text === 'Bo called in Mortar Volley' && mortar.tone === 'enemy');
   assert.ok(notice?.kind === 'message' && notice.tone === 'info');
   assert.equal(new Set(entries.map(entry => entry.key)).size, entries.length, 'stable unique keys');
   assert.equal(killFeed(feed, lookup, { id: 'me' }, 'ffa', 10_000, 6000, 2).length, 2);
+  // A short phone screen has room for no rows at all: show nothing, never the whole history.
+  assert.deepEqual(killFeed(feed, lookup, { id: 'me' }, 'ffa', 10_000, 6000, 0), []);
   assert.equal(lookup('ghost').name, 'Player');
 });
 
@@ -168,6 +170,6 @@ test('enemy rewards warn the viewer; friendly ones do not', () => {
   assert.deepEqual(threatNotices({ ...base, drones: [{ id: 'd', ownerId: 'ana', team: 'teal', x: 0, y: 0, z: 0, yaw: 0, health: 200, until: 9000 }] }, self, 'ffa'), ['Enemy Attack Drone overhead.']);
   const recon = { ...base, recon: [{ ownerId: 'bo', team: 'gold' as Team, until: 9000 }] };
   assert.deepEqual(threatNotices(recon, self, 'tdm'), ['Enemy Recon Sweep: you show on their map.']);
-  assert.deepEqual(threatNotices(recon, { ...self, loadout: LOADOUT_PRESETS.assault }, 'tdm'), [], 'Low Profile hides you from Recon Sweeps');
+  assert.deepEqual(threatNotices(recon, { ...self, loadout: LOADOUT_PRESETS.assault }, 'tdm'), [], 'No Trace hides you from Recon Sweeps');
   assert.deepEqual(threatNotices(null, self, 'tdm'), []);
 });

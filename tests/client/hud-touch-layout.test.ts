@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { GameEvent } from '../../shared/protocol.js';
 import { WEAPONS } from '../../shared/weapons.js';
 import { crosshairReach } from '../../src/components/hud/combat.js';
-import { TOUCH_CALLOUT } from '../../src/components/hud/match.js';
-import { FEED_GAP, FEED_ROW, MIN_TARGET, hudEdges, minimapSpec, overlaps, touchHudLayout, touchLayout, type Insets, type Rect, type TouchLayout } from '../../src/components/hud/touchLayout.js';
+import { TOUCH_CALLOUT, killFeed, nameLookup } from '../../src/components/hud/match.js';
+import { FEED_GAP, FEED_ROW, MIN_TARGET, feedStyle, hudEdges, minimapSpec, overlaps, touchHudLayout, touchLayout, type Insets, type Rect, type TouchLayout } from '../../src/components/hud/touchLayout.js';
 
 const VIEWPORTS: Array<{ name: string; width: number; height: number; safe: Partial<Insets> }> = [
   { name: 'iPhone landscape 844x390', width: 844, height: 390, safe: { left: 47, right: 47, bottom: 21 } },
@@ -122,6 +123,37 @@ test('with the usual weapons a phone shows a warning, a medal and a score pop-up
   const hud = touchHudLayout({ ...phone, controls: touchLayout({ ...phone, sprintButton: true, rewards: 1 }), minimapSize: 96, reach: crosshairReach(WEAPONS.kr5, 80, 800, 360) });
   assert.ok(hud.callouts.y + hud.callouts.h <= 180 - 30, 'messages stop above the crosshair and its markers');
   assert.ok(hud.feed.y + hud.feed.h <= touchLayout({ ...phone, sprintButton: true, rewards: 1 }).buttons.fireLeft!.y, 'the feed stops above the left Fire button');
+});
+
+// Phones in landscape in a normal Safari tab (not the Home Screen app): the toolbar takes about 50 px.
+const SHORT_VIEWPORTS: Array<{ name: string; width: number; height: number; safe: Partial<Insets> }> = [
+  { name: 'iPhone 12-15 Safari 844x340', width: 844, height: 340, safe: { left: 47, right: 47, bottom: 21 } },
+  { name: 'iPhone 14 Pro Safari 852x343', width: 852, height: 343, safe: { left: 59, right: 59, bottom: 21 } },
+  { name: 'iPhone 13 mini Safari 812x325', width: 812, height: 325, safe: { left: 50, right: 50, bottom: 21 } },
+  { name: 'iPhone SE Safari 667x325', width: 667, height: 325, safe: {} },
+  { name: 'Android with toolbar 800x320', width: 800, height: 320, safe: {} },
+];
+
+test('the kill feed shows only the rows that fit, none at all on a short phone screen', () => {
+  const lookup = nameLookup([{ id: 'me', name: 'Me' }, { id: 'ana', name: 'Ana' }]);
+  const feed: GameEvent[] = Array.from({ length: 8 }, (_, index) => ({ type: 'elimination', playerId: index % 2 ? 'me' : 'ana', attackerId: index % 2 ? 'ana' : 'me',
+    cause: 'bullet', weapon: 'kr5', headshot: false, distance: 10, assists: [], at: 9000 + index * 100 }));
+  const place = (viewport: typeof SHORT_VIEWPORTS[number], sprintButton: boolean) => touchHudLayout({ ...viewport, controls: touchLayout({ ...viewport, sprintButton }),
+    minimapSize: minimapSpec(viewport.width, viewport.height, true).size, reach: crosshairReach(WEAPONS.kr5, 80, viewport.width, viewport.height) });
+  for (const viewport of [...SHORT_VIEWPORTS, ...VIEWPORTS]) for (const sprintButton of [false, true]) {
+    const label = `${viewport.name} sprint=${sprintButton}`, { feed: box } = place(viewport, sprintButton);
+    const entries = killFeed(feed, lookup, { id: 'me' }, 'ffa', 10_000, 6000, box.rows);
+    assert.equal(entries.length, Math.min(feed.length, box.rows), `${label}: one entry per row that fits`);
+    // The box itself is capped too, so nothing can ever spill over the left thumb's buttons.
+    const style = feedStyle(box);
+    assert.equal(style.maxHeight, box.h, label); assert.equal(style.overflow, 'hidden', label);
+    assert.deepEqual([style.left, style.top, style.maxWidth], [box.x, box.y, box.w], label);
+  }
+  // Most iPhones in a Safari tab have no room for a single row above the left Fire button.
+  for (const viewport of SHORT_VIEWPORTS) {
+    const { feed: box } = place(viewport, false);
+    assert.deepEqual([box.rows, box.h], [0, 0], viewport.name);
+  }
 });
 
 test('minimap size follows the screen', () => {

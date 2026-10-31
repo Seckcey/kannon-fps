@@ -1,17 +1,24 @@
 import test, { type TestContext } from 'node:test';
 import assert from 'node:assert/strict';
-import { activeLoadout, defaultSettings, readSettings, sanitizeSettings, saveSettings, SETTING_RANGES } from '../../src/lib/storage.js';
+import { activeLoadout, defaultSettings, isTouchDevice, readSettings, sanitizeSettings, saveSettings, SETTING_RANGES } from '../../src/lib/storage.js';
+import { warmupTextureTier } from '../../src/lib/warmup.js';
 import { requestGyroscope, GyroscopeInput } from '../../src/game/Gyroscope.js';
 import { InputController } from '../../src/game/InputController.js';
 import { DEFAULT_LOADOUT, LOADOUT_PRESETS } from '../../shared/weapons.js';
 
+/** Replaces a global for one test. */
+function withGlobal(t: TestContext, key: string, value: unknown) {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, key);
+  Object.defineProperty(globalThis, key, { configurable: true, value });
+  t.after(() => previous ? Object.defineProperty(globalThis, key, previous) : Reflect.deleteProperty(globalThis, key));
+}
 function withStorage(t: TestContext, initial: unknown) {
-  const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   const store = { saved: JSON.stringify(initial) };
-  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: () => store.saved, setItem: (_key: string, value: string) => { store.saved = value; } } });
-  t.after(() => previous ? Object.defineProperty(globalThis, 'localStorage', previous) : Reflect.deleteProperty(globalThis, 'localStorage'));
+  withGlobal(t, 'localStorage', { getItem: () => store.saved, setItem: (_key: string, value: string) => { store.saved = value; } });
   return store;
 }
+/** A browser whose media queries answer from `matches`. */
+const withMedia = (t: TestContext, matches: (query: string) => boolean) => withGlobal(t, 'matchMedia', (query: string) => ({ matches: matches(query) }));
 
 test('existing settings retain their values while mobile firing defaults to Simple and gyro stays off', t => {
   const store = withStorage(t, { sensitivity: 1.8, volume: .2, quality: 'low', invertY: true });
@@ -53,6 +60,37 @@ test('new settings are clamped to their ranges and unknown choices fall back', (
   assert.equal(odd.reduceMotion, false); assert.equal(odd.quality, 'auto');
   const chosen = sanitizeSettings({ aimMode: 'toggle', crouchMode: 'hold', sprintMode: 'toggle', reduceMotion: true }, false);
   assert.equal(chosen.aimMode, 'toggle'); assert.equal(chosen.crouchMode, 'hold'); assert.equal(chosen.sprintMode, 'toggle'); assert.equal(chosen.reduceMotion, true);
+});
+
+test('camera motion starts calm when the device asks for reduced motion, and a saved choice still wins', t => {
+  let reduce = true;
+  withMedia(t, query => reduce && query === '(prefers-reduced-motion: reduce)');
+  const store = withStorage(t, {});
+  assert.equal(defaultSettings(false).reduceMotion, true);
+  assert.equal(readSettings(true).reduceMotion, true, 'a first visit follows the device');
+  store.saved = JSON.stringify({ reduceMotion: false });
+  assert.equal(readSettings(true).reduceMotion, false, 'the player turned it off');
+  store.saved = JSON.stringify({ reduceMotion: 'yes' });
+  assert.equal(readSettings(false).reduceMotion, true, 'a broken value falls back to the device');
+  reduce = false;
+  store.saved = '{}';
+  assert.equal(readSettings(false).reduceMotion, false);
+  store.saved = JSON.stringify({ reduceMotion: true });
+  assert.equal(readSettings(false).reduceMotion, true, 'the player turned it on');
+});
+
+test('a touch-screen laptop warms up the same full town it plays, not the phone build', t => {
+  // A touch screen with a mouse or trackpad as the main pointer: touch controls, desktop rendering.
+  let coarse = false;
+  withMedia(t, query => coarse && query === '(pointer: coarse)');
+  withGlobal(t, 'navigator', { maxTouchPoints: 10 });
+  assert.equal(isTouchDevice(), true, 'it still gets the touch controls');
+  assert.equal(warmupTextureTier('auto'), 'full', 'the match draws the full town, so the warm-up fetches that file');
+  assert.equal(warmupTextureTier('high'), 'full');
+  assert.equal(warmupTextureTier('low'), 'phone');
+  coarse = true;
+  assert.equal(warmupTextureTier('auto'), 'phone', 'phones warm the phone build');
+  assert.equal(warmupTextureTier('high'), 'full');
 });
 
 test('loadout choices persist and invalid saved classes are replaced', t => {
