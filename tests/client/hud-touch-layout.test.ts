@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MIN_TARGET, overlaps, touchLayout, type Insets, type Rect, type TouchLayout } from '../../src/components/hud/touchLayout.js';
+import { WEAPONS } from '../../shared/weapons.js';
+import { crosshairReach } from '../../src/components/hud/combat.js';
+import { TOUCH_CALLOUT } from '../../src/components/hud/match.js';
+import { FEED_GAP, FEED_ROW, MIN_TARGET, hudEdges, minimapSpec, overlaps, touchHudLayout, touchLayout, type Insets, type Rect, type TouchLayout } from '../../src/components/hud/touchLayout.js';
 
 const VIEWPORTS: Array<{ name: string; width: number; height: number; safe: Partial<Insets> }> = [
   { name: 'iPhone landscape 844x390', width: 844, height: 390, safe: { left: 47, right: 47, bottom: 21 } },
@@ -60,4 +63,73 @@ test('in portrait the status panel moves above the controls', () => {
   const layout = touchLayout({ width: 390, height: 844, safe: { top: 47, bottom: 34 }, rewards: 2 });
   const top = Math.min(...controls(layout).map(([, rect]) => rect.y));
   assert.ok(layout.status.y + layout.status.h <= top);
+});
+
+const FOVS = [70, 80, 90, 110];
+const inside = (rect: Rect, width: number, height: number, edges: Insets) =>
+  rect.x >= edges.left && rect.y >= edges.top && rect.x + rect.w <= width - edges.right && rect.y + rect.h <= height - edges.bottom;
+
+test('on touch screens the kill feed, messages and standings never cover the crosshair or a button', () => {
+  for (const viewport of VIEWPORTS) for (const sprintButton of [false, true]) for (const rewards of [0, 1, 3]) for (const fov of FOVS) for (const spec of Object.values(WEAPONS)) {
+    const label = `${viewport.name} sprint=${sprintButton} rewards=${rewards} fov=${fov} ${spec.id}`;
+    const layout = touchLayout({ ...viewport, sprintButton, rewards });
+    const reach = crosshairReach(spec, fov, viewport.width, viewport.height);
+    const hud = touchHudLayout({ ...viewport, controls: layout, minimapSize: minimapSpec(viewport.width, viewport.height, true).size, reach });
+    const { feed, callouts, standings, minimap, scoreBar, topActions, edges, hint } = hud;
+    assert.deepEqual(edges, hudEdges(viewport.safe, true));
+    // The crosshair, hit markers and cook ring live in a square of `reach` around the centre.
+    const crosshair: Rect = { x: viewport.width / 2 - reach, y: viewport.height / 2 - reach, w: 2 * reach, h: 2 * reach };
+    assert.ok(callouts.y + callouts.h <= viewport.height / 2 - reach, `${label}: messages end above the crosshair`);
+    const portrait = viewport.height > viewport.width;
+    assert.equal(!!hint, portrait, `${label}: the turn-sideways hint is placed only in portrait`);
+    if (hint) assert.ok(hint.w >= 140, `${label}: hint wide enough (${hint.w})`);
+    const text: Array<[string, Rect]> = [['feed', feed], ['messages', callouts], ...(hint ? [['hint', hint] as [string, Rect]] : [])];
+    for (const [name, rect] of text) {
+      assert.ok(inside(rect, viewport.width, viewport.height, edges), `${label}: ${name} ${JSON.stringify(rect)} stays on screen`);
+      assert.equal(overlaps(rect, crosshair), false, `${label}: ${name} covers the crosshair`);
+      for (const [id, control] of controls(layout)) assert.equal(overlaps(rect, control), false, `${label}: ${name} covers ${id}`);
+      assert.equal(overlaps(rect, layout.status), false, `${label}: ${name} covers the health and ammo panel`);
+      for (const [other, fixed] of [['minimap', minimap], ['score bar', scoreBar], ['top buttons', topActions]] as const) {
+        assert.equal(overlaps(rect, fixed), false, `${label}: ${name} covers the ${other}`);
+      }
+    }
+    for (let i = 0; i < text.length; i++) for (let j = i + 1; j < text.length; j++) {
+      assert.equal(overlaps(text[i]![1], text[j]![1]), false, `${label}: ${text[i]![0]} and ${text[j]![0]} overlap`);
+    }
+    assert.equal(feed.h, feed.rows > 0 ? feed.rows * FEED_ROW + (feed.rows - 1) * FEED_GAP : 0);
+    // The standings panel replaces the feed and messages while open, but never covers a control.
+    assert.ok(inside(standings, viewport.width, viewport.height, edges), `${label}: standings on screen`);
+    for (const [id, control] of controls(layout)) assert.equal(overlaps(standings, control), false, `${label}: standings cover ${id}`);
+    assert.equal(overlaps(standings, layout.status), false, `${label}: standings cover the status panel`);
+    assert.equal(overlaps(standings, topActions), false, `${label}: standings cover the pause button`);
+    assert.ok(standings.w >= 240 && standings.h >= 150, `${label}: standings are big enough to read (${standings.w}x${standings.h})`);
+    // Something always fits: at least one message line, and on phones at least two feed rows.
+    assert.ok(callouts.h >= TOUCH_CALLOUT.notice, `${label}: room for a message (${callouts.h})`);
+    assert.ok(feed.rows >= 2, `${label}: ${feed.rows} feed rows`);
+    assert.ok(feed.w >= 170, `${label}: feed wide enough for two names (${feed.w})`);
+  }
+});
+
+test('with the usual weapons a phone shows a warning, a medal and a score pop-up together', () => {
+  for (const viewport of VIEWPORTS.filter(item => item.height < 500)) {
+    const layout = touchLayout({ ...viewport, rewards: 3 });
+    const hud = touchHudLayout({ ...viewport, controls: layout, minimapSize: 96, reach: crosshairReach(WEAPONS.kr5, 80, viewport.width, viewport.height) });
+    const needed = TOUCH_CALLOUT.notice + TOUCH_CALLOUT.medal + TOUCH_CALLOUT.popup + 2 * TOUCH_CALLOUT.gap;
+    assert.ok(hud.callouts.h >= needed, `${viewport.name}: ${hud.callouts.h}px for messages`);
+  }
+  // The reviewer's case: 800x360 had the "reward ready" panel over the crosshair's top line.
+  const phone = { width: 800, height: 360, safe: { left: 24 } };
+  const hud = touchHudLayout({ ...phone, controls: touchLayout({ ...phone, sprintButton: true, rewards: 1 }), minimapSize: 96, reach: crosshairReach(WEAPONS.kr5, 80, 800, 360) });
+  assert.ok(hud.callouts.y + hud.callouts.h <= 180 - 30, 'messages stop above the crosshair and its markers');
+  assert.ok(hud.feed.y + hud.feed.h <= touchLayout({ ...phone, sprintButton: true, rewards: 1 }).buttons.fireLeft!.y, 'the feed stops above the left Fire button');
+});
+
+test('minimap size follows the screen', () => {
+  assert.deepEqual(minimapSpec(844, 390, true), { size: 96, range: 20 });
+  assert.deepEqual(minimapSpec(1180, 820, true), { size: 128, range: 20 });
+  assert.deepEqual(minimapSpec(1920, 1080, false), { size: 216, range: 30 });
+  assert.equal(minimapSpec(1280, 600, false).size, 150);
+  assert.equal(minimapSpec(3840, 2160, false).size, 240);
+  assert.deepEqual(hudEdges({ left: 47, bottom: 21 }, true), { top: 8, right: 12, bottom: 21, left: 47 });
+  assert.deepEqual(hudEdges({}, false), { top: 16, right: 18, bottom: 18, left: 18 });
 });

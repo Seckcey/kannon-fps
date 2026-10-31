@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { RULES, type GameEvent, type GameMode, type StreakId } from '../../shared/protocol';
+import { WEAPONS } from '../../shared/weapons';
 import type { ArenaConnection } from '../lib/connection';
 import { isTouchDevice, type PlayerSession, type Settings } from '../lib/storage';
 import { GameView } from '../game/GameView';
@@ -17,11 +18,16 @@ import { PRESET_INFO } from './loadoutInfo';
 import { CombatHud } from './hud/CombatHud';
 import { CombatCallouts, KillFeed, ScoreBar } from './hud/MatchHud';
 import { Scoreboard } from './hud/Scoreboard';
+import { crosshairReach } from './hud/combat';
 import { useHudValue, useSafeArea, useViewport } from './hud/hooks';
 import { clock, eliminatedBy, killFeed, matchResult, nameLookup, recentMedals, rewardReady, scoreboard, scorePopups, scoreSummary, threatNotices, topScorer, type Viewer } from './hud/match';
-import { touchLayout } from './hud/touchLayout';
+import { FEED_GAP, FEED_ROW, minimapSpec, touchHudLayout, touchLayout } from './hud/touchLayout';
 
-export default function GameScreen({ connection, settings, setSettings, player, onLeave }: { connection: ArenaConnection; settings: Settings; setSettings: (value: Settings) => void; player: PlayerSession; onLeave: () => void }) {
+export default function GameScreen({ connection, settings, setSettings, player, onLeave, onLoadoutDone }: {
+  connection: ArenaConnection; settings: Settings; setSettings: (value: Settings) => void; player: PlayerSession; onLeave: () => void;
+  /** The in-game loadout picker closed: send a waiting change now. */
+  onLoadoutDone?: () => void;
+}) {
   const state = useSyncExternalStore(connection.subscribe, connection.getSnapshot);
   const container = useRef<HTMLDivElement>(null); const game = useRef<GameView | null>(null);
   const [hud] = useState(() => new HudStore());
@@ -45,6 +51,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const viewport = useViewport(), safe = useSafeArea();
   const rewardKey = useHudValue(hud, frame => frame?.rewards.join(',') ?? '');
   const targeting = useHudValue(hud, frame => !!frame?.mortarTargeting);
+  const heldWeapon = useHudValue(hud, frame => frame?.weapon ?? null);
   const rewards = (rewardKey ? rewardKey.split(',') : []) as StreakId[];
   const snapshot = state.snapshot;
   const self = snapshot?.self;
@@ -131,7 +138,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   }, [state.events]);
   const pause = () => { availability.current.paused = true; syncControls.current(); setPaused(true); };
   const settingsOpen = (open: boolean) => { availability.current.settings = open; syncControls.current(); setShowSettings(open); };
-  const loadoutOpen = (open: boolean) => { availability.current.loadout = open; syncControls.current(); setShowLoadout(open); };
+  const loadoutOpen = (open: boolean) => { availability.current.loadout = open; syncControls.current(); setShowLoadout(open); if (!open) onLoadoutDone?.(); };
   const resume = () => {
     availability.current.paused = false; syncControls.current(); setPaused(false);
     // Preparing needs its own explicit acknowledgement; countdown/playing can recapture without changing the round.
@@ -144,7 +151,17 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const live = playing && !dead && loaded;
   const mapVisible = (playing || countdown) && loaded;
   const menu = paused || showSettings || showLoadout;
-  const entries = killFeed(feed, lookup, viewer, mode, serverNow, 6000, touch ? 3 : 5);
+  const standingsOpen = !finished && (tabScore || touchScores) && !menu;
+  const layout = touch ? touchLayout({ ...viewport, safe, sprintButton: settings.sprintMode !== 'auto', rewards: rewards.length }) : null;
+  const minimap = minimapSpec(viewport.width, viewport.height, touch);
+  // Text stays clear of the crosshair, the hit markers and the cook ring for the weapon in hand.
+  const reach = crosshairReach(WEAPONS[heldWeapon ?? me?.weapon ?? 'kr5'] ?? WEAPONS.kr5, settings.fov, viewport.width, viewport.height);
+  const hudLayout = layout ? touchHudLayout({ ...viewport, safe, controls: layout, minimapSize: minimap.size, reach }) : null;
+  const hudStyle: Record<string, string> = { '--minimap-size': `${minimap.size}px` };
+  if (hudLayout) for (const [side, value] of Object.entries(hudLayout.edges)) hudStyle[`--edge-${side}`] = `${value}px`;
+  const feedStyle = hudLayout ? { left: hudLayout.feed.x, top: hudLayout.feed.y, maxWidth: hudLayout.feed.w, ['--feed-row' as string]: `${FEED_ROW}px`, ['--feed-gap' as string]: `${FEED_GAP}px` } as CSSProperties : undefined;
+  // On a phone the standings panel replaces the feed and messages while it is open.
+  const entries = touch && standingsOpen ? [] : killFeed(feed, lookup, viewer, mode, serverNow, 6000, hudLayout ? hudLayout.feed.rows : 5);
   const killer = dead ? eliminatedBy(feed, lookup, viewer, mode) : null;
   const groups = scoreboard(snapshot?.players ?? [], mode, viewer, snapshot?.teamScores);
   const summary = scoreSummary(snapshot, viewer, mode);
@@ -154,14 +171,12 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const damaged = state.events.some(e => e.type === 'damage' && e.playerId === state.playerId && serverNow - e.at < 250);
   const protectedNow = live && (me?.protectedUntil || 0) > serverNow;
   const roomLabel = state.room?.practice ? `${practiceLevelName(state.room.practiceDifficulty)} bot match` : state.room?.ranked ? 'Ranked crew match' : state.room?.visibility === 'public' ? 'Public match' : 'Private match';
-  const layout = touch ? touchLayout({ ...viewport, safe, sprintButton: settings.sprintMode !== 'auto', rewards: rewards.length }) : null;
-  const minimap = touch ? { size: Math.min(viewport.width, viewport.height) < 500 ? 96 : 128, range: 20 } : { size: Math.round(Math.max(150, Math.min(240, viewport.height * 0.2))), range: 30 };
   const respawnIn = Math.max(1, Math.ceil(((me?.respawnAt || serverNow) - serverNow) / 1000));
 
   return <main className={`game-screen ${touch ? 'touch-game' : 'desktop-game'} ${damaged ? 'taking-damage' : ''}`}>
     <div ref={container} className="game-canvas" aria-label="Kannon Town 3D arena"/>
     {(loading || loadError) && <div className="game-cover"><h2>{loadError ? 'Graphics unavailable' : 'Entering Kannon Town…'}</h2><p>{loadError || 'Preparing the arena and your loadout.'}</p><button className={`button ${loadError ? 'primary' : 'secondary'}`} onClick={onLeave}>Back to menu</button></div>}
-    <div className="game-hud tactical-hud" style={{ ['--minimap-size' as string]: `${minimap.size}px` }}>
+    <div className="game-hud tactical-hud" style={hudStyle as CSSProperties}>
       <CombatHud hud={hud} input={input} touch={touch} live={live && !menu} status={mapVisible && !dead} autoTarget={autoTarget}
         streak={me?.streak ?? 0} loadout={me?.loadout} minimap={minimap} statusRect={layout?.status}/>
       {mapVisible && <span className="match-tag">{MODE_INFO[mode].name} · {roomLabel}</span>}
@@ -171,14 +186,16 @@ export default function GameScreen({ connection, settings, setSettings, player, 
         {touch && <button className="icon-button" aria-label="Match standings" aria-pressed={touchScores} onClick={() => setTouchScores(open => !open)}><Icon name="list"/></button>}
         <button className="icon-button" aria-label="Pause menu" onClick={pause}><Icon name="pause"/></button>
       </div>
-      <KillFeed entries={entries}/>
-      {live && <CombatCallouts popups={scorePopups(feed, state.playerId, serverNow, 2400, touch ? 2 : 4)} medals={recentMedals(feed, state.playerId, serverNow, 3200, touch ? 1 : 2)} reward={rewardReady(feed, state.playerId, serverNow)} notices={threatNotices(snapshot, self, mode)} touch={touch}/>}
+      <KillFeed entries={entries} style={feedStyle}/>
+      {live && !(touch && standingsOpen) && <CombatCallouts touch={touch} region={hudLayout?.callouts} offset={Math.max(86, reach + 16)} callouts={{
+        popups: scorePopups(feed, state.playerId, serverNow, 2400, touch ? 2 : 4), medals: recentMedals(feed, state.playerId, serverNow, 3200, touch ? 1 : 2),
+        reward: rewardReady(feed, state.playerId, serverNow), notices: threatNotices(snapshot, self, mode) }}/>}
       {protectedNow && <div className="protection-label"><Icon name="shield" size={14}/> Spawn protection · ends when you fire</div>}
       {!touch && !menu && !finished && !preparing && !stats.locked && !targeting && loaded && state.status === 'connected' && <button className="mouse-prompt" onClick={resume}><Icon name="play" size={18}/>{countdown ? 'Capture mouse' : 'Click to play'}<span>WASD move · Mouse look · Right click aim · Esc releases the mouse</span></button>}
-      {!touch && (countdown || dead) && <span className="game-bottom-hint">Shift sprint, tap twice to dash · C crouch or slide · Space jump or vault · R reload · Q swap · G grenade · V knife · 4 reward · Tab scores</span>}
+      {!touch && (countdown || dead) && <span className="game-bottom-hint">{settings.sprintMode === 'auto' ? 'W sprints, tap it twice and hold to dash' : settings.sprintMode === 'toggle' ? 'Shift turns sprint on and off, tap twice to dash' : 'Shift sprint, tap twice and hold to dash'} · C crouch or slide · Space jump or vault · R reload · Q swap · G grenade · V knife · 4 reward · Tab scores</span>}
     </div>
     {touch && input && layout && !dead && !menu && !finished && !preparing && !countdown && loaded && state.status === 'connected' && <TouchControls input={input} hud={hud} settings={settings} layout={layout} rewards={rewards}/>}
-    {touch && <div className="portrait-hint"><Icon name="phone" size={30}/><span>Turn your phone sideways for the best view.</span></div>}
+    {touch && <div className="portrait-hint" style={hudLayout?.hint ? { left: hudLayout.hint.x, top: hudLayout.hint.y, width: hudLayout.hint.w, maxHeight: hudLayout.hint.h } : undefined}><Icon name="phone" size={22}/><span>Turn your phone sideways for the best view.</span></div>}
     {preparing && loaded && !menu && state.status === 'connected' && <section className="preparation-panel" aria-label="Match readiness">
       <h2>{!preparationRendered ? 'Preparing your next round…' : readiness.ready ? 'Waiting for your rivals…' : 'Your arena is ready.'}</h2>
       <p>{!preparationRendered ? 'Getting everyone into position.' : readiness.ready ? 'The countdown starts when everyone is ready.' : 'Everyone gets the full countdown before the match begins.'}</p>
@@ -201,7 +218,9 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     </div>}
     {state.status !== 'connected' && <div className="connection-cover"><Icon name="link" size={30}/><h2>{state.status === 'offline' ? 'Connection lost' : 'Getting you back in…'}</h2><p>Your spot is held briefly while we reconnect.</p><div className="button-row"><button className="button primary small" onClick={() => void connection.connect().catch(() => {})}>Try again</button><button className="button secondary small" onClick={onLeave}>Back to menu</button></div></div>}
     {state.error && <div className="game-error" role="alert">{state.error}<button className="icon-button" aria-label="Dismiss error" onClick={connection.clearError}><Icon name="close" size={16}/></button></div>}
-    {(finished || ((tabScore || touchScores) && !menu)) && <Scoreboard groups={groups} mode={mode} limit={limit} onClose={touchScores && !finished ? () => setTouchScores(false) : undefined}
+    {(finished || standingsOpen) && <Scoreboard groups={groups} mode={mode} limit={limit} live={!finished} onClose={touchScores && !finished ? () => setTouchScores(false) : undefined}
+      // Phone standings sit between the thumbs, so the controls stay usable while they are open.
+      panelStyle={!finished && hudLayout ? { left: hudLayout.standings.x, top: hudLayout.standings.y, width: hudLayout.standings.w, maxHeight: hudLayout.standings.h } : undefined}
       result={finished ? { result: matchResult(mode, viewer, snapshot?.winnerIds ?? endEvent?.winnerIds ?? [], snapshot?.winningTeam ?? endEvent?.winningTeam, [...(snapshot?.players ?? []), ...(state.room?.players ?? [])]),
         detail: endEvent?.reason || 'Good game. Ready for another?', topScorer: top ? { name: top.name, score: top.score } : null } : undefined}>
       {finished && <><p className="result-rating">{endEvent?.ranked ? 'This result was saved to your crew leaderboard.' : 'This round did not change your crew rating.'}</p><div className="button-row">{state.room?.hostId === state.playerId ? <button className="button primary" onClick={() => { availability.current.paused = false; setPaused(false); connection.clearError(); connection.send({ type: 'rematch' }); }}><Icon name="play" size={20}/> Play again</button> : <p className="muted">Waiting for the host to start a rematch.</p>}<button className="button secondary" onClick={onLeave}>Back to menu</button></div></>}

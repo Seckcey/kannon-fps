@@ -1,8 +1,9 @@
-import type { StreakId } from '../../../shared/protocol';
+import type { CSSProperties } from 'react';
 import { STREAKS } from '../../../shared/weapons';
 import { Icon } from '../Icon';
 import { STREAK_ICONS, TEAM_NAMES, modeRule } from '../labels';
-import type { FeedEntry, MedalCard, Popup, ScoreSummary } from './match';
+import { TOUCH_CALLOUT, fitCallouts, type Callouts, type FeedEntry, type ScoreSummary } from './match';
+import type { Rect } from './touchLayout';
 
 /** Top-centre score and clock: you against your best rival, or team against team. */
 export function ScoreBar({ summary, time }: { summary: ScoreSummary; time: string }) {
@@ -21,8 +22,9 @@ export function ScoreBar({ summary, time }: { summary: ScoreSummary; time: strin
   </div>;
 }
 
-export function KillFeed({ entries }: { entries: FeedEntry[] }) {
-  return <div className="kill-feed-v3" aria-live="polite">{entries.map(entry => entry.kind === 'elimination'
+/** Recent eliminations. On phones `style` places it under the minimap with only the rows that fit. */
+export function KillFeed({ entries, style }: { entries: FeedEntry[]; style?: CSSProperties }) {
+  return <div className="kill-feed-v3" aria-live="polite" style={style}>{entries.map(entry => entry.kind === 'elimination'
     ? <div key={entry.key} className="feed-row">
       {entry.attacker && <strong className={`rel-${entry.attacker.relation}`}>{entry.attacker.name}</strong>}
       <span className="feed-weapon" title={entry.weapon}><Icon name={entry.icon} size={20}/>{entry.headshot && <Icon name="head" size={13} className="feed-head"/>}</span>
@@ -33,14 +35,26 @@ export function KillFeed({ entries }: { entries: FeedEntry[] }) {
   </div>;
 }
 
-/** Score pop-ups, medals and reward announcements under the crosshair. */
-export function CombatCallouts({ popups, medals, reward, notices, touch }: { popups: Popup[]; medals: MedalCard[]; reward: StreakId | null; notices: string[]; touch: boolean }) {
-  const warnings = notices.length > 0 && <div className="threat-notices" role="status">{notices.map(notice => <span key={notice}>{notice}</span>)}</div>;
-  // Phones have no room under the crosshair (thumbs and the status panel), so everything stacks at the top.
+/**
+ * Threat warnings, medals, score pop-ups and the "reward ready" notice. On desktop the warnings sit under
+ * the score bar and the rest under the crosshair, `offset` pixels below the centre. Phones have no room
+ * under the crosshair (thumbs and the status panel), so everything stacks in `region` under the score bar,
+ * as compact fixed-height lines, keeping only what fits above the crosshair.
+ */
+export function CombatCallouts({ callouts, touch, region, offset = 86 }: { callouts: Callouts; touch: boolean; region?: Rect; offset?: number }) {
+  if (touch && region) {
+    const fitted = fitCallouts(callouts, region.h), size = TOUCH_CALLOUT;
+    return <div className="callouts touch-callouts" aria-live="polite" style={{ left: region.x, top: region.y, width: region.w, gap: size.gap }}>
+      {fitted.notices.map(notice => <span key={notice} className="threat-line" style={{ height: size.notice }}>{notice}</span>)}
+      {fitted.medals.map(medal => <div key={medal.key} className="medal-card" style={{ height: size.medal }}><i/><strong>{medal.name}</strong></div>)}
+      {fitted.popups.map(popup => <div key={popup.key} className="score-popup" style={{ height: size.popup }}><strong>+{popup.points}</strong><span>{popup.label}</span></div>)}
+      {fitted.reward && <div className="reward-ready" style={{ height: size.reward }}><Icon name={STREAK_ICONS[fitted.reward]} size={14}/><strong>{STREAKS[fitted.reward].name} ready</strong></div>}
+    </div>;
+  }
+  const { notices, medals, popups, reward } = callouts;
   return <>
-    {!touch && warnings}
-    <div className="callouts" aria-live="polite">
-      {touch && warnings}
+    {notices.length > 0 && <div className="threat-notices" role="status">{notices.map(notice => <span key={notice}>{notice}</span>)}</div>}
+    <div className="callouts" aria-live="polite" style={{ ['--callout-offset' as string]: `${Math.round(offset)}px` } as CSSProperties}>
       {medals.map(medal => <div key={medal.key} className="medal-card"><i/><strong>{medal.name}</strong></div>)}
       {popups.length > 0 && <div className="score-popups">{popups.map(popup => <div key={popup.key} className="score-popup"><strong>+{popup.points}</strong><span>{popup.label}</span></div>)}</div>}
       {reward && <div className="reward-ready"><Icon name={STREAK_ICONS[reward]} size={22}/><span><strong>{STREAKS[reward].name} ready</strong><small>{touch ? 'Tap its button to use it.' : 'Press 4 to use it.'}</small></span></div>}

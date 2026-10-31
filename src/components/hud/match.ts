@@ -83,6 +83,30 @@ export function rewardReady(feed: readonly GameEvent[], playerId: string, now: n
   return null;
 }
 
+/** Everything the callout stack may show at once. */
+export interface Callouts { notices: string[]; medals: MedalCard[]; popups: Popup[]; reward: StreakId | null }
+/** Fixed line heights of the compact touch callouts, in CSS pixels (applied inline). */
+export const TOUCH_CALLOUT = { notice: 19, medal: 22, popup: 16, reward: 19, gap: 3 } as const;
+/**
+ * The callouts that fit in `budget` pixels of height, most important first: threat warnings, then
+ * medals, score pop-ups and the "reward ready" line. Display order is unchanged; whatever does not fit
+ * is left out (each item is short-lived), so the stack never grows into the crosshair.
+ */
+export function fitCallouts(set: Callouts, budget: number, sizes: typeof TOUCH_CALLOUT = TOUCH_CALLOUT): Callouts & { height: number } {
+  let height = 0, count = 0;
+  const fits = (size: number) => {
+    const next = height + (count > 0 ? sizes.gap : 0) + size;
+    if (next > budget) return false;
+    height = next; count++;
+    return true;
+  };
+  const notices = set.notices.filter(() => fits(sizes.notice));
+  const medals = set.medals.filter(() => fits(sizes.medal));
+  const popups = set.popups.filter(() => fits(sizes.popup));
+  const reward = set.reward && fits(sizes.reward) ? set.reward : null;
+  return { notices, medals, popups, reward, height };
+}
+
 export interface EliminatedBy { attacker: FeedName | null; weapon: string; icon: IconName; distance: number; headshot: boolean }
 /** Who eliminated the viewer most recently. */
 export function eliminatedBy(feed: readonly GameEvent[], lookup: (id: string) => Person, viewer: Viewer, mode: GameMode): EliminatedBy | null {

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { GameMode } from '../../../shared/protocol';
 import { Icon } from '../Icon';
 import { MODE_INFO, modeRule } from '../labels';
@@ -6,12 +6,15 @@ import type { MatchResult, ScoreGroup } from './match';
 
 export interface ResultSummary { result: MatchResult; detail: string; topScorer: { name: string; score: number } | null }
 
-/** Hold-Tab standings during play, and the results screen at the end. */
-export function Scoreboard({ groups, mode, limit, result, onClose, children }: {
-  groups: ScoreGroup[]; mode: GameMode; limit: number; result?: ResultSummary; onClose?: () => void; children?: ReactNode;
+/** Standings during play (hold Tab, or the phone's standings button), and the results screen at the end.
+ * During play the game stays visible and unblurred; `panelStyle` places the phone panel between the thumbs. */
+export function Scoreboard({ groups, mode, limit, result, onClose, live = false, panelStyle, children }: {
+  groups: ScoreGroup[]; mode: GameMode; limit: number; result?: ResultSummary; onClose?: () => void;
+  live?: boolean; panelStyle?: CSSProperties; children?: ReactNode;
 }) {
-  return <div className={`scoreboard-overlay ${result ? 'results' : ''}`}>
-    <div className={`scoreboard-panel scoreboard-v3 ${mode === 'tdm' ? 'teams' : ''} ${result ? `outcome-${result.result.outcome}` : ''}`} role={result ? 'dialog' : 'region'} aria-label={result ? 'Match results' : 'Match standings'}>
+  return <div className={`scoreboard-overlay ${result ? 'results' : ''} ${live ? 'live' : ''} ${panelStyle ? 'placed' : ''}`}>
+    <div className={`scoreboard-panel scoreboard-v3 ${mode === 'tdm' ? 'teams' : ''} ${result ? `outcome-${result.result.outcome}` : ''}`} style={panelStyle}
+      role={result ? 'dialog' : 'region'} aria-label={result ? 'Match results' : 'Match standings'}>
       {result ? <header className="results-header">
         <Icon name="trophy" size={38}/>
         <h1>{result.result.title}</h1>
@@ -28,7 +31,8 @@ export function Scoreboard({ groups, mode, limit, result, onClose, children }: {
           </tr>) : <tr><td colSpan={5} className="table-empty">No players yet</td></tr>}</tbody>
         </table>
       </section>)}</div>
-      {children}
+      {/* Results keep their buttons in view on short screens; only the standings scroll. */}
+      {children && <footer className="scoreboard-actions">{children}</footer>}
     </div>
   </div>;
 }

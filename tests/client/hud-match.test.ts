@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { GameEvent, PublicPlayerState, Team } from '../../shared/protocol.js';
 import { DEFAULT_LOADOUT, LOADOUT_PRESETS } from '../../shared/weapons.js';
-import { clock, eliminatedBy, killFeed, matchResult, nameLookup, recentMedals, relationOf, rewardReady, scoreboard, scorePopups, scoreSummary, threatNotices, topScorer } from '../../src/components/hud/match.js';
+import { TOUCH_CALLOUT, clock, eliminatedBy, fitCallouts, killFeed, matchResult, nameLookup, recentMedals, relationOf, rewardReady, scoreboard, scorePopups, scoreSummary, threatNotices, topScorer, type Callouts } from '../../src/components/hud/match.js';
 
 function player(id: string, patch: Partial<PublicPlayerState> = {}): PublicPlayerState {
   return {
@@ -71,6 +71,41 @@ test('score pop-ups, medals and reward announcements belong to the viewer', () =
   assert.deepEqual(scorePopups([{ type: 'notice', message: 'hi', at: 9500 }, ...feed], 'me', 10_000).map(p => p.key), keys, 'shifted positions keep their keys');
   const twice = scorePopups([...feed.slice(0, 1), ...feed.slice(0, 1)], 'me', 10_000).map(p => p.key);
   assert.equal(new Set(twice).size, 2, 'repeated awards at the same moment get distinct keys');
+});
+
+test('phone callouts keep only what fits above the crosshair, warnings first', () => {
+  const size = TOUCH_CALLOUT;
+  const full: Callouts = {
+    notices: ['Mortar Strike incoming. Keep moving.', 'Enemy Attack Drone overhead.'],
+    medals: [{ key: 'm1', medal: 'headshot', name: 'Bullseye' }],
+    popups: [{ key: 'p1', points: 100, label: 'Elimination' }, { key: 'p2', points: 50, label: 'Headshot' }],
+    reward: 'mortar',
+  };
+  const all = fitCallouts(full, 1000);
+  assert.deepEqual({ ...all, height: undefined }, { ...full, height: undefined });
+  assert.equal(all.height, 2 * size.notice + size.medal + 2 * size.popup + size.reward + 5 * size.gap);
+  // The reviewer's 800x360 case (96 px above the crosshair): one warning, a medal, two pop-ups and
+  // "reward ready" no longer pile into the crosshair.
+  const tight = fitCallouts({ ...full, notices: full.notices.slice(0, 1) }, 96);
+  assert.deepEqual([tight.notices.length, tight.medals.length, tight.popups.length], [1, 1, 2]);
+  assert.equal(tight.reward, null, '"Reward ready" goes first; the reward button already pulses');
+  assert.equal(tight.height, 82);
+  assert.deepEqual(fitCallouts(full, 41).notices, full.notices, 'two warnings fit in 41 px');
+  assert.equal(fitCallouts(full, 41).medals.length, 0);
+  // A smaller line still fits where a bigger one did not.
+  const rewardOnly = fitCallouts({ notices: [], medals: full.medals, popups: [], reward: 'recon' }, size.medal - 1);
+  assert.deepEqual([rewardOnly.medals.length, rewardOnly.reward], [0, 'recon']);
+  assert.equal(fitCallouts(full, 0).height, 0);
+  assert.equal(fitCallouts(full, -5).notices.length, 0);
+  // Never taller than the budget, and always in display order.
+  for (let budget = 0; budget <= 160; budget += 7) {
+    const fitted = fitCallouts(full, budget);
+    assert.ok(fitted.height <= budget, `budget ${budget}: ${fitted.height}`);
+    const lines = fitted.notices.length * size.notice + fitted.medals.length * size.medal + fitted.popups.length * size.popup + (fitted.reward ? size.reward : 0);
+    const count = fitted.notices.length + fitted.medals.length + fitted.popups.length + (fitted.reward ? 1 : 0);
+    assert.equal(fitted.height, lines + Math.max(0, count - 1) * size.gap);
+    assert.deepEqual(fitted.popups, full.popups.slice(0, fitted.popups.length), 'the first pop-up of a kill stays');
+  }
 });
 
 test('the eliminated-by card names the latest attacker, weapon and distance', () => {

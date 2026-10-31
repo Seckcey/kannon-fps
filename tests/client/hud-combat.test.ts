@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WEAPONS } from '../../shared/weapons.js';
-import { ARC_MS, MARKER_MS, ammoLevel, arcOpacity, cookState, crosshairRing, crosshairStyle, crosshairTicks, fadeOut, grenadeAlert, healthBarVisible, lowHealthLevel, staminaVisible, streakProgress } from '../../src/components/hud/combat.js';
+import { ARC_MS, CLOCK_SKEW_MS, MARKER_MS, ammoLevel, arcOpacity, cookState, crosshairReach, crosshairRing, crosshairStyle, crosshairTicks, fadeOut, grenadeAlert, healthBarVisible, lowHealthLevel, staminaVisible, streakProgress } from '../../src/components/hud/combat.js';
 
 test('every weapon class has its own crosshair and a zero gap hides it', () => {
   assert.equal(crosshairStyle(WEAPONS.kr5.kind), 'cross');
@@ -32,6 +32,36 @@ test('markers and damage arcs fade over their lifetimes', () => {
   assert.ok(arcOpacity(0, 0, 60) > arcOpacity(0, 0, 8), 'bigger hits draw stronger arcs');
   assert.equal(arcOpacity(ARC_MS, 0, 60), 0);
   assert.ok(arcOpacity(0, 0, 1) >= 0.45);
+});
+
+test('a marker stamped on another clock expires instead of staying on screen', () => {
+  // HudFrame.time is performance.now(); a server-time stamp (epoch milliseconds) is far in its future.
+  const frameTime = 52_000, serverStamp = 1_793_000_000_000;
+  assert.equal(fadeOut(frameTime, serverStamp, MARKER_MS.hit), 0);
+  assert.equal(arcOpacity(frameTime, serverStamp, 60), 0);
+  assert.equal(fadeOut(frameTime, frameTime + CLOCK_SKEW_MS + 1, 200), 0);
+  assert.equal(fadeOut(frameTime, frameTime + CLOCK_SKEW_MS - 1, 200), 1, 'a stamp a moment ahead still shows');
+  assert.equal(fadeOut(frameTime, Number.NaN, 200), 0);
+  assert.equal(fadeOut(Number.NaN, frameTime, 200), 0);
+});
+
+test('crosshair reach covers the drawn crosshair, its markers and the cook ring', () => {
+  const [width, height] = [844, 390];
+  for (const spec of Object.values(WEAPONS)) for (const fov of [70, 90, 110]) {
+    const reach = crosshairReach(spec, fov, width, height);
+    assert.ok(Number.isInteger(reach) && reach >= 30, `${spec.id} at ${fov}°: ${reach}`);
+    // Whatever gap the game draws for this weapon at hip (its cone at this field of view, or the base gap).
+    const vertical = 2 * Math.atan(Math.tan(fov * Math.PI / 360) * height / width);
+    const spread = spec.pelletSpread?.hip ?? spec.hipSpread;
+    const gap = Math.max(11, Math.tan(spread) / Math.tan(vertical / 2) * height / 2);
+    const style = crosshairStyle(spec.kind);
+    for (const tick of crosshairTicks(style, gap)) assert.ok(Math.max(Math.abs(tick.y), Math.abs(tick.y + tick.h)) < reach, `${spec.id}: tick inside`);
+    assert.ok(crosshairRing(style, gap) < reach, `${spec.id}: ring inside`);
+  }
+  assert.equal(crosshairReach(WEAPONS.kr5, 80, width, height), 30, 'line crosshairs are covered by the marker and cook ring floor');
+  assert.ok(crosshairReach(WEAPONS.longbow, 80, width, height) > crosshairReach(WEAPONS.breaker12, 80, width, height));
+  assert.ok(crosshairReach(WEAPONS.longbow, 70, width, height) > crosshairReach(WEAPONS.longbow, 110, width, height), 'a narrow view magnifies the hip cone');
+  assert.ok(crosshairReach(WEAPONS.longbow, Number.NaN, width, height) >= 30, 'a broken setting still gives a sane reach');
 });
 
 test('the low-health edge grows as health drops and the bar shows only when hurt', () => {

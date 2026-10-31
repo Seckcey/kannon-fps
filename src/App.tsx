@@ -3,6 +3,7 @@ import type { Crew, GameMode, PracticeDifficulty, RoomVisibility } from '../shar
 import { Icon } from './components/Icon';
 import { Modal } from './components/Modal';
 import { LoadoutDialog, LoadoutSummary, type LoadoutChoice } from './components/Loadout';
+import { LoadoutSync } from './components/loadoutSync';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Leaderboard } from './components/Leaderboard';
 import { Lobby } from './components/Lobby';
@@ -64,14 +65,22 @@ export function App() {
   const state = useSyncExternalStore(connection?.subscribe || emptySubscribe, connection?.getSnapshot || emptySnapshot);
   const setSettings = (value: Settings) => { setSettingsState(value); try { saveSettings(value); } catch { /* game still works in private browsing */ } };
   const setLoadout = (choice: LoadoutChoice) => setSettings({ ...settings, ...choice });
-  // The server keeps a loadout per player for their next spawn. Send the saved choice whenever a room
-  // or connection begins, and again whenever it changes in the lobby, pause menu or while respawning.
+  // The server keeps a loadout per player for their next spawn. A new room or a reconnect gets the
+  // saved choice at once; changes made in the lobby, pause menu or while respawning go out once the
+  // player settles on one (the server limits how often a loadout may change), and closing the picker
+  // sends a waiting change straight away.
+  const [loadoutSync] = useState(() => new LoadoutSync(loadout => connectionRef.current?.send({ type: 'loadout', loadout })));
+  useEffect(() => () => loadoutSync.dispose(), [loadoutSync]);
   const loadoutKey = JSON.stringify(activeLoadout(settings));
+  const latestLoadout = useRef(loadoutKey); latestLoadout.current = loadoutKey;
   const loadoutRoomId = state.room?.id;
+  const loadoutReady = !!connection && !!loadoutRoomId && state.status === 'connected';
   useEffect(() => {
-    if (!connection || !loadoutRoomId || state.status !== 'connected') return;
-    connection.send({ type: 'loadout', loadout: JSON.parse(loadoutKey) });
-  }, [connection, loadoutRoomId, state.status, loadoutKey]);
+    if (loadoutReady) loadoutSync.sendNow(JSON.parse(latestLoadout.current)); else loadoutSync.cancel();
+  }, [loadoutSync, loadoutReady, connection, loadoutRoomId]);
+  const loadoutReadyRef = useRef(loadoutReady); loadoutReadyRef.current = loadoutReady;
+  useEffect(() => { if (loadoutReadyRef.current) loadoutSync.change(JSON.parse(loadoutKey)); }, [loadoutSync, loadoutKey]);
+  const closeLoadout = () => { setShowLoadout(false); loadoutSync.flush(); };
   const applyPlayer = useCallback((value: PlayerSession, requestedDraft?: string) => {
     if (playerRef.current?.token !== value.token) {
       connectionRef.current?.dispose(); connectionRef.current = null; setConnection(null);
@@ -162,8 +171,11 @@ export function App() {
   const leaveMatch = () => { cancelEntry(); connectionRef.current?.leave(); setTab('play'); setError(''); };
   const closeEntryDialog = () => { cancelEntry(); connectionRef.current?.leave(); setDialog(null); setError(''); };
   const startMatch = () => { if (busyRef.current) return; const generation = ++entryGeneration.current; setBusy(true); setError(''); connection?.clearError(); connection?.send({ type: 'start' }); entryTimeout(generation, () => setBusy(false), 1500); };
-  const active = state.room && state.room.phase !== 'waiting';
-  if (active && state.room && connection && player) return <Suspense fallback={<main className="fatal-screen"><h1>Entering Kannon Town…</h1><p>Loading your arena.</p></main>}><GameScreen key={state.room.id} connection={connection} settings={settings} setSettings={setSettings} player={player} onLeave={leaveMatch}/></Suspense>;
+  const active = !!state.room && state.room.phase !== 'waiting';
+  // A host can start while a guest has a lobby menu open. The game screen replaces the lobby, so close
+  // those menus (sending any waiting loadout) rather than reopening them when the player comes back.
+  useEffect(() => { if (active) { setShowLoadout(false); setShowSettings(false); loadoutSync.flush(); } }, [active, loadoutSync]);
+  if (active && state.room && connection && player) return <Suspense fallback={<main className="fatal-screen"><h1>Entering Kannon Town…</h1><p>Loading your arena.</p></main>}><GameScreen key={state.room.id} connection={connection} settings={settings} setSettings={setSettings} player={player} onLeave={leaveMatch} onLoadoutDone={() => loadoutSync.flush()}/></Suspense>;
 
   return <div className={`app-shell ${tab === 'play' ? 'play-page' : 'inner-page'} ${state.room ? 'has-room' : ''}`}>
     {tab === 'play' && <div className="lobby-art" aria-hidden="true"/>}
@@ -176,7 +188,7 @@ export function App() {
       {tab === 'help' && <Help/>}
     </main>
     {showSettings && <SettingsDialog settings={settings} onChange={setSettings} player={player} onPlayer={acceptPlayer} onClose={() => setShowSettings(false)}/>}
-    {showLoadout && <LoadoutDialog value={settings} onChange={setLoadout} onClose={() => setShowLoadout(false)}/>}
+    {showLoadout && <LoadoutDialog value={settings} onChange={setLoadout} onClose={closeLoadout}/>}
     {dialog === 'practice' && <Modal title="Choose your challenge." onClose={closeEntryDialog}>
       <p className="modal-intro">{practiceMode === 'tdm' ? 'Team up with an AI teammate against two AI rivals.' : 'Face three AI rivals that move, fight, and use cover.'} Bring any loadout. Your crew rating stays untouched.</p>
       <ModeChoice mode={practiceMode} onMode={setPracticeMode} disabled={busy}/>

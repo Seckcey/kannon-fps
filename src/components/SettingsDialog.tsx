@@ -28,8 +28,9 @@ export function SettingsDialog({ settings, onChange, player, onPlayer, onClose, 
   const currentSettings = useRef(settings); currentSettings.current = settings;
   const change = (patch: Partial<Settings>) => onChange({ ...currentSettings.current, ...patch });
   const sprintHint = settings.sprintMode === 'auto'
-    ? touch ? 'Push the stick all the way forward to sprint. Push it again quickly to dash.' : 'You sprint whenever you move straight ahead. Tap Shift twice to dash.'
-    : settings.sprintMode === 'toggle' ? `${touch ? 'Tap Sprint' : 'Tap Shift'} to start sprinting and again to stop.` : touch ? 'Hold Sprint to sprint.' : 'Hold Shift to sprint. Tap it twice and hold to dash.';
+    ? touch ? 'Push the stick all the way forward to sprint. Push it again quickly to dash.' : 'Holding W always sprints. Tap W twice and hold to dash.'
+    : settings.sprintMode === 'toggle' ? `${touch ? 'Tap Sprint' : 'Tap Shift'} to start sprinting and again to stop. Tap twice quickly to dash.`
+    : touch ? 'Hold Sprint to sprint. Tap it twice and hold to dash.' : 'Hold Shift to sprint. Tap it twice and hold to dash.';
   return <Modal title="Your settings" onClose={onClose}>
     <div className="settings-fields">
       <h3 className="settings-heading">Aiming</h3>

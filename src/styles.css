@@ -373,9 +373,9 @@
   .connection-metric { padding: 4px 8px; background: var(--hud-panel); color: var(--hud-dim); font: 500 12px var(--hud); letter-spacing: .5px; }
   .connection-metric.high-ping { color: var(--objective); }
   .kill-feed-v3 { position: absolute; top: calc(var(--edge-top) + 54px); right: var(--edge-right); display: grid; justify-items: end; gap: 3px; max-width: min(440px, 42vw); }
-  .feed-row { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 4px 10px; background: var(--hud-panel); font: 600 15px/1.15 var(--hud); white-space: nowrap; animation: feed-in .18s ease-out; }
-  .feed-row strong { max-width: 150px; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-  .feed-weapon { display: inline-flex; align-items: center; gap: 2px; color: #fff; }
+  .feed-row { display: flex; align-items: center; gap: 8px; max-width: 100%; overflow: hidden; padding: 4px 10px; background: var(--hud-panel); font: 600 15px/1.15 var(--hud); white-space: nowrap; animation: feed-in .18s ease-out; }
+  .feed-row strong { flex: 0 1 auto; min-width: 0; max-width: 150px; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .feed-weapon { display: inline-flex; flex-shrink: 0; align-items: center; gap: 2px; color: #fff; }
   .feed-head { color: var(--objective); }
   .feed-message { color: var(--hud-dim); font-weight: 500; }
   .feed-message svg { color: var(--objective); }
@@ -423,8 +423,8 @@
   .stamina-pip.dashing i { background: var(--objective); }
   .protection-label { position: absolute; top: calc(50% - 84px); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; padding: 4px 10px; background: #4aa3ff2e; border: 1px solid #4aa3ff99; color: #dcecff; font: 600 12px var(--hud); letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
 
-  /* Pop-ups under the crosshair. */
-  .callouts { position: absolute; left: 50%; top: calc(50% + 86px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  /* Pop-ups under the crosshair; the offset clears the crosshair of the weapon in hand. */
+  .callouts { position: absolute; left: 50%; top: calc(50% + var(--callout-offset, 86px)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .medal-card { display: flex; align-items: center; gap: 9px; padding: 5px 14px 5px 10px; background: var(--hud-panel-strong); border-left: 3px solid var(--objective); font: 700 18px/1 var(--hud); letter-spacing: 1.6px; text-transform: uppercase; white-space: nowrap; animation: callout-in 3.2s ease-out forwards; }
   .medal-card i { width: 11px; height: 11px; background: var(--objective); transform: rotate(45deg); }
   .score-popups { display: grid; justify-items: center; gap: 2px; }
@@ -552,7 +552,18 @@
   .scoreboard-panel td { padding: 15px 13px; font-size: 18px; border-bottom: 1px solid #324c56; }
   .scoreboard-panel .button-row { justify-content: center; margin-top: 22px; }
   .scoreboard-panel .result-rating { font-size: 14px; color: var(--muted); }
-  .scoreboard-v3 { width: min(780px, 100%); text-align: left; font-family: var(--hud); background: var(--brackets), #080c10eb; border: 1px solid var(--hud-line); border-top: 2px solid #ffffffb3; }
+  .scoreboard-v3 { display: flex; flex-direction: column; overflow: hidden; width: min(780px, 100%); text-align: left; font-family: var(--hud); background: var(--brackets), #080c10eb; border: 1px solid var(--hud-line); border-top: 2px solid #ffffffb3; }
+  .scoreboard-v3 > header, .scoreboard-actions { flex-shrink: 0; }
+  /* Only the standings scroll, so the results buttons stay on screen. */
+  .scoreboard-v3 .score-groups { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  /* During play the game stays sharp behind the standings. */
+  .scoreboard-overlay.live { background: #0513218a; backdrop-filter: none; }
+  /* Phone standings sit between the thumbs (placed inline) and let touches reach the controls around them. */
+  .scoreboard-overlay.placed { display: block; padding: 0; background: none; pointer-events: none; }
+  .scoreboard-overlay.placed .scoreboard-panel { position: absolute; pointer-events: auto; }
+  .scoreboard-overlay.placed .scoreboard-v3.teams .score-groups { grid-template-columns: 1fr; }
+  .scoreboard-overlay.placed .standings-header h2 { font-size: 22px; }
+  .scoreboard-overlay.placed .standings-header span { font-size: 12px; line-height: 1.2; }
   .scoreboard-v3.teams { width: min(1000px, 100%); }
   .scoreboard-v3.outcome-win { border-top-color: var(--objective); }
   .scoreboard-v3.outcome-loss { border-top-color: var(--enemy); }
@@ -663,18 +674,24 @@
   .touch-game .game-top-actions .icon-button { width: 44px; height: 44px; }
   .touch-game .game-top-actions svg { width: 20px; height: 20px; }
   .touch-game .connection-metric { font-size: 10px; padding: 3px 6px; }
-  .touch-game .kill-feed-v3 { top: calc(var(--edge-top) + var(--minimap-size, 96px) + 8px); left: var(--edge-left); right: auto; justify-items: start; max-width: min(300px, 36vw); }
-  .touch-game .feed-row { font-size: 11px; padding: 2px 7px; gap: 5px; }
-  .touch-game .feed-row svg { width: 15px; height: 15px; }
+  /* Phones: GameScreen places the kill feed and the message stack inline (touchHudLayout), with fixed
+     line heights, so neither reaches the crosshair or a button. These are fallbacks and looks. */
+  .touch-game .kill-feed-v3 { top: calc(var(--edge-top) + var(--minimap-size, 96px) + 6px); left: var(--edge-left); right: auto; justify-items: start; gap: var(--feed-gap, 2px); max-width: min(300px, 36vw); }
+  .touch-game .feed-row { height: var(--feed-row, 17px); font-size: 11px; padding: 0 7px; gap: 5px; }
+  .touch-game .feed-row svg { width: 14px; height: 14px; }
   .touch-game .feed-row strong { max-width: 92px; }
-  .touch-game .callouts { top: calc(var(--edge-top) + 44px); gap: 4px; }
-  .touch-game .callouts .threat-notices { position: static; transform: none; }
-  .touch-game .medal-card { font-size: 14px; padding: 4px 10px 4px 8px; }
-  .touch-game .score-popup { font-size: 12px; }
-  .touch-game .score-popup strong { font-size: 16px; }
-  .touch-game .reward-ready { padding: 5px 10px; }
-  .touch-game .reward-ready strong { font-size: 14px; }
-  .touch-game .reward-ready small { display: none; }
+  .touch-game .callouts { transform: none; }
+  .touch-callouts > * { max-width: 100%; overflow: hidden; }
+  .threat-line { display: block; padding: 0 8px; background: #3c0c0ab8; border: 1px solid #ff5a4fb3; color: #ffe1dd; font: 600 11px var(--hud); line-height: 17px; letter-spacing: .6px; text-transform: uppercase; white-space: nowrap; text-overflow: ellipsis; animation: threat-pulse 1.3s ease-in-out infinite; }
+  .touch-game .medal-card { font-size: 14px; padding: 0 10px 0 8px; }
+  .touch-game .score-popup { align-items: center; font-size: 12px; }
+  .touch-game .score-popup strong { font-size: 15px; }
+  .touch-game .reward-ready { gap: 6px; padding: 0 10px; }
+  .touch-game .reward-ready strong { font-size: 13px; }
+  .touch-game .scoreboard-overlay.placed .scoreboard-panel { padding: 10px 12px; }
+  .scoreboard-overlay.placed .standings-header { position: relative; display: grid; gap: 2px; padding-right: 40px; }
+  .scoreboard-overlay.placed .standings-header .icon-button { position: absolute; top: -10px; right: -12px; width: 44px; height: 44px; }
+  .scoreboard-overlay.placed .score-groups { margin-top: 8px; gap: 8px; }
   .touch-game .protection-label { top: calc(50% + 50px); font-size: 10px; }
   .touch-game .damage-arc i { left: -92px; top: -92px; width: 184px; height: 184px; border-width: 4px; }
   .touch-game .grenade-warning span { top: -82px; }
@@ -716,12 +733,24 @@
   .touch-game .scoreboard-v3 th:not(:first-child), .touch-game .scoreboard-v3 td:not(:first-child) { width: 44px; }
   .touch-game .scoreboard-panel .button { font-size: 21px; min-height: 44px; padding: 9px 17px; }
   .touch-game .pause-panel { padding: 18px 23px; gap: 10px; max-height: calc(100dvh - 24px); overflow: auto; } .touch-game .pause-panel h2 { font-size: 34px; } .touch-game .pause-panel .button { font-size: 21px; min-height: 44px; padding: 8px; }
+  /* Short screens: compact results so Play again and Back to menu stay in view; the standings scroll. */
+  @media (max-height: 500px) {
+    .scoreboard-overlay.results { padding: 8px; }
+    .scoreboard-overlay.results .scoreboard-panel { max-height: calc(100dvh - 16px); padding: 10px 14px; }
+    .scoreboard-overlay.results .results-header { gap: 3px; }
+    .scoreboard-overlay.results .results-header > svg { display: none; }
+    .scoreboard-overlay.results .results-header h1 { font-size: 26px; }
+    .scoreboard-overlay.results .results-header p { font-size: 13px; line-height: 1.3; }
+    .scoreboard-overlay.results .score-groups { margin-top: 8px; gap: 8px; }
+    .scoreboard-overlay.results .result-rating { margin-top: 6px; font-size: 12px; }
+    .scoreboard-overlay.results .button-row { margin-top: 6px; }
+  }
   @media (orientation: portrait) and (max-width: 650px) {
-    .touch-game .portrait-hint { position: absolute; display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--hud-panel-strong); top: 30%; left: 20px; right: 20px; z-index: 4; font: 500 14px var(--hud); pointer-events: none; }
+    /* Placed inline between the minimap and the top buttons (touchHudLayout), clear of the messages. */
+    .touch-game .portrait-hint { position: absolute; display: flex; align-items: center; gap: 8px; padding: 6px 10px; overflow: hidden; background: var(--hud-panel-strong); z-index: 4; font: 500 13px/1.25 var(--hud); pointer-events: none; }
     .touch-game .scoreboard-v3.teams .score-groups { grid-template-columns: 1fr; }
-    .touch-game .score-bar { left: auto; right: var(--edge-right); transform: none; top: calc(var(--edge-top) + 52px); }
-    .touch-game .callouts { top: calc(var(--edge-top) + 150px); }
-    .touch-game .kill-feed-v3 { max-width: calc(100vw - 24px); }
+    /* No room beside the minimap: the score bar moves under it (touchHudLayout stacks the rest below). */
+    .touch-game .score-bar { top: calc(var(--edge-top) + var(--minimap-size, 96px) + 8px); }
     .touch-game .connection-metric { display: none; }
   }
   @media (max-width: 650px) {
@@ -737,5 +766,10 @@
     .rule-strip span { font-size: 14px; gap: 4px; }
     .rule-strip { gap: 8px; }
   }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    /* A near-zero duration would jump these fade-outs straight to their invisible last frame, and turn the
+       pulses into flicker. They simply appear and disappear instead (the HUD removes them on time). */
+    .medal-card, .score-popup, .reward-ready, .feed-row, .threat-notices span, .threat-line, .grenade-warning span, .touch-reward { animation: none; }
+  }
 }

@@ -23,14 +23,36 @@ export function crosshairTicks(style: CrosshairStyle, gap: number): Tick[] {
 export function crosshairRing(style: CrosshairStyle, gap: number): number {
   return (style === 'ring' || style === 'wide') && gap > 0 ? Math.max(8, gap) : 0;
 }
+/** Largest hip gap the game draws for a weapon with no cone (the SMG's), in CSS pixels. */
+const BASE_GAP = 11;
+/** Hit markers (scaled up when fresh) and the grenade cook ring reach this far from the centre. */
+const MARKER_REACH = 30;
+/**
+ * How far the hip crosshair, hit markers and cook ring can reach from the screen centre, in CSS
+ * pixels, so text can be laid out clear of them. The weapon's fixed hip cone is drawn to scale at
+ * the player's field of view (horizontal degrees), like the game's own crosshair gap.
+ */
+export function crosshairReach(spec: Pick<WeaponSpec, 'kind' | 'hipSpread' | 'pelletSpread'>, fovDegrees: number, width: number, height: number): number {
+  const spread = spec.pelletSpread?.hip ?? spec.hipSpread;
+  const fov = Math.max(1, Math.min(179, Number.isFinite(fovDegrees) ? fovDegrees : 90)) * Math.PI / 180;
+  const vertical = 2 * Math.atan(Math.tan(fov / 2) * height / Math.max(1, width));
+  const cone = spread > 0 ? Math.tan(spread) / Math.tan(vertical / 2) * height / 2 : 0;
+  const style = crosshairStyle(spec.kind), gap = Math.max(BASE_GAP, cone);
+  const ticks = crosshairTicks(style, gap).reduce((far, tick) => Math.max(far, Math.abs(tick.y), Math.abs(tick.y + tick.h), Math.abs(tick.x), Math.abs(tick.x + tick.w)), 0);
+  return Math.ceil(Math.max(MARKER_REACH, ticks + 2, crosshairRing(style, gap) + 2));
+}
 
 /** How long each marker stays on screen, in milliseconds. */
 export const MARKER_MS: Record<HitMarker['kind'], number> = { hit: 260, head: 360, kill: 560 };
 export const ARC_MS = 1600;
-/** 1 when new, fading to 0 at `durationMs`. Times are performance.now() milliseconds. */
+/** A marker stamped this far in the future comes from another clock (server time, say) and is dropped. */
+export const CLOCK_SKEW_MS = 1000;
+/** 1 when new, fading to 0 at `durationMs`. Times are performance.now() milliseconds; a slightly
+ * newer stamp still shows, but one from a different clock expires instead of staying on screen. */
 export function fadeOut(now: number, at: number, durationMs: number): number {
   const age = now - at;
-  if (!(age >= 0)) return 1;
+  if (!Number.isFinite(age) || age < -CLOCK_SKEW_MS) return 0;
+  if (age <= 0) return 1;
   return Math.max(0, Math.min(1, 1 - age / durationMs));
 }
 /** Damage arcs are stronger for bigger hits and fade over ARC_MS. */
