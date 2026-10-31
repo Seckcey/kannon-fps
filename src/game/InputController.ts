@@ -1,5 +1,6 @@
 import type { InputFrame, Slot, StreakId } from '../../shared/protocol';
 import { ARENA_LIMITS } from '../../shared/map';
+import { coarsePointer } from './RenderTiers';
 
 export type AimMode = 'hold' | 'toggle';
 export type SprintMode = 'hold' | 'toggle' | 'auto';
@@ -97,7 +98,9 @@ export class InputController {
   }
 
   get locked() { return !!this.canvas && document.pointerLockElement === this.canvas; }
-  get isTouch() { return this.touchActive || window.matchMedia('(pointer: coarse)').matches; }
+  /** Touch controls in use, or a coarse main pointer: the same test the render tier and the art
+   * warm-up use, so a touch laptop driven by its trackpad keeps the desktop town it downloaded. */
+  get isTouch() { return this.touchActive || coarsePointer(); }
   get isPaused() { return this.paused; }
   get canEngage() { return !this.disposed && !this.paused && this.focused && !document.hidden; }
   get acceptsInput() { return this.canEngage && !this.gameplayBlocked; }

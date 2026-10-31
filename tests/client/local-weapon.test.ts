@@ -3,8 +3,8 @@ import test from 'node:test';
 import { RULES, type InputFrame, type Loadout, type PlayerState, type WeaponId } from '../../shared/protocol';
 import { EXPLOSIVES, fireIntervalMs, LOADOUT_PRESETS, QUICK_HANDS_FACTOR, WEAPONS } from '../../shared/weapons';
 import {
-  DASH_SPRINT_TO_FIRE, LocalWeapon, RecoilRecovery, recoilKick, shotDirections, spawnFrags, spawnReserve, VAULT_FIRE_PROGRESS,
-  type WeaponEvent, type WeaponStepContext,
+  aimProgress, DASH_SPRINT_TO_FIRE, LocalWeapon, RecoilRecovery, recoilKick, ServerTracers, shotCone, shotDirections, spawnFrags, spawnReserve,
+  VAULT_FIRE_PROGRESS, type WeaponEvent, type WeaponStepContext,
 } from '../../src/game/LocalWeapon';
 import { directionFromAngles } from '../../shared/physics';
 
@@ -15,8 +15,11 @@ const frame = (seq: number, changes: Partial<InputFrame> = {}): InputFrame => ({
   seq, moveX: 0, moveZ: 0, yaw: 0, pitch: 0, fire: false, aim: false, jump: false, sprint: false, reload: false, slot: 1,
   crouch: false, dash: false, melee: false, grenade: false, streak: null, viewTime: 0, ...changes,
 });
-const context = (now: number, changes: Partial<WeaponStepContext> = {}): WeaponStepContext =>
-  ({ now, alive: true, sprinting: false, dashing: false, vaultProgress: 1, ads: 0, ...changes });
+/** Unless a test says otherwise, the vault state before this tick's move is the same as after it. */
+const context = (now: number, changes: Partial<WeaponStepContext> = {}): WeaponStepContext => {
+  const vaultProgress = changes.vaultProgress ?? 1;
+  return { now, alive: true, sprinting: false, dashing: false, vaultProgress, pressVaultProgress: vaultProgress, vaultingBefore: vaultProgress < 1, ads: 0, ...changes };
+};
 function self(loadout: Loadout, changes: Partial<PlayerState> = {}): PlayerState {
   const primary = WEAPONS[loadout.primary], secondary = WEAPONS[loadout.secondary];
   return {
@@ -82,7 +85,7 @@ test('each weapon keeps its own cadence: the pistol fires once raised after a bo
   assert.ok(weapon.step(frame(1, { fire: true }), context(start)).some(event => event.type === 'shot'));
   weapon.step(frame(2, { slot: 2 }), context(start + TICK));
   assert.ok(weapon.step(frame(3, { slot: 2, fire: true }), context(start + TICK + raise)).some(event => event.type === 'shot'),
-    'The pistol does not wait for the Longbow bolt');
+    'The pistol does not wait for the Heron 7 bolt');
   weapon.step(frame(4, { slot: 1 }), context(start + 2 * TICK + raise));
   const back = start + 2 * TICK + raise + longbowRaise;
   assert.ok(back < start + interval, 'the scenario swaps back before the bolt is ready');
@@ -265,15 +268,114 @@ test('recovery returns its share of the climb after release but never pulls belo
 
 test('shots travel along the crosshair; shotgun pellets keep their fixed pattern around it, tighter when aimed', () => {
   const yaw = 0.7, pitch = -0.1, forward = directionFromAngles(yaw, pitch);
-  assert.deepEqual(shotDirections(WEAPONS.kr5, yaw, pitch, false), [forward]);
-  const hip = shotDirections(WEAPONS.breaker12, yaw, pitch, false), aimed = shotDirections(WEAPONS.breaker12, yaw, pitch, true);
+  assert.deepEqual(shotDirections(WEAPONS.kr5, yaw, pitch, 0), [forward]);
+  const hip = shotDirections(WEAPONS.breaker12, yaw, pitch, 0), aimed = shotDirections(WEAPONS.breaker12, yaw, pitch, 1);
   assert.equal(hip.length, WEAPONS.breaker12.pellets);
   const angle = (a: { x: number; y: number; z: number }) => Math.acos(Math.min(1, a.x * forward.x + a.y * forward.y + a.z * forward.z));
   assert.ok(angle(hip[0]!) < 1e-7, 'The centre pellet goes where the crosshair points');
   for (const direction of hip) assert.ok(Math.abs(Math.hypot(direction.x, direction.y, direction.z) - 1) < 1e-12);
   assert.ok(Math.abs(angle(hip[1]!) - Math.atan(0.55 * WEAPONS.breaker12.pelletSpread!.hip)) < 1e-9);
+  assert.ok(Math.abs(angle(aimed[1]!) - Math.atan(0.55 * WEAPONS.breaker12.pelletSpread!.ads)) < 1e-9);
   assert.ok(angle(aimed[5]!) < angle(hip[5]!), 'Aiming tightens the pattern');
   assert.ok(Math.abs(hip[1]!.y - forward.y) < 1e-3 && Math.abs(hip[3]!.y - forward.y) > 0.01, 'The pattern is laid out in the view, sideways and up');
+});
+
+test('a pellet pattern part-way into aiming narrows by the aim progress, as the server blends it', () => {
+  const yaw = -0.4, pitch = 0.05, forward = directionFromAngles(yaw, pitch), spread = WEAPONS.breaker12.pelletSpread!;
+  const angle = (a: { x: number; y: number; z: number }) => Math.acos(Math.min(1, a.x * forward.x + a.y * forward.y + a.z * forward.z));
+  for (const aim of [0.25, 0.5, 0.8]) {
+    const pellets = shotDirections(WEAPONS.breaker12, yaw, pitch, aim), cone = spread.hip + (spread.ads - spread.hip) * aim;
+    assert.ok(Math.abs(angle(pellets[1]!) - Math.atan(0.55 * cone)) < 1e-9, `aim ${aim}: not the hip or the aimed pattern, but the blend`);
+  }
+  assert.deepEqual(shotDirections(WEAPONS.breaker12, yaw, pitch, 7), shotDirections(WEAPONS.breaker12, yaw, pitch, 1), 'Progress is clamped');
+  assert.deepEqual(shotDirections(WEAPONS.breaker12, yaw, pitch, NaN), shotDirections(WEAPONS.breaker12, yaw, pitch, 0));
+});
+
+test('shot events carry the aim progress the server will use: timed from the tick aim went down, faster with Cool Head', () => {
+  for (const [loadout, factor] of [[{ ...plain, primary: 'longbow' as const }, 1], [{ ...LOADOUT_PRESETS.marksman }, 0.8]] as const) {
+    const spec = WEAPONS.longbow, aimTime = spec.adsMs * factor;
+    for (const aimTicks of [0, 3, 6, 9, 20]) {
+      const weapon = armed(loadout), start = 90_000;
+      // Aim goes down on tick 0 and the trigger is pressed `aimTicks` ticks later.
+      const run = drive(weapon, aimTicks + 1, tick => ({ aim: true, fire: tick === aimTicks }), start);
+      const shot = run.events.flat().find(event => event.type === 'shot');
+      assert.ok(shot && shot.type === 'shot', `${aimTicks} ticks: the press fires`);
+      const expected = Math.min(1, aimTicks * TICK / aimTime);
+      assert.ok(Math.abs(shot.aim - expected) < 1e-9, `${loadout.perks.join(',')}, ${aimTicks} ticks: aim ${shot.aim} vs ${expected}`);
+      assert.equal(shot.at, start + aimTicks * TICK, 'The shot is stamped with its predicted tick time');
+      assert.ok(Math.abs(aimProgress(spec, loadout, start, true, start + aimTicks * TICK) - expected) < 1e-9);
+    }
+  }
+  const marksman = { ...plain, primary: 'longbow' as const };
+  const hip = drive(armed(marksman), 1, () => ({ fire: true })).events.flat().find(event => event.type === 'shot');
+  assert.ok(hip?.type === 'shot' && hip.aim === 0, 'From the hip');
+  // Letting go of aim starts the clock again.
+  const reaimed = drive(armed(marksman), 12, tick => ({ aim: tick < 6 || tick >= 9, fire: tick === 11 })).events.flat().find(event => event.type === 'shot');
+  assert.ok(reaimed?.type === 'shot' && Math.abs(reaimed.aim - 2 * TICK / WEAPONS.longbow.adsMs) < 1e-9, 'Aim restarts when it goes down again');
+  assert.equal(aimProgress(WEAPONS.longbow, marksman, 1_000, false, 5_000), 0, 'A frame that is not aiming is a hip shot');
+  assert.equal(aimProgress(WEAPONS.longbow, marksman, null, true, 5_000), 0);
+});
+
+test('the aim start survives reconciliation, so replayed shots keep their aim progress', () => {
+  const loadout = { ...plain, primary: 'longbow' as const }, weapon = armed(loadout), start = 95_000;
+  drive(weapon, 4, () => ({ aim: true }), start);
+  // The server has processed the first two aimed inputs; the rest are still in flight.
+  weapon.reconcile(self(loadout), 2, start + TICK);
+  const shot = weapon.step(frame(5, { aim: true, fire: true }), context(start + 4 * TICK)).find(event => event.type === 'shot');
+  assert.ok(shot?.type === 'shot' && Math.abs(shot.aim - 4 * TICK / WEAPONS.longbow.adsMs) < 1e-9);
+  const dead = armed(loadout);
+  dead.step(frame(1, { aim: true }), context(start));
+  dead.step(frame(2, { aim: true }), context(start + TICK, { alive: false }));
+  const respawned = dead.step(frame(3, { aim: true, fire: true }), context(start + 2 * TICK)).find(event => event.type === 'shot');
+  assert.ok(respawned?.type === 'shot' && respawned.aim === 0, 'A life that ended released the aim, as on the server');
+});
+
+test('only the Heron 7 rolls a random cone: wide from the hip, none once fully scoped; shotguns and the rest have none', () => {
+  assert.equal(shotCone(WEAPONS.longbow, 0), WEAPONS.longbow.hipSpread);
+  assert.ok(Math.abs(shotCone(WEAPONS.longbow, 0.5) - WEAPONS.longbow.hipSpread / 2) < 1e-12);
+  assert.equal(shotCone(WEAPONS.longbow, 1), 0, 'Fully scoped, the round goes exactly down the crosshair');
+  assert.ok(shotCone(WEAPONS.longbow, 0.999) > 0);
+  for (const id of ['kr5', 'hornet9', 'breaker12', 'sentry9'] as const) for (const aim of [0, 0.5, 1]) assert.equal(shotCone(WEAPONS[id], aim), 0, id);
+  assert.equal(shotCone(WEAPONS.longbow, NaN), WEAPONS.longbow.hipSpread);
+});
+
+test('a shot whose tracer is left to the server is matched to its confirmation by weapon and tick time', () => {
+  const tracers = new ServerTracers();
+  assert.equal(tracers.take('longbow', 10_000), false, 'Nothing expected: the tracer was already drawn');
+  tracers.expect('longbow', 10_000);
+  assert.equal(tracers.take('kr5', 10_010), false, 'Another weapon is not that shot');
+  assert.equal(tracers.take('longbow', 10_030), true);
+  assert.equal(tracers.take('longbow', 10_030), false, 'Each expected shot is drawn once');
+  // The first predicted round never went off on the server; the second did.
+  tracers.expect('longbow', 20_000); tracers.expect('longbow', 21_300);
+  assert.equal(tracers.take('longbow', 21_290), true, 'A shot the server never fired falls away');
+  assert.equal(tracers.take('longbow', 21_300), false);
+  tracers.expect('longbow', 30_000);
+  assert.equal(tracers.take('longbow', 29_000), false, 'A confirmation from well before the predicted shot is not it');
+  assert.equal(tracers.take('longbow', 30_100), true);
+  tracers.expect('longbow', 40_000); tracers.clear();
+  assert.equal(tracers.take('longbow', 40_000), false);
+});
+
+test('a new trigger press, the knife and a cook are judged on the body before the move; the held trigger after it', () => {
+  // The press that starts a vault: the server sees no vault yet, although the moved body is at 0%.
+  const starting = { vaultProgress: 0, pressVaultProgress: 1, vaultingBefore: false };
+  assert.ok(armed(plain).step(frame(1, { fire: true }), context(1_000, starting)).some(event => event.type === 'shot'), 'The jump-and-fire press shoots');
+  assert.deepEqual(armed(plain).step(frame(1, { melee: true }), context(1_000, starting)), [{ type: 'melee' }], 'The jump-and-knife press swings');
+  assert.deepEqual(armed(plain).step(frame(1, { grenade: true }), context(1_000, starting)), [{ type: 'cook' }], 'The jump-and-cook press cooks');
+  // The tick a vault ends: the server still sees the vault, although the moved body is clear of it.
+  const ending = { vaultProgress: 1, pressVaultProgress: 1, vaultingBefore: true };
+  assert.deepEqual(armed(plain).step(frame(1, { melee: true }), context(1_000, ending)), [], 'No knife while the body starts the tick vaulting');
+  const cook = armed(plain);
+  assert.deepEqual(cook.step(frame(1, { grenade: true }), context(1_000, ending)), [], 'No cook either');
+  assert.equal(cook.state.frags, spawnFrags(plain));
+  assert.ok(armed(plain).step(frame(1, { fire: true }), context(1_000, ending)).some(event => event.type === 'shot'), 'A press at the end of the vault fires');
+  // Early in a vault on both sides, a held carbine trigger waits for 70% of the moved body's vault.
+  const held = armed(plain), early = { vaultProgress: 0.5, pressVaultProgress: 0.4, vaultingBefore: true };
+  assert.deepEqual(held.step(frame(1, { fire: true }), context(1_000, early)), []);
+  assert.deepEqual(held.step(frame(2, { fire: true }), context(1_033, { ...early, vaultProgress: 0.69, pressVaultProgress: 0.6 })), []);
+  assert.ok(held.step(frame(3, { fire: true }), context(1_066, { ...early, vaultProgress: 0.75, pressVaultProgress: 0.69 })).some(event => event.type === 'shot'),
+    'The held trigger fires once the moved body is 70% through');
 });
 
 test('the server state wins once acknowledged and the inputs still in flight replay silently', () => {

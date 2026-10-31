@@ -12,19 +12,23 @@ const frame = (seq: number, changes: Partial<InputFrame> = {}): InputFrame => ({
   crouch: false, dash: false, melee: false, grenade: false, streak: null, viewTime: 0, ...changes,
 });
 
-/** The server's tick as the plan describes it, written independently of the client: rising edges
- * from the previous accepted input, the equipped weapon's movement factors, no sprint while
- * cooking or knifing, and this tick's knife/grenade edges handled after moving. */
+/** The server's tick in the engine's order (server/engine.ts updatePlayer), written independently of
+ * the client: rising edges from the previous accepted input; this tick's knife and cook start before
+ * the move, both refused while the body is vaulting, and the cook takes the frag as it starts; then the
+ * move with the equipped weapon's factors and no sprint while cooking or knifing; then a release (or a
+ * fuse run out in hand) ends the cook. */
 interface ServerPlayer { state: MoveState; previous: InputFrame | null; loadout: Loadout; cookingSince: number; meleeUntil: number; frags: number }
 function serverTick(player: ServerPlayer, input: InputFrame, now: number): MoveEvents {
   const previous = player.previous, weapon = WEAPONS[input.slot === 1 ? player.loadout.primary : player.loadout.secondary];
+  if (input.melee && !previous?.melee && now >= player.meleeUntil && !player.cookingSince && !player.state.vault) player.meleeUntil = now + RULES.meleeMs;
+  if (input.grenade && !previous?.grenade && !player.cookingSince && player.frags > 0 && now >= player.meleeUntil && !player.state.vault) {
+    player.cookingSince = now; player.frags--;
+  }
   const events = movePlayer(player.state, input, {
     now, dt: 1 / 30, jumpPressed: input.jump && !previous?.jump, crouchPressed: input.crouch && !previous?.crouch,
     moveFactor: weapon.moveFactor, adsFactor: weapon.adsMoveFactor, canSprint: !player.cookingSince && now >= player.meleeUntil,
   });
-  if (input.melee && !previous?.melee && now >= player.meleeUntil && !player.cookingSince) player.meleeUntil = now + RULES.meleeMs;
-  if (input.grenade && !previous?.grenade && !player.cookingSince && player.frags > 0 && now >= player.meleeUntil) player.cookingSince = now;
-  else if (player.cookingSince && (!input.grenade || now >= player.cookingSince + RULES.fragFuseMs)) { player.cookingSince = 0; player.frags--; }
+  if (player.cookingSince && (!input.grenade || now >= player.cookingSince + RULES.fragFuseMs)) player.cookingSince = 0;
   player.previous = input;
   return events;
 }
@@ -44,8 +48,8 @@ function source(player: ServerPlayer, round = false): PredictionSource {
 }
 interface Run { inputs: InputFrame[]; states: Array<{ server: ServerPlayer; time: number }>; events: MoveEvents[] }
 /** Drive the reference server with a script that may look at the state (deterministic). */
-function run(start: MoveState, ticks: number, script: (tick: number, state: MoveState, seq: number) => InputFrame, loadout: Loadout = LOADOUT_PRESETS.assault): Run {
-  const player: ServerPlayer = { state: structuredClone(start), previous: null, loadout, cookingSince: 0, meleeUntil: 0, frags: 1 };
+function run(start: MoveState, ticks: number, script: (tick: number, state: MoveState, seq: number) => InputFrame, loadout: Loadout = LOADOUT_PRESETS.assault, frags = 1): Run {
+  const player: ServerPlayer = { state: structuredClone(start), previous: null, loadout, cookingSince: 0, meleeUntil: 0, frags };
   const result: Run = { inputs: [], states: [], events: [] };
   for (let tick = 0; tick < ticks; tick++) {
     const input = script(tick, player.state, tick + 1), time = 50_000 + (tick + 1) * TICK;
@@ -109,18 +113,57 @@ test('prediction replays slide, jump, vault and landing chains exactly from ever
   assertParity(chain());
 });
 
-test('knifing and cooking stop the sprint from the next tick in prediction and on the server alike', () => {
+test('knifing and cooking stop the sprint on their own tick, in prediction and on the server alike', () => {
   const knife = run(startState(-6, 20, Math.PI / 2), 60, (tick, _state, seq) => frame(seq, { moveZ: 1, sprint: true, melee: tick === 10, yaw: Math.PI / 2 }));
-  assert.equal(knife.states[10]!.server.state.sprinting, true, 'The knife tick itself still moves at sprint speed');
-  assert.equal(knife.states[11]!.server.state.sprinting, false);
-  assert.ok(knife.states.slice(11, 28).every(entry => !entry.server.state.sprinting), 'No sprint for the 600 ms knife');
+  assert.equal(knife.states[9]!.server.state.sprinting, true);
+  assert.equal(knife.states[10]!.server.state.sprinting, false, 'The knife starts before the move, so its own tick no longer sprints');
+  assert.ok(knife.states.slice(10, 28).every(entry => !entry.server.state.sprinting), 'No sprint for the 600 ms knife');
   assert.equal(knife.states.at(-1)!.server.state.sprinting, true, 'Sprint resumes after the knife');
-  assertParity(knife, 3);
+  assertParity(knife);
   const cook = run(startState(-6, 20, Math.PI / 2), 50, (tick, _state, seq) => frame(seq, { moveZ: 1, sprint: true, grenade: tick >= 5 && tick < 25, yaw: Math.PI / 2 }));
-  assert.ok(cook.states.slice(6, 25).every(entry => !entry.server.state.sprinting), 'No sprint while cooking');
+  assert.equal(cook.states[4]!.server.state.sprinting, true);
+  assert.ok(cook.states.slice(5, 26).every(entry => !entry.server.state.sprinting), 'No sprint from the cook tick through the release tick');
+  assert.equal(cook.states[5]!.server.frags, 0, 'The frag leaves the belt when the cook starts');
   assert.equal(cook.states.at(-1)!.server.state.sprinting, true);
   assert.equal(cook.states.at(-1)!.server.frags, 0, 'The release throws the only frag');
-  assertParity(cook, 3);
+  assertParity(cook);
+});
+
+test('a snapshot taken mid-cook already counts the frag gone, so a second cook soon after the release is predicted', () => {
+  // Two frags: cook, release, sprint a moment, cook again. Snapshots taken during the first cook carry the
+  // server's count with that frag already gone; taking it again at the release would leave none for the second.
+  const cooks = run(startState(-6, 20, Math.PI / 2), 50, (tick, _state, seq) =>
+    frame(seq, { moveZ: 1, sprint: true, grenade: (tick >= 5 && tick < 15) || (tick >= 20 && tick < 32), yaw: Math.PI / 2 }), LOADOUT_PRESETS.assault, 2);
+  assert.equal(cooks.states[10]!.server.frags, 1, 'Mid-cook, the server has already taken the first frag');
+  assert.equal(cooks.states[18]!.server.state.sprinting, true, 'Sprinting again between the cooks');
+  assert.ok(cooks.states.slice(20, 33).every(entry => !entry.server.state.sprinting), 'The second cook stops the sprint');
+  assert.equal(cooks.states.at(-1)!.server.frags, 0);
+  assertParity(cooks);
+});
+
+test('the knife and a cook pressed on the last tick of a vault are refused on both sides, so the sprint carries on after it', () => {
+  for (const key of ['melee', 'grenade'] as const) {
+    let pressed = 0;
+    const result = run(startState(barrier.x, barrierFront - PLAYER_RADIUS - 0.4), 60, (tick, state, seq) => {
+      const time = 50_000 + (tick + 1) * TICK;
+      if (tick === 2) return frame(seq, { moveZ: 1, jump: true });
+      // The vault ends during this tick's move, but the body starts the tick still vaulting.
+      if (!pressed && state.vault && time >= state.vault.end) {
+        pressed = seq;
+        return frame(seq, { moveZ: 1, sprint: true, ...(key === 'melee' ? { melee: true } : { grenade: true }) });
+      }
+      // A real cook later on: it can only start if the refused press left the frag on the belt.
+      return frame(seq, { moveZ: 1, sprint: true, grenade: key === 'grenade' && !!pressed && tick >= pressed + 20 && tick < pressed + 30 });
+    });
+    assert.ok(pressed > 0, `${key}: the press lands on the vault's last tick`);
+    const refused = result.states[pressed - 1]!.server;
+    assert.equal(refused.meleeUntil, 0, `${key}: no knife was started`);
+    assert.equal(refused.cookingSince, 0, `${key}: no cook was started`);
+    assert.equal(refused.frags, 1, `${key}: the frag is still on the belt`);
+    assert.ok(result.states.slice(pressed, pressed + 18).some(entry => entry.server.state.sprinting), `${key}: sprinting resumes within the 600 ms a knife would block`);
+    if (key === 'grenade') assert.equal(result.states.at(-1)!.server.frags, 0, 'The later cook takes the frag');
+    assertParity(result);
+  }
 });
 
 test('the equipped weapon sets walking and aimed speeds, and a swap changes them on that tick', () => {
@@ -179,6 +222,30 @@ test('local prediction keeps only unacknowledged inputs, and none outside live p
   assert.deepEqual(local.pending, []);
   for (let seq = 1; seq <= 200; seq++) local.record(frame(seq), 300, false);
   assert.equal(local.pending.length, 120, 'The in-flight list is bounded');
+});
+
+test('after a reconnect restarts the server count at 0, no held frame is replayed and the round trip estimate is kept', () => {
+  const east = { moveZ: 1, yaw: Math.PI / 2 };
+  const drive = (restarted: boolean) => {
+    const local = new LocalPrediction();
+    local.receive(source(standing(-6)), 1_000, 0, { ...live, spawned: true }, 0);
+    for (let seq = 1; seq <= 3; seq++) local.record(frame(seq, east), seq * TICK, true);
+    local.receive(source(standing(-6)), 1_033, 0, live, 100);
+    const lead = local.clockLead;
+    // The socket dies silently: the walk goes on into it for three seconds, then the server takes the
+    // player back where they were frozen, reporting input 0 as the last one processed.
+    for (let seq = 4; seq <= 93; seq++) local.record(frame(seq, east), seq * TICK, seq < 20);
+    local.receive(source(standing(-6)), 4_200, 0, { ...live, restarted }, 3_200);
+    return { local, lead };
+  };
+  const { local, lead } = drive(true);
+  assert.equal(local.pending.length, 0, 'Frames lost with the old socket or already simulated are not in flight');
+  assert.ok(Math.abs(local.movement.state.x + 6) < 1e-9, 'The body stays where the server froze it');
+  assert.equal(local.clockLead, lead, 'A restart is not a round-trip sample');
+  local.record(frame(94, east), 3_233, true);
+  assert.deepEqual(local.pending.map(input => input.seq), [94], 'New frames are in flight again');
+  const stale = drive(false).local;
+  assert.ok(stale.movement.state.x > -6 + 10, `Without it, the 90 held frames replay down the street (x ${stale.movement.state.x.toFixed(2)})`);
 });
 
 test('corrections glide the drawn body onto the server path, while spawns and teleports jump', () => {

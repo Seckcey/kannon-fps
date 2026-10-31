@@ -138,7 +138,7 @@ test('pulse timing is independent of frame count and repeated damage cannot accu
   effectA.dispose(); effectB.dispose();
 });
 
-test('death, disconnect and new-spawn protection clear the pulse and deliberate hits resume normally', async () => {
+test('death and new-spawn protection clear the pulse, a body left by a dropped connection still flashes, and hits resume normally', async () => {
   const model = clone((await loadScout()).scene);
   const effect = createCharacterImpact(model, () => 100);
   const surface = bodySurface(model), baseline = emission(surface);
@@ -152,10 +152,13 @@ test('death, disconnect and new-spawn protection clear the pulse and deliberate 
   assert.notDeepEqual(emission(surface), baseline);
   effect.update({ ...living, protectedUntil: 10_000 });
   assert.deepEqual(emission(surface), baseline, 'A respawn clears even when the dead snapshot was skipped');
-  effect.impact('hit'); effect.update({ ...living, connected: false, protectedUntil: 10_000 });
-  assert.deepEqual(emission(surface), baseline);
-  effect.impact('head'); assert.deepEqual(emission(surface), baseline);
-  effect.update({ ...living, protectedUntil: 10_000 });
+  // The server can still hit a living player whose connection dropped, so the body still shows it.
+  const offline = { ...living, connected: false, protectedUntil: 10_000 };
+  effect.update(offline);
+  effect.impact('head'); assert.notDeepEqual(emission(surface), baseline, 'A hit on a disconnected body flashes');
+  effect.update({ ...offline, health: 0 });
+  assert.deepEqual(emission(surface), baseline, 'and the flash ends when that body is eliminated');
+  effect.update({ ...living, protectedUntil: 15_000 });
   effect.impact('head'); assert.notDeepEqual(emission(surface), baseline);
   effect.dispose(); assert.deepEqual(emission(surface), baseline);
 });

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
 import { DOUBLE_TAP_MS, InputController, PITCH_LIMIT, type InputSettings } from '../../src/game/InputController.js';
+import { coarsePointer, renderTier } from '../../src/game/RenderTiers.js';
 
 function browserEnvironment(run: (environment: { window: EventTarget; document: EventTarget & { hidden: boolean; focused: boolean } }) => void) {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -378,6 +379,29 @@ test('view kicks move the view within the pitch limits; view time and blocked fi
       input.setFireBlocked(false); assert.equal(input.current().fire, true);
     } finally { input.dispose(); }
   });
+});
+
+test('touch is the shared coarse-pointer test, so a touch laptop driven by its trackpad keeps the desktop town', t => {
+  // A touch screen with a fine main pointer: touch points, but `(pointer: coarse)` does not match.
+  let coarse = false;
+  const globals = {
+    window: new EventTarget(), document: Object.assign(new EventTarget(), { hidden: false, pointerLockElement: null, hasFocus: () => true, exitPointerLock() {} }),
+    matchMedia: (query: string) => ({ matches: query === '(pointer: coarse)' && coarse }), navigator: { maxTouchPoints: 10 },
+  };
+  const saved = new Map<string, PropertyDescriptor | undefined>();
+  for (const [key, value] of Object.entries(globals)) { saved.set(key, Object.getOwnPropertyDescriptor(globalThis, key)); Object.defineProperty(globalThis, key, { configurable: true, value }); }
+  const input = new InputController();
+  t.after(() => {
+    input.dispose();
+    for (const [key, descriptor] of saved) if (descriptor) Object.defineProperty(globalThis, key, descriptor); else Reflect.deleteProperty(globalThis, key);
+  });
+  assert.equal(input.isTouch, false, 'The same answer as the render tier and the art warm-up');
+  assert.equal(renderTier('auto', input.isTouch, true).textureTier, renderTier('auto', coarsePointer(), true).textureTier);
+  coarse = true;
+  assert.equal(input.isTouch, true, 'A phone or tablet');
+  assert.equal(renderTier('auto', input.isTouch, true).textureTier, 'phone');
+  coarse = false; input.setTouchMove(0, 1);
+  assert.equal(input.isTouch, true, 'Using the on-screen controls counts as touch');
 });
 
 test('aiming applies the aim sensitivity and compensates the zoom', () => {

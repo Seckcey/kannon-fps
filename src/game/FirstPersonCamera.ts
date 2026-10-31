@@ -16,6 +16,14 @@ export function blastFeedback(distance: number, cause: 'frag' | 'mortar' | 'dron
 
 /** Extra field of view while sprinting, in degrees. */
 export const SPRINT_FOV_BONUS = 4;
+/** How fast the death view widens back to the hip field of view (1/s): most of the way in a quarter second. */
+const DEATH_FOV_RATE = 12;
+/** The game's yaw of the way `camera` faces as drawn (0 faces -Z, positive turns toward +X), so sound can
+ * follow a view the input does not steer, such as the death view or the orbit. */
+export function viewYaw(camera: THREE.Camera, scratch = new THREE.Vector3()): number {
+  const facing = camera.getWorldDirection(scratch);
+  return Math.atan2(facing.x, -facing.z);
+}
 /** The weapon lowers when the view meets a wall this close, and raises again beyond the second distance. */
 export const WALL_BLOCK_NEAR = 0.55, WALL_BLOCK_CLEAR = 0.65;
 const approach = (value: number, target: number, step: number) => value < target ? Math.min(target, value + step) : Math.max(target, value - step);
@@ -243,14 +251,21 @@ export class FirstPersonCamera {
     return { footstep, eye: this.eye, fov };
   }
 
-  /** After an elimination the view sinks and turns toward the attacker until the respawn. */
-  updateDeath(camera: THREE.PerspectiveCamera, dt: number, killer: Vec3 | null, reduceMotion: boolean) {
+  /** After an elimination the view sinks and turns toward the attacker until the respawn, and eases
+   * from any sights, scope or sprint zoom back to `hipFov` (vertical degrees): the zoom ends with the
+   * life, as the scope picture does. */
+  updateDeath(camera: THREE.PerspectiveCamera, dt: number, killer: Vec3 | null, reduceMotion: boolean, hipFov: number) {
     if (!this.death) {
       const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
       this.death = { from: camera.position.clone(), yaw: -euler.y, pitch: euler.x, elapsed: 0 };
     }
-    const death = this.death;
-    death.elapsed += Number.isFinite(dt) ? clamp(dt, 0, 0.1) : 0;
+    const death = this.death, step = Number.isFinite(dt) ? clamp(dt, 0, 0.1) : 0;
+    death.elapsed += step;
+    if (Number.isFinite(hipFov) && hipFov > 0 && camera.fov !== hipFov) {
+      const eased = damp(camera.fov, hipFov, DEATH_FOV_RATE, step);
+      camera.fov = Math.abs(eased - hipFov) < 0.01 ? hipFov : eased;
+      camera.updateProjectionMatrix();
+    }
     const t = 1 - Math.exp(-death.elapsed * 3);
     const floor = Math.max(0, this.feetY) + 0.45;
     camera.position.set(death.from.x, death.from.y + (floor - death.from.y) * t, death.from.z);

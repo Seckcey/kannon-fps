@@ -5,8 +5,9 @@ import { directionFromAngles, EYE_HEIGHT, isPlayerGrounded } from '../../shared/
 import type { InputFrame, Posture } from '../../shared/protocol';
 import {
   blastFeedback, cameraFov, FirstPersonCamera, FirstPersonMotion, flinchKick, LandingFilter, landingStrength, SLIDE_ROLL, SPRINT_FOV_BONUS, STEP_DOWN_SPEED, Stride,
-  verticalFov, WALL_BLOCK_CLEAR, WALL_BLOCK_NEAR, zoomFov, type CameraFrame, type MotionFrame,
+  verticalFov, viewYaw, WALL_BLOCK_CLEAR, WALL_BLOCK_NEAR, zoomFov, type CameraFrame, type MotionFrame,
 } from '../../src/game/FirstPersonCamera';
+import { relative, stereoPan } from '../../src/game/audio/spatial';
 import { MovementPrediction, type PredictionSource } from '../../src/game/MovementPrediction';
 import { DEFAULT_LOADOUT, STEADY_AIM_ADS_FACTOR, STEADY_AIM_FLINCH_FACTOR } from '../../shared/weapons';
 
@@ -99,15 +100,60 @@ test('strides count footfalls from distance travelled and pause in the air', () 
 });
 
 test('the death view sinks toward the floor and turns toward the attacker', () => {
-  const view = new FirstPersonCamera(), camera = new THREE.PerspectiveCamera();
+  const view = new FirstPersonCamera(), camera = new THREE.PerspectiveCamera(), hip = verticalFov(90, 16 / 9);
   view.snap({ x: 0, y: 0, z: 0 }, 'stand');
   view.update(camera, base({ feet: { x: 0, y: 0, z: 0 }, yaw: 0, pitch: 0 }));
-  for (let i = 0; i < 180; i++) view.updateDeath(camera, 1 / 60, { x: 10, y: 0, z: 0 }, false);
+  for (let i = 0; i < 180; i++) view.updateDeath(camera, 1 / 60, { x: 10, y: 0, z: 0 }, false, hip);
   assert.ok(camera.position.y < 0.6, `eye ${camera.position.y}`);
   const direction = camera.getWorldDirection(new THREE.Vector3());
   assert.ok(direction.x > 0.9, 'Facing the attacker on +X');
   view.update(camera, base({ feet: { x: 0, y: 0, z: 0 } }));
   near(camera.position.y, EYE_HEIGHT.stand, 0.2, 'A new life returns to the eye');
+});
+
+test('dying scoped or aimed eases the death view back to the hip field of view, also in the projection', () => {
+  for (const [label, changes] of [
+    ['Heron 7 scoped', { ads: 1, adsZoom: 4.2 }], ['carbine aimed', { ads: 1, adsZoom: 1.3 }], ['sprinting', { sprint: 1, sprinting: true }],
+  ] as const) for (const [fov, aspect] of [[90, 16 / 9], [80, 2.16]] as const) {
+    const view = new FirstPersonCamera(), camera = new THREE.PerspectiveCamera(), hip = verticalFov(fov, aspect);
+    view.snap({ x: 0, y: 0, z: 0 }, 'stand');
+    view.update(camera, base({ feet: { x: 0, y: 0, z: 0 }, fov, aspect, ...changes }));
+    assert.ok(Math.abs(camera.fov - hip) > 3, `${label}: the zoom is on at the moment of death`);
+    const zoomed = camera.fov;
+    view.updateDeath(camera, 1 / 60, null, false, hip);
+    assert.ok(Math.abs(camera.fov - hip) < Math.abs(zoomed - hip) && Math.abs(camera.fov - hip) > 0.5, `${label}: it eases, not jumps`);
+    for (let i = 0; i < 14; i++) view.updateDeath(camera, 1 / 60, null, false, hip);
+    assert.ok(Math.abs(camera.fov - hip) < Math.abs(zoomed - hip) * 0.06, `${label}: most of the way back a quarter second in`);
+    for (let i = 0; i < 45; i++) view.updateDeath(camera, 1 / 60, null, false, hip);
+    near(camera.fov, hip, 1e-9, `${label} at ${fov} degrees: exactly the hip view a second in`);
+    const projected = new THREE.PerspectiveCamera(hip, aspect, camera.near, camera.far);
+    projected.updateProjectionMatrix();
+    near(camera.projectionMatrix.elements[5]!, projected.projectionMatrix.elements[5]!, 1e-9, `${label}: the projection follows`);
+    for (let i = 0; i < 150; i++) view.updateDeath(camera, 1 / 60, null, true, hip);
+    near(camera.fov, hip, 1e-9, `${label}: and stays there for the rest of the wait`);
+  }
+});
+
+test('the ears face the drawn view: the yaw of the death view and of the first-person view', () => {
+  const view = new FirstPersonCamera(), camera = new THREE.PerspectiveCamera();
+  view.snap({ x: 0, y: 0, z: 0 }, 'stand');
+  for (const yaw of [0, 0.4, -2.5, 3]) {
+    view.update(camera, base({ feet: { x: 0, y: 0, z: 0 }, yaw, pitch: -0.3 }));
+    near(viewYaw(camera), Math.atan2(Math.sin(yaw), Math.cos(yaw)), 1e-9, `first person at yaw ${yaw}`);
+  }
+  // Shot from behind-left: the death view turns around to face the attacker, who is then drawn ahead.
+  view.update(camera, base({ feet: { x: 0, y: 0, z: 0 }, yaw: 0, pitch: 0 }));
+  const killer = { x: -4, y: 0, z: 10 };
+  for (let i = 0; i < 120; i++) view.updateDeath(camera, 1 / 60, killer, false, verticalFov(90, 16 / 9));
+  camera.updateMatrixWorld();
+  const facing = viewYaw(camera), ears = { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: facing, indoors: false };
+  const heard = relative(ears, { x: killer.x, y: killer.y + 1.2, z: killer.z });
+  assert.ok(heard.ahead > 0 && Math.abs(stereoPan(heard)) < 0.05, `The attacker drawn ahead is heard ahead (pan ${stereoPan(heard)})`);
+  const stale = relative({ ...ears, yaw: 0 }, { x: killer.x, y: killer.y + 1.2, z: killer.z });
+  assert.ok(stale.ahead < 0, 'The input yaw from before the death would put them behind');
+  // Another player off to the left of the turned view: heard on the left, not the opposite ear.
+  const side = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).multiplyScalar(-6).add(camera.position);
+  assert.ok(stereoPan(relative(ears, side)) < -0.3, 'Left of the drawn view is the left ear');
 });
 
 const motionFrame = (changes: Partial<MotionFrame> = {}): MotionFrame => ({

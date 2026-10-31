@@ -26,9 +26,11 @@ export function serverMoveContext(input: InputFrame, previous: InputEdges, loado
 
 /** Replays `movePlayer` for the local player from the latest authoritative snapshot, one server
  * tick per sent input. Replay advances from that snapshot's server time, not the wall clock at
- * which old inputs are replayed. The server moves before it handles this tick's knife and grenade
- * edges, so a new cook or knife limits sprint from the following tick. One tick per input is what
- * the server does with a steady input stream; it can coalesce inputs that arrive in a burst. */
+ * which old inputs are replayed. As on the server, this tick's knife and cook start before the
+ * move, so they stop a sprint on the same tick; both are refused while a vault is under way (judged
+ * on the body before the move), and the frag leaves the belt when the cook starts. One tick per
+ * input is what the server does with a steady input stream; it can coalesce inputs that arrive in
+ * a burst. */
 export class MovementPrediction {
   readonly state: MoveState = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, ...moveDefaults() };
   /** Predicted server time of the last step. */
@@ -62,14 +64,17 @@ export class MovementPrediction {
    * presses against a body the server never had. */
   step(input: InputFrame): MoveEvents {
     this.time += TICK_MS;
+    // The server's order: the knife and a cook start before the move, both refused while a vault is
+    // under way on the body before it, and the cook takes the frag as it starts.
+    const vaulting = !!this.state.vault;
+    if (input.melee && !this.previous.melee && this.time >= this.meleeUntil && !this.cooking && !vaulting) this.meleeUntil = this.time + RULES.meleeMs;
+    if (input.grenade && !this.previous.grenade && !this.cooking && this.frags > 0 && this.time >= this.meleeUntil && !vaulting) {
+      this.cooking = true; this.cookingSince = this.time; this.frags--;
+    }
     const ctx = serverMoveContext(input, this.previous, this.loadout, this.time, TICK_SECONDS, { cooking: this.cooking, meleeUntil: this.meleeUntil });
     const events = movePlayer(this.state, input, ctx);
-    if (input.melee && !this.previous.melee && this.time >= this.meleeUntil && !this.cooking) this.meleeUntil = this.time + RULES.meleeMs;
-    if (input.grenade && !this.previous.grenade && !this.cooking && this.frags > 0 && this.time >= this.meleeUntil) {
-      this.cooking = true; this.cookingSince = this.time;
-    } else if (this.cooking && (!input.grenade || this.time >= this.cookingSince + RULES.fragFuseMs)) {
-      this.cooking = false; this.cookingSince = 0; this.frags = Math.max(0, this.frags - 1);
-    }
+    // A release throws after the move, and a fuse that runs out goes off in hand; the frag is already gone.
+    if (this.cooking && (!input.grenade || this.time >= this.cookingSince + RULES.fragFuseMs)) { this.cooking = false; this.cookingSince = 0; }
     this.previous = { jump: input.jump, crouch: input.crouch, melee: input.melee, grenade: input.grenade };
     return events;
   }
@@ -124,9 +129,14 @@ export class LocalPrediction {
   }
 
   /** Adopt the server's pose after input `ack` and replay the inputs still in flight. Outside live
-   * play the server ignores inputs, so none survive; a new life also starts with none.
+   * play the server ignores inputs, so none survive; a new life also starts with none. `restarted`
+   * means the server began counting this player's inputs again at 0 (a reconnect): every frame still
+   * held went down with the old socket or was already simulated, so none replays, the held keys count
+   * as released (as the server releases them) and the snapshot says nothing about the round trip.
    * Returns true when the view should jump (spawn, first snapshot or a teleport). */
-  receive(source: PredictionSource, serverTime: number, ack: number, live: { playing: boolean; alive: boolean; spawned: boolean }, now: number): boolean {
+  receive(source: PredictionSource, serverTime: number, ack: number,
+    live: { playing: boolean; alive: boolean; spawned: boolean; restarted?: boolean }, now: number): boolean {
+    if (live.restarted) { this.pending = []; this.acknowledged = null; }
     const acknowledged = this.pending.filter(frame => frame.seq <= ack).at(-1);
     if (acknowledged) this.acknowledged = acknowledged;
     this.pending = live.playing && !live.spawned ? this.pending.filter(frame => frame.seq > ack) : [];
@@ -139,7 +149,7 @@ export class LocalPrediction {
         if (index === this.pending.length - 1) copyPoint(this.prior, state);
         this.movement.step(frame);
       });
-      if (!live.spawned) {
+      if (!live.spawned && !live.restarted) {
         const lead = this.movement.time - serverTime;
         this.clockLead = this.leadMeasured ? this.clockLead * 0.8 + lead * 0.2 : lead;
         this.leadMeasured = true;

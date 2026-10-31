@@ -13,7 +13,7 @@ export const isGunVoice = (value: unknown): value is GunVoice => typeof value ==
 /** One gunshot is built from layers, the way game sound designers stack recordings:
  *
  * - crack: the first millisecond. An N-shaped pressure pulse plus a spit of high-passed noise. It
- *   gives the attack and the crispness; narrower pulses (pistol, SMG) are brighter, and the Longbow's
+ *   gives the attack and the crispness; narrower pulses (pistol, SMG) are brighter, and the Heron 7's
  *   supersonic magnum crack is the loudest.
  * - body: the muzzle blast, 9–32 ms of band-limited noise with a slower "bloom" behind it. Its
  *   centre frequency is the main thing that tells guns apart (drone 2.9 kHz, pistol 2.4 kHz, SMG
@@ -104,7 +104,7 @@ export const GUN_DESIGNS: Record<GunVoice, GunDesign> = {
     mech: [],
     far: { length: 1.4, decay: 0.05, bloom: 0.8, bloomDecay: 0.26, cutoff: 1300, centre: 380, thump: [80, 40, 0.15], roll: { cutoff: 560, decay: 0.5, rate: 5, depth: 0.4, gain: 0.55 } },
   },
-  // Longbow bolt rifle: the loudest crack (a supersonic magnum) with a 3.4 kHz bite, an 850 Hz body,
+  // Heron 7 bolt rifle: the loudest crack (a supersonic magnum) with a 3.4 kHz bite, an 850 Hz body,
   // the deepest sub and a long rolling dry tail, so every shot reads as a big event across the map.
   longbow: {
     length: 0.85, peak: 1, level: 1, glue: 1.8, blast: 0.78, loudness: 0.23,
@@ -197,7 +197,7 @@ export function renderGunFar(voice: GunVoice, sampleRate: number, rng: Rng): Flo
 }
 
 /** Pump-action rack (back, forward) and bolt cycle (lift, draw, case out, push, lock). Played after
- * each Breaker 12 or Longbow shot for the shooter and nearby players, and for reloads. */
+ * each Breaker 12 or Heron 7 shot for the shooter and nearby players, and for reloads. */
 export function renderCycle(kind: 'pump' | 'bolt', sampleRate: number, rng: Rng): Float32Array {
   if (kind === 'pump') {
     const out = samples(0.36, sampleRate);
