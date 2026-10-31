@@ -1,23 +1,24 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { Crew, PracticeDifficulty, RoomVisibility } from '../shared/protocol';
+import type { Crew, GameMode, PracticeDifficulty, RoomVisibility } from '../shared/protocol';
 import { Icon } from './components/Icon';
 import { Modal } from './components/Modal';
-import { Loadout } from './components/Loadout';
+import { LoadoutDialog, LoadoutSummary, type LoadoutChoice } from './components/Loadout';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Leaderboard } from './components/Leaderboard';
 import { Lobby } from './components/Lobby';
 import { AvailableGames } from './components/AvailableGames';
-import { CreateMatchDialog } from './components/CreateMatchDialog';
+import { CreateMatchDialog, ModeChoice } from './components/CreateMatchDialog';
 import { Help } from './components/Help';
+import { modeRule } from './components/labels';
 import { warmArenaAssets } from './game/assets';
 import { renderTier } from './game/RenderTiers';
 import { PRACTICE_LEVELS } from './lib/practice';
 import { api } from './lib/api';
 import { ArenaConnection, type ConnectionState } from './lib/connection';
-import { extractInvite, isTouchDevice, readPlayer, readSettings, savePlayer, saveSettings, type PlayerSession, type Settings } from './lib/storage';
+import { activeLoadout, extractInvite, isTouchDevice, readPlayer, readSettings, savePlayer, saveSettings, type PlayerSession, type Settings } from './lib/storage';
 
 const GameScreen = lazy(() => import('./components/GameScreen'));
-const noConnection: ConnectionState = { status: 'idle', playerId: '', room: null, snapshot: null, events: [], error: '', latency: 0 };
+const noConnection: ConnectionState = { status: 'idle', playerId: '', room: null, snapshot: null, events: [], feed: [], error: '', latency: 0 };
 const emptySubscribe = () => () => {};
 const emptySnapshot = () => noConnection;
 type Tab = 'play' | 'games' | 'leaderboard' | 'help';
@@ -30,10 +31,13 @@ export function App() {
   const setName = useCallback((value: string) => { nameRef.current = value; setNameState(value); }, []);
   const [settings, setSettingsState] = useState<Settings>(readSettings);
   const [showSettings, setShowSettings] = useState(false);
+  const [showLoadout, setShowLoadout] = useState(false);
   const [initialInvite] = useState(() => new URLSearchParams(location.hash.slice(1)));
   const [tab, setTab] = useState<Tab>(initialInvite.has('crew') ? 'leaderboard' : 'play');
   const [dialog, setDialog] = useState<'create' | 'join' | 'practice' | null>(initialInvite.has('room') ? 'join' : null);
   const [practiceDifficulty, setPracticeDifficulty] = useState<PracticeDifficulty>('normal');
+  const [practiceMode, setPracticeMode] = useState<GameMode>('ffa');
+  const [mode, setMode] = useState<GameMode>('ffa');
   const [preparingArt, setPreparingArt] = useState(false);
   const [invite, setInvite] = useState(initialInvite.get('room') || '');
   const [crews, setCrews] = useState<Crew[]>([]);
@@ -59,6 +63,15 @@ export function App() {
   const ensurePromise = useRef<{ name: string; promise: Promise<PlayerSession> } | null>(null);
   const state = useSyncExternalStore(connection?.subscribe || emptySubscribe, connection?.getSnapshot || emptySnapshot);
   const setSettings = (value: Settings) => { setSettingsState(value); try { saveSettings(value); } catch { /* game still works in private browsing */ } };
+  const setLoadout = (choice: LoadoutChoice) => setSettings({ ...settings, ...choice });
+  // The server keeps a loadout per player for their next spawn. Send the saved choice whenever a room
+  // or connection begins, and again whenever it changes in the lobby, pause menu or while respawning.
+  const loadoutKey = JSON.stringify(activeLoadout(settings));
+  const loadoutRoomId = state.room?.id;
+  useEffect(() => {
+    if (!connection || !loadoutRoomId || state.status !== 'connected') return;
+    connection.send({ type: 'loadout', loadout: JSON.parse(loadoutKey) });
+  }, [connection, loadoutRoomId, state.status, loadoutKey]);
   const applyPlayer = useCallback((value: PlayerSession, requestedDraft?: string) => {
     if (playerRef.current?.token !== value.token) {
       connectionRef.current?.dispose(); connectionRef.current = null; setConnection(null);
@@ -132,7 +145,8 @@ export function App() {
     setBusy(true); setError('');
     try {
       const current = await getConnection(generation);
-      current.clearError(); current.send({ type: 'create', ranked: !practice && ranked, ...(selectedCrew && ranked && !practice ? { crewId: selectedCrew } : {}), practice, ...(practice ? { practiceDifficulty } : { visibility, fillBots: !ranked && fillBots, ...(!ranked && fillBots ? { botDifficulty } : {}) }) });
+      const matchMode: GameMode = practice ? practiceMode : ranked ? 'ffa' : mode;
+      current.clearError(); current.send({ type: 'create', ranked: !practice && ranked, mode: matchMode, ...(selectedCrew && ranked && !practice ? { crewId: selectedCrew } : {}), practice, ...(practice ? { practiceDifficulty } : { visibility, fillBots: !ranked && fillBots, ...(!ranked && fillBots ? { botDifficulty } : {}) }) });
       // Rendering begins after the server accepts and broadcasts the room.
       entryTimeout(generation, () => { if (!current.getSnapshot().room) { setBusy(false); setError(current.getSnapshot().error || 'The room could not be created. Try again.'); } }, 6000);
     } catch (e) { if (generation === entryGeneration.current) { setError((e as Error).message); setBusy(false); } }
@@ -155,25 +169,27 @@ export function App() {
     {tab === 'play' && <div className="lobby-art" aria-hidden="true"/>}
     <header className="app-header"><button className="wordmark" disabled={busy} aria-label="Kannon Arena home" onClick={() => setTab('play')}><span>Kannon</span><small><i/>Arena<i/></small></button><nav aria-label="Main navigation">{([['play', 'Play'], ['games', 'Games'], ['leaderboard', 'Leaderboard'], ['help', 'How to play']] as const).map(([id, label]) => <button key={id} disabled={busy} onClick={() => setTab(id)} className={tab === id ? 'active' : ''} aria-current={tab === id ? 'page' : undefined}>{label}</button>)}</nav><button className="icon-button header-settings" disabled={busy} aria-label="Settings" onClick={() => setShowSettings(true)}><Icon name="settings" size={30}/></button></header>
     <main className="menu-main">
-      {tab === 'play' && !state.room && <section className="play-home"><div className="play-main"><h1><span>Your crew.</span><span>Your arena.</span></h1><p className="tagline">Good rivals. Great games.</p><form className="player-panel" onSubmit={e => { e.preventDefault(); if (!busyRef.current) { openCreate(); } }}><label className="field-label" htmlFor="player-name">Player name</label><div className="name-input"><input id="player-name" disabled={busy} autoComplete="nickname" maxLength={20} value={name} onChange={e => setName(e.target.value)} placeholder="Player" aria-describedby="name-help"/><Icon name="shield" size={20}/></div><span id="name-help" className="sr-only">Choose a nickname. No real name needed.</span><button className="button primary full-width" type="submit" disabled={busy}><Icon name="play" size={25}/> Create match</button><button className="button secondary full-width" type="button" onClick={() => { setTab('games'); setError(''); }} disabled={busy}><Icon name="users" size={26}/> Available Games</button><button className="button secondary full-width" type="button" disabled={busy} onClick={() => { setDialog('practice'); setError(''); }}><Icon name="target" size={25}/>Play against bots</button><button className="practice-button" type="button" onClick={() => { setDialog('join'); setError(''); }} disabled={busy}>Join with invite<Icon name="arrow" size={21}/></button></form>{error && <p className="error-message" role="alert">{error}</p>}</div><footer className="play-footer"><div className="rule-strip"><span><Icon name="users" size={23}/>1–8 people + bots</span><i/><span><Icon name="clock" size={22}/>5 minutes</span><i/><span><Icon name="target" size={22}/>First to 15</span></div><Loadout compact/></footer></section>}
-      {tab === 'play' && state.room && <><Lobby room={state.room} playerId={state.playerId} onStart={startMatch} onLeave={leaveMatch} busy={busy}/>{error && <p className="error-message lobby-error" role="alert">{error}</p>}{state.status !== 'connected' && <div className="connection-banner" role="status">Reconnecting to your room… <button className="text-button" onClick={() => void connection?.connect().catch(() => {})}>Retry</button></div>}</>}
+      {tab === 'play' && !state.room && <section className="play-home"><div className="play-main"><h1><span>Your crew.</span><span>Your arena.</span></h1><p className="tagline">Good rivals. Great games.</p><form className="player-panel" onSubmit={e => { e.preventDefault(); if (!busyRef.current) { openCreate(); } }}><label className="field-label" htmlFor="player-name">Player name</label><div className="name-input"><input id="player-name" disabled={busy} autoComplete="nickname" maxLength={20} value={name} onChange={e => setName(e.target.value)} placeholder="Player" aria-describedby="name-help"/><Icon name="shield" size={20}/></div><span id="name-help" className="sr-only">Choose a nickname. No real name needed.</span><button className="button primary full-width" type="submit" disabled={busy}><Icon name="play" size={25}/> Create match</button><button className="button secondary full-width" type="button" onClick={() => { setTab('games'); setError(''); }} disabled={busy}><Icon name="users" size={26}/> Available Games</button><button className="button secondary full-width" type="button" disabled={busy} onClick={() => { setDialog('practice'); setError(''); }}><Icon name="target" size={25}/>Play against bots</button><button className="practice-button" type="button" onClick={() => { setDialog('join'); setError(''); }} disabled={busy}>Join with invite<Icon name="arrow" size={21}/></button></form>{error && <p className="error-message" role="alert">{error}</p>}</div><footer className="play-footer"><div className="rule-strip"><span><Icon name="users" size={23}/>1–8 people + bots</span><i/><span><Icon name="clock" size={22}/>5 minutes</span><i/><span><Icon name="target" size={22}/>Solo or teams</span></div><LoadoutSummary value={settings} compact onEdit={() => setShowLoadout(true)}/></footer></section>}
+      {tab === 'play' && state.room && <><Lobby room={state.room} playerId={state.playerId} onStart={startMatch} onLeave={leaveMatch} busy={busy} loadout={settings} onEditLoadout={() => setShowLoadout(true)}/>{error && <p className="error-message lobby-error" role="alert">{error}</p>}{state.status !== 'connected' && <div className="connection-banner" role="status">Reconnecting to your room… <button className="text-button" onClick={() => void connection?.connect().catch(() => {})}>Retry</button></div>}</>}
       {tab === 'games' && (state.room ? <section className="content-page"><div className="page-title"><h1>Available Games</h1><p>Leave your current room to choose another game.</p></div><button className="button secondary" onClick={() => { leaveMatch(); setTab('games'); }}>Leave current room</button></section> : <AvailableGames name={name} onName={setName} onJoin={id => void joinMatch(id)} onCreate={() => openCreate('public')} onCancel={() => { cancelEntry(); connectionRef.current?.leave(); setError(''); }} busy={busy} preparingArt={preparingArt} error={error}/>)}
       {tab === 'leaderboard' && <Leaderboard key={profileGeneration.current} player={player} ensurePlayer={ensurePlayer} crews={crews} onCrews={refreshCrews} initialInvite={initialInvite.get('crew') || ''}/>}
       {tab === 'help' && <Help/>}
     </main>
     {showSettings && <SettingsDialog settings={settings} onChange={setSettings} player={player} onPlayer={acceptPlayer} onClose={() => setShowSettings(false)}/>}
+    {showLoadout && <LoadoutDialog value={settings} onChange={setLoadout} onClose={() => setShowLoadout(false)}/>}
     {dialog === 'practice' && <Modal title="Choose your challenge." onClose={closeEntryDialog}>
-      <p className="modal-intro">Face three AI rivals that move, fight, and use cover. Same loadout, full respawns. Your crew rating stays untouched.</p>
+      <p className="modal-intro">{practiceMode === 'tdm' ? 'Team up with an AI teammate against two AI rivals.' : 'Face three AI rivals that move, fight, and use cover.'} Bring any loadout. Your crew rating stays untouched.</p>
+      <ModeChoice mode={practiceMode} onMode={setPracticeMode} disabled={busy}/>
       <fieldset className="practice-levels"><legend>Opponent difficulty</legend>{PRACTICE_LEVELS.map(level => <label key={level.id} className={practiceDifficulty === level.id ? 'selected' : ''}>
         <input type="radio" name="practice-difficulty" value={level.id} checked={practiceDifficulty === level.id} onChange={() => setPracticeDifficulty(level.id)} disabled={busy}/>
         <span><strong>{level.name}</strong><small>{level.description}</small></span>
       </label>)}</fieldset>
-      <div className="modal-rule-line">You + 3 AI rivals · 5 minutes · First to 15</div>
+      <div className="modal-rule-line">{practiceMode === 'tdm' ? 'You + 3 AI in two teams' : 'You + 3 AI rivals'} · 5 minutes · {modeRule(practiceMode)}</div>
       {error && <p className="error-message" role="alert">{error}</p>}
       <button className="button primary full-width" disabled={busy} onClick={() => void createMatch(true)}><Icon name="target"/>{preparingArt ? 'Preparing arena…' : busy ? 'Creating bot match…' : 'Create bot match'}</button>
       {preparingArt && <p className="practice-loading" role="status">Loading the arena and characters before you enter.</p>}
     </Modal>}
-    {dialog === 'create' && <CreateMatchDialog visibility={visibility} onVisibility={setVisibility} ranked={ranked} onRanked={setRanked} fillBots={fillBots} onFillBots={setFillBots} botDifficulty={botDifficulty} onBotDifficulty={setBotDifficulty} crews={crews} selectedCrew={selectedCrew} onCrew={setSelectedCrew} onSetupCrew={() => { closeEntryDialog(); setTab('leaderboard'); }} onClose={closeEntryDialog} onCreate={() => void createMatch()} busy={busy} preparingArt={preparingArt} error={error}/>}
+    {dialog === 'create' && <CreateMatchDialog visibility={visibility} onVisibility={setVisibility} ranked={ranked} onRanked={setRanked} mode={mode} onMode={setMode} fillBots={fillBots} onFillBots={setFillBots} botDifficulty={botDifficulty} onBotDifficulty={setBotDifficulty} crews={crews} selectedCrew={selectedCrew} onCrew={setSelectedCrew} onSetupCrew={() => { closeEntryDialog(); setTab('leaderboard'); }} onClose={closeEntryDialog} onCreate={() => void createMatch()} busy={busy} preparingArt={preparingArt} error={error}/>}
     {dialog === 'join' && <Modal title="Your rival is waiting." onClose={closeEntryDialog}><form onSubmit={e => { e.preventDefault(); void joinMatch(); }}><p className="modal-intro">Paste the match invitation or enter the room code your friend shared.</p><label className="field-label">Match invitation<input autoFocus disabled={busy} required maxLength={500} value={invite} onChange={e => setInvite(e.target.value)} placeholder="Room code or invitation link" autoComplete="off" spellCheck={false}/></label>{!player && <p className="muted small-type">You’ll join as {name.trim() || 'Player'}. Set your nickname on the Play screen.</p>}{error && <p className="error-message" role="alert">{error}</p>}<button className="button primary full-width" disabled={busy || !invite.trim()}><Icon name="users"/>{preparingArt ? 'Preparing arena…' : busy ? 'Joining…' : 'Join match'}</button></form></Modal>}
   </div>;
 }
