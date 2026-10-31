@@ -1,0 +1,257 @@
+{
+  "model": "Kannon operator",
+  "raw": "operator-raw.glb",
+  "vertices": 11842,
+  "triangles": 23188,
+  "materials": [
+    "ScoutSurface",
+    "PlayerAccent",
+    "Visor"
+  ],
+  "bones": [
+    "root",
+    "pelvis",
+    "spine",
+    "chest",
+    "neck",
+    "head",
+    "upper_arm_r",
+    "forearm_r",
+    "hand_r",
+    "upper_arm_l",
+    "forearm_l",
+    "hand_l",
+    "thigh_r",
+    "shin_r",
+    "foot_r",
+    "thigh_l",
+    "shin_l",
+    "foot_l"
+  ],
+  "clips": {
+    "Idle": {
+      "frames": 90,
+      "fps": 30
+    },
+    "Walk": {
+      "frames": 16,
+      "fps": 30
+    },
+    "Run": {
+      "frames": 14,
+      "fps": 30
+    },
+    "Jump": {
+      "frames": 30,
+      "fps": 30
+    },
+    "Aim": {
+      "frames": 60,
+      "fps": 30
+    },
+    "Fire": {
+      "frames": 6,
+      "fps": 30
+    },
+    "Reload": {
+      "frames": 54,
+      "fps": 30
+    },
+    "Crouch": {
+      "frames": 60,
+      "fps": 30
+    },
+    "CrouchWalk": {
+      "frames": 16,
+      "fps": 30
+    },
+    "Slide": {
+      "frames": 30,
+      "fps": 30
+    }
+  },
+  "inheritedClips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Aim",
+    "Fire",
+    "Reload"
+  ],
+  "authoredClips": [
+    "Crouch",
+    "CrouchWalk",
+    "Slide"
+  ],
+  "retiredClips": [
+    "Heal"
+  ],
+  "referenceSpeeds": {
+    "Walk": 6.5,
+    "Run": 9.0,
+    "CrouchWalk": 2.6
+  },
+  "weaponSocket": {
+    "parent": "hand_r",
+    "restBlender": [
+      0.14000000059604645,
+      0.335999995470047,
+      1.3899999856948853
+    ],
+    "restGltf": [
+      0.14000000059604645,
+      1.3899999856948853,
+      -0.335999995470047
+    ],
+    "axes": "glTF -Z forward along the barrel, +Y up (identity rotation at rest)"
+  },
+  "atlas": {
+    "size": 2048,
+    "bakeSamples": 16,
+    "aoSamples": 128,
+    "aoDistanceMetres": 0.08,
+    "textures": [
+      "Operator_BaseColor",
+      "Operator_Normal",
+      "Operator_MetalRoughness"
+    ]
+  },
+  "poseAudit": [
+    {
+      "clip": "Idle",
+      "frame": 1,
+      "head": [
+        -0.02814144641160965,
+        0.0985899418592453,
+        1.6326334476470947
+      ],
+      "top": 1.7927693128585815,
+      "lowest": 0.006999944802373648,
+      "lowestPart": "boot_lug_r"
+    },
+    {
+      "clip": "Aim",
+      "frame": 1,
+      "head": [
+        -0.025887731462717056,
+        0.1041802242398262,
+        1.623518943786621
+      ],
+      "top": 1.7845662832260132,
+      "lowest": 0.006999800447374582,
+      "lowestPart": "boot_lug_r"
+    },
+    {
+      "clip": "Crouch",
+      "frame": 1,
+      "head": [
+        -0.07947979867458344,
+        0.08141598850488663,
+        1.1696038246154785
+      ],
+      "top": 1.3314473628997803,
+      "lowest": 0.006499961018562317,
+      "lowestPart": "boot_sole_r"
+    },
+    {
+      "clip": "Crouch",
+      "frame": 31,
+      "head": [
+        -0.08156437426805496,
+        0.08615858852863312,
+        1.171457290649414
+      ],
+      "top": 1.3332476615905762,
+      "lowest": 0.0065000057220458984,
+      "lowestPart": "boot_sole_r"
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 1,
+      "head": [
+        -0.07650700956583023,
+        0.09153138846158981,
+        1.1864569187164307
+      ],
+      "top": 1.3483011722564697,
+      "lowest": 0.006499944254755974,
+      "lowestPart": "boot_lug_l.001"
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 5,
+      "head": [
+        -0.05619075149297714,
+        0.0935460701584816,
+        1.2105706930160522
+      ],
+      "top": 1.3723809719085693,
+      "lowest": 0.006499988958239555,
+      "lowestPart": "boot_lug_l.004"
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 9,
+      "head": [
+        -0.07650700956583023,
+        0.09153138846158981,
+        1.1864569187164307
+      ],
+      "top": 1.3483011722564697,
+      "lowest": 0.006499822251498699,
+      "lowestPart": "boot_lug_r"
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 13,
+      "head": [
+        -0.09675580263137817,
+        0.08930197358131409,
+        1.2103451490402222
+      ],
+      "top": 1.3722119331359863,
+      "lowest": 0.006499897222965956,
+      "lowestPart": "boot_lug_r"
+    },
+    {
+      "clip": "Slide",
+      "frame": 1,
+      "head": [
+        0.03020346909761429,
+        0.009003860875964165,
+        0.8936939239501953
+      ],
+      "top": 1.0526738166809082,
+      "lowest": 0.0064999014139175415,
+      "lowestPart": "boot_sole_l"
+    },
+    {
+      "clip": "Slide",
+      "frame": 16,
+      "head": [
+        0.03020346909761429,
+        0.009003860875964165,
+        0.8936939239501953
+      ],
+      "top": 1.0526738166809082,
+      "lowest": 0.006499911658465862,
+      "lowestPart": "boot_sole_r"
+    }
+  ],
+  "animationExport": {
+    "denseHz": 120,
+    "denseClips": [
+      "Walk",
+      "Run",
+      "CrouchWalk"
+    ],
+    "otherClipsHz": 30,
+    "method": "Walk/Run/CrouchWalk samplers from a 120 Hz export spliced into the 30 Hz export (scout_export._merge_animation_samples)."
+  },
+  "units": "metres",
+  "forward": "glTF -Z",
+  "up": "glTF +Y",
+  "source": "Rig and seven clips from art/source/scout.blend (Walk/Run lower body derived from CMU 09_01, frames 15-103; see art/source/motion/cmu-09/CMU-USAGE-NOTICE.md). Operator geometry, materials and the Crouch, CrouchWalk and Slide clips are original Kannon work; no third-party textures or models.",
+  "seconds": 187.3
+}

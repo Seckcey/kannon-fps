@@ -1,0 +1,235 @@
+{
+  "status": "passed",
+  "file": "public/models/operator-v1.glb",
+  "bytes": 2859948,
+  "sha256": "d419c5f6710a19a0ce38ddf9f532eeb3614a101047805d79c8d3d35674612154",
+  "vertices": 21132,
+  "triangles": 23188,
+  "bodyDraws": 3,
+  "materials": [
+    "ScoutSurface",
+    "PlayerAccent",
+    "Visor"
+  ],
+  "bones": 18,
+  "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Aim",
+    "Fire",
+    "Reload",
+    "Crouch",
+    "CrouchWalk",
+    "Slide"
+  ],
+  "textures": [
+    {
+      "name": "Operator_Normal",
+      "mimeType": "image/ktx2",
+      "bytes": 769592
+    },
+    {
+      "name": "Operator_BaseColor",
+      "mimeType": "image/ktx2",
+      "bytes": 478910
+    },
+    {
+      "name": "Operator_MetalRoughness",
+      "mimeType": "image/ktx2",
+      "bytes": 135835
+    }
+  ],
+  "weaponSocket": {
+    "parent": "hand_r",
+    "restPosition": [
+      0.140000042146571,
+      1.3900001045251373,
+      -0.3359995941677459
+    ],
+    "restRotationErrorRadians": 2.1490760299348777e-7,
+    "convention": "metres; Y up; -Z forward along the barrel"
+  },
+  "sameRigAsScout": {
+    "baseline": "public/models/scout.glb",
+    "restPoseMaxDifference": 7.152557373046875e-7,
+    "inverseBindMaxDifference": 0,
+    "inheritedClips": [
+      {
+        "clip": "Idle",
+        "channels": 54,
+        "maxDifference": 0
+      },
+      {
+        "clip": "Walk",
+        "channels": 54,
+        "maxDifference": 0
+      },
+      {
+        "clip": "Run",
+        "channels": 54,
+        "maxDifference": 0
+      },
+      {
+        "clip": "Jump",
+        "channels": 54,
+        "maxDifference": 0
+      },
+      {
+        "clip": "Aim",
+        "channels": 54,
+        "maxDifference": 0
+      },
+      {
+        "clip": "Fire",
+        "channels": 54,
+        "maxDifference": 0
+      },
+      {
+        "clip": "Reload",
+        "channels": 54,
+        "maxDifference": 0
+      }
+    ]
+  },
+  "referenceSpeeds": {
+    "Walk": 6.5,
+    "Run": 9,
+    "CrouchWalk": 2.6
+  },
+  "locomotion": [
+    {
+      "clip": "Walk",
+      "referenceSpeed": 6.5,
+      "duration": 0.5333333611488342,
+      "samples": 258,
+      "minFloor": 0.006755883891524501,
+      "maxFloor": 0.09643524174445951,
+      "seamPosition": 0,
+      "seamVelocity": 0.9920566309105219,
+      "contactBands": [
+        {
+          "heightMetres": 0.02,
+          "contactDuty": 0.28793774319066145,
+          "horizontalSlipMedian": 0.06388010750215846,
+          "horizontalSlipP95": 0.18955347201765074
+        },
+        {
+          "heightMetres": 0.04,
+          "contactDuty": 0.5291828793774319,
+          "horizontalSlipMedian": 0.06540463079423296,
+          "horizontalSlipP95": 0.36640487871055044
+        }
+      ]
+    },
+    {
+      "clip": "Run",
+      "referenceSpeed": 9,
+      "duration": 0.46666666865348816,
+      "samples": 226,
+      "minFloor": 0.0065038200182311046,
+      "maxFloor": 0.096807105914242,
+      "seamPosition": 0,
+      "seamVelocity": 1.5761267739120453,
+      "contactBands": [
+        {
+          "heightMetres": 0.02,
+          "contactDuty": 0.24888888888888888,
+          "horizontalSlipMedian": 0.14648680514294657,
+          "horizontalSlipP95": 0.6426905535475347
+        },
+        {
+          "heightMetres": 0.04,
+          "contactDuty": 0.4577777777777778,
+          "horizontalSlipMedian": 0.1869579982548078,
+          "horizontalSlipP95": 1.633166190151403
+        }
+      ]
+    },
+    {
+      "clip": "CrouchWalk",
+      "referenceSpeed": 2.6,
+      "duration": 0.5333333611488342,
+      "samples": 258,
+      "minFloor": 0.006294485535481976,
+      "maxFloor": 0.0064996219038107005,
+      "seamPosition": 2.46364654656893e-7,
+      "seamVelocity": 0.48598450231606577,
+      "contactBands": [
+        {
+          "heightMetres": 0.02,
+          "contactDuty": 1,
+          "horizontalSlipMedian": 0.0063710335884091035,
+          "horizontalSlipP95": 0.09349571680869767
+        },
+        {
+          "heightMetres": 0.04,
+          "contactDuty": 1,
+          "horizontalSlipMedian": 0.0063710335884091035,
+          "horizontalSlipP95": 0.09349571680869767
+        }
+      ]
+    }
+  ],
+  "holds": [
+    {
+      "clip": "Idle",
+      "posture": "stand",
+      "duration": 3.0333333015441895,
+      "soleMin": 0.006999782132205975,
+      "bodyMin": 0.006999782132205975,
+      "bodyTop": 1.795431338794427,
+      "headCentre": [
+        1.6301104345939075,
+        1.6351056712490184
+      ],
+      "headHorizontalReach": 0.10588926135142498,
+      "plantedFootTravel": 0
+    },
+    {
+      "clip": "Aim",
+      "posture": "stand",
+      "duration": 2.0333333015441895,
+      "soleMin": 0.006999739038077678,
+      "bodyMin": 0.006999739038077678,
+      "bodyTop": 1.7848383952763496,
+      "headCentre": [
+        1.6235188222796788,
+        1.6237171243780233
+      ],
+      "headHorizontalReach": 0.1073484384896338,
+      "plantedFootTravel": 0
+    },
+    {
+      "clip": "Crouch",
+      "posture": "crouch",
+      "duration": 2.0333333015441895,
+      "soleMin": 0.006491978639282553,
+      "bodyMin": 0.006491978639282553,
+      "bodyTop": 1.3332416882068423,
+      "headCentre": [
+        1.1696037197748812,
+        1.1714571306546582
+      ],
+      "headHorizontalReach": 0.11864247249790134,
+      "plantedFootTravel": 4.0003061174269803e-7
+    },
+    {
+      "clip": "Slide",
+      "posture": "slide",
+      "duration": 1.0333333015441895,
+      "soleMin": 0.006441924972857985,
+      "bodyMin": 0.006448381020106994,
+      "bodyTop": 1.0575381675526891,
+      "headCentre": [
+        0.8892417448123981,
+        0.898103167608622
+      ],
+      "headHorizontalReach": 0.03207718303663888,
+      "plantedFootTravel": 0
+    }
+  ],
+  "crouchWalkTop": 1.3723807464824695,
+  "coordinateSystem": "metres; Y up; -Z forward"
+}

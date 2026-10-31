@@ -1,0 +1,37 @@
+{
+  "input": "<work>/operator-raw.glb",
+  "out": "public/models/operator-v1.glb",
+  "bytes": 2859948,
+  "sha256": "d419c5f6710a19a0ce38ddf9f532eeb3614a101047805d79c8d3d35674612154",
+  "rawBytes": 8341408,
+  "normalMode": "uastc",
+  "textures": [
+    {
+      "name": "Operator_Normal",
+      "mimeType": "image/ktx2",
+      "bytes": 769592,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "Operator_BaseColor",
+      "mimeType": "image/ktx2",
+      "bytes": 478910,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "Operator_MetalRoughness",
+      "mimeType": "image/ktx2",
+      "bytes": 135835,
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  ]
+}
