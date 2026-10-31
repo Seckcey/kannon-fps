@@ -7,7 +7,7 @@ import {
 } from '../../shared/physics.js';
 import { ARENA_LIMITS, groundSurfaceAt, OBSTACLES, surfaceOf, type MapObstacle } from '../../shared/map.js';
 import type { InputFrame, Vec3 } from '../../shared/protocol.js';
-import { context, frame, player, withObstacle } from './support.js';
+import { context, frame, player, random, withObstacle } from './support.js';
 
 // Reference scans over every obstacle, exactly as the physics worked before the grid existed.
 const lo = (box: MapObstacle): Vec3 => ({ x: box.x - box.w / 2, y: box.y - box.h / 2, z: box.z - box.d / 2 });
@@ -52,11 +52,6 @@ function scanSupport(p: Vec3): number {
   for (const box of OBSTACLES) { const top = box.y + box.h / 2; if (overlapsXZ(p, box, PLAYER_RADIUS) && top <= p.y + 0.06) support = Math.max(support, top); }
   return support;
 }
-/** Small deterministic generator (mulberry32). */
-function random(seed: number) {
-  return () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-
 test('grid ray casts give exactly the same answers as scanning every obstacle', () => {
   const rand = random(20261030);
   const rays: Array<[Vec3, Vec3, number]> = [];
@@ -103,6 +98,12 @@ test('obstacles added at run time are seen by every query', () => {
   });
   assert.equal(raycastMap(origin, east, 2), before);
   assert.equal(spaceFree({ x: -6, y: 0, z: 3 }, 1.8), true);
+  // Swapping one temporary box for another (same count, no query in between) is seen too.
+  withObstacle({ id: 'test-post-a', x: -6, y: 1, z: 3, w: 0.2, h: 2, d: 0.2, kind: 'wall', surface: 'trim' }, () => assert.equal(spaceFree({ x: -6, y: 0, z: 3 }, 1.8), false));
+  withObstacle({ id: 'test-post-b', x: -6, y: 1, z: 6, w: 0.2, h: 2, d: 0.2, kind: 'wall', surface: 'trim' }, () => {
+    assert.equal(spaceFree({ x: -6, y: 0, z: 3 }, 1.8), true, 'the first post is gone');
+    assert.equal(spaceFree({ x: -6, y: 0, z: 6 }, 1.8), false, 'the second post is there');
+  });
 });
 
 test('8 players × 30 ticks of movement plus 8 × 12 detailed rays stay well inside budget', (t) => {

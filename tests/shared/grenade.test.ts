@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { performance } from 'node:perf_hooks';
 import { EYE_HEIGHT, GRENADE, grenadeLaunch, grenadePosition, GrenadeTrajectory, stepGrenade, type GrenadeBody } from '../../shared/physics.js';
 import { OBSTACLES } from '../../shared/map.js';
 import type { Vec3 } from '../../shared/protocol.js';
-import { FACE } from './support.js';
+import { FACE, withObstacle } from './support.js';
 
 const STEP = GRENADE.stepMs;
 const inside = (p: Vec3) => p.y < GRENADE.radius - 1e-9 || OBSTACLES.some(box =>
@@ -90,6 +91,50 @@ test('identical throws give identical trajectories, however the time is advanced
   assert.deepEqual(impactsC, impactsA);
   assert.deepEqual(grenadePosition(launch.from, launch.velocity, 3400), a.position);
   assert.ok(impactsA.length > 0 && impactsA.every(speed => speed > 1.2), 'hard bounces are reported');
+});
+
+test('grenadePosition asked every frame matches one trajectory exactly and stays cheap', () => {
+  const launch = grenadeLaunch({ x: -6.6, y: EYE_HEIGHT.stand, z: 3 }, FACE.south, 0.1, { vx: 1.2, vz: 3.4 });
+  const other = grenadeLaunch({ x: 6.6, y: EYE_HEIGHT.stand, z: -3 }, FACE.north, 0.3, { vx: 0, vz: 0 });
+  const a = new GrenadeTrajectory(launch.from, launch.velocity), b = new GrenadeTrajectory(other.from, other.velocity);
+  // Two grenades asked about in turn every frame of a full fuse, as a client drawing both would.
+  for (let frame = 0; frame <= 204; frame++) {
+    const ms = frame * 1000 / 60;
+    a.advanceTo(ms); b.advanceTo(ms);
+    assert.deepEqual(grenadePosition(launch.from, launch.velocity, ms), a.position, `first throw at ${ms} ms`);
+    assert.deepEqual(grenadePosition(other.from, other.velocity, ms), b.position, `second throw at ${ms} ms`);
+  }
+  // Asking about an earlier moment still gives the exact replay.
+  const earlier = new GrenadeTrajectory(launch.from, launch.velocity); earlier.advanceTo(1500);
+  assert.deepEqual(grenadePosition(launch.from, launch.velocity, 1500), earlier.position);
+  assert.deepEqual(grenadePosition(launch.from, launch.velocity, Number.NaN), launch.from, 'unknown time: the throw point');
+  // Per-frame calls cost about what one trajectory does, not a replay from the throw every frame.
+  let throwNumber = 0;
+  const time = (perFrame: boolean) => {
+    const throwYaw = FACE.south + 0.01 * ++throwNumber; // a fresh throw each run
+    const { from, velocity } = grenadeLaunch({ x: -6.6, y: EYE_HEIGHT.stand, z: 3 }, throwYaw, 0.1, { vx: 0, vz: 0 });
+    const single = new GrenadeTrajectory(from, velocity), started = performance.now();
+    for (let frame = 0; frame <= 204; frame++) {
+      if (perFrame) grenadePosition(from, velocity, frame * 1000 / 60); else single.advanceTo(frame * 1000 / 60);
+    }
+    return performance.now() - started;
+  };
+  time(true); time(false);
+  const cached = Math.min(time(true), time(true), time(true)), single = Math.min(time(false), time(false), time(false));
+  assert.ok(cached <= 5 * single + 2, `per-frame grenadePosition ${cached.toFixed(2)} ms vs one trajectory ${single.toFixed(2)} ms`);
+});
+
+test('grenadePosition sees obstacles that change after a throw was first asked about', () => {
+  const from = { x: -7, y: 1.5, z: 0 }, velocity = { x: 0, y: 0, z: 10 };
+  const open = grenadePosition(from, velocity, 300);
+  assert.ok(open.z > 2.5, 'flies across the open square');
+  withObstacle({ id: 'test-grenade-wall', x: -7, y: 1.5, z: 1.5, w: 2, h: 3, d: 0.28, kind: 'wall', surface: 'trim' }, () => {
+    const blocked = grenadePosition(from, velocity, 300);
+    const fresh = new GrenadeTrajectory(from, velocity); fresh.advanceTo(300);
+    assert.deepEqual(blocked, fresh.position);
+    assert.ok(blocked.z <= 1.36 - GRENADE.radius + 1e-9, 'the new wall stops it');
+  });
+  assert.deepEqual(grenadePosition(from, velocity, 300), open, 'and the wall is gone again');
 });
 
 test('advancing to exact multiples of the step takes exactly that many steps', () => {

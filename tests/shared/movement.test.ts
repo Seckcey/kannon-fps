@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isPlayerGrounded, MOVE, movePlayer, POSTURE_HEIGHT, type MoveState } from '../../shared/physics.js';
-import { clone, context, Driver, FACE, frame, LANE_X, OPEN, player, speedOf, TICK_MS, withObstacle } from './support.js';
+import { eyePosition, isPlayerGrounded, MOVE, movePlayer, POSTURE_HEIGHT, spaceFree, type MoveState } from '../../shared/physics.js';
+import { OBSTACLES } from '../../shared/map.js';
+import { context, Driver, FACE, frame, LANE_X, OPEN, player, snapshotOf, speedOf, TICK_MS, withObstacle } from './support.js';
 
 const near = (actual: number, expected: number, tolerance: number, label = '') =>
   assert.ok(Math.abs(actual - expected) <= tolerance, `${label} expected ${expected} ± ${tolerance}, got ${actual}`);
@@ -64,27 +65,57 @@ test('sprint runs at 6.9 only forward-ish and never while aiming or firing', () 
 
 test('dash runs at 8.2, drains stamina in 3 s, fades to sprint below 20% and refills in 4 s', () => {
   const run = new Driver(player(LANE_X, -21));
+  const dash = { moveZ: 1, yaw: FACE.south, sprint: true, dash: true };
   run.steps(10, { moveZ: 1, yaw: FACE.south, sprint: true });
-  run.steps(15, { moveZ: 1, yaw: FACE.south, sprint: true, dash: true });
+  const dashFrom = run.log.length;
+  run.steps(15, dash);
   near(speedOf(run.state), MOVE.dash, 1e-6, 'full dash');
   assert.equal(run.state.dashing, true);
   near(run.state.stamina, 1 - 15 * TICK_MS / MOVE.dashMs, 1e-9, 'stamina drains at 1/3 per second');
   // Run the dash down to 10% stamina: the speed has faded halfway back to sprint.
-  run.until(state => state.stamina <= 0.1 + 1e-9, { moveZ: 1, yaw: FACE.south, sprint: true, dash: true });
+  run.until(state => state.stamina <= 0.1 + 1e-9, dash);
   const fadeTarget = MOVE.sprint + (MOVE.dash - MOVE.sprint) * (run.state.stamina / MOVE.dashFadeStamina);
   near(speedOf(run.state), fadeTarget, 0.05, 'dash fades below 20%');
-  run.until(state => !state.dashing, { moveZ: 1, yaw: FACE.south, sprint: true, dash: true });
-  assert.ok(run.state.stamina < 0.02, 'emptied, now refilling');
-  run.steps(3, { moveZ: 1, yaw: FACE.south, sprint: true, dash: true });
+  run.until(state => !state.dashing, dash);
+  const dashTicks = run.log.slice(dashFrom).filter(tick => tick.after.dashing).length;
+  near(dashTicks * TICK_MS, MOVE.dashMs, TICK_MS + 1e-6, 'a full dash lasts 3 s');
+  assert.equal(run.state.stamina, 0, 'ran dry');
+  run.steps(3, dash);
   near(speedOf(run.state), MOVE.sprint, 1e-6, 'empty stamina sprints');
-  assert.equal(run.state.dashing, false, 'no flicker back into a dash while stamina is nearly empty');
-  assert.ok(run.state.stamina > 0 && run.state.stamina < MOVE.dashFadeStamina);
   // Rest: stamina refills in 4 s; a new dash waits until 20% is back.
   const rest = new Driver(player(OPEN.x, OPEN.z, { stamina: 0 }));
   rest.steps(Math.round(0.8 * 30) - 1);
-  assert.ok(rest.state.stamina < MOVE.dashFadeStamina);
+  assert.ok(rest.state.stamina < MOVE.dashRestartStamina);
   rest.steps(Math.round(3.2 * 30) + 1);
   near(rest.state.stamina, 1, 1e-9, 'full after 4 s');
+});
+
+test('holding dash after it runs dry stays a plain sprint until dash is let go', () => {
+  const run = new Driver(player(LANE_X, -21));
+  const dash = { moveZ: 1, yaw: FACE.south, sprint: true, dash: true }, sprint = { moveZ: 1, yaw: FACE.south, sprint: true };
+  run.steps(10, sprint);
+  run.until(state => state.stamina === 0 && !state.dashing, dash, 120);
+  // Held on, it never surges back into a dash (it used to restart at 20% every 0.8 s) and stays spent.
+  for (let tick = 0; tick < 36; tick++) {
+    run.step(dash);
+    near(speedOf(run.state), MOVE.sprint, 1e-6, `held dash, tick ${tick}`);
+    assert.equal(run.state.dashing, false);
+  }
+  assert.equal(run.state.stamina, 0, 'a spent dash refills only once dash is let go');
+  // Letting go of dash while still sprinting refills it; with 20% back, a new press dashes again.
+  const refill = Math.ceil(MOVE.dashRestartStamina * MOVE.dashRefillMs / TICK_MS) + 1;
+  run.steps(refill, sprint);
+  near(run.state.stamina, refill * TICK_MS / MOVE.dashRefillMs, 1e-9, 'refilling while sprinting');
+  run.step(dash);
+  assert.equal(run.state.dashing, true, 'a fresh dash');
+  assert.ok(speedOf(run.state) > MOVE.sprint + 1, 'faster than a sprint (fading, as stamina is near 20%)');
+  // Pressing dash with less than 20% does not dash, and stamina waits until it is let go.
+  const low = new Driver(player(LANE_X, -21, { stamina: 0.1 }));
+  low.steps(10, sprint);
+  const before = low.state.stamina;
+  low.steps(5, dash);
+  assert.equal(low.state.dashing, false);
+  assert.equal(low.state.stamina, before);
 });
 
 test('a jump peaks near 0.95 m and the landing reports the fall speed', () => {
@@ -128,6 +159,83 @@ test('standing up from a crouch, a slide or a vault needs headroom', () => {
     const slide = new Driver(player(OPEN.x, OPEN.z - 0.2, { posture: 'slide', slideUntil: 20, vx: 0, vz: 4 }));
     slide.step({ moveZ: 1, yaw: FACE.south });
     assert.equal(slide.state.posture, 'crouch');
+  });
+  // A slab 1.35 m above the mail crates (top 1.4) leaves room for the 1.25 m vault body, not for standing:
+  // the mantle ends crouched and stays crouched with crouch released until the body is clear.
+  withObstacle({ id: 'test-crate-slab', x: -4.8, y: 2.8, z: -17, w: 2.3, h: 0.1, d: 2.2, kind: 'wall', surface: 'trim' }, () => {
+    const run = new Driver(player(-4.8, -15.35));
+    assert.equal(run.step({ moveZ: 1, yaw: FACE.north, jump: true }).vaultStarted, true);
+    run.until((_, events) => events.vaultEnded, { moveZ: 1, yaw: FACE.north }, 30);
+    near(run.state.y, 1.4, 1e-9, 'on the crates');
+    assert.equal(run.state.posture, 'crouch', 'no room to stand under the slab');
+    assert.ok(spaceFree(run.state, POSTURE_HEIGHT.crouch));
+    run.steps(3);
+    assert.equal(run.state.posture, 'crouch', 'released crouch under the slab stays crouched');
+    // Walking back off the crates, the player stands once clear of the slab.
+    run.until(state => state.posture === 'stand', { moveZ: -1, yaw: FACE.north }, 60);
+    assert.ok(run.state.z - 0.42 >= -15.9 - 1e-6, 'stood only once clear of the slab');
+  });
+});
+
+test('a slide never moves where a crouch would not fit, so it never ends inside the upstairs floor', () => {
+  // The inside stairs run 0.2 m under the upstairs floor (bottom 2.96 m) at both side edges. From step 3 a
+  // 1.0 m slide body could climb to step 6 (1.92 m), where a 1.25 m crouch cannot fit.
+  const fits = (state: MoveState) => state.posture === 'vault' || spaceFree(state, state.posture === 'slide' ? POSTURE_HEIGHT.crouch : POSTURE_HEIGHT[state.posture]);
+  // The first-person camera sits at the eye: it must never be inside a box (that would show the room above).
+  const eyeClear = (state: MoveState) => {
+    const eye = eyePosition(state);
+    return !OBSTACLES.some(box => Math.abs(eye.x - box.x) < box.w / 2 && Math.abs(eye.y - box.y) < box.h / 2 && Math.abs(eye.z - box.z) < box.d / 2);
+  };
+  for (const side of [-1, 1]) {
+    // The street-side edge from a sprint up the stairs (the reported case), crouch held and released.
+    for (const hold of [true, false]) {
+      const run = new Driver(player(side * 17.75, -5.05));
+      run.until(state => state.z >= -2.6, { moveZ: 1, yaw: FACE.south, sprint: true }, 60);
+      assert.equal(run.step({ moveZ: 1, yaw: FACE.south, sprint: true, crouch: true }).slideStarted, true);
+      run.until((_, events) => { assert.ok(fits(run.state), `${side * 17.75}: ${JSON.stringify(run.state)}`); return events.slideEnded; },
+        { moveZ: 1, yaw: FACE.south, crouch: hold }, 60);
+      assert.ok(spaceFree(run.state, POSTURE_HEIGHT[run.state.posture]), `slide end at ${side * 17.75}, crouch ${hold}: ${JSON.stringify(run.state)}`);
+      assert.ok(run.state.y <= 1.6 + 1e-9, 'stopped where a crouch fits (step 5)');
+    }
+    // Both edges, from a slide already running up step 3, ending by itself or by a jump.
+    for (const u of [17.75, 20.25]) for (const jumpAfter of [Infinity, 3, 6]) {
+      const run = new Driver(player(side * u, -2.45, { y: 0.96, vz: MOVE.slideSpeed, posture: 'slide', slideUntil: MOVE.slideMs }));
+      assert.ok(spaceFree(run.state, POSTURE_HEIGHT.stand), 'a valid start');
+      for (let tick = 0; tick < 45; tick++) {
+        run.step({ moveZ: 1, yaw: FACE.south, crouch: true, jump: tick === jumpAfter });
+        assert.ok(fits(run.state), `${side * u}, jump at ${jumpAfter}, tick ${tick}: ${JSON.stringify(run.state)}`);
+        assert.ok(eyeClear(run.state), `${side * u}, jump at ${jumpAfter}, tick ${tick}: the eye is inside the floor`);
+      }
+    }
+  }
+});
+
+test('a body already inside a floor overhead never rises through it', () => {
+  // A slide state left under the floor edge (no longer reachable): jumping out of it becomes a crouch that
+  // does not fit, and the jump must not carry it up through the slab.
+  const run = new Driver(player(-17.75, 0, { y: 1.92, vz: 4, posture: 'slide', slideUntil: 500 }));
+  assert.equal(spaceFree(run.state, POSTURE_HEIGHT.crouch), false, 'the crouch body overlaps the floor');
+  const events = run.step({ moveZ: 1, yaw: FACE.south, jump: true });
+  assert.equal(events.jumped, true);
+  run.steps(30, { moveZ: 1, yaw: FACE.south });
+  for (const tick of run.log) assert.ok(tick.after.y <= 1.92 + 1e-9, `rose to ${tick.after.y}`);
+});
+
+test('sprinting stands a crouched player up, headroom permitting; a held crouch returns when sprint stops', () => {
+  const run = new Driver(player(LANE_X, -10));
+  run.steps(3, { crouch: true });
+  assert.equal(run.state.posture, 'crouch');
+  run.steps(10, { crouch: true, sprint: true, moveZ: 1, yaw: FACE.south });
+  assert.equal(run.state.posture, 'stand'); assert.equal(run.state.sprinting, true);
+  near(speedOf(run.state), MOVE.sprint, 1e-6, 'sprints with crouch still held');
+  run.step({ crouch: true, moveZ: 1, yaw: FACE.south });
+  assert.equal(run.state.posture, 'crouch', 'crouches again once sprint stops');
+  // Under a low bar the crouched player cannot stand up to sprint.
+  withObstacle({ id: 'test-sprint-bar', x: LANE_X, y: 1.5, z: 6, w: 2, h: 0.1, d: 2, kind: 'wall', surface: 'trim' }, () => {
+    const under = new Driver(player(LANE_X, 6, { posture: 'crouch' }));
+    under.steps(5, { crouch: true, sprint: true, moveZ: 1, yaw: FACE.south });
+    assert.equal(under.state.posture, 'crouch'); assert.equal(under.state.sprinting, false);
+    near(speedOf(under.state), MOVE.crouch, 1e-6, 'crouch walk under the bar');
   });
 });
 
@@ -269,15 +377,6 @@ test('sliding off a ledge ends the slide', () => {
   assert.equal(run.state.posture, 'stand', 'airborne slides stand up even with crouch held');
 });
 
-test('a held crouch keeps the player crouched; sprint does not stand them up', () => {
-  const run = new Driver(player(LANE_X, -10));
-  run.steps(5, { crouch: true, sprint: true, moveZ: 1, yaw: FACE.south });
-  assert.equal(run.state.posture, 'crouch'); assert.equal(run.state.sprinting, false);
-  near(speedOf(run.state), MOVE.crouch, 1e-6);
-  run.steps(2, { sprint: true, moveZ: 1, yaw: FACE.south });
-  assert.equal(run.state.posture, 'stand');
-});
-
 test('bad numbers in inputs or context never corrupt the state', () => {
   const state = player(OPEN.x, OPEN.z);
   const bad = frame({ moveX: Number.NaN, moveZ: Number.POSITIVE_INFINITY, yaw: Number.NaN, pitch: Number.NaN });
@@ -290,21 +389,6 @@ test('bad numbers in inputs or context never corrupt the state', () => {
   movePlayer(stale, frame(), context(33));
   assert.equal(stale.posture, 'stand');
 });
-
-/** Rounds like a snapshot: positions 3 decimals, angles 4, times whole milliseconds. */
-function snapshotOf(state: MoveState): MoveState {
-  const r = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits;
-  const copy = clone(state);
-  for (const key of ['x', 'y', 'z', 'vx', 'vy', 'vz', 'stamina'] as const) copy[key] = r(copy[key], 3);
-  copy.yaw = r(copy.yaw, 4); copy.pitch = r(copy.pitch, 4);
-  copy.slideUntil = Math.round(copy.slideUntil); copy.slideCooldownUntil = Math.round(copy.slideCooldownUntil);
-  if (copy.vault) {
-    const v = copy.vault;
-    copy.vault = { ...v, fromX: r(v.fromX, 3), fromY: r(v.fromY, 3), fromZ: r(v.fromZ, 3), toX: r(v.toX, 3), toY: r(v.toY, 3), toZ: r(v.toZ, 3),
-      start: Math.round(v.start), end: Math.round(v.end), exitSpeed: r(v.exitSpeed, 3), exitYaw: r(v.exitYaw, 4) };
-  }
-  return copy;
-}
 
 /** Sprint, slide, slide-jump, land, sprint, vault the barrier, land; inputs depend on the state like a player's. */
 function chainRun(): Driver {
@@ -371,6 +455,57 @@ test('prediction replayed from rounded snapshots agrees on the stairs and throug
   window.steps(20, { moveZ: 1, yaw: FACE.west, sprint: true });
   assert.ok(window.state.x < -11, 'inside the house');
   assertReplayParity(window, 'window', 1);
+});
+
+test('a player resting against a wall in a rounded snapshot still collides with it in prediction', () => {
+  // Bodies stop flush against walls (1e-9 short). Rounding to 1 mm can put that a hair inside the wall, and
+  // a body starting inside a box may walk out of it, so prediction used to walk straight through the wall.
+  const walls: Array<[string, number, number, number, number]> = [
+    ['south car, from the north', -3.9, 12, FACE.south, FACE.east],
+    ['bus side, from the west', -6, -4, FACE.east, FACE.north],
+    ['teal front wall, from the street', -8, -4.5, FACE.west, FACE.south],
+    ['west lane sandbags, from the south', -7, -11, FACE.north, FACE.west],
+    ['mail crates, from the south', -4.8, -14, FACE.north, FACE.east],
+    ['south planter, from the north', 6.5, 12, FACE.south, FACE.west],
+  ];
+  for (const [name, x, z, into, along] of walls) {
+    const server = new Driver(player(x, z));
+    server.until(state => speedOf(state) < 1e-9 && server.log.length > 5, { moveZ: 1, yaw: into }, 60);
+    // Push straight in, then slide along the face while still pushing into it (heading halfway between).
+    server.steps(10, { moveZ: 1, yaw: into });
+    server.steps(10, { moveZ: 1, yaw: into + Math.atan2(Math.sin(along - into), Math.cos(along - into)) / 2 });
+    assert.ok(Math.abs(server.log.at(-1)!.after.x - server.log.at(-11)!.after.x) + Math.abs(server.log.at(-1)!.after.z - server.log.at(-11)!.after.z) > 0.5, `${name}: slid along the face`);
+    assertReplayParity(server, name, 1, 0.002);
+  }
+});
+
+test('prediction replayed from rounded snapshots agrees through vault-slide chains and a held dash', () => {
+  // Slide at the mail crates, mantle them from the slide with crouch held, slide on along the top and off it.
+  const crates = new Driver(player(-4.8, -4));
+  crates.until(state => state.z <= -13.3, { moveZ: 1, yaw: FACE.north, sprint: true }, 60);
+  crates.step({ moveZ: 1, yaw: FACE.north, sprint: true, crouch: true });
+  crates.until(state => state.z <= -14.88, { moveZ: 1, yaw: FACE.north, crouch: true }, 20);
+  crates.step({ moveZ: 1, yaw: FACE.north, crouch: true, jump: true });
+  crates.until((_, events) => events.vaultEnded, { moveZ: 1, yaw: FACE.north, crouch: true }, 30);
+  crates.steps(25, { moveZ: 1, yaw: FACE.north, crouch: true });
+  assert.ok(crates.log.some(tick => tick.events.vaultEnded && tick.events.slideStarted), 'the mantle chained into a slide');
+  assertReplayParity(crates, 'crates', 1);
+  // Slide at the west lane barrier, vault over it from the slide, land tucked into a new slide.
+  const barrier = new Driver(player(-6.6, -2));
+  barrier.until(state => state.z >= 5.6, { moveZ: 1, yaw: FACE.south, sprint: true }, 60);
+  barrier.step({ moveZ: 1, yaw: FACE.south, sprint: true, crouch: true });
+  barrier.until(state => state.z >= 8.18, { moveZ: 1, yaw: FACE.south, crouch: true }, 20);
+  barrier.step({ moveZ: 1, yaw: FACE.south, crouch: true, jump: true });
+  barrier.until((_, events) => events.vaultEnded, { moveZ: 1, yaw: FACE.south, crouch: true }, 30);
+  barrier.steps(30, { moveZ: 1, yaw: FACE.south, crouch: true });
+  assert.ok(barrier.log.some(tick => tick.events.landedSpeed > 0 && tick.events.slideStarted), 'landed into a slide');
+  assertReplayParity(barrier, 'barrier', 1);
+  // Dash until dry with dash held, let go, dash again.
+  const dash = new Driver(player(LANE_X, -21));
+  dash.steps(100, { moveZ: 1, yaw: FACE.south, sprint: true, dash: true });
+  dash.steps(30, { moveZ: 1, yaw: FACE.south, sprint: true });
+  dash.steps(10, { moveZ: 1, yaw: FACE.south, sprint: true, dash: true });
+  assertReplayParity(dash, 'dash', 2);
 });
 
 test('collision height follows posture', () => {

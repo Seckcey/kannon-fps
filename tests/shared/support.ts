@@ -57,6 +57,31 @@ export class Driver {
 
 export function clone<T>(value: T): T { return structuredClone(value); }
 
+/** Rounds like a snapshot: positions 3 decimals, angles 4, times whole milliseconds. */
+export function snapshotOf(state: MoveState): MoveState {
+  const r = (value: number, digits: number) => Math.round(value * 10 ** digits) / 10 ** digits;
+  const copy = clone(state);
+  for (const key of ['x', 'y', 'z', 'vx', 'vy', 'vz', 'stamina'] as const) copy[key] = r(copy[key], 3);
+  copy.yaw = r(copy.yaw, 4); copy.pitch = r(copy.pitch, 4);
+  copy.slideUntil = Math.round(copy.slideUntil); copy.slideCooldownUntil = Math.round(copy.slideCooldownUntil);
+  if (copy.vault) {
+    const v = copy.vault;
+    copy.vault = { ...v, fromX: r(v.fromX, 3), fromY: r(v.fromY, 3), fromZ: r(v.fromZ, 3), toX: r(v.toX, 3), toY: r(v.toY, 3), toZ: r(v.toZ, 3),
+      start: Math.round(v.start), end: Math.round(v.end), exitSpeed: r(v.exitSpeed, 3), exitYaw: r(v.exitYaw, 4) };
+  }
+  return copy;
+}
+
+/** Small deterministic generator (mulberry32): the same seed always gives the same sequence in [0, 1). */
+export function random(seed: number): () => number {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /** Runs `body` with a temporary obstacle in the shared map, always removing it afterwards. */
 export function withObstacle<T>(obstacle: Omit<MapObstacle, 'color'> & { color?: string }, body: () => T): T {
   const added: MapObstacle = { color: '#000000', ...obstacle };
