@@ -10,6 +10,8 @@ export interface ArenaWorld {
   root: THREE.Group;
   environment: THREE.Texture | null;
   background: THREE.CubeTexture;
+  /** Cosmetic meshes named `Breakable*` (window glass, pots) that shatter when a tracer crosses them; filled on load. */
+  breakables: THREE.Mesh[];
   prepareReflections(scene: THREE.Scene): void;
   /** Grass cards are pure decoration: none on phones, half on desktop Auto, all on High. */
   setGrassDensity(density: 0 | 1 | 2): void;
@@ -30,6 +32,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
   let reflection: THREE.WebGLRenderTarget | null = null;
   const reflectiveMaterials = new Set<THREE.MeshStandardMaterial>();
   const grassCards: THREE.Mesh[] = [];
+  const breakables: THREE.Mesh[] = [];
   let grassDensity: 0 | 1 | 2 = 2;
   const applyGrassDensity = () => {
     for (const mesh of grassCards) {
@@ -73,6 +76,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
       if (!(object instanceof THREE.Mesh)) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       if (materials.some(material => /GrassCard/i.test(material.name))) grassCards.push(object);
+      if (/^Breakable/i.test(object.name)) breakables.push(object);
       object.castShadow = !isHorizon(object) && !materials.every(material => /GroundGrass|GroundAsphalt|Cliff/i.test(material.name));
       object.receiveShadow = true;
       for (const material of materials) {
@@ -133,7 +137,7 @@ export function createWorld(renderer: THREE.WebGLRenderer, textureTier: TextureT
     root.add(gltf.scene); onReady();
   }).catch(() => { if (!disposed) onError('The arena artwork could not load. Return to the lobby and try again.'); });
   return {
-    root, environment: atmosphere.environment, background: atmosphere.background,
+    root, environment: atmosphere.environment, background: atmosphere.background, breakables,
     prepareReflections(scene) {
       if (disposed || reflection || !reflectiveMaterials.size || !atmosphere.environment) return;
       // Bake the actual static street once. Cars and closed glazing reflect the

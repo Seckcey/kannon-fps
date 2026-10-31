@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import type { GameEvent, Vec3 } from '../../shared/protocol';
+import type { DroneState, GameEvent, SurfaceKind, Vec3, WeaponId } from '../../shared/protocol';
 import { raycastMap } from '../../shared/physics';
 
 type Shot = Extract<GameEvent, { type: 'shot' }>;
 const GLOW_CAPACITY = 512, DUST_CAPACITY = 256, TRAIL_CAPACITY = 96;
 const ivory = new THREE.Color('#fff0c5'), amber = new THREE.Color('#ffc579');
 const shield = new THREE.Color('#82e7ff'), stone = new THREE.Color('#c9bba2');
-const ceramic = new THREE.Color('#ffe4bc'), healing = new THREE.Color('#91ffd0');
+const ceramic = new THREE.Color('#ffe4bc');
 
 /** A cosmetic barrel may protrude through cover; effects must stay on this side. */
 export function resolveVisualMuzzle(authoritative: Vec3, visual: Vec3): THREE.Vector3 {
@@ -156,7 +156,7 @@ export class CombatEffects {
   private readonly viewDirection = new THREE.Vector3();
   private readonly cameraPosition = new THREE.Vector3();
 
-  constructor() { this.root.name = 'combat-effects'; this.root.add(this.dust.mesh, this.glow.mesh); }
+  constructor(_options: { quality: 'phone' | 'desktop' } = { quality: 'desktop' }) { this.root.name = 'combat-effects'; this.root.add(this.dust.mesh, this.glow.mesh); }
 
   private emit(additive: boolean, position: Vec3, color: THREE.Color, size: number, endSize: number, duration: number, kind: number, opacity = 1) {
     const pool = additive ? this.glowParticles : this.dustParticles;
@@ -170,16 +170,18 @@ export class CombatEffects {
     return particle;
   }
 
-  shot(event: Shot, visualMuzzle?: Vec3, showMuzzle = true) {
+  /** World presentation of one authoritative shot. `from` is the visual muzzle. Local shots skip the
+   * muzzle flash (the viewmodel draws it); `tracer` false skips the streak but keeps impacts. */
+  shot(event: Shot, visualMuzzle: Vec3, options: { local: boolean; tracer: boolean } = { local: false, tracer: true }) {
     if (this.disposed) return;
-    const from = visualMuzzle ? resolveVisualMuzzle(event.from, visualMuzzle) : new THREE.Vector3(event.from.x, event.from.y, event.from.z);
-    const shotgun = event.slot === 2;
+    const from = resolveVisualMuzzle(event.from, visualMuzzle);
+    const shotgun = event.weapon === 'breaker12', showMuzzle = !options.local;
     if (showMuzzle) {
       this.emit(true, from, ivory, shotgun ? 0.42 : 0.28, 0.08, shotgun ? 0.075 : 0.055, 0, 1);
       const flame = this.emit(true, from, amber, shotgun ? 0.64 : 0.39, 0.08, shotgun ? 0.08 : 0.06, 0, 0.7);
       flame.spin = 3;
     }
-    const traces = event.traces?.slice(0, shotgun ? 9 : 1) ?? [{ to: event.to, kind: 'range' as const }];
+    const traces = event.traces.slice(0, shotgun ? 8 : 1);
     for (const trace of traces) {
       const to = trace.to;
       this.direction.set(to.x - from.x, to.y - from.y, to.z - from.z);
@@ -188,7 +190,7 @@ export class CombatEffects {
       const forward = this.direction.x * (to.x - event.from.x) + this.direction.y * (to.y - event.from.y) + this.direction.z * (to.z - event.from.z);
       // At point-blank range the animated barrel can extend past the contact.
       // Keep the accepted impact, but never draw a tracer backwards into it.
-      if (length >= 0.005 && forward > 0) {
+      if (options.tracer && length >= 0.005 && forward > 0) {
         this.direction.multiplyScalar(1 / length);
         const wall = raycastMap(from, this.direction, length);
         const trail = this.trails[this.trailCursor++ % this.trails.length];
@@ -218,7 +220,7 @@ export class CombatEffects {
         }
       } else {
         for (let i = 0; i < (shotgun ? 2 : 6); i++) {
-          const spark = this.emit(true, to, trace.shield ? shield : ceramic, 0.055, 0.01, 0.13 + Math.random() * 0.08, 1, 0.85);
+          const spark = this.emit(true, to, ceramic, 0.055, 0.01, 0.13 + Math.random() * 0.08, 1, 0.85);
           spark.velocity.copy(this.direction).multiplyScalar(0.8 + Math.random() * 1.5);
           spark.velocity.x += (Math.random() - 0.5) * 2; spark.velocity.y += (Math.random() - 0.2) * 2; spark.velocity.z += (Math.random() - 0.5) * 2;
           spark.aspect = 2.8; spark.gravity = 2;
@@ -237,7 +239,21 @@ export class CombatEffects {
     }
   }
 
-  heal(position: Vec3) { if (!this.disposed) this.rise(position, healing, 14); }
+  /** Contract surface for the effects workstream; interim bodies reuse the existing particles. */
+  impact(position: Vec3, normal: Vec3, _surface: SurfaceKind | 'player', _protectedTarget = false) {
+    if (this.disposed) return;
+    const puff = this.emit(false, position, stone, 0.12, 0.38, 0.35, 2, 0.45);
+    puff.velocity.set(normal.x, normal.y + 0.3, normal.z);
+  }
+  bulletHole(_position: Vec3, _normal: Vec3, _surface: SurfaceKind) {}
+  shell(_position: THREE.Vector3, _velocity: THREE.Vector3, _weapon: WeaponId) {}
+  explosion(position: Vec3, _kind: 'frag' | 'mortar' | 'drone') { if (!this.disposed) this.rise(position, amber, 30); }
+  /** Draw, move or (with null) remove an in-flight grenade. */
+  grenade(_id: string, _position: Vec3 | null) {}
+  /** World meshes (glass panes, pots) that shatter when a tracer crosses them. */
+  setBreakables(_meshes: THREE.Mesh[]) {}
+  /** Attack drones from the latest snapshot, drawn and interpolated each frame. */
+  setDrones(_drones: DroneState[], _serverTime: number) {}
   respawn(position: Vec3) { if (!this.disposed) this.rise(position, shield, 20); }
 
   private rise(position: Vec3, color: THREE.Color, count: number) {

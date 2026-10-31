@@ -4,6 +4,13 @@ import { LightProbeGenerator } from 'three/examples/jsm/lights/LightProbeGenerat
 
 export const SUN_DIRECTION = new THREE.Vector3(-38, 52, 28).normalize();
 export const SKY_LIGHT_INTENSITY = 0.055;
+/** Real-time light that must agree with the environment bake. GameView reads these; the
+ * environment art owns their values together with the bake's sun. */
+export const SUN_COLOR = '#fff4e4';
+export const SUN_INTENSITY = 3.3;
+export const HEMISPHERE = { sky: '#d9edff', ground: '#8e7357', intensity: 0.8 } as const;
+export const FOG = { color: '#b2cbd0', near: 100, far: 460 } as const;
+export const EXPOSURE = 1.0;
 
 /** Shared daylight gives architecture and armor a coherent physical environment. */
 export function createAtmosphere(renderer: THREE.WebGLRenderer) {

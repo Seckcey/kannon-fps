@@ -47,7 +47,7 @@ export const GradeShader = {
     }`,
 };
 
-export interface PresentationOptions { bloom: boolean }
+export interface PresentationOptions { bloom: boolean; depthOfField?: boolean }
 
 /** Desktop presentation: contact shading, bloom on the brightest highlights, a colour grade
  *  and SMAA edges. Phones render directly and never download this module. */
@@ -89,6 +89,16 @@ export class ArenaPresentation {
     this.composer.addPass(this.grade);
     this.composer.addPass(this.antialias);
   }
+
+  /** First-person viewmodel drawn over the world with cleared depth, before bloom and grading.
+   * Contract: the look workstream implements the pass; GameView renders it directly until then. */
+  setOverlay(_scene: THREE.Scene | null, _camera: THREE.Camera | null) {}
+  /** Aim-down-sights blend 0..1 and the distance to the aimed point, for depth of field. */
+  setAim(_blend: number, _focusDistance: number) {}
+  /** Screen condition 0..1: low health (desaturate, darken edges) and a flash (stun or explosion). */
+  setCondition(_lowHealth: number, _flash: number) {}
+  /** True when setOverlay is implemented and the viewmodel is drawn inside render(). */
+  readonly drawsOverlay: boolean = false;
 
   resize(width: number, height: number) {
     const ratio = this.renderer.getPixelRatio();

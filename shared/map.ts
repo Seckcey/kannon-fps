@@ -1,17 +1,18 @@
-import type { Vec3 } from './protocol.js';
+import type { SurfaceKind, Vec3 } from './protocol.js';
 export const ARENA_HALF = 32;
 // The inner fence faces also bound airborne movement from balconies and sheds.
 export const ARENA_LIMITS = { x: 30.9, z: 22.9 } as const;
 export const MAP_NAME = 'Kannon Town';
+export type ObstacleSurface = 'teal' | 'yellow' | 'trim' | 'wood' | 'concrete' | 'bus' | 'truck' | 'fence' | 'roof' | 'sandbag' | 'barrier';
 export interface MapObstacle {
   id: string; x: number; y: number; z: number; w: number; h: number; d: number;
   color: string; kind: 'wall' | 'cover' | 'platform' | 'step';
-  surface?: 'teal' | 'yellow' | 'trim' | 'wood' | 'concrete' | 'bus' | 'truck' | 'fence' | 'roof';
+  surface?: ObstacleSurface;
 }
 export interface StairRoute { id: string; steps: string[]; landing: string; approach: Vec3; exit: Vec3 }
 export const OBSTACLES: MapObstacle[] = [];
 export const STAIR_ROUTES: StairRoute[] = [];
-const colors = { teal: '#74a698', yellow: '#ddbf73', trim: '#e3ded0', wood: '#927355', concrete: '#bdb9ab', bus: '#d4a644', truck: '#c3cfbd', fence: '#dbd7c8', roof: '#716e64' };
+const colors = { teal: '#74a698', yellow: '#ddbf73', trim: '#e3ded0', wood: '#927355', concrete: '#bdb9ab', bus: '#d4a644', truck: '#c3cfbd', fence: '#dbd7c8', roof: '#716e64', sandbag: '#8c7d5c', barrier: '#a9a69c' };
 function box(id: string, x: number, y: number, z: number, w: number, h: number, d: number, kind: MapObstacle['kind'] = 'wall', surface: NonNullable<MapObstacle['surface']> = 'trim') {
   OBSTACLES.push({ id, x, y, z, w, h, d, kind, surface, color: colors[surface] });
 }
@@ -93,6 +94,40 @@ box('south-car-cabin', -3.9, 1.38, 16.2, 2.55, .72, 1.8, 'cover', 'teal');
 box('north-car-cabin', 4, 1.38, -17.4, 2.55, .72, 1.8, 'cover', 'yellow');
 box('north-mail-crates', -4.8, 0.7, -17, 2.3, 1.4, 2.2, 'cover', 'wood');
 box('south-planter', 6.5, 0.68, 16.5, 2.2, 1.36, 3.5, 'cover', 'concrete');
+// Checkpoint cover (v3): sandbag walls and concrete barriers break the long street lanes,
+// give the centre ends a waist-high fight, and add mid cover to both back yards.
+box('west-lane-sandbags', -7, 0.55, -13, 2.6, 1.1, 0.9, 'cover', 'sandbag');
+box('east-lane-sandbags', 7, 0.55, 13, 2.6, 1.1, 0.9, 'cover', 'sandbag');
+box('west-lane-barrier', -6.6, 0.48, 9.5, 2.8, 0.96, 0.6, 'cover', 'barrier');
+box('east-lane-barrier', 6.6, 0.48, -9.5, 2.8, 0.96, 0.6, 'cover', 'barrier');
+box('north-centre-sandbags', 0.5, 0.55, -14.5, 2.4, 1.1, 0.9, 'cover', 'sandbag');
+box('south-centre-sandbags', 0.6, 0.55, 14, 2.4, 1.1, 0.9, 'cover', 'sandbag');
+for (const side of [-1, 1]) box(`${side < 0 ? 'teal' : 'yellow'}-yard-sandbags`, side * 26.6, 0.55, 8.6, 0.9, 1.1, 2.6, 'cover', 'sandbag');
+
+const SURFACES: Record<ObstacleSurface, SurfaceKind> = {
+  teal: 'wood', yellow: 'wood', trim: 'concrete', wood: 'wood', concrete: 'concrete', bus: 'metal', truck: 'metal',
+  fence: 'wood', roof: 'concrete', sandbag: 'sandbag', barrier: 'concrete',
+};
+/** Material of an obstacle face, for impacts and footsteps. */
+export const surfaceOf = (obstacle: MapObstacle): SurfaceKind => SURFACES[obstacle.surface ?? 'trim'];
+/** Material of the ground (y = 0) at a point: street asphalt, house floors, garage concrete, yard grass. */
+export function groundSurfaceAt(x: number, z: number): SurfaceKind {
+  const ax = Math.abs(x);
+  if (ax <= 9.6) return 'asphalt';
+  if (ax >= 10 && ax <= 22 && z >= -6 && z <= 6) return 'wood';
+  if (ax >= 10 && ax <= 18 && z > 6 && z <= 13.5) return 'concrete';
+  return 'grass';
+}
+/** Surface under a standing point: the highest supporting obstacle top, otherwise the ground. */
+export function surfaceAt(point: Vec3): SurfaceKind {
+  let best: MapObstacle | null = null;
+  for (const box of OBSTACLES) {
+    const top = box.y + box.h / 2;
+    if (Math.abs(top - point.y) > 0.08 || Math.abs(point.x - box.x) > box.w / 2 || Math.abs(point.z - box.z) > box.d / 2) continue;
+    if (!best || top > best.y + best.h / 2) best = box;
+  }
+  return best ? surfaceOf(best) : groundSurfaceAt(point.x, point.z);
+}
 
 export const SPAWNS: Array<Vec3 & { yaw: number }> = [
   { x: -28, y: 0, z: -18.5, yaw: Math.PI / 2 }, { x: 28, y: 0, z: 20, yaw: -Math.PI / 2 },

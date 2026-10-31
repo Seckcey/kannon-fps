@@ -1,8 +1,9 @@
 /** Versioned URLs keep a new art release from reusing the previous cached model. */
 export const ARENA_ASSETS = {
-  character: '/models/scout-v2.glb?v=scout-v2',
-  environment: '/models/environment-v2.glb?v=kannon-town-v2',
-  environmentPhone: '/models/environment-v2-phone.glb?v=kannon-town-v2',
+  character: '/models/operator-v1.glb?v=operator-v1',
+  weapons: '/models/weapons-v1.glb?v=weapons-v1',
+  environment: '/models/environment-v3.glb?v=kannon-town-v3',
+  environmentPhone: '/models/environment-v3-phone.glb?v=kannon-town-v3',
 } as const;
 export type TextureTier = 'phone' | 'full';
 /** Phones load a smaller-texture build of the same town. */
@@ -15,6 +16,8 @@ export const VEHICLE_TEST_ASSETS = {
   originalTown: '/models/environment.glb?v=kannon-town-v1',
   refinedTown: '/models/environment-refined.glb?v=kannon-town-graphics-v2',
   townV2: '/models/environment-v2.glb', townV2Phone: '/models/environment-v2-phone.glb',
+  townV3: '/models/environment-v3.glb', townV3Phone: '/models/environment-v3-phone.glb',
+  scoutV2: '/models/scout-v2.glb?v=scout-v2',
 } as const;
 for (const url of Object.values(VEHICLE_TEST_ASSETS)) knownUrls.add(url);
 const buffers = new Map<string, Promise<ArrayBuffer>>();
@@ -41,7 +44,7 @@ function validateGlb(buffer: ArrayBuffer): void {
   }
 }
 
-/** One download per versioned model for this page's lifetime (two URLs maximum).
+/** One download per versioned model for this page's lifetime.
  * Consumers may read or parse the shared buffer, but must not mutate/transfer it.
  * Keeping the bytes makes room admission independent of a second network fetch. */
 export function getArenaAssetBuffer(url: string): Promise<ArrayBuffer> {
@@ -69,7 +72,7 @@ export function getArenaAssetBuffer(url: string): Promise<ArrayBuffer> {
 /** Warm the same retained buffers that the GLTF parsers will consume. */
 export function warmArenaAssets(tier: TextureTier = 'full'): Promise<void> {
   if (import.meta.env?.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).get('graphics') === 'current') {
-    return Promise.all([ARENA_ASSETS.character, VEHICLE_TEST_ASSETS.originalTown].map(getArenaAssetBuffer)).then(() => {});
+    return Promise.all([ARENA_ASSETS.character, ARENA_ASSETS.weapons, VEHICLE_TEST_ASSETS.originalTown].map(getArenaAssetBuffer)).then(() => {});
   }
-  return Promise.all([ARENA_ASSETS.character, environmentAssetUrl(tier)].map(getArenaAssetBuffer)).then(() => {});
+  return Promise.all([ARENA_ASSETS.character, ARENA_ASSETS.weapons, environmentAssetUrl(tier)].map(getArenaAssetBuffer)).then(() => {});
 }
