@@ -1,0 +1,543 @@
+{
+  "model": "Kannon operator",
+  "raw": "operator-raw.glb",
+  "vertices": 11842,
+  "triangles": 23188,
+  "materials": [
+    "ScoutSurface",
+    "PlayerAccent",
+    "Visor"
+  ],
+  "bones": [
+    "root",
+    "pelvis",
+    "spine",
+    "chest",
+    "neck",
+    "head",
+    "upper_arm_r",
+    "forearm_r",
+    "hand_r",
+    "upper_arm_l",
+    "forearm_l",
+    "hand_l",
+    "thigh_r",
+    "shin_r",
+    "foot_r",
+    "thigh_l",
+    "shin_l",
+    "foot_l"
+  ],
+  "clips": {
+    "Idle": {
+      "frames": 90,
+      "fps": 30
+    },
+    "Walk": {
+      "frames": 16,
+      "fps": 30
+    },
+    "Run": {
+      "frames": 14,
+      "fps": 30
+    },
+    "Jump": {
+      "frames": 30,
+      "fps": 30
+    },
+    "Aim": {
+      "frames": 60,
+      "fps": 30
+    },
+    "Fire": {
+      "frames": 6,
+      "fps": 30
+    },
+    "Reload": {
+      "frames": 54,
+      "fps": 30
+    },
+    "Crouch": {
+      "frames": 60,
+      "fps": 30
+    },
+    "CrouchWalk": {
+      "frames": 16,
+      "fps": 30
+    },
+    "Slide": {
+      "frames": 30,
+      "fps": 30
+    }
+  },
+  "inheritedClips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Aim",
+    "Fire",
+    "Reload"
+  ],
+  "unchangedClips": [
+    "Idle",
+    "Jump",
+    "Aim",
+    "Fire",
+    "Reload"
+  ],
+  "authoredClips": [
+    "Crouch",
+    "CrouchWalk",
+    "Slide"
+  ],
+  "retiredClips": [
+    "Heal"
+  ],
+  "referenceSpeeds": {
+    "Walk": 6.5,
+    "Run": 9.0,
+    "CrouchWalk": 2.6
+  },
+  "uprightGait": {
+    "clips": [
+      "Walk",
+      "Run"
+    ],
+    "leanBackDegrees": {
+      "Walk": 25.48124415637858,
+      "Run": 25.247499715057984
+    },
+    "skullAheadMetres": 0.06,
+    "kept": "root, pelvis and leg tracks sample for sample (CMU-derived)",
+    "changed": "spine lean, head tip and both arm chains, keyed at every 120 Hz sample"
+  },
+  "crouchWalk": {
+    "referenceSpeed": 2.6,
+    "frames": 16,
+    "duty": 0.54,
+    "strokeMetres": 0.7488,
+    "feetAheadOfHipsMetres": 0.28,
+    "swingLiftMetres": 0.1,
+    "phaseShiftToMatchWalk": 0.28125
+  },
+  "postureRules": {
+    "source": "shared/physics.ts",
+    "postureHeight": {
+      "stand": 1.8,
+      "crouch": 1.25,
+      "slide": 1.0,
+      "vault": 1.25
+    },
+    "eyeHeight": {
+      "stand": 1.62,
+      "crouch": 1.12,
+      "slide": 0.92,
+      "vault": 1.12
+    },
+    "helmetTopAboveSkullCentre": 0.16140329837799072,
+    "supportArmReach": 0.95
+  },
+  "weaponSocket": {
+    "parent": "hand_r",
+    "restBlender": [
+      0.14000000059604645,
+      0.335999995470047,
+      1.3899999856948853
+    ],
+    "restGltf": [
+      0.14000000059604645,
+      1.3899999856948853,
+      -0.335999995470047
+    ],
+    "axes": "glTF -Z forward along the barrel, +Y up (identity rotation at rest)"
+  },
+  "atlas": {
+    "size": 2048,
+    "bakeSamples": 16,
+    "aoSamples": 128,
+    "aoDistanceMetres": 0.08,
+    "textures": [
+      "Operator_BaseColor",
+      "Operator_Normal",
+      "Operator_MetalRoughness"
+    ]
+  },
+  "poseAudit": [
+    {
+      "clip": "Idle",
+      "frame": 1,
+      "head": [
+        -0.02814144641160965,
+        0.0985899418592453,
+        1.6326334476470947
+      ],
+      "top": 1.7927693128585815,
+      "lowest": 0.006999864708632231,
+      "lowestPart": "boot_lug_r.004",
+      "reach": 0.5707111358642578,
+      "inBoxes": 0.8194561729437595
+    },
+    {
+      "clip": "Aim",
+      "frame": 1,
+      "head": [
+        -0.025887731462717056,
+        0.1041802242398262,
+        1.623518943786621
+      ],
+      "top": 1.7845662832260132,
+      "lowest": 0.006999716628342867,
+      "lowestPart": "boot_lug_r.004",
+      "reach": 0.5707108378410339,
+      "inBoxes": 0.8060293869278838
+    },
+    {
+      "clip": "Walk",
+      "frame": 1,
+      "head": [
+        0.003719918429851532,
+        0.08411812782287598,
+        1.6276451349258423
+      ],
+      "top": 1.786950945854187,
+      "lowest": 0.023107297718524933,
+      "lowestPart": "boot_lug_l.004",
+      "reach": 0.5404845476150513,
+      "inBoxes": 0.8197939537240331
+    },
+    {
+      "clip": "Walk",
+      "frame": 5,
+      "head": [
+        0.0887560173869133,
+        0.05588115006685257,
+        1.6928038597106934
+      ],
+      "top": 1.8523908853530884,
+      "lowest": 0.09501267969608307,
+      "lowestPart": "boot_sole_r",
+      "reach": 0.6514788866043091,
+      "inBoxes": 0.6288633676743793
+    },
+    {
+      "clip": "Run",
+      "frame": 1,
+      "head": [
+        0.00017368083354085684,
+        0.08124641329050064,
+        1.62550687789917
+      ],
+      "top": 1.7849966287612915,
+      "lowest": 0.021195881068706512,
+      "lowestPart": "boot_lug_l.004",
+      "reach": 0.53802090883255,
+      "inBoxes": 0.8251140010133423
+    },
+    {
+      "clip": "Crouch",
+      "frame": 1,
+      "head": [
+        -1.862645149230957e-09,
+        -2.7939677238464355e-08,
+        1.0846480131149292
+      ],
+      "top": 1.2440000772476196,
+      "lowest": 0.006499990820884705,
+      "lowestPart": "boot_sole_r",
+      "reach": 0.6572316884994507,
+      "inBoxes": 0.7661712548555987
+    },
+    {
+      "clip": "Crouch",
+      "frame": 31,
+      "head": [
+        -0.0019523268565535545,
+        0.004372935742139816,
+        1.0857611894607544
+      ],
+      "top": 1.244991660118103,
+      "lowest": 0.006499946117401123,
+      "lowestPart": "boot_sole_r",
+      "reach": 0.6572316884994507,
+      "inBoxes": 0.7660868096605303
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 1,
+      "head": [
+        -0.0004814807325601578,
+        -7.271301001310349e-05,
+        1.083020806312561
+      ],
+      "top": 1.243227481842041,
+      "lowest": 0.0065001449547708035,
+      "lowestPart": "boot_lug_l",
+      "reach": 0.6051236987113953,
+      "inBoxes": 0.8084782975848674
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 5,
+      "head": [
+        -0.029846269637346268,
+        -0.004866474773734808,
+        1.0639712810516357
+      ],
+      "top": 1.2240395545959473,
+      "lowest": 0.006500073708593845,
+      "lowestPart": "boot_lug_r.004",
+      "reach": 0.5958229899406433,
+      "inBoxes": 0.7470021955750717
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 9,
+      "head": [
+        -0.04934657737612724,
+        -0.008445953018963337,
+        1.0820865631103516
+      ],
+      "top": 1.242022156715393,
+      "lowest": 0.006500124931335449,
+      "lowestPart": "boot_lug_r.004",
+      "reach": 0.5896483659744263,
+      "inBoxes": 0.8122783313629455
+    },
+    {
+      "clip": "CrouchWalk",
+      "frame": 13,
+      "head": [
+        -0.020125113427639008,
+        -0.0032004984095692635,
+        1.0641571283340454
+      ],
+      "top": 1.2242794036865234,
+      "lowest": 0.006500012706965208,
+      "lowestPart": "boot_lug_l.004",
+      "reach": 0.5989693999290466,
+      "inBoxes": 0.7551933794967066
+    },
+    {
+      "clip": "Slide",
+      "frame": 1,
+      "head": [
+        -6.51925802230835e-09,
+        -0.05000002682209015,
+        0.827906608581543
+      ],
+      "top": 0.9900000095367432,
+      "lowest": 0.006500027142465115,
+      "lowestPart": "boot_sole_r",
+      "reach": 0.6645706295967102,
+      "inBoxes": 0.7475933119405506
+    },
+    {
+      "clip": "Slide",
+      "frame": 16,
+      "head": [
+        -6.51925802230835e-09,
+        -0.05000002682209015,
+        0.827906608581543
+      ],
+      "top": 0.9900000095367432,
+      "lowest": 0.006499920040369034,
+      "lowestPart": "boot_sole_r",
+      "reach": 0.6645703911781311,
+      "inBoxes": 0.7475933119405506
+    }
+  ],
+  "fitAudit": [
+    {
+      "clip": "Idle",
+      "posture": "stand",
+      "top": 1.7954365015029907,
+      "eye": [
+        1.6375663244724274,
+        1.6437287354469299
+      ],
+      "centre": [
+        1.6301138401031494,
+        1.635103702545166
+      ],
+      "offset": 0.10288012027740479,
+      "grip": 4.224136582688218e-05,
+      "elbow": 148.6809648718066,
+      "knee": 0.18953928351402283,
+      "helmet": [
+        0.6699417758369723,
+        0.6921838472056813
+      ],
+      "boots": 0.3621281041854026
+    },
+    {
+      "clip": "Aim",
+      "posture": "stand",
+      "top": 1.7848395109176636,
+      "eye": [
+        1.6360342210531236,
+        1.6365684962272644
+      ],
+      "centre": [
+        1.623518943786621,
+        1.623717188835144
+      ],
+      "offset": 0.1041802242398262,
+      "grip": 1.277038873689968e-06,
+      "elbow": 144.17181058554758,
+      "knee": 0.18611344695091248,
+      "helmet": [
+        0.6823144104803494,
+        0.6842000793965861
+      ],
+      "boots": 0.3691951771950679
+    },
+    {
+      "clip": "Walk",
+      "posture": "stand",
+      "top": 1.85262930393219,
+      "eye": [
+        1.5952070903778077,
+        1.7001823258399964
+      ],
+      "centre": [
+        1.5870827436447144,
+        1.6928038597106934
+      ],
+      "offset": 0.12823925912380219,
+      "grip": 5.186220926167761e-07,
+      "elbow": 131.54451201786483,
+      "knee": 0.18075013160705566,
+      "helmet": [
+        0.462882096069869,
+        0.6788959463631954
+      ],
+      "boots": 0.6746762922282811
+    },
+    {
+      "clip": "Run",
+      "posture": "stand",
+      "top": 1.8535676002502441,
+      "eye": [
+        1.59621357858181,
+        1.700643157362938
+      ],
+      "centre": [
+        1.58809494972229,
+        1.6938161849975586
+      ],
+      "offset": 0.12719641625881195,
+      "grip": 0.0005024372970222294,
+      "elbow": 131.62046372143539,
+      "knee": 0.18403305113315582,
+      "helmet": [
+        0.4457787481804949,
+        0.664064223016188
+      ],
+      "boots": 0.6734231153233025
+    },
+    {
+      "clip": "Fire",
+      "posture": "stand",
+      "top": 1.7960935831069946,
+      "eye": [
+        1.640686994791031,
+        1.6457670265436173
+      ],
+      "centre": [
+        1.6326334476470947,
+        1.635396957397461
+      ],
+      "offset": 0.0985899418592453,
+      "grip": 0.0004770207321810002,
+      "elbow": 146.41129301061136,
+      "knee": 0.18953926861286163,
+      "helmet": [
+        0.6943231441048034,
+        0.7135216796788849
+      ],
+      "boots": 0.36212812475983547
+    },
+    {
+      "clip": "Crouch",
+      "posture": "crouch",
+      "top": 1.244991660118103,
+      "eye": [
+        1.0904130834341048,
+        1.0912173914909362
+      ],
+      "centre": [
+        1.0846480131149292,
+        1.0857611894607544
+      ],
+      "offset": 0.004372935742139816,
+      "grip": 6.0938787875210045e-05,
+      "elbow": 123.00637940437703,
+      "knee": 0.020113486796617508,
+      "helmet": [
+        1.0,
+        0.9999999999999993
+      ],
+      "boots": 0.6572429207159017
+    },
+    {
+      "clip": "CrouchWalk",
+      "posture": "crouch",
+      "top": 1.2440000772476196,
+      "eye": [
+        1.0726604425907136,
+        1.0927502703666687
+      ],
+      "centre": [
+        1.0633026361465454,
+        1.0837916135787964
+      ],
+      "offset": 0.049822159111499786,
+      "grip": 5.559176707860797e-07,
+      "elbow": 123.2147274948191,
+      "knee": 0.07145554572343826,
+      "helmet": [
+        0.9548762736535662,
+        0.9890168056106918
+      ],
+      "boots": 0.6669478283006358
+    },
+    {
+      "clip": "Slide",
+      "posture": "slide",
+      "top": 0.9929834008216858,
+      "eye": [
+        0.8653749120235443,
+        0.8738561296463012
+      ],
+      "centre": [
+        0.8248077630996704,
+        0.8309705257415771
+      ],
+      "offset": 0.052329689264297485,
+      "grip": 4.686329687723664e-07,
+      "elbow": 125.21224363834601,
+      "knee": 0.1534302830696106,
+      "helmet": [
+        0.901018922852984,
+        0.9122336906179703
+      ],
+      "boots": 0.6440014945118012
+    }
+  ],
+  "animationExport": {
+    "denseHz": 120,
+    "denseClips": [
+      "Walk",
+      "Run",
+      "CrouchWalk"
+    ],
+    "otherClipsHz": 30,
+    "method": "Walk/Run/CrouchWalk samplers from a 120 Hz export spliced into the 30 Hz export (scout_export._merge_animation_samples)."
+  },
+  "units": "metres",
+  "forward": "glTF -Z",
+  "up": "glTF +Y",
+  "source": "Rig and clips from art/source/scout.blend: Idle, Jump, Aim, Fire and Reload unchanged; Walk and Run keep the hips and legs derived from CMU 09_01, frames 15-103 (see art/source/motion/cmu-09/CMU-USAGE-NOTICE.md), with an original upright upper body. Operator geometry, materials and the Crouch, CrouchWalk and Slide clips are original Kannon work; no third-party textures or models.",
+  "seconds": 118.9
+}
