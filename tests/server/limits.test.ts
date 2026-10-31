@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
-import { createGameServer } from '../../server/app.js';
+import { createGameServer, rateLimitKey } from '../../server/app.js';
 import { fixture, frame, startReady } from '../acceptance/helpers.js';
 import { RULES } from '../../shared/protocol.js';
 
@@ -41,4 +41,28 @@ test('behind a trusted proxy each visitor has their own rate limit; without the 
       }
     } finally { await app.close(); }
   }
+});
+
+test('rate limits count an IPv6 visitor by their /64 network and an IPv4 visitor by their address', () => {
+  // Every spelling of one /64 is one visitor; the next /64 is another.
+  for (const address of ['2001:db8:aa:bb::1', '2001:0db8:00aa:00bb:ffff:ffff:ffff:ffff', '2001:db8:aa:bb:1:2:3:4', '2001:DB8:AA:BB::9%eth0'])
+    assert.equal(rateLimitKey(address), '2001:db8:aa:bb::/64', address);
+  assert.equal(rateLimitKey('2001:db8:aa:bc::1'), '2001:db8:aa:bc::/64');
+  assert.equal(rateLimitKey('::1'), '0:0:0:0::/64');
+  assert.equal(rateLimitKey('64:ff9b::198.51.100.7'), '64:ff9b:0:0::/64');
+  // IPv4, also when the socket reports it IPv4-mapped.
+  assert.equal(rateLimitKey('203.0.113.7'), '203.0.113.7');
+  assert.equal(rateLimitKey('::ffff:203.0.113.7'), '203.0.113.7');
+  assert.equal(rateLimitKey(undefined), 'unknown');
+});
+
+test('behind a trusted proxy one household cannot rotate through its IPv6 addresses past a limit', async t => {
+  const junk = (base: string, visitor: string) => fetch(`${base}/api/profile`, { method: 'POST', headers: { 'content-type': 'text/plain', 'cf-connecting-ip': visitor }, body: 'x', signal: AbortSignal.timeout(5_000) });
+  const app = createGameServer({ host: '127.0.0.1', port: 0, dbPath: ':memory:', trustedClientIpHeader: 'cf-connecting-ip' });
+  t.after(() => app.close());
+  const base = `http://127.0.0.1:${(await app.listen()).port}`;
+  // Twenty sign-ups, each from a fresh address in the household's /64.
+  for (let i = 0; i < 20; i++) assert.equal((await junk(base, `2001:db8:aa:bb::${(i + 1).toString(16)}`)).status, 415);
+  assert.equal((await junk(base, '2001:db8:aa:bb:dead:beef:0:1')).status, 429, 'Another address in the same /64 is the same visitor.');
+  assert.equal((await junk(base, '2001:db8:aa:bc::1')).status, 415, 'The next household is not limited.');
 });

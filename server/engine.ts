@@ -24,14 +24,36 @@ const INPUT_TIMEOUT_MS = 300;
 /** Each client frame is one step of this length, exactly as the client predicts it. */
 export const FRAME_MS = 1000 / 30;
 const FRAME_SECONDS = 1 / 30;
-/** Frames waiting to be simulated per player (200 ms). On overflow the oldest frame's movement is dropped and its
- * presses are kept for the next simulated frame. */
+/** Frames waiting to be simulated per player (200 ms), beyond the frames a streaming player's playout holds back. On
+ * overflow the oldest frame's movement is dropped and its presses are kept for the next simulated frame. */
 export const INPUT_QUEUE_LIMIT = 6;
 /** The most of one player's frames a tick simulates, so a backlog drains at double speed at most. */
 export const FRAMES_PER_TICK = 2;
-/** Wall-clock time banked for catching up after a stall. Frames simulated over any window stay within the elapsed
- * time divided by FRAME_MS plus this allowance (six frames), so sending faster never moves anyone faster. */
-const FRAME_CREDIT_MS = INPUT_QUEUE_LIMIT * FRAME_MS;
+/** Wall-clock time banked for catching up. Frames simulated over any window stay within the elapsed time divided by
+ * FRAME_MS plus this allowance, so sending faster never moves anyone faster. Five frames (167 ms) is the least that
+ * still simulates every frame of a 150 ms jitter spike; it is also the most a client that holds back its frames can
+ * spend at double speed afterwards (about 1.1 m of sprint). */
+export const FRAME_CREDIT_MS = 5 * FRAME_MS;
+/** A player is streaming once this many frames arrived within STREAM_WINDOW_MS, spread over at least
+ * STREAM_SPREAD_MS and with no gap over STREAM_GAP_MS between them (a client sending its 30 a second, not one burst
+ * and not across a pause), until the connection goes quiet. */
+const STREAM_FRAMES = 8, STREAM_WINDOW_MS = 10 * FRAME_MS, STREAM_SPREAD_MS = 4 * FRAME_MS, STREAM_GAP_MS = 2.5 * FRAME_MS;
+/** A streaming player's frames wait up to this long behind their own clock after a late frame (see updatePlayer)... */
+export const MAX_PLAYOUT_MS = 2 * FRAME_MS;
+/** ...and one frame less after this long with every frame arriving a tick early. */
+export const PLAYOUT_RELAX_MS = 5000;
+/** Every CLOCK_CHECK_FRAMES frames a streaming clock is compared with when its frames arrive. If even the least
+ * delayed of them came more than two ticks before its clock (a shorter route than when the clock was set), or more
+ * than a tick after it (a longer route, frames the page skipped), the clock moves towards them by at most
+ * CLOCK_SLEW_MS a frame: too little to change a timer the client predicted. Jitter only delays frames, so it never
+ * moves the clock. */
+const CLOCK_CHECK_FRAMES = 30, CLOCK_SLEW_MS = 1;
+/** A clock this far behind the tick is put straight back on it. */
+const CLOCK_RESET_MS = 250;
+/** Tick times and frame clocks are compared to this tolerance: rounding only. The server's ticks carry exact
+ * 1000/30 ms times (server/app.ts); on whole-millisecond ticks a frame due a fraction later waits a tick rather than
+ * running on a bent clock. */
+const CLOCK_TOLERANCE_MS = 1e-6;
 /** Firing waits until a vault is this far through (0..1). */
 export const VAULT_FIRE_PROGRESS = 0.7;
 /** Sprint-to-fire takes this much longer after the faster dash. */
@@ -144,9 +166,19 @@ interface Runtime {
   queue: QueuedFrame[];
   /** Presses from frames dropped on overflow, used by the next simulated frame. */
   presses: Partial<Record<PressAction, PendingPress>>;
-  /** Server time of the last simulated frame. Each frame is one FRAME_MS step after the one before, never later
-   * than the tick, so slides, vaults and weapon timers follow the client's predicted clock. */
-  clock: number;
+  /** Server time of the last simulated frame (published as `lastInputTime`), never later than the tick. While
+   * streaming, each frame is one FRAME_MS step after the frame `clockSeq` (one step per sequence number), so slides,
+   * vaults and weapon timers follow the client's predicted clock. `clockSeq` is null until a frame sets the clock
+   * after a spawn, reconnect or silence. */
+  clock: number; clockSeq: number | null;
+  /** Arrival times of the latest STREAM_FRAMES frames, and whether the player is streaming (see updatePlayer). */
+  arrivals: Array<{ at: number; seq: number }>; streaming: boolean;
+  /** Clock check: frames measured since the last one, the most any of them arrived before its clock, and the
+   * milliseconds the clock still has to move. `startAt` is the clock for the frame that starts a stream. */
+  checked: number; earliest: number; slew: number; startAt: number;
+  /** How far behind their own clock a streaming player's frames run, in ms (0 to MAX_PLAYOUT_MS); `late` marks a
+   * hold for a late frame, and `earlySince` when frames last stopped arriving a tick early. */
+  playout: number; late: boolean; earlySince: number;
   /** Wall-clock milliseconds available for simulating frames, refilled every tick up to FRAME_CREDIT_MS. */
   credit: number; creditAt: number;
   /** Held state at the end of the previous tick, for rising edges and continuous automatic fire. */
@@ -231,7 +263,8 @@ export class MatchEngine {
     if (existing) {
       existing.connected = true; existing.name = profile.name; existing.lastInputSeq = 0; existing.aiming = false;
       const rt = this.runtime.get(profile.id)!;
-      rt.input = { ...idleInput(), yaw: existing.yaw, pitch: existing.pitch, slot: existing.slot }; rt.receivedAt = 0; rt.clock = now; this.releaseControls(rt);
+      rt.input = { ...idleInput(), yaw: existing.yaw, pitch: existing.pitch, slot: existing.slot }; rt.receivedAt = 0; this.releaseControls(rt);
+      this.resetClock(existing, rt, now);
       if (team && this.mode === 'tdm') { existing.team = team; rt.explicitTeam = true; }
       return existing;
     }
@@ -240,12 +273,13 @@ export class MatchEngine {
       id: profile.id, name: profile.name, color: profile.color, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vy: 0, vz: 0, ...moveDefaults(),
       health: RULES.health, slot: 1, weapon: loadout.primary, loadout, kills: 0, deaths: 0, assists: 0, score: 0, streak: 0,
       connected: true, respawnAt: 0, protectedUntil: 0, reloadingUntil: 0, cookingSince: 0, lastInputSeq: 0, aiming: false,
-      mag: [0, 0], reserve: [0, 0], frags: 0, rewards: [], reloadSlot: 0, readyAt: 0, meleeUntil: 0, lastDamageAt: 0,
+      mag: [0, 0], reserve: [0, 0], frags: 0, rewards: [], reloadSlot: 0, readyAt: 0, meleeUntil: 0, lastDamageAt: 0, lastInputTime: now,
       ...(bot ? { bot: true } : {}),
     };
     this.players.set(profile.id, state);
     this.runtime.set(profile.id, {
-      input: idleInput(), receivedAt: 0, queue: [], presses: {}, clock: now, credit: FRAME_CREDIT_MS, creditAt: now,
+      input: idleInput(), receivedAt: 0, queue: [], presses: {}, clock: now, clockSeq: null, arrivals: [], streaming: false,
+      checked: 0, earliest: -Infinity, slew: 0, startAt: now, playout: 0, late: false, earlySince: now, credit: FRAME_CREDIT_MS, creditAt: now,
       fireDown: false, jumpDown: false, crouchDown: false, aimSince: null, triggerPending: false,
       nextFireAt: [-Infinity, -Infinity], lastSprintAt: -Infinity, lastSprintDash: false, reload: null, pendingLoadout: null,
       history: [], aliveSince: now, life: 0, regenStart: NaN, regenBase: RULES.health,
@@ -282,12 +316,9 @@ export class MatchEngine {
     const previous = runtime.input, presses: PressAction[] = PRESS_KEYS.filter(action => input[action] && !previous[action]);
     if (input.streak && input.streak !== previous.streak) presses.push('streak');
     runtime.queue.push({ input: { ...input }, receivedAt: now, presses });
-    // A long stall delivers its backlog at once. Bound the delay: drop the oldest movement, but keep its presses
-    // (one per action) for the next simulated frame, so no tap is lost.
-    while (runtime.queue.length > INPUT_QUEUE_LIMIT) {
-      const dropped = runtime.queue.shift()!;
-      for (const action of dropped.presses) runtime.presses[action] ??= { input: dropped.input, receivedAt: dropped.receivedAt };
-    }
+    runtime.arrivals.push({ at: now, seq: input.seq }); if (runtime.arrivals.length > STREAM_FRAMES) runtime.arrivals.shift();
+    // A long stall delivers its backlog at once. Bound the delay: drop the oldest movement (see dropFrame).
+    while (runtime.queue.length > INPUT_QUEUE_LIMIT + Math.round(runtime.playout / FRAME_MS)) this.dropFrame(runtime);
     runtime.input = input; runtime.receivedAt = now; return true;
   }
   start(now = Date.now()): void { this.resetRound('countdown', now); }
@@ -437,6 +468,33 @@ export class MatchEngine {
   private releaseControls(rt: Runtime) {
     rt.queue = []; rt.presses = {}; rt.fireDown = false; rt.jumpDown = false; rt.crouchDown = false; rt.aimSince = null; rt.triggerPending = false;
   }
+  /** A spawn or reconnect starts the player's clock afresh on the tick; the first frame sets it (see updatePlayer). */
+  private resetClock(player: PlayerState, rt: Runtime, now: number) {
+    rt.clock = now; this.endStream(rt); rt.earlySince = now;
+    player.lastInputTime = now;
+  }
+  /** The connection went quiet, or the life ended: the next frames start a stream (and its clock) afresh. */
+  private endStream(rt: Runtime) {
+    rt.clockSeq = null; rt.arrivals = []; rt.streaming = false; rt.checked = 0; rt.earliest = -Infinity; rt.slew = 0; rt.playout = 0; rt.late = false;
+  }
+  /** Starts a stream once frames come at about 30 a second. Placed on a 30 Hz grid, the recent frames show when the
+   * next one is due without delay (the earliest of them: a frame held back by a spike would set the clock late) and
+   * how much they jitter. The next frame's clock is that due time, the frames after it follow one step each, and the
+   * playout starts out covering the jitter seen. */
+  private startStream(rt: Runtime, now: number) {
+    const arrivals = rt.arrivals, head = rt.queue[0];
+    if (!head || arrivals.length < STREAM_FRAMES || arrivals[0]!.at <= now - STREAM_WINDOW_MS || arrivals.at(-1)!.at - arrivals[0]!.at < STREAM_SPREAD_MS) return;
+    if (arrivals.some((arrival, i) => i > 0 && arrival.at - arrivals[i - 1]!.at > STREAM_GAP_MS)) return;
+    const due = arrivals.map(arrival => arrival.at + (head.input.seq - arrival.seq) * FRAME_MS), earliest = Math.min(...due), jitter = Math.max(...due) - earliest;
+    rt.streaming = true; rt.clockSeq = null; rt.startAt = earliest; rt.checked = 0; rt.earliest = -Infinity; rt.slew = 0;
+    rt.playout = jitter < FRAME_MS / 4 ? 0 : Math.min(MAX_PLAYOUT_MS, Math.ceil(jitter / FRAME_MS) * FRAME_MS); rt.late = false; rt.earlySince = now;
+  }
+  /** Drops the oldest queued frame's movement but keeps its presses (one per action) for the next simulated frame,
+   * so no tap is lost. Its sequence number still counts one step of the player's clock. */
+  private dropFrame(rt: Runtime) {
+    const dropped = rt.queue.shift()!;
+    for (const action of dropped.presses) rt.presses[action] ??= { input: dropped.input, receivedAt: dropped.receivedAt };
+  }
   /** Disconnected players and idle bots stop where they are; a grenade being cooked goes back in the pouch. */
   private freeze(player: PlayerState) {
     const rt = this.runtime.get(player.id)!;
@@ -469,7 +527,7 @@ export class MatchEngine {
     rt.reload = null; rt.nextFireAt = [-Infinity, -Infinity]; rt.lastSprintAt = -Infinity; rt.lastSprintDash = false; this.releaseControls(rt);
     // Multi-kills pair kills from one life only.
     rt.chain = 0; rt.lastKillAt = -Infinity;
-    rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0; rt.clock = now;
+    rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0; this.resetClock(player, rt, now);
     rt.history = [{ t: now, x: player.x, y: player.y, z: player.z, posture: player.posture }]; rt.aliveSince = now; rt.life++;
     rt.regenStart = NaN; rt.damageBy.clear();
     if (announce) this.onEvent({ type: 'respawn', playerId: player.id, at: now });
@@ -542,9 +600,16 @@ export class MatchEngine {
   // ---- One player's tick ---------------------------------------------------------------------
   /** The client predicts exactly one 1/30 s step per frame it sends, so a person's frames are simulated the same
    * way: each once, in order, up to FRAMES_PER_TICK per tick while wall-clock credit allows (a backlog catches up,
-   * a fast sender gains nothing). With no frame waiting the body holds still, as the prediction does, until the
-   * connection has been silent for INPUT_TIMEOUT_MS; then the player stands down as before. A rival's brain hands
-   * over one frame per tick, simulated with the tick's own clock and dt. */
+   * a fast sender gains nothing). With no frame to run the body holds still, as the prediction does, until the
+   * connection has been silent for INPUT_TIMEOUT_MS; then the player stands down as before.
+   *
+   * A streaming player (about 30 frames a second arriving) keeps a clock of their own: each frame is one FRAME_MS
+   * step after the frame before it, by sequence number, exactly as the client predicts, and it runs on the first tick
+   * that reaches its clock plus a playout. The playout grows a frame when a frame comes late, so the next late frame
+   * finds one waiting and other players see a steady body instead of a stop and a double step; it shrinks after
+   * PLAYOUT_RELAX_MS of frames arriving a tick early. A clock left CLOCK_RESET_MS behind the tick is put back on it.
+   * Until a player streams (the first frames of a life, a sparse or stalled sender) frames run as they come, on the
+   * tick's clock. A rival's brain hands over one frame per tick, simulated with the tick's own clock and dt. */
   private updatePlayer(player: PlayerState, now: number, dt: number, actions: TickActions) {
     const rt = this.runtime.get(player.id)!;
     this.regenerate(player, rt, now);
@@ -554,31 +619,62 @@ export class MatchEngine {
       return;
     }
     rt.credit = Math.min(FRAME_CREDIT_MS, rt.credit + Math.max(0, now - rt.creditAt)); rt.creditAt = now;
+    if (!rt.streaming) this.startStream(rt, now);
     let simulated = 0;
     while (rt.queue.length && simulated < FRAMES_PER_TICK && rt.credit >= FRAME_MS - 1e-6) {
-      const queued = rt.queue.shift()!;
-      // One step after the frame before, as predicted; never later than this tick, and never more than one step
-      // per frame still waiting behind it, so the clock catches up after a stall.
-      const clock = Math.min(now, Math.max(now - rt.queue.length * FRAME_MS, rt.clock + FRAME_MS));
-      rt.credit -= FRAME_MS; simulated++;
+      const queued = rt.queue[0]!, behind = rt.queue.length - 1, own = rt.streaming && rt.clockSeq !== null;
+      let clock: number;
+      if (own) {
+        const strict = rt.clock + (queued.input.seq - rt.clockSeq!) * FRAME_MS, onTick = now - behind * FRAME_MS - rt.playout;
+        // Not due yet: wait. A full queue (a sender running ahead of real time) or a clock far ahead of the tick (a
+        // jump in sequence numbers) cannot hold the player up, though: those run now, on the tick's clock.
+        const forced = rt.queue.length >= INPUT_QUEUE_LIMIT + Math.round(rt.playout / FRAME_MS) || strict > now + CLOCK_RESET_MS;
+        if (strict + rt.playout > now + CLOCK_TOLERANCE_MS && !forced) break;
+        // The clock waits out a vault or slide before it moves, where even a millisecond shows.
+        const step = player.vault || player.posture === 'slide' ? 0 : Math.max(-CLOCK_SLEW_MS, Math.min(CLOCK_SLEW_MS, rt.slew));
+        rt.slew -= step;
+        clock = Math.min(now, Math.max(rt.clock, strict < onTick - CLOCK_RESET_MS ? onTick : strict + step));
+        // The clock check (see CLOCK_CHECK_FRAMES): how long before its clock the least delayed frame arrived.
+        rt.earliest = Math.max(rt.earliest, clock - queued.receivedAt);
+        if (++rt.checked >= CLOCK_CHECK_FRAMES) {
+          rt.slew = rt.earliest > 2 * FRAME_MS ? FRAME_MS - rt.earliest : rt.earliest < -FRAME_MS ? -rt.earliest : 0;
+          rt.checked = 0; rt.earliest = -Infinity;
+        }
+      } else if (rt.streaming) clock = Math.min(now, Math.max(rt.clock, rt.startAt)); // The frame that starts a stream.
+      else clock = Math.min(now, Math.max(now - behind * FRAME_MS, rt.clock + FRAME_MS));
+      rt.queue.shift(); rt.credit -= FRAME_MS; simulated++;
+      // A frame that came less than a tick before it ran needed the playout.
+      if (own && now - queued.receivedAt < FRAME_MS - CLOCK_TOLERANCE_MS) rt.earlySince = now;
       this.simulate(player, rt, queued, clock, now, FRAME_SECONDS, actions);
+      rt.clockSeq = queued.input.seq;
+    }
+    if (rt.streaming && rt.clockSeq !== null) {
+      if (simulated) rt.late = false;
+      else if (!rt.queue.length && rt.clock + FRAME_MS + rt.playout <= now + CLOCK_TOLERANCE_MS) {
+        // The next frame is late. From now on run a frame further behind, so the next late frame finds one waiting.
+        if (!rt.late) rt.playout = Math.min(MAX_PLAYOUT_MS, rt.playout + FRAME_MS);
+        rt.late = true; rt.earlySince = now;
+      }
+      if (rt.playout > 0 && now - rt.earlySince >= PLAYOUT_RELAX_MS) { rt.playout = Math.max(0, rt.playout - FRAME_MS); rt.earlySince = now; }
     }
     if (simulated) return;
     if (!rt.queue.length && now - rt.receivedAt > INPUT_TIMEOUT_MS) {
-      // A silent connection brakes and falls, keeping its view, weapon and any cooked frag.
+      // A silent connection brakes and falls, keeping its view, weapon and any cooked frag. Its clock starts afresh.
       const idle: QueuedFrame = { input: { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: player.pitch, slot: player.slot, viewTime: now }, receivedAt: now, presses: [] };
       this.simulate(player, rt, idle, now, now, dt, actions, false);
+      this.endStream(rt);
       return;
     }
-    // Waiting for the next frame: nothing moves, but a reload still finishes on time.
-    this.advanceReload(player, rt, now);
+    // Waiting for a frame: nothing moves. Off the stream a reload still finishes on the tick; a streaming player's
+    // reload finishes on their own clock, with their next frame.
+    if (!rt.streaming) this.advanceReload(player, rt, now);
   }
   /** One frame, completely and in order, at its own server time `now`: presses, swap, knife, cook, move, throw,
    * reward, reload and trigger. Shots and knife swings are traced once every player has moved, from where this
    * frame left the player. `real` is false for a silent connection's idle frame, which never releases a frag. */
   private simulate(player: PlayerState, rt: Runtime, queued: QueuedFrame, now: number, tickNow: number, dt: number, actions: TickActions, real = true) {
     const input = queued.input, frameActions: FrameActions = { shots: [], melees: [] };
-    rt.clock = now;
+    rt.clock = now; player.lastInputTime = now;
     const take = (action: PressAction): InputFrame | undefined => {
       const own = queued.presses.includes(action), kept = rt.presses[action]; delete rt.presses[action];
       if (kept && tickNow - kept.receivedAt <= INPUT_TIMEOUT_MS) {
@@ -1035,5 +1131,6 @@ export function privateState(p: PlayerState): PlayerState {
     mag: [p.mag[0], p.mag[1]], reserve: [p.reserve[0], p.reserve[1]], frags: p.frags, rewards: [...p.rewards],
     reloadSlot: p.reloadSlot, readyAt: Math.round(p.readyAt), meleeUntil: Math.round(p.meleeUntil), stamina: r6(p.stamina),
     slideCooldownUntil: Math.round(p.slideCooldownUntil), lastDamageAt: Math.round(p.lastDamageAt),
+    ...(p.lastInputTime !== undefined ? { lastInputTime: r3(p.lastInputTime) } : {}),
   };
 }

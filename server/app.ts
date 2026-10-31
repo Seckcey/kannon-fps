@@ -47,6 +47,40 @@ function notModified(req: IncomingMessage, etag: string, mtimeMs: number): boole
   const since = Date.parse(req.headers['if-modified-since'] ?? '');
   return Number.isFinite(since) && Math.floor(mtimeMs / 1000) * 1000 <= since;
 }
+/** Who a rate limit counts: an IPv4 address on its own (also when written IPv4-mapped), and an IPv6 address by its
+ * /64 network. A household is handed a whole /64, so keying on the full address would let one visitor rotate
+ * through fresh addresses past every limit. */
+export function rateLimitKey(address: string | undefined): string {
+  if (!address) return 'unknown';
+  const plain = address.split('%')[0]!;
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(plain);
+  if (mapped) return mapped[1]!;
+  if (isIP(plain) !== 6) return plain;
+  // Spell out the groups a "::" leaves out (an IPv4 tail is the last two), then keep the first four.
+  const [head = '', tail] = plain.split('::'), groups = (part: string) => part ? part.split(':').flatMap(group => group.includes('.') ? ['0', '0'] : [group]) : [];
+  const left = groups(head), right = tail === undefined ? [] : groups(tail);
+  const all = tail === undefined ? left : [...left, ...Array<string>(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  return `${all.slice(0, 4).map(group => parseInt(group, 16).toString(16)).join(':')}::/64`;
+}
+/** The tick loop's schedule: exactly 30 ticks a second on the wall clock. setInterval(…, 1000 / 30) runs every 33 ms
+ * plus however late the loop is (about 30.1 to 30.3 Hz), but each player's frames come at exactly 30 a second and
+ * each is one tick of movement, so a faster tick leaves a moving player without a frame every few seconds: a hitch
+ * everyone watching them sees. Ticks carry their scheduled times, so the engine sees exactly 1000/30 ms between
+ * ticks even when the loop runs a little late. A loop that falls more than `catchUp` ticks behind (a long pause), or
+ * a wall clock that jumps, starts the schedule afresh from now. */
+export class TickSchedule {
+  private next: number;
+  constructor(now: number, private readonly interval = 1000 / 30, private readonly catchUp = 3) { this.next = now + interval; }
+  /** The scheduled times of the ticks due by `now`, oldest first. */
+  due(now: number): number[] {
+    if (now - this.next > this.catchUp * this.interval || this.next - now > 2 * this.interval) this.next = now;
+    const ticks: number[] = [];
+    while (this.next <= now) { ticks.push(this.next); this.next += this.interval; }
+    return ticks;
+  }
+  /** Whole milliseconds until the next tick is due. */
+  wait(now: number): number { return Math.max(0, Math.ceil(this.next - now)); }
+}
 
 export function createGameServer(options: ServerOptions = {}) {
   const host = options.host ?? process.env.HOST ?? '127.0.0.1';
@@ -76,7 +110,7 @@ export function createGameServer(options: ServerOptions = {}) {
     return first && isIP(first) ? first : req.socket.remoteAddress;
   }
   function limit(req: IncomingMessage, key: string, max: number, window = 60_000) {
-    const id = `${clientAddress(req)}:${key}`; const now = Date.now();
+    const id = `${rateLimitKey(clientAddress(req))}:${key}`; const now = Date.now();
     let bucket = rateBuckets.get(id);
     if (!bucket || now - bucket.since >= window) { bucket = { count: 0, since: now }; rateBuckets.set(id, bucket); }
     if (++bucket.count > max) throw new HttpError(429, 'A few too many requests. Please try again shortly.');
@@ -421,8 +455,8 @@ export function createGameServer(options: ServerOptions = {}) {
     });
   });
   let lastStep = Date.now(); let snapshotTick = 0;
-  const tickTimer = setInterval(() => {
-    const now = Date.now(); const dt = Math.min(0.1, Math.max(0, (now - lastStep) / 1000)); lastStep = now;
+  function tick(now: number) {
+    const dt = Math.min(0.1, Math.max(0, (now - lastStep) / 1000)); lastStep = now;
     for (const room of rooms.values()) {
       if (room.expiresAt <= now || (room.emptySince && now - room.emptySince > DISCONNECT_GRACE)) { destroyRoom(room); continue; }
       for (const [id, since] of room.disconnected) {
@@ -440,7 +474,16 @@ export function createGameServer(options: ServerOptions = {}) {
       if (snapshotTick % 2 === 0 && room.sockets.size) broadcastSnapshot(room, now);
     }
     snapshotTick++;
-  }, 1000 / 30);
+  }
+  const schedule = new TickSchedule(Date.now());
+  let tickTimer: ReturnType<typeof setTimeout>;
+  function runTicks() {
+    if (closed) return;
+    const due = schedule.due(Date.now());
+    tickTimer = setTimeout(runTicks, schedule.wait(Date.now())); tickTimer.unref();
+    for (const now of due) tick(now);
+  }
+  tickTimer = setTimeout(runTicks, schedule.wait(Date.now()));
   const housekeeping = setInterval(() => {
     const now = Date.now();
     for (const connection of connections) {
@@ -457,7 +500,7 @@ export function createGameServer(options: ServerOptions = {}) {
       server.once('error', reject); server.listen(port, host, () => { server.removeListener('error', reject); const address = server.address(); if (!address || typeof address === 'string') reject(new Error('No TCP address')); else resolveListen({ port: address.port, host: address.address }); });
     }),
     close: async () => {
-      if (closed) return; closed = true; clearInterval(tickTimer); clearInterval(housekeeping);
+      if (closed) return; closed = true; clearTimeout(tickTimer); clearInterval(housekeeping);
       for (const connection of connections) connection.socket.terminate();
       await new Promise<void>((done) => wss.close(() => done()));
       await new Promise<void>((done) => { if (server.listening) { server.close(() => done()); server.closeAllConnections(); } else done(); });

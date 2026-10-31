@@ -343,8 +343,8 @@ test('after a bolt or pump shot the sidearm fires as soon as it is up, and swapp
     assert.equal(a.readyAt, up); assert.ok(up < cycle, `Setup: the sidearm is up before the ${primary} could fire again.`);
     send(engine, 'a', up, { slot: 2, fire: true, yaw }); engine.step(up, 0);
     assert.deepEqual(fired('sentry9'), [up], `${primary}: the sidearm waits only for its own raise.`);
-    // Straight back to the main gun: it still has to finish its own bolt or pump cycle.
-    const back = up + 10;
+    // Straight back to the main gun, on the next frame: it still has to finish its own bolt or pump cycle.
+    const back = up + TICK;
     send(engine, 'a', back, { slot: 1, yaw }); engine.step(back, 0);
     for (let now = back + TICK; now < back + 2000 && fired(primary).length < 2; now += TICK) { send(engine, 'a', now, { slot: 1, fire: true, yaw }); engine.step(now, 0); }
     const [, second] = fired(primary), allowed = Math.max(cycle, back + spec.raiseMs);

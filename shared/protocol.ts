@@ -96,6 +96,10 @@ export interface PlayerState extends PublicPlayerState {
   stamina: number;
   slideCooldownUntil: number;
   lastDamageAt: number;
+  /** Server time (ms) the input `lastInputSeq` was simulated at, on that player's own clock. Every later input is one
+   * 1000/30 ms step after the one before it, so the local prediction replays its unacknowledged inputs from here
+   * (not from `serverTime`, the tick's time, which a queued input can run behind). */
+  lastInputTime?: number;
 }
 export interface Vec3 { x: number; y: number; z: number }
 /** Presentation of an authoritative ray, in pellet order (centre first). */

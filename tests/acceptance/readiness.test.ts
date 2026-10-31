@@ -192,20 +192,24 @@ test('a completed abandoned round requires a fresh rematch readiness nonce and c
 });
 
 test('a stale-map reconnect cannot move or shoot in an already playing round', async t => {
-  const f = await fixture(t), identity = await f.profile('Map Recovery');
-  const modern = await f.connect(identity.token);
-  await modern.command({ type: 'create', ranked: false, practice: true }, 'room');
-  await startReady(modern, [modern]);
-  await modern.wait('snapshot', message => message.snapshot.phase === 'playing');
-  const stale = await f.connect();
-  await stale.command({ type: 'hello', token: identity.token, readyProtocol: 1, worldVersion: 'sunbreak-coastal-v1' }, 'welcome');
-  await stale.wait('room', message => message.room.phase === 'playing');
-  const mark = stale.mark();
-  await stale.command({ type: 'input', input: input(1) }, 'error', message => message.code === 'GAME_UPDATE_REQUIRED');
-  const observed = await stale.wait('snapshot', message => message.snapshot.players.some(player => player.id === identity.profile.id), mark);
-  const player = observed.snapshot.players.find(player => player.id === identity.profile.id)!;
-  assert.equal(player.vx, 0); assert.equal(player.vz, 0); assert.equal(player.lastInputSeq, 0);
-  assert.ok(!stale.messages.slice(mark).some(message => message.type === 'event' && message.event.type === 'shot' && message.event.playerId === identity.profile.id));
+  // Also the page production serves before this release (kannon-town-v1): it sends on a 33 ms timer, 30.3 frames a
+  // second, which this server's one-step-per-frame movement would queue and drop.
+  for (const worldVersion of ['sunbreak-coastal-v1', 'kannon-town-v1']) {
+    const f = await fixture(t), identity = await f.profile('Map Recovery');
+    const modern = await f.connect(identity.token);
+    await modern.command({ type: 'create', ranked: false, practice: true }, 'room');
+    await startReady(modern, [modern]);
+    await modern.wait('snapshot', message => message.snapshot.phase === 'playing');
+    const stale = await f.connect();
+    await stale.command({ type: 'hello', token: identity.token, readyProtocol: 1, worldVersion }, 'welcome');
+    await stale.wait('room', message => message.room.phase === 'playing');
+    const mark = stale.mark();
+    await stale.command({ type: 'input', input: input(1) }, 'error', message => message.code === 'GAME_UPDATE_REQUIRED');
+    const observed = await stale.wait('snapshot', message => message.snapshot.players.some(player => player.id === identity.profile.id), mark);
+    const player = observed.snapshot.players.find(player => player.id === identity.profile.id)!;
+    assert.equal(player.vx, 0, worldVersion); assert.equal(player.vz, 0); assert.equal(player.lastInputSeq, 0);
+    assert.ok(!stale.messages.slice(mark).some(message => message.type === 'event' && message.event.type === 'shot' && message.event.playerId === identity.profile.id));
+  }
 });
 
 test('readiness-capable pages with missing or stale map versions cannot start a mismatched world', async t => {
