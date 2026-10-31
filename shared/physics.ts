@@ -2,7 +2,9 @@ import { ARENA_LIMITS, OBSTACLES, groundSurfaceAt, surfaceOf, type MapObstacle }
 import type { HitZone, InputFrame, Posture, SurfaceKind, Vec3, VaultState } from './protocol.js';
 
 /** Shared, deterministic movement for the server and client prediction. Distances are metres,
- * `ctx.now` is the server clock in milliseconds and `ctx.dt` is seconds. */
+ * `ctx.now` is the server clock in milliseconds and `ctx.dt` is seconds. On one JavaScript engine
+ * the same state, inputs and context always give bit-identical results; across engines (Node vs a
+ * phone browser) Math.sin/hypot may differ in the last bits, which snapshot correction absorbs. */
 export const PLAYER_RADIUS = 0.42;
 /** Standing height. Crouch, slide and vault bodies are lower; see POSTURE_HEIGHT. */
 export const PLAYER_HEIGHT = 1.8;
@@ -15,6 +17,18 @@ export const MOVE = {
   dashMs: 3000, dashRefillMs: 4000, dashFadeStamina: 0.2,
   vaultMin: 0.5, vaultMax: 2.1, vaultBaseMs: 250, vaultPerMeterMs: 150, vaultReach: 0.75, vaultThin: 0.6, vaultMinExitSpeed: 3.5,
   stepHeight: 0.45,
+  /** A dash that ran dry starts again only once stamina is back to this share (no flicker at empty). */
+  dashRestartStamina: 0.2,
+  /** Sideways steering of a vault's crossing point (m), and how fast it moves there (m/s). */
+  vaultSteer: 0.25, vaultSteerRate: 1.25,
+  /** A crouch press before this share of a vault cancels it back to the start. */
+  vaultCancelWindow: 0.4,
+  /** Weapons may fire from this share of a vault on (see vaultFireProgress). */
+  vaultFireAt: 0.7,
+  /** Falling faster than this (m/s) is too fast to catch a ledge. */
+  vaultMaxFallSpeed: 4,
+  /** Longest integration step (s). */
+  subStep: 1 / 90,
 } as const;
 export const WALK_SPEED = MOVE.walk;
 export const SPRINT_SPEED = MOVE.sprint;
@@ -33,16 +47,22 @@ export interface MoveContext {
   dt: number;
   /** Rising edges this step, computed by the caller from the previous accepted input. */
   jumpPressed: boolean; crouchPressed: boolean;
-  /** Equipped weapon handling: hip movement factor and aimed movement factor. */
+  /** Equipped weapon handling: the hip factor scales movement when not aiming; the aimed factor
+   * replaces it while aiming (KR-5: 5.0 m/s × 0.52 = 2.6 m/s aimed walk). */
   moveFactor: number; adsFactor: number;
   /** False while server-only actions forbid sprinting (cooking a grenade, knifing). */
   canSprint: boolean;
 }
-export interface MoveEvents { jumped: boolean; landedSpeed: number; slideStarted: boolean; slideEnded: boolean; vaultStarted: boolean; vaultEnded: boolean }
+export interface MoveEvents {
+  jumped: boolean; landedSpeed: number; slideStarted: boolean; slideEnded: boolean; vaultStarted: boolean; vaultEnded: boolean;
+  /** The vault was cancelled by a crouch press (vaultEnded is also set). Always present on results. */
+  vaultCancelled?: boolean;
+}
 export const moveDefaults = (): Pick<MoveState, 'posture' | 'stamina' | 'slideUntil' | 'slideCooldownUntil' | 'vault' | 'sprinting' | 'dashing'> =>
   ({ posture: 'stand', stamina: 1, slideUntil: 0, slideCooldownUntil: 0, vault: null, sprinting: false, dashing: false });
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const finite = (value: number, fallback: number) => (Number.isFinite(value) ? value : fallback);
 export function directionFromAngles(yaw: number, pitch: number): Vec3 {
   return { x: Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) };
 }
@@ -53,6 +73,155 @@ export const add = (a: Vec3, b: Vec3): Vec3 => ({ x: a.x + b.x, y: a.y + b.y, z:
 export const scale = (v: Vec3, k: number): Vec3 => ({ x: v.x * k, y: v.y * k, z: v.z * k });
 export const magnitude = (v: Vec3) => Math.hypot(v.x, v.y, v.z);
 export function normalize(v: Vec3): Vec3 { const len = magnitude(v); return len > 0 ? scale(v, 1 / len) : { x: 0, y: 0, z: -1 }; }
+
+// ---------------------------------------------------------------------------------------------
+// Static spatial grid. OBSTACLES is filled when shared/map.ts loads; the grid is built on the first
+// query and rebuilt if the obstacle count changes (tests may add a temporary box). Each obstacle is
+// listed in every 2 m cell its footprint touches, so a query only tests nearby boxes. Results are
+// exactly those of scanning every obstacle: ties are broken by obstacle index, as a scan would.
+
+const GRID_CELL = 2;
+const GRID_PAD = 1e-4;
+interface ObstacleGrid {
+  count: number;
+  minX: number; minZ: number; cols: number; rows: number;
+  /** Cell c lists items[start[c] .. start[c + 1]), ascending obstacle indices. */
+  start: Int32Array; items: Int32Array;
+  /** Per obstacle: minX, minY, minZ, maxX, maxY, maxZ. */
+  bounds: Float64Array;
+  /** Per obstacle: the last query that visited it, for de-duplication. */
+  seen: Uint32Array;
+}
+let grid: ObstacleGrid | null = null;
+let queryStamp = 0;
+const NO_OBSTACLES = new Int32Array(0);
+
+function obstacleGrid(): ObstacleGrid {
+  if (grid && grid.count === OBSTACLES.length) return grid;
+  const count = OBSTACLES.length;
+  const bounds = new Float64Array(count * 6);
+  let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
+  for (let i = 0; i < count; i++) {
+    const box = OBSTACLES[i]!, o = i * 6;
+    bounds[o] = box.x - box.w / 2; bounds[o + 1] = box.y - box.h / 2; bounds[o + 2] = box.z - box.d / 2;
+    bounds[o + 3] = box.x + box.w / 2; bounds[o + 4] = box.y + box.h / 2; bounds[o + 5] = box.z + box.d / 2;
+    minX = Math.min(minX, bounds[o]!); minZ = Math.min(minZ, bounds[o + 2]!);
+    maxX = Math.max(maxX, bounds[o + 3]!); maxZ = Math.max(maxZ, bounds[o + 5]!);
+  }
+  if (!(minX <= maxX && minZ <= maxZ)) { minX = -1; maxX = 1; minZ = -1; maxZ = 1; }
+  minX -= 1; minZ -= 1; maxX += 1; maxZ += 1;
+  const cols = Math.max(1, Math.ceil((maxX - minX) / GRID_CELL)), rows = Math.max(1, Math.ceil((maxZ - minZ) / GRID_CELL));
+  const cellRange = (o: number) => [
+    clamp(Math.floor((bounds[o]! - GRID_PAD - minX) / GRID_CELL), 0, cols - 1), clamp(Math.floor((bounds[o + 3]! + GRID_PAD - minX) / GRID_CELL), 0, cols - 1),
+    clamp(Math.floor((bounds[o + 2]! - GRID_PAD - minZ) / GRID_CELL), 0, rows - 1), clamp(Math.floor((bounds[o + 5]! + GRID_PAD - minZ) / GRID_CELL), 0, rows - 1),
+  ] as const;
+  const start = new Int32Array(cols * rows + 1);
+  for (let i = 0; i < count; i++) {
+    const [c0, c1, r0, r1] = cellRange(i * 6);
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) start[r * cols + c + 1]!++;
+  }
+  for (let c = 0; c < cols * rows; c++) start[c + 1]! += start[c]!;
+  const items = new Int32Array(start[cols * rows]!), cursor = start.slice(0, cols * rows);
+  for (let i = 0; i < count; i++) {
+    const [c0, c1, r0, r1] = cellRange(i * 6);
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) items[cursor[r * cols + c]!++] = i;
+  }
+  grid = { count, minX, minZ, cols, rows, start, items, bounds, seen: new Uint32Array(count) };
+  return grid;
+}
+function nextStamp(g: ObstacleGrid): number {
+  queryStamp = (queryStamp + 1) >>> 0;
+  if (queryStamp === 0) { g.seen.fill(0); queryStamp = 1; }
+  return queryStamp;
+}
+/** Ascending indices of obstacles whose footprint may touch the XZ rectangle (a superset: callers test exactly). */
+function obstaclesIn(minX: number, maxX: number, minZ: number, maxZ: number): ArrayLike<number> {
+  const g = obstacleGrid();
+  const c0 = Math.max(0, Math.floor((minX - g.minX) / GRID_CELL)), c1 = Math.min(g.cols - 1, Math.floor((maxX - g.minX) / GRID_CELL));
+  const r0 = Math.max(0, Math.floor((minZ - g.minZ) / GRID_CELL)), r1 = Math.min(g.rows - 1, Math.floor((maxZ - g.minZ) / GRID_CELL));
+  if (!(c0 <= c1 && r0 <= r1)) return NO_OBSTACLES;
+  if (c0 === c1 && r0 === r1) { const cell = r0 * g.cols + c0; return g.items.subarray(g.start[cell]!, g.start[cell + 1]!); }
+  const stamp = nextStamp(g), found: number[] = [];
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+    const cell = r * g.cols + c;
+    for (let k = g.start[cell]!; k < g.start[cell + 1]!; k++) {
+      const i = g.items[k]!;
+      if (g.seen[i] !== stamp) { g.seen[i] = stamp; found.push(i); }
+    }
+  }
+  return found.sort((a, b) => a - b);
+}
+/** Ray entry distance into obstacle `i` within `limit`, else Infinity. Same arithmetic as rayBoxSpan. */
+function entryDistance(b: Float64Array, i: number, origin: Vec3, direction: Vec3, limit: number): number {
+  const o = i * 6;
+  let near = 0, far = limit;
+  if (Math.abs(direction.x) < 1e-8) { if (origin.x < b[o]! || origin.x > b[o + 3]!) return Infinity; }
+  else {
+    const a = (b[o]! - origin.x) / direction.x, c = (b[o + 3]! - origin.x) / direction.x;
+    near = Math.max(near, Math.min(a, c)); far = Math.min(far, Math.max(a, c)); if (near > far) return Infinity;
+  }
+  if (Math.abs(direction.y) < 1e-8) { if (origin.y < b[o + 1]! || origin.y > b[o + 4]!) return Infinity; }
+  else {
+    const a = (b[o + 1]! - origin.y) / direction.y, c = (b[o + 4]! - origin.y) / direction.y;
+    near = Math.max(near, Math.min(a, c)); far = Math.min(far, Math.max(a, c)); if (near > far) return Infinity;
+  }
+  if (Math.abs(direction.z) < 1e-8) { if (origin.z < b[o + 2]! || origin.z > b[o + 5]!) return Infinity; }
+  else {
+    const a = (b[o + 2]! - origin.z) / direction.z, c = (b[o + 5]! - origin.z) / direction.z;
+    near = Math.max(near, Math.min(a, c)); far = Math.min(far, Math.max(a, c)); if (near > far) return Infinity;
+  }
+  return far >= 0 && near <= limit ? near : Infinity;
+}
+/** Nearest obstacle along a ray within `limit` (ties: lower index); index -1 when none. Walks the
+ * grid cells under the ray in order and stops once no later cell can hold a nearer entry. */
+function nearestObstacle(origin: Vec3, direction: Vec3, limit: number): { distance: number; index: number } {
+  const g = obstacleGrid();
+  let bestDistance = Infinity, bestIndex = -1;
+  const width = g.cols * GRID_CELL, depth = g.rows * GRID_CELL, dx = direction.x, dz = direction.z;
+  let t0 = 0, t1 = limit;
+  if (!(t1 >= 0)) return { distance: bestDistance, index: bestIndex };
+  if (Math.abs(dx) < 1e-12) { if (!(origin.x >= g.minX && origin.x <= g.minX + width)) return { distance: bestDistance, index: bestIndex }; }
+  else { const a = (g.minX - origin.x) / dx, b = (g.minX + width - origin.x) / dx; t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b)); }
+  if (Math.abs(dz) < 1e-12) { if (!(origin.z >= g.minZ && origin.z <= g.minZ + depth)) return { distance: bestDistance, index: bestIndex }; }
+  else { const a = (g.minZ - origin.z) / dz, b = (g.minZ + depth - origin.z) / dz; t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b)); }
+  if (!(t0 <= t1)) return { distance: bestDistance, index: bestIndex };
+  let cx = clamp(Math.floor((origin.x + dx * t0 - g.minX) / GRID_CELL), 0, g.cols - 1);
+  let cz = clamp(Math.floor((origin.z + dz * t0 - g.minZ) / GRID_CELL), 0, g.rows - 1);
+  const stepX = Math.abs(dx) < 1e-12 ? 0 : dx > 0 ? 1 : -1, stepZ = Math.abs(dz) < 1e-12 ? 0 : dz > 0 ? 1 : -1;
+  const deltaX = stepX ? GRID_CELL / Math.abs(dx) : Infinity, deltaZ = stepZ ? GRID_CELL / Math.abs(dz) : Infinity;
+  let nextX = stepX ? (g.minX + (cx + (stepX > 0 ? 1 : 0)) * GRID_CELL - origin.x) / dx : Infinity;
+  let nextZ = stepZ ? (g.minZ + (cz + (stepZ > 0 ? 1 : 0)) * GRID_CELL - origin.z) / dz : Infinity;
+  let enter = t0;
+  const stamp = nextStamp(g);
+  for (;;) {
+    if (bestDistance < enter) break;
+    const cell = cz * g.cols + cx;
+    for (let k = g.start[cell]!; k < g.start[cell + 1]!; k++) {
+      const i = g.items[k]!;
+      if (g.seen[i] === stamp) continue;
+      g.seen[i] = stamp;
+      const distance = entryDistance(g.bounds, i, origin, direction, limit);
+      if (distance < bestDistance || (distance === bestDistance && distance !== Infinity && i < bestIndex)) { bestDistance = distance; bestIndex = i; }
+    }
+    if (nextX <= nextZ) {
+      if (!(nextX <= t1)) break;
+      enter = nextX; cx += stepX; nextX += deltaX;
+      if (cx < 0 || cx >= g.cols) break;
+    } else {
+      if (!(nextZ <= t1)) break;
+      enter = nextZ; cz += stepZ; nextZ += deltaZ;
+      if (cz < 0 || cz >= g.rows) break;
+    }
+  }
+  return { distance: bestDistance, index: bestIndex };
+}
+const overlapsXZAt = (b: Float64Array, i: number, x: number, z: number, radius: number) => {
+  const o = i * 6;
+  return x + radius > b[o]! && x - radius < b[o + 3]! && z + radius > b[o + 2]! && z - radius < b[o + 5]!;
+};
+
+// ---------------------------------------------------------------------------------------------
+// Rays and overlap queries.
 
 const boxMin = (box: MapObstacle): Vec3 => ({ x: box.x - box.w / 2, y: box.y - box.h / 2, z: box.z - box.d / 2 });
 const boxMax = (box: MapObstacle): Vec3 => ({ x: box.x + box.w / 2, y: box.y + box.h / 2, z: box.z + box.d / 2 });
@@ -70,9 +239,11 @@ export function rayBoxSpan(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3, 
 export function rayBox(origin: Vec3, direction: Vec3, min: Vec3, max: Vec3, limit = 200): number {
   return rayBoxSpan(origin, direction, min, max, limit)?.[0] ?? Infinity;
 }
+/** Distance to the nearest obstacle or the ground along a ray, at most `limit`. */
 export function raycastMap(origin: Vec3, direction: Vec3, limit = 200): number {
   let result = limit;
-  for (const box of OBSTACLES) result = Math.min(result, rayBox(origin, direction, boxMin(box), boxMax(box), limit));
+  const hit = nearestObstacle(origin, direction, limit);
+  if (hit.index >= 0) result = Math.min(result, hit.distance);
   if (direction.y < -1e-6) { const floor = -origin.y / direction.y; if (floor >= 0) result = Math.min(result, floor); }
   return result;
 }
@@ -80,17 +251,16 @@ export interface MapHit { distance: number; point: Vec3; normal: Vec3; obstacle:
 /** Nearest world contact with its face normal and material; null when nothing is hit within `limit`. */
 export function raycastMapDetailed(origin: Vec3, direction: Vec3, limit = 200): MapHit | null {
   let best: MapHit | null = null;
-  for (const box of OBSTACLES) {
-    const min = boxMin(box), max = boxMax(box);
-    const span = rayBoxSpan(origin, direction, min, max, best?.distance ?? limit);
-    if (!span || (best && span[0] >= best.distance)) continue;
-    const point = add(origin, scale(direction, span[0]));
+  const hit = nearestObstacle(origin, direction, limit);
+  if (hit.index >= 0) {
+    const box = OBSTACLES[hit.index]!, min = boxMin(box), max = boxMax(box);
+    const point = add(origin, scale(direction, hit.distance));
     let normal: Vec3 = scale(normalize(direction), -1), closest = Infinity;
     for (const axis of ['x', 'y', 'z'] as const) for (const [face, sign] of [[min[axis], -1], [max[axis], 1]] as const) {
       const gap = Math.abs(point[axis] - face);
       if (gap < closest && direction[axis] * sign < 0) { closest = gap; normal = { x: 0, y: 0, z: 0 }; normal[axis] = sign; }
     }
-    best = { distance: span[0], point, normal, obstacle: box, surface: surfaceOf(box) };
+    best = { distance: hit.distance, point, normal, obstacle: box, surface: surfaceOf(box) };
   }
   if (direction.y < -1e-6) {
     const floor = -origin.y / direction.y;
@@ -102,13 +272,17 @@ export function raycastMapDetailed(origin: Vec3, direction: Vec3, limit = 200): 
   return best;
 }
 
-function overlapsXZ(state: Vec3, box: MapObstacle, radius = PLAYER_RADIUS) {
-  return state.x + radius > box.x - box.w / 2 && state.x - radius < box.x + box.w / 2 &&
-    state.z + radius > box.z - box.d / 2 && state.z - radius < box.z + box.d / 2;
-}
 function supportAt(state: Vec3): number {
+  const g = obstacleGrid(), r = PLAYER_RADIUS;
+  const near = obstaclesIn(state.x - r, state.x + r, state.z - r, state.z + r);
+  return supportAmong(g, near, state);
+}
+function supportAmong(g: ObstacleGrid, near: ArrayLike<number>, state: Vec3): number {
   let support = 0;
-  for (const box of OBSTACLES) { const top = box.y + box.h / 2; if (overlapsXZ(state, box) && top <= state.y + 0.06) support = Math.max(support, top); }
+  for (let k = 0; k < near.length; k++) {
+    const i = near[k]!, top = g.bounds[i * 6 + 4]!;
+    if (top <= state.y + 0.06 && overlapsXZAt(g.bounds, i, state.x, state.z, PLAYER_RADIUS)) support = Math.max(support, top);
+  }
   return support;
 }
 /** Visual animation shares the real supporting surface, including steps/platforms. */
@@ -120,9 +294,12 @@ export const playerHeight = (posture: Posture) => POSTURE_HEIGHT[posture];
 /** True when a body of `height` with its feet at `position` overlaps no obstacle. */
 export function spaceFree(position: Vec3, height: number, radius = PLAYER_RADIUS): boolean {
   if (Math.abs(position.x) > ARENA_LIMITS.x - radius + 1e-6 || Math.abs(position.z) > ARENA_LIMITS.z - radius + 1e-6) return false;
-  for (const box of OBSTACLES) {
-    if (!overlapsXZ(position, box, radius)) continue;
-    if (position.y + height > box.y - box.h / 2 + 0.02 && position.y < box.y + box.h / 2 - 0.02) return false;
+  const g = obstacleGrid();
+  const near = obstaclesIn(position.x - radius, position.x + radius, position.z - radius, position.z + radius);
+  for (let k = 0; k < near.length; k++) {
+    const i = near[k]!, o = i * 6;
+    if (!overlapsXZAt(g.bounds, i, position.x, position.z, radius)) continue;
+    if (position.y + height > g.bounds[o + 1]! + 0.02 && position.y < g.bounds[o + 4]! - 0.02) return false;
   }
   return true;
 }
@@ -163,6 +340,9 @@ export function rayHitboxes(origin: Vec3, direction: Vec3, state: Vec3 & { postu
   return best;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Vaulting.
+
 const easeOut = (t: number) => 1 - (1 - t) * (1 - t);
 const easeInOut = (t: number) => t * t * (3 - 2 * t);
 function worldWish(input: InputFrame): { x: number; z: number; magnitude: number } {
@@ -180,49 +360,115 @@ function pathClear(fromX: number, fromZ: number, to: Vec3, height: number): bool
 }
 
 /** A vault or mantle the player can start now, or null. Needs forward input; the nearest obstacle
- * in front decides: low enough to climb, thin ones are vaulted over, thick ones mantled onto. */
+ * in front decides: its top must be 0.5–2.1 m above the floor under the player (a jump does not
+ * stretch that), thin ones (≤ 0.6 m) are vaulted over, thicker ones mantled onto. The body must fit
+ * rising in place, along the path and at the landing. */
 export function findVault(state: MoveState, input: InputFrame, now: number): VaultState | null {
-  if (input.moveZ < 0.3 || state.posture === 'vault') return null;
-  const fx = Math.sin(input.yaw), fz = -Math.cos(input.yaw);
+  const yaw = input.yaw;
+  if (!(input.moveZ >= 0.3) || state.posture === 'vault' || !Number.isFinite(yaw) || !Number.isFinite(now)) return null;
+  if (!Number.isFinite(state.x) || !Number.isFinite(state.y) || !Number.isFinite(state.z)) return null;
+  const g = obstacleGrid(), b = g.bounds;
+  const fx = Math.sin(yaw), fz = -Math.cos(yaw);
   const origin = { x: state.x, y: 0, z: state.z }, direction = { x: fx, y: 0, z: fz };
-  const bodyTop = state.y + POSTURE_HEIGHT[state.posture];
-  let nearest: { box: MapObstacle; distance: number } | null = null;
-  for (const box of OBSTACLES) {
-    const bottom = box.y - box.h / 2, top = box.y + box.h / 2;
+  const bodyTop = state.y + (POSTURE_HEIGHT[state.posture] ?? PLAYER_HEIGHT);
+  const reach = MOVE.vaultReach + 0.05, around = reach + PLAYER_RADIUS + 0.01;
+  const near = obstaclesIn(state.x - around, state.x + around, state.z - around, state.z + around);
+  let nearest = -1, nearestDistance = Infinity, nearestTop = -Infinity;
+  for (let k = 0; k < near.length; k++) {
+    const i = near[k]!, o = i * 6, bottom = b[o + 1]!, top = b[o + 4]!;
     // Only obstacles in front of the lower body matter; lintels above windows are checked as clearance.
     if (top <= state.y + 0.06 || bottom > state.y + 0.35 || bottom >= bodyTop) continue;
-    const grown = { x: PLAYER_RADIUS, y: 0, z: PLAYER_RADIUS };
-    const distance = rayBox(origin, direction, { x: box.x - box.w / 2 - grown.x, y: -1, z: box.z - box.d / 2 - grown.z },
-      { x: box.x + box.w / 2 + grown.x, y: 1, z: box.z + box.d / 2 + grown.z }, MOVE.vaultReach + 0.05);
+    const distance = rayBox(origin, direction, { x: b[o]! - PLAYER_RADIUS, y: -1, z: b[o + 2]! - PLAYER_RADIUS },
+      { x: b[o + 3]! + PLAYER_RADIUS, y: 1, z: b[o + 5]! + PLAYER_RADIUS }, reach);
     if (distance === Infinity) continue;
-    if (!nearest || distance < nearest.distance - 1e-4 || (Math.abs(distance - nearest.distance) <= 1e-4 && top > nearest.box.y + nearest.box.h / 2)) nearest = { box, distance };
+    if (nearest < 0 || distance < nearestDistance - 1e-4 || (Math.abs(distance - nearestDistance) <= 1e-4 && top > nearestTop)) {
+      nearest = i; nearestDistance = distance; nearestTop = top;
+    }
   }
-  if (!nearest) return null;
-  const box = nearest.box, top = box.y + box.h / 2, rise = top - state.y;
+  if (nearest < 0) return null;
+  const o = nearest * 6, top = b[o + 4]!;
+  const rise = top - Math.min(supportAt(state), state.y);
   if (rise < MOVE.vaultMin || rise > MOVE.vaultMax) return null;
-  const span = rayBoxSpan(origin, direction, { ...boxMin(box), y: -1 }, { ...boxMax(box), y: 1 }, 10);
+  const span = rayBoxSpan(origin, direction, { x: b[o]!, y: -1, z: b[o + 2]! }, { x: b[o + 3]!, y: 1, z: b[o + 5]! }, 10);
   if (!span) return null;
   // The body must be able to rise in place before crossing.
   if (!spaceFree({ x: state.x, y: top + 0.02, z: state.z }, POSTURE_HEIGHT.vault, 0.3)) return null;
-  const horizontal = Math.hypot(state.vx, state.vz);
+  const horizontal = finite(Math.hypot(state.vx, state.vz), 0), climb = Math.max(0, top - state.y);
   const make = (to: Vec3): VaultState => ({
     fromX: state.x, fromY: state.y, fromZ: state.z, toX: to.x, toY: to.y, toZ: to.z,
-    start: now, end: now + MOVE.vaultBaseMs + MOVE.vaultPerMeterMs * rise,
-    exitSpeed: clamp(horizontal * 0.95, MOVE.vaultMinExitSpeed, MOVE.dash), exitYaw: input.yaw,
+    start: now, end: now + MOVE.vaultBaseMs + MOVE.vaultPerMeterMs * climb,
+    exitSpeed: clamp(horizontal * 0.95, MOVE.vaultMinExitSpeed, MOVE.dash), exitYaw: yaw,
   });
   if (span[1] - span[0] <= MOVE.vaultThin) {
-    const reach = span[1] + PLAYER_RADIUS + 0.12;
-    const over = { x: state.x + fx * reach, y: top + 0.02, z: state.z + fz * reach };
+    const reachOver = span[1] + PLAYER_RADIUS + 0.12;
+    const over = { x: state.x + fx * reachOver, y: top + 0.02, z: state.z + fz * reachOver };
     if (spaceFree(over, POSTURE_HEIGHT.vault) && pathClear(state.x, state.z, over, POSTURE_HEIGHT.vault)) return make(over);
   }
-  const reach = span[0] + PLAYER_RADIUS + 0.12;
-  const onto = { x: state.x + fx * reach, y: top, z: state.z + fz * reach };
+  const reachOnto = span[0] + PLAYER_RADIUS + 0.12;
+  const onto = { x: state.x + fx * reachOnto, y: top, z: state.z + fz * reachOnto };
   if (spaceFree(onto, POSTURE_HEIGHT.vault) && pathClear(state.x, state.z, onto, POSTURE_HEIGHT.vault)) return make(onto);
   return null;
 }
 
-function endSlide(state: MoveState, now: number, crouchHeld: boolean, jumping: boolean) {
-  state.posture = !jumping && crouchHeld ? 'crouch' : spaceFree(state, POSTURE_HEIGHT.stand) ? 'stand' : 'crouch';
+/** How far through its vault a player is, 0..1; 1 when not vaulting. Firing waits for MOVE.vaultFireAt. */
+export function vaultFireProgress(state: { vault: VaultState | null }, now: number): number {
+  const vault = state.vault;
+  if (!vault) return 1;
+  if (!Number.isFinite(now)) return 0;
+  const duration = vault.end - vault.start;
+  if (!(duration > 0)) return 1;
+  return clamp((now - vault.start) / duration, 0, 1);
+}
+
+/** Moves the crossing point toward moveX × vaultSteer sideways, only while the shifted path and landing are clear. */
+function steerVault(state: MoveState, vault: VaultState, moveX: number, dt: number): VaultState {
+  const rx = Math.cos(vault.exitYaw), rz = Math.sin(vault.exitYaw);
+  const lateral = (vault.toX - vault.fromX) * rx + (vault.toZ - vault.fromZ) * rz;
+  const step = clamp(clamp(moveX, -1, 1) * MOVE.vaultSteer - lateral, -MOVE.vaultSteerRate * dt, MOVE.vaultSteerRate * dt);
+  if (!(Math.abs(step) >= 1e-9)) return vault;
+  const to = { x: vault.toX + rx * step, y: vault.toY, z: vault.toZ + rz * step };
+  if (!spaceFree(to, POSTURE_HEIGHT.vault) || !pathClear(vault.fromX, vault.fromZ, to, POSTURE_HEIGHT.vault)) return vault;
+  const steered = { ...vault, toX: to.x, toZ: to.z };
+  state.vault = steered;
+  return steered;
+}
+function cancelVault(state: MoveState, input: InputFrame, events: MoveEvents) {
+  const vault = state.vault!;
+  state.x = vault.fromX; state.y = vault.fromY; state.z = vault.fromZ;
+  state.vx = 0; state.vy = 0; state.vz = 0;
+  state.vault = null;
+  state.posture = input.crouch || !spaceFree(state, POSTURE_HEIGHT.stand) ? 'crouch' : 'stand';
+  events.vaultEnded = true; events.vaultCancelled = true;
+}
+function advanceVault(state: MoveState, input: InputFrame, ctx: MoveContext, dt: number, events: MoveEvents, ongoing: boolean) {
+  let vault = state.vault!;
+  const duration = Math.max(1, vault.end - vault.start);
+  const t = finite(clamp((ctx.now - vault.start) / duration, 0, 1), 0);
+  if (ongoing && ctx.crouchPressed && t < MOVE.vaultCancelWindow) { cancelVault(state, input, events); return; }
+  vault = steerVault(state, vault, input.moveX, dt);
+  const rise = easeOut(clamp(t / 0.55, 0, 1)), cross = easeInOut(clamp((t - 0.25) / 0.75, 0, 1));
+  state.x = vault.fromX + (vault.toX - vault.fromX) * cross;
+  state.z = vault.fromZ + (vault.toZ - vault.fromZ) * cross;
+  state.y = vault.fromY + (vault.toY - vault.fromY) * rise;
+  // Presentation velocity for animation; position is scripted while vaulting.
+  state.vx = (vault.toX - vault.fromX) / (duration / 1000); state.vz = (vault.toZ - vault.fromZ) / (duration / 1000); state.vy = 0;
+  state.posture = 'vault';
+  if (t < 1) return;
+  state.vault = null; events.vaultEnded = true;
+  state.posture = spaceFree(state, POSTURE_HEIGHT.stand) ? 'stand' : 'crouch';
+  state.vx = Math.sin(vault.exitYaw) * vault.exitSpeed; state.vz = -Math.cos(vault.exitYaw) * vault.exitSpeed;
+  // Holding crouch through a fast vault chains straight into a slide; a slow one ends crouched.
+  if (input.crouch && isPlayerGrounded(state)) {
+    if (vault.exitSpeed >= MOVE.slideMinStartSpeed && ctx.now >= state.slideCooldownUntil) { startSlide(state, ctx.now); events.slideStarted = true; }
+    else state.posture = 'crouch';
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Movement.
+
+function endSlide(state: MoveState, now: number, crouchHeld: boolean, airborne: boolean) {
+  state.posture = !airborne && crouchHeld ? 'crouch' : spaceFree(state, POSTURE_HEIGHT.stand) ? 'stand' : 'crouch';
   state.slideUntil = 0; state.slideCooldownUntil = now + MOVE.slideCooldownMs;
 }
 function startSlide(state: MoveState, now: number) {
@@ -231,66 +477,178 @@ function startSlide(state: MoveState, now: number) {
   state.posture = 'slide'; state.slideUntil = now + MOVE.slideMs;
   state.vx *= boost; state.vz *= boost; state.sprinting = false; state.dashing = false;
 }
-function advanceVault(state: MoveState, input: InputFrame, ctx: MoveContext, events: MoveEvents) {
-  const vault = state.vault!, duration = Math.max(1, vault.end - vault.start);
-  const t = clamp((ctx.now - vault.start) / duration, 0, 1);
-  const rise = easeOut(clamp(t / 0.55, 0, 1)), cross = easeInOut(clamp((t - 0.25) / 0.75, 0, 1));
-  state.x = vault.fromX + (vault.toX - vault.fromX) * cross;
-  state.z = vault.fromZ + (vault.toZ - vault.fromZ) * cross;
-  state.y = vault.fromY + (vault.toY - vault.fromY) * rise;
-  // Presentation velocity for animation; position is scripted while vaulting.
-  state.vx = (vault.toX - vault.fromX) / (duration / 1000); state.vz = (vault.toZ - vault.fromZ) / (duration / 1000); state.vy = 0;
-  if (t < 1) return;
-  state.vault = null; events.vaultEnded = true;
-  state.posture = spaceFree(state, POSTURE_HEIGHT.stand) ? 'stand' : 'crouch';
-  state.vx = Math.sin(vault.exitYaw) * vault.exitSpeed; state.vz = -Math.cos(vault.exitYaw) * vault.exitSpeed;
-  // Holding crouch through a fast vault chains straight into a slide.
-  if (input.crouch && vault.exitSpeed >= MOVE.slideMinStartSpeed && isPlayerGrounded(state) && ctx.now >= state.slideCooldownUntil) {
-    startSlide(state, ctx.now); events.slideStarted = true;
+function refillStamina(state: MoveState, dt: number) { state.stamina = Math.min(1, state.stamina + dt * 1000 / MOVE.dashRefillMs); }
+const POSTURES: readonly Posture[] = ['stand', 'crouch', 'slide', 'vault'];
+/** Non-finite numbers or an impossible posture (bad snapshot, bad caller) must not spread. */
+function repairState(state: MoveState) {
+  for (const key of ['x', 'y', 'z', 'vx', 'vy', 'vz', 'yaw', 'pitch', 'slideUntil', 'slideCooldownUntil'] as const) {
+    if (!Number.isFinite(state[key])) state[key] = 0;
+  }
+  state.stamina = clamp(finite(state.stamina, 1), 0, 1);
+  const vault = state.vault;
+  if (vault && ![vault.fromX, vault.fromY, vault.fromZ, vault.toX, vault.toY, vault.toZ, vault.start, vault.end, vault.exitSpeed, vault.exitYaw].every(Number.isFinite)) state.vault = null;
+  if (!POSTURES.includes(state.posture) || (state.posture === 'vault' && !state.vault)) {
+    state.posture = spaceFree(state, POSTURE_HEIGHT.stand) ? 'stand' : 'crouch';
   }
 }
+function accelerateGround(state: MoveState, targetX: number, targetZ: number, targetSpeed: number, dt: number) {
+  const dx = targetX - state.vx, dz = targetZ - state.vz, difference = Math.hypot(dx, dz);
+  if (difference <= 1e-6) return;
+  const accelerating = targetSpeed >= Math.hypot(state.vx, state.vz) - 1e-6;
+  const k = Math.min(1, (accelerating ? MOVE.accel : MOVE.brake) * dt / difference);
+  state.vx += dx * k; state.vz += dz * k;
+}
+/** 20% of ground acceleration toward the wish; it can turn and speed up but never slows the player. */
+function accelerateAir(state: MoveState, targetX: number, targetZ: number, dt: number) {
+  const dx = targetX - state.vx, dz = targetZ - state.vz, difference = Math.hypot(dx, dz);
+  if (difference <= 1e-6) return;
+  const before = Math.hypot(state.vx, state.vz), k = Math.min(1, MOVE.accel * MOVE.airControl * dt / difference);
+  let vx = state.vx + dx * k, vz = state.vz + dz * k;
+  const after = Math.hypot(vx, vz);
+  if (after < before) {
+    if (after <= 1e-6) return;
+    vx *= before / after; vz *= before / after;
+  }
+  state.vx = vx; state.vz = vz;
+}
+/** One horizontal axis of one sub-step: steps up to MOVE.stepHeight into free space, else stops in
+ * contact with the obstacle (or where it was, if contact would not be free). */
+function moveAxis(g: ObstacleGrid, state: MoveState, axis: 'x' | 'z', delta: number, height: number, near: ArrayLike<number>) {
+  if (delta === 0) return;
+  const velocity = axis === 'x' ? 'vx' : 'vz', prior = state[axis], limit = ARENA_LIMITS[axis] - PLAYER_RADIUS;
+  const target = prior + delta, next = clamp(target, -limit, limit), lowFace = axis === 'x' ? 0 : 2, highFace = axis === 'x' ? 3 : 5;
+  state[axis] = next;
+  const priorX = axis === 'x' ? prior : state.x, priorZ = axis === 'z' ? prior : state.z;
+  let stepTo = state.y, blocked = false, contact = delta > 0 ? Infinity : -Infinity;
+  for (let k = 0; k < near.length; k++) {
+    const i = near[k]!, o = i * 6, bottom = g.bounds[o + 1]!, top = g.bounds[o + 4]!;
+    if (state.y + height <= bottom + 0.02 || state.y >= top - 0.01 || !overlapsXZAt(g.bounds, i, state.x, state.z, PLAYER_RADIUS)) continue;
+    // A box the body was already inside does not block, so a bad state can walk out instead of sticking.
+    if (overlapsXZAt(g.bounds, i, priorX, priorZ, PLAYER_RADIUS)) continue;
+    if (top - state.y <= MOVE.stepHeight && state.vy <= 0.1) { stepTo = Math.max(stepTo, top); continue; }
+    blocked = true;
+    contact = delta > 0 ? Math.min(contact, g.bounds[o + lowFace]! - PLAYER_RADIUS - 1e-9) : Math.max(contact, g.bounds[o + highFace]! + PLAYER_RADIUS + 1e-9);
+  }
+  if (!blocked && stepTo > state.y) {
+    if (spaceFree({ x: state.x, y: stepTo, z: state.z }, height)) state.y = stepTo; else blocked = true;
+  }
+  if (blocked) {
+    state[axis] = prior;
+    if (delta > 0 ? contact > prior && contact < next : contact < prior && contact > next) {
+      state[axis] = contact;
+      if (!spaceFree(state, height)) state[axis] = prior;
+    }
+    state[velocity] = 0;
+  } else if (next !== target) state[velocity] = 0;
+}
+function integrate(state: MoveState, height: number, grounded: boolean, dt: number, events: MoveEvents) {
+  const g = obstacleGrid(), b = g.bounds, reach = PLAYER_RADIUS + 0.01;
+  const steps = Math.max(1, Math.ceil(dt / MOVE.subStep - 1e-9)), h = dt / steps;
+  let onGround = grounded;
+  for (let s = 0; s < steps; s++) {
+    const x0 = state.x, z0 = state.z, x1 = x0 + state.vx * h, z1 = z0 + state.vz * h;
+    const near = obstaclesIn(Math.min(x0, x1) - reach, Math.max(x0, x1) + reach, Math.min(z0, z1) - reach, Math.max(z0, z1) + reach);
+    moveAxis(g, state, 'x', state.vx * h, height, near);
+    moveAxis(g, state, 'z', state.vz * h, height, near);
+    // Walking off a step of up to MOVE.stepHeight follows the ground down instead of falling.
+    if (onGround && state.vy <= 0) {
+      const support = supportAmong(g, near, state);
+      if (support < state.y && state.y - support <= MOVE.stepHeight) { state.y = support; state.vy = 0; }
+    }
+    // Exact for constant gravity: a 6 m/s jump peaks at 6² / (2 × 19) = 0.947 m.
+    const y0 = state.y, vy0 = state.vy;
+    state.vy = Math.max(-MOVE.maxFall, vy0 - MOVE.gravity * h);
+    state.y = y0 + (vy0 + state.vy) * 0.5 * h;
+    let landOn = -Infinity, ceiling = Infinity;
+    for (let k = 0; k < near.length; k++) {
+      const i = near[k]!, o = i * 6;
+      if (!overlapsXZAt(b, i, state.x, state.z, PLAYER_RADIUS)) continue;
+      const top = b[o + 4]!, bottom = b[o + 1]!;
+      if (state.vy <= 0 && y0 >= top - 0.03 && state.y < top) landOn = Math.max(landOn, top);
+      if (state.vy > 0 && y0 + height <= bottom + 0.03 && state.y + height > bottom) ceiling = Math.min(ceiling, bottom);
+    }
+    let landed = false;
+    const falling = -state.vy;
+    if (landOn > -Infinity) { state.y = landOn; state.vy = 0; landed = true; }
+    else if (ceiling < Infinity) { state.y = ceiling - height; state.vy = 0; }
+    if (state.y < 0) { state.y = 0; state.vy = 0; landed = true; }
+    if (landed && !onGround) events.landedSpeed = Math.max(events.landedSpeed, falling);
+    onGround = landed;
+  }
+  if (events.landedSpeed < 2) events.landedSpeed = 0;
+}
 
-/** Advance one player by one input. Mutates `state`; returns what happened for presentation. */
+/** Advance one player by one input. Mutates `state`; returns what happened for presentation.
+ * Rules: ground acceleration 40 / braking 30 m/s², 20% air control that never brakes; walk 5.0,
+ * back 4.0, strafe 4.5, crouch 2.6 (× weapon hip factor, or × the aimed factor while aiming);
+ * sprint 6.9 forward-ish, never aiming or firing; dash 8.2 on stamina (3 s drain, 4 s refill,
+ * fading to sprint below 20%); a held crouch keeps the player crouched; jumps, slides and vaults
+ * as documented on MOVE and findVault. */
 export function movePlayer(state: MoveState, input: InputFrame, ctx: MoveContext): MoveEvents {
-  const events: MoveEvents = { jumped: false, landedSpeed: 0, slideStarted: false, slideEnded: false, vaultStarted: false, vaultEnded: false };
-  const dt = clamp(Number.isFinite(ctx.dt) ? ctx.dt : 0, 0, 0.1);
-  state.yaw = input.yaw; state.pitch = input.pitch;
-  if (state.vault) { advanceVault(state, input, ctx, events); state.sprinting = false; state.dashing = false; return events; }
-  const wish = worldWish(input);
+  const events: MoveEvents = { jumped: false, landedSpeed: 0, slideStarted: false, slideEnded: false, vaultStarted: false, vaultEnded: false, vaultCancelled: false };
+  const dt = clamp(finite(ctx.dt, 0), 0, 0.1), now = ctx.now;
+  repairState(state);
+  if (Number.isFinite(input.yaw)) state.yaw = input.yaw;
+  if (Number.isFinite(input.pitch)) state.pitch = input.pitch;
+  const command: InputFrame = { ...input, moveX: finite(input.moveX, 0), moveZ: finite(input.moveZ, 0), yaw: state.yaw, pitch: state.pitch };
+  const moveFactor = clamp(finite(ctx.moveFactor, 1), 0, 2), adsFactor = clamp(finite(ctx.adsFactor, 1), 0, 2);
+  const jumpPressed = !!ctx.jumpPressed, crouchPressed = !!ctx.crouchPressed;
+
+  if (state.vault) {
+    advanceVault(state, command, ctx, dt, events, true);
+    state.sprinting = false; state.dashing = false; refillStamina(state, dt);
+    return events;
+  }
+  const beginVault = (vault: VaultState): MoveEvents => {
+    if (state.posture === 'slide') { endSlide(state, now, command.crouch, false); events.slideEnded = true; }
+    state.vault = vault; state.posture = 'vault'; state.sprinting = false; state.dashing = false; state.vy = 0;
+    events.vaultStarted = true;
+    advanceVault(state, command, ctx, dt, events, false);
+    refillStamina(state, dt);
+    return events;
+  };
+
   const grounded = isPlayerGrounded(state);
-  const wasSprinting = !!state.sprinting;
-  const forwardish = input.moveZ > 0.3 && Math.abs(input.moveX) <= input.moveZ * 1.2;
-  const wantsSprint = ctx.canSprint && input.sprint && forwardish && !input.aim && !input.fire;
+  const wasSprinting = !!state.sprinting, wasDashing = !!state.dashing;
+  const wish = worldWish(command);
+  const forwardish = command.moveZ > 0.3 && Math.abs(command.moveX) <= command.moveZ * 1.2;
+  const wantsSprint = !!ctx.canSprint && !!command.sprint && forwardish && !command.aim && !command.fire;
 
   if (state.posture === 'slide') {
-    if (ctx.jumpPressed && grounded) {
-      endSlide(state, ctx.now, input.crouch, true); events.slideEnded = true;
+    if (jumpPressed && grounded) {
+      const vault = findVault(state, command, now);
+      if (vault) return beginVault(vault);
+      endSlide(state, now, command.crouch, true); events.slideEnded = true;
       state.vx *= MOVE.slideJumpKeep; state.vz *= MOVE.slideJumpKeep; state.vy = MOVE.jumpSpeed; events.jumped = true;
-    } else if (!grounded || ctx.now >= state.slideUntil || Math.hypot(state.vx, state.vz) <= MOVE.slideEndSpeed + 0.05) {
-      endSlide(state, ctx.now, input.crouch, false); events.slideEnded = true;
+    } else if (!grounded) {
+      endSlide(state, now, command.crouch, true); events.slideEnded = true;
+    } else if (now >= state.slideUntil || Math.hypot(state.vx, state.vz) <= MOVE.slideEndSpeed + 0.05) {
+      endSlide(state, now, command.crouch, false); events.slideEnded = true;
     }
-  } else if (ctx.jumpPressed && (grounded || state.vy > -4)) {
-    const vault = findVault(state, input, ctx.now);
-    if (vault) {
-      state.vault = vault; state.posture = 'vault'; state.sprinting = false; state.dashing = false; state.vy = 0;
-      events.vaultStarted = true; advanceVault(state, input, ctx, events); return events;
-    }
-    if (grounded) {
-      if (state.posture === 'crouch') { if (spaceFree(state, POSTURE_HEIGHT.stand)) state.posture = 'stand'; }
-      else { state.vy = MOVE.jumpSpeed; events.jumped = true; }
+  } else {
+    // Pressing jump on the ground, or pressing or holding it in the air, catches a ledge in reach.
+    const airborneTry = !grounded && (command.jump || jumpPressed) && state.vy > -MOVE.vaultMaxFallSpeed;
+    if ((jumpPressed && grounded) || airborneTry) {
+      const vault = findVault(state, command, now);
+      if (vault) return beginVault(vault);
+      if (jumpPressed && grounded) {
+        // Jump from a crouch stands up first (headroom permitting).
+        if (state.posture === 'crouch') { if (spaceFree(state, POSTURE_HEIGHT.stand)) state.posture = 'stand'; }
+        else { state.vy = MOVE.jumpSpeed; events.jumped = true; }
+      }
     }
   }
-  if (!events.jumped && state.posture === 'stand' && grounded && ctx.crouchPressed && wasSprinting
-    && Math.hypot(state.vx, state.vz) >= MOVE.slideMinStartSpeed && ctx.now >= state.slideCooldownUntil) {
-    startSlide(state, ctx.now); events.slideStarted = true;
-  } else if (state.posture === 'stand' && input.crouch && !wantsSprint && !events.jumped && grounded) {
+  if (!events.jumped && state.posture === 'stand' && grounded && crouchPressed && wasSprinting
+    && Math.hypot(state.vx, state.vz) >= MOVE.slideMinStartSpeed && now >= state.slideCooldownUntil) {
+    startSlide(state, now); events.slideStarted = true;
+  } else if (state.posture === 'stand' && command.crouch && grounded && !events.jumped) {
     state.posture = 'crouch';
-  } else if (state.posture === 'crouch' && (!input.crouch || wantsSprint) && spaceFree(state, POSTURE_HEIGHT.stand)) {
+  } else if (state.posture === 'crouch' && !command.crouch && spaceFree(state, POSTURE_HEIGHT.stand)) {
     state.posture = 'stand';
   }
 
   const sprinting = state.posture === 'stand' && wantsSprint && (grounded || wasSprinting);
-  const dashing = sprinting && input.dash && state.stamina > 0;
+  const dashing = sprinting && !!command.dash && (wasDashing ? state.stamina > 0 : state.stamina >= MOVE.dashRestartStamina);
   state.sprinting = sprinting; state.dashing = dashing;
   state.stamina = dashing ? Math.max(0, state.stamina - dt * 1000 / MOVE.dashMs) : Math.min(1, state.stamina + dt * 1000 / MOVE.dashRefillMs);
 
@@ -303,99 +661,130 @@ export function movePlayer(state: MoveState, input: InputFrame, ctx: MoveContext
       heading += clamp(delta, -MOVE.slideSteer * dt, MOVE.slideSteer * dt);
     }
     state.vx = Math.sin(heading) * next; state.vz = -Math.cos(heading) * next;
-  } else if (grounded || wish.magnitude > 0.001) {
+  } else {
     let speed = 0;
     if (wish.magnitude > 0.001) {
-      const forwardness = input.moveZ / Math.max(1e-6, Math.hypot(input.moveX, input.moveZ));
+      const forwardness = command.moveZ / Math.max(1e-6, Math.hypot(command.moveX, command.moveZ));
       speed = forwardness >= 0 ? MOVE.strafe + (MOVE.walk - MOVE.strafe) * forwardness : MOVE.strafe + (MOVE.back - MOVE.strafe) * -forwardness;
       if (state.posture === 'crouch') speed = MOVE.crouch;
       if (sprinting) speed = dashing ? MOVE.sprint + (MOVE.dash - MOVE.sprint) * Math.min(1, state.stamina / MOVE.dashFadeStamina) : MOVE.sprint;
-      speed *= ctx.moveFactor * (input.aim && !sprinting ? ctx.adsFactor : 1) * wish.magnitude;
+      speed *= (command.aim && !sprinting ? adsFactor : moveFactor) * wish.magnitude;
     }
-    const targetX = wish.x * speed, targetZ = wish.z * speed;
-    const dx = targetX - state.vx, dz = targetZ - state.vz, difference = Math.hypot(dx, dz);
-    if (difference > 1e-6) {
-      const accelerating = speed >= Math.hypot(state.vx, state.vz) - 1e-6;
-      const rate = (accelerating ? MOVE.accel : MOVE.brake) * (grounded ? 1 : MOVE.airControl) * dt;
-      const k = Math.min(1, rate / difference);
-      state.vx += dx * k; state.vz += dz * k;
-    }
+    // The jump tick already counts as airborne: a jump keeps its take-off speed.
+    if (grounded && !events.jumped) accelerateGround(state, wish.x * speed, wish.z * speed, speed, dt);
+    else if (wish.magnitude > 0.001) accelerateAir(state, wish.x * speed, wish.z * speed, dt);
   }
-
-  const height = POSTURE_HEIGHT[state.posture];
-  const steps = Math.max(1, Math.ceil(dt / (1 / 90))); const step = dt / steps;
-  for (let index = 0; index < steps; index++) {
-    for (const axis of ['x', 'z'] as const) {
-      const velocity = axis === 'x' ? 'vx' : 'vz';
-      const prior = state[axis]; state[axis] += state[velocity] * step;
-      state[axis] = clamp(state[axis], -ARENA_LIMITS[axis] + PLAYER_RADIUS, ARENA_LIMITS[axis] - PLAYER_RADIUS);
-      for (const box of OBSTACLES) {
-        if (!overlapsXZ(state, box) || state.y + height <= box.y - box.h / 2 + 0.02 || state.y >= box.y + box.h / 2 - 0.01) continue;
-        const rise = box.y + box.h / 2 - state.y;
-        if (rise <= MOVE.stepHeight && state.vy <= 0.1) state.y = box.y + box.h / 2;
-        else { state[axis] = prior; state[velocity] = 0; break; }
-      }
-    }
-    const previousY = state.y; const falling = -state.vy;
-    state.vy = Math.max(-MOVE.maxFall, state.vy - MOVE.gravity * step); state.y += state.vy * step;
-    for (const box of OBSTACLES) {
-      if (!overlapsXZ(state, box)) continue;
-      const top = box.y + box.h / 2; const bottom = box.y - box.h / 2;
-      if (state.vy <= 0 && previousY >= top - 0.03 && state.y < top) { if (!grounded) events.landedSpeed = Math.max(events.landedSpeed, falling); state.y = top; state.vy = 0; }
-      if (state.vy > 0 && previousY + height <= bottom + 0.03 && state.y + height > bottom) { state.y = bottom - height; state.vy = 0; }
-    }
-    if (state.y < 0) { if (!grounded) events.landedSpeed = Math.max(events.landedSpeed, falling); state.y = 0; state.vy = 0; }
-  }
-  if (events.landedSpeed < 2) events.landedSpeed = 0;
+  integrate(state, POSTURE_HEIGHT[state.posture], grounded && !events.jumped, dt, events);
   return events;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Grenades.
+
 /** Thrown grenades share one deterministic fixed-step simulation on the server and every client. */
 export interface GrenadeBody extends Vec3 { vx: number; vy: number; vz: number }
-export const GRENADE = { radius: 0.07, gravity: 14, restitution: 0.38, impactFriction: 0.7, rollFriction: 0.94, rest: 0.6, stepMs: 1000 / 60 } as const;
-function grenadeBlocked(body: Vec3, axis: 'x' | 'y' | 'z'): boolean {
-  if (axis === 'y' && body.y < GRENADE.radius) return true;
-  if (axis !== 'y' && Math.abs(body[axis]) > ARENA_LIMITS[axis] - GRENADE.radius) return true;
-  for (const box of OBSTACLES) {
-    if (Math.abs(body.x - box.x) < box.w / 2 + GRENADE.radius && Math.abs(body.y - box.y) < box.h / 2 + GRENADE.radius && Math.abs(body.z - box.z) < box.d / 2 + GRENADE.radius) return true;
-  }
-  return false;
+export const GRENADE = {
+  radius: 0.07, gravity: 14, restitution: 0.38, impactFriction: 0.7, rollFriction: 0.94, rest: 0.6, stepMs: 1000 / 60,
+  /** Longest move between collision checks (m), well under the thinnest wall (0.28) or rail (0.12). */
+  maxMove: 0.08,
+  /** A grenade on the ground slower than this (m/s) stops. */
+  sleepSpeed: 0.15,
+} as const;
+/** Trajectories are never replayed further than this many fixed steps (30 s). */
+const MAX_GRENADE_STEPS = 1800;
+const AXES = ['x', 'y', 'z'] as const;
+const VELOCITY = { x: 'vx', y: 'vy', z: 'vz' } as const;
+function grenadeOverlaps(b: Float64Array, i: number, x: number, y: number, z: number): boolean {
+  const o = i * 6, r = GRENADE.radius;
+  return x > b[o]! - r && x < b[o + 3]! + r && y > b[o + 1]! - r && y < b[o + 4]! + r && z > b[o + 2]! - r && z < b[o + 5]! + r;
 }
-/** One fixed step. Returns the impact speed of a hard bounce (> 1.2 m/s), else 0. */
-export function stepGrenade(body: GrenadeBody, dt = GRENADE.stepMs / 1000): number {
-  let impact = 0;
-  body.vy -= GRENADE.gravity * dt;
-  for (const axis of ['x', 'y', 'z'] as const) {
-    const velocity = `v${axis}` as 'vx' | 'vy' | 'vz';
-    const prior = body[axis]; body[axis] += body[velocity] * dt;
-    if (!grenadeBlocked(body, axis)) continue;
-    body[axis] = prior;
-    const speed = Math.abs(body[velocity]);
-    body[velocity] = -body[velocity] * GRENADE.restitution;
-    const friction = speed > 1.2 ? GRENADE.impactFriction : GRENADE.rollFriction;
-    for (const other of ['vx', 'vy', 'vz'] as const) if (other !== velocity) body[other] *= friction;
-    if (axis === 'y' && Math.abs(body.vy) < GRENADE.rest) body.vy = 0;
-    if (speed > 1.2) impact = Math.max(impact, speed);
+function grenadeFree(p: Vec3): boolean {
+  const r = GRENADE.radius;
+  if (!(p.y >= r) || Math.abs(p.x) > ARENA_LIMITS.x - r || Math.abs(p.z) > ARENA_LIMITS.z - r) return false;
+  const g = obstacleGrid(), near = obstaclesIn(p.x - r, p.x + r, p.z - r, p.z + r);
+  for (let k = 0; k < near.length; k++) if (grenadeOverlaps(g.bounds, near[k]!, p.x, p.y, p.z)) return false;
+  return true;
+}
+/** Where a move from `prior` to `body` along one axis first touches the ground, the arena edge or an
+ * obstacle (the contact coordinate on that axis), or NaN when the move is free. Anything the grenade
+ * was already inside does not block, so a bad start falls free instead of sticking. */
+function grenadeContact(body: Vec3, prior: Vec3, axis: 'x' | 'y' | 'z'): number {
+  const r = GRENADE.radius, rising = body[axis] > prior[axis];
+  let contact = Number.NaN;
+  const keep = (value: number) => { if (Number.isNaN(contact) || (rising ? value < contact : value > contact)) contact = value; };
+  if (axis === 'y' && body.y < r && body.y <= prior.y) keep(r);
+  if (axis !== 'y' && Math.abs(body[axis]) > ARENA_LIMITS[axis] - r && Math.abs(body[axis]) >= Math.abs(prior[axis])) keep(Math.sign(body[axis]) * (ARENA_LIMITS[axis] - r));
+  const g = obstacleGrid(), near = obstaclesIn(body.x - r, body.x + r, body.z - r, body.z + r);
+  const low = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
+  for (let k = 0; k < near.length; k++) {
+    const i = near[k]!;
+    if (grenadeOverlaps(g.bounds, i, body.x, body.y, body.z) && !grenadeOverlaps(g.bounds, i, prior.x, prior.y, prior.z)) {
+      keep(rising ? g.bounds[i * 6 + low]! - r : g.bounds[i * 6 + low + 3]! + r);
+    }
   }
+  return contact;
+}
+/** One fixed step, sub-stepped so the grenade never moves more than GRENADE.maxMove between checks.
+ * Returns the impact speed of a hard bounce (> 1.2 m/s), else 0. */
+export function stepGrenade(body: GrenadeBody, dt = GRENADE.stepMs / 1000): number {
+  if (!(dt > 0) || ![body.x, body.y, body.z, body.vx, body.vy, body.vz].every(Number.isFinite)) return 0;
+  const reach = (Math.hypot(body.vx, body.vy, body.vz) + GRENADE.gravity * dt) * dt;
+  const steps = Math.min(512, Math.max(1, Math.ceil(reach / GRENADE.maxMove))), h = dt / steps;
+  const contact = { x: -1, y: -1, z: -1 }, prior = { x: 0, y: 0, z: 0 };
+  let impact = 0, onGround = false;
+  for (let s = 0; s < steps; s++) {
+    body.vy -= GRENADE.gravity * h;
+    for (const axis of AXES) {
+      const velocity = VELOCITY[axis];
+      prior.x = body.x; prior.y = body.y; prior.z = body.z;
+      body[axis] += body[velocity] * h;
+      const touch = grenadeContact(body, prior, axis);
+      if (Number.isNaN(touch)) continue;
+      // Rest against the surface it touched (between the old and new positions), else stay put.
+      const lo = Math.min(prior[axis], body[axis]), hi = Math.max(prior[axis], body[axis]);
+      body[axis] = touch >= lo && touch <= hi ? touch : prior[axis];
+      const speed = Math.abs(body[velocity]);
+      if (axis === 'y' && body.vy < 0) onGround = true;
+      body[velocity] = -body[velocity] * GRENADE.restitution;
+      if (axis === 'y' && Math.abs(body.vy) < GRENADE.rest) body.vy = 0;
+      contact[axis] = Math.max(contact[axis], speed);
+      if (speed > 1.2) impact = Math.max(impact, speed);
+    }
+  }
+  // Contact friction once per fixed step, so the sub-step count never changes how far it rolls.
+  for (const axis of AXES) {
+    if (contact[axis] < 0) continue;
+    const friction = contact[axis] > 1.2 ? GRENADE.impactFriction : GRENADE.rollFriction;
+    for (const other of AXES) if (other !== axis) body[VELOCITY[other]] *= friction;
+  }
+  if (onGround && body.vy === 0 && Math.hypot(body.vx, body.vz) < GRENADE.sleepSpeed) { body.vx = 0; body.vz = 0; }
   return impact;
 }
-/** Launch point and velocity for a throw from the eye. */
+/** Launch point and velocity for a throw from the eye. The start is always in free space. */
 export function grenadeLaunch(eye: Vec3, yaw: number, pitch: number, carrier: { vx: number; vz: number }, speed = 16, lift = 3): { from: Vec3; velocity: Vec3 } {
-  const forward = directionFromAngles(yaw, pitch), reach = 0.45, wall = raycastMap(eye, forward, reach);
-  const from = add(eye, scale(forward, Math.max(0, Math.min(reach, wall - 0.12))));
-  return { from, velocity: { x: forward.x * speed + carrier.vx * 0.5, y: forward.y * speed + lift, z: forward.z * speed + carrier.vz * 0.5 } };
+  const forward = directionFromAngles(finite(yaw, 0), finite(pitch, 0)), reach = 0.45, wall = raycastMap(eye, forward, reach);
+  let distance = Math.max(0, Math.min(reach, wall - 0.12)), from = add(eye, scale(forward, distance));
+  // Grazing walls or a low ceiling can leave the point inside geometry: pull it back toward the eye.
+  for (let attempt = 0; attempt < 4 && distance > 0 && !grenadeFree(from); attempt++) {
+    distance = attempt < 3 ? distance / 2 : 0;
+    from = add(eye, scale(forward, distance));
+  }
+  const carrierX = finite(carrier.vx, 0), carrierZ = finite(carrier.vz, 0);
+  return { from, velocity: { x: forward.x * speed + carrierX * 0.5, y: forward.y * speed + lift, z: forward.z * speed + carrierZ * 0.5 } };
 }
 /** Replays a throw with fixed steps; callers keep one per grenade and advance it to an elapsed time. */
 export class GrenadeTrajectory {
   readonly body: GrenadeBody;
-  private elapsed = 0;
-  constructor(from: Vec3, velocity: Vec3) { this.body = { ...from, vx: velocity.x, vy: velocity.y, vz: velocity.z }; }
+  private steps = 0;
+  constructor(from: Vec3, velocity: Vec3) { this.body = { x: from.x, y: from.y, z: from.z, vx: velocity.x, vy: velocity.y, vz: velocity.z }; }
   /** Advances to `elapsedMs` after the throw; returns impact speeds of hard bounces on the way. */
   advanceTo(elapsedMs: number): number[] {
     const impacts: number[] = [];
-    while (this.elapsed + GRENADE.stepMs <= elapsedMs) {
+    if (!Number.isFinite(elapsedMs)) return impacts;
+    const target = Math.min(MAX_GRENADE_STEPS, Math.floor(elapsedMs / GRENADE.stepMs + 1e-9));
+    while (this.steps < target) {
       const impact = stepGrenade(this.body); if (impact) impacts.push(impact);
-      this.elapsed += GRENADE.stepMs;
+      this.steps++;
     }
     return impacts;
   }
