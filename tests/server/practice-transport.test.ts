@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 import { createGameServer } from '../../server/app.js';
 import { Peer, startReady } from '../acceptance/helpers.js';
-import { RULES, type PracticeDifficulty } from '../../shared/protocol.js';
+import { RULES, WORLD_VERSION, type PracticeDifficulty } from '../../shared/protocol.js';
 
 test('practice settings survive recovery and rematch without creating bot profiles or any ranked result', async t => {
   const originalNow = Date.now; let offset = 0; Date.now = () => originalNow() + offset;
@@ -15,7 +15,7 @@ test('practice settings survive recovery and rematch without creating bot profil
   const connect = async (token: string) => {
     const socket = new WebSocket(base.replace('http:', 'ws:') + '/ws', { origin: base }), peer = new Peer(socket); peers.push(peer);
     await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
-    await peer.command({ type: 'hello', token, readyProtocol: 1, worldVersion: 'kannon-town-v1' }, 'welcome'); return peer;
+    await peer.command({ type: 'hello', token, readyProtocol: 1, worldVersion: WORLD_VERSION }, 'welcome'); return peer;
   };
   const host = await connect(hostIdentity.token), friend = await connect(otherIdentity.token);
   const defaults = await host.command({ type: 'create', ranked: true, practice: true, crewId: crew.id }, 'room', m => m.room.players.length === 4);
@@ -46,7 +46,8 @@ test('practice settings survive recovery and rematch without creating bot profil
   assert.equal(end.event.ranked, false); assert.ok(end.event.winnerIds.some(id => id.startsWith('bot-')), 'A time-limit tie includes AI competitors.');
   const rematch = await startReady(recovered, [recovered], 'rematch'); assert.equal(rematch.room.practiceDifficulty, 'hard');
   const reset = await recovered.wait('snapshot', m => m.snapshot.phase === 'countdown');
-  assert.ok(reset.snapshot.players.every(p => p.kills === 0 && p.deaths === 0 && p.health === RULES.health && p.shield === RULES.shield));
+  assert.ok(reset.snapshot.players.every(p => p.kills === 0 && p.deaths === 0 && p.health === RULES.health && p.score === 0 && p.streak === 0));
+  assert.ok(reset.snapshot.players.filter(p => p.bot).every(p => p.loadout.primary === (p.id === 'bot-moxie' ? 'hornet9' : p.id === 'bot-rook' ? 'longbow' : 'kr5')), 'Bots carry their shared loadouts (Rook is a marksman on Challenging).');
   const count = (table: string) => app.store.db.prepare(`SELECT COUNT(*) AS total FROM ${table}`).get()!.total;
   assert.equal(count('profiles'), 2, 'Bots must never become persistent identities.');
   for (const table of ['stats', 'matches', 'match_pairs']) assert.equal(count(table), 0, `${table} must not receive practice results.`);

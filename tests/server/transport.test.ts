@@ -4,9 +4,10 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createGameServer } from '../../server/app.js';
-import { fixture, startReady } from '../acceptance/helpers.js';
+import { fixture, frame, startReady } from '../acceptance/helpers.js';
 import { RULES, type Crew } from '../../shared/protocol.js';
 import { idleInput } from '../../server/engine.js';
+import { LOADOUT_PRESETS } from '../../shared/weapons.js';
 
 test('static serving confines requests to the client directory and gives missing assets real 404 responses', async t => {
   const directory = mkdtempSync(join(tmpdir(), 'kannon-static-')); const client = join(directory, 'dist'); mkdirSync(client);
@@ -84,9 +85,52 @@ test('automatic reconnect followed by same-room join is idempotent and accepts a
   const dropMark = guest.mark(); host.close(); await guest.wait('room', m => m.room.players.some(p => p.id === a.profile.id && !p.connected), dropMark);
   const returned = await f.connect(a.token); await returned.wait('room', m => m.room.id === created.room.id && m.room.phase === 'playing');
   const joined = await returned.command({ type: 'join', code: created.room.code }, 'room'); assert.equal(joined.room.phase, 'playing'); assert.equal(joined.room.players.length, 2);
-  const seqMark = returned.mark(); returned.send({ type: 'input', input: { ...idleInput(1), slot: 3 } });
-  const fresh = await returned.wait('snapshot', m => m.snapshot.players.some(p => p.id === a.profile.id && p.lastInputSeq === 1 && p.slot === 3), seqMark);
+  const seqMark = returned.mark(); returned.send({ type: 'input', input: { ...idleInput(1), slot: 1 } });
+  const fresh = await returned.wait('snapshot', m => m.snapshot.players.some(p => p.id === a.profile.id && p.lastInputSeq === 1 && p.slot === 1), seqMark);
   assert.equal(fresh.snapshot.phase, 'playing'); assert.equal(returned.messages.some(m => m.type === 'event' && m.event.type === 'match-end'), false);
+  assert.equal(fresh.snapshot.self?.id, a.profile.id, 'A recovered socket gets its own full state again.');
+});
+test('loadouts are checked, follow the player into a room, and wait for the next spawn once play has begun', async t => {
+  const f = await fixture(t); const a = await f.profile('Class picker'), b = await f.profile('Rival');
+  const host = await f.connect(a.token), guest = await f.connect(b.token);
+  host.send({ type: 'loadout', loadout: LOADOUT_PRESETS.close });
+  const created = await host.command({ type: 'create', ranked: false }, 'room');
+  const lobby = await host.wait('snapshot', m => !!m.snapshot.self);
+  assert.deepEqual(lobby.snapshot.self!.loadout, LOADOUT_PRESETS.close, 'A class chosen before joining applies in the lobby.');
+  assert.equal(lobby.snapshot.self!.weapon, 'hornet9'); assert.deepEqual(lobby.snapshot.self!.mag, [32, 12]);
+  for (const loadout of [{ ...LOADOUT_PRESETS.close, perks: ['quick-hands', 'deep-pockets', 'second-wind'] }, { ...LOADOUT_PRESETS.close, primary: 'rocket' }, null, 'assault']) {
+    const error = await host.command({ type: 'loadout', loadout: loadout as never }, 'error');
+    assert.equal(error.code, 'INVALID_LOADOUT');
+  }
+  await guest.command({ type: 'join', code: created.room.code }, 'room', m => m.room.players.length === 2);
+  await startReady(host, [host, guest]);
+  await host.wait('snapshot', m => m.snapshot.phase === 'playing');
+  const mark = host.mark(); host.send({ type: 'loadout', loadout: LOADOUT_PRESETS.marksman });
+  await host.command({ type: 'ping', t: 7 }, 'pong');
+  const later = await host.wait('snapshot', m => m.snapshot.phase === 'playing', mark);
+  assert.deepEqual(later.snapshot.self!.loadout, LOADOUT_PRESETS.close, 'A new class waits for the next spawn.');
+  assert.equal(host.messages.slice(mark).some(m => m.type === 'error'), false);
+});
+test('malformed or hostile inputs are refused without stopping the room, and unearned rewards do nothing', async t => {
+  const f = await fixture(t); const a = await f.profile('Hostile page'), b = await f.profile('Honest page');
+  const host = await f.connect(a.token), guest = await f.connect(b.token);
+  const created = await host.command({ type: 'create', ranked: false }, 'room');
+  await guest.command({ type: 'join', code: created.room.code }, 'room', m => m.room.players.length === 2);
+  await startReady(host, [host, guest]);
+  await host.wait('snapshot', m => m.snapshot.phase === 'playing');
+  const hostile = [
+    { ...frame(1), viewTime: null }, { ...frame(1), viewTime: 'now' }, frame(1, { streak: 'mortar', streakTarget: { x: 999, z: 0 } }), { ...frame(1), streak: 'nuke' },
+    { ...frame(1), slot: 3 }, { ...frame(1), crouch: 'yes' }, { seq: 1, moveX: 0, moveZ: 0, yaw: 0, pitch: 0, fire: true, aim: false, jump: false, sprint: false, reload: false, slot: 1 },
+  ];
+  for (const input of hostile) {
+    const error = await host.command({ type: 'input', input: input as never }, 'error');
+    assert.match(error.message, /invalid player input/i);
+  }
+  const mark = host.mark(); host.send({ type: 'input', input: frame(1, { streak: 'drone', moveX: 1 }) });
+  const accepted = await host.wait('snapshot', m => m.snapshot.players.some(p => p.id === a.profile.id && p.lastInputSeq === 1), mark);
+  assert.equal(accepted.snapshot.phase, 'playing'); assert.deepEqual(accepted.snapshot.drones, []);
+  assert.equal(host.messages.slice(mark).some(m => m.type === 'event' && m.event.type === 'streak'), false, 'An unearned reward does nothing.');
+  await guest.wait('snapshot', m => m.snapshot.serverTime > accepted.snapshot.serverTime, guest.mark());
 });
 test('finished recovery replays the saved ranked result exactly once without another rating write and clears it on rematch', async t => {
   const originalNow = Date.now; let offset = 0; Date.now = () => originalNow() + offset;

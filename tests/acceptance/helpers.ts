@@ -5,9 +5,14 @@ import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 import WebSocket from 'ws';
 import { createGameServer } from '../../server/app.js';
-import type { ClientMessage, Profile, ServerMessage } from '../../shared/protocol.js';
+import { WORLD_VERSION, type ClientMessage, type InputFrame, type Profile, type ServerMessage } from '../../shared/protocol.js';
 
 export interface Identity { token: string; profile: Profile }
+/** A complete v3 input frame, as a current page sends it. */
+export const frame = (seq: number, changes: Partial<InputFrame> = {}): InputFrame => ({
+  seq, moveX: 0, moveZ: 0, yaw: 0, pitch: 0, fire: false, aim: false, jump: false, sprint: false, reload: false, slot: 1,
+  crouch: false, dash: false, melee: false, grenade: false, streak: null, viewTime: Date.now(), ...changes,
+});
 type MessageOf<T extends ServerMessage['type']> = Extract<ServerMessage, { type: T }>;
 
 export class Peer {
@@ -99,7 +104,7 @@ export async function fixture(t: TestContext) {
       const socket = new WebSocket(base.replace(/^http/, 'ws') + '/ws', { origin: base });
       const peer = new Peer(socket); peers.push(peer);
       await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject); });
-      if (token) await peer.command({ type: 'hello', token, readyProtocol: 1, worldVersion: 'kannon-town-v1' }, 'welcome');
+      if (token) await peer.command({ type: 'hello', token, readyProtocol: 1, worldVersion: WORLD_VERSION }, 'welcome');
       return peer;
     },
   };
