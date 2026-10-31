@@ -16,14 +16,15 @@ import { renderTier, type RenderTier } from './RenderTiers';
 import { CombatEffects } from './CombatEffects';
 import { effectsOptionsFor } from './effects/budget';
 import { DeferredRespawns } from './DeferredRespawns';
-import { LocalPrediction, vaultProgress } from './MovementPrediction';
+import { LocalPlayer } from './LocalPlayer';
+import { vaultProgress } from './MovementPrediction';
 import { AutomaticFire, reticleTarget } from './AutomaticFire';
 import { ViewModel } from './ViewModel';
 import { THROW_MOVE, THROW_RELEASE } from './viewmodel/choreography';
 import { loadWeaponModels, type WeaponLibrary } from './WeaponModels';
 import type { HudStore } from './hud';
 import { blastFeedback, FirstPersonCamera, FirstPersonMotion, flinchKick, LandingFilter, verticalFov, viewYaw } from './FirstPersonCamera';
-import { LocalWeapon, RecoilRecovery, ServerTracers, shotCone, shotDirections, type WeaponEvent } from './LocalWeapon';
+import { RecoilRecovery, ServerTracers, shotCone, shotDirections, type WeaponEvent } from './LocalWeapon';
 import { isFriend, RemotePlayers, renderTime, type Buffered, type RemoteSounds } from './RemotePlayers';
 import { crosshairGap, displayedHealth, dueWhistles, GrenadeTracker, HudFeed, nearMiss, shotMarker } from './HudFeed';
 
@@ -94,15 +95,15 @@ export class GameView {
   private readonly remotes: RemotePlayers;
   private readonly fpCamera = new FirstPersonCamera();
   private readonly motion = new FirstPersonMotion();
-  private readonly prediction = new LocalPrediction();
+  /** My predicted body and weapon. */
+  private readonly local = new LocalPlayer();
+  private readonly prediction = this.local.prediction;
+  private readonly weapon = this.local.weapon;
   private readonly landings = new LandingFilter();
   /** Strongest landing predicted since the last frame (0..1), shown on the next frame. */
   private landing = 0;
-  private readonly weapon = new LocalWeapon();
   /** My shots fired inside a random cone, whose tracers come from the server's shot events. */
   private readonly serverTracers = new ServerTracers();
-  /** The last input the server reported processing for me; it only goes back when it starts again at 0. */
-  private lastAck = 0;
   private readonly recoil = new RecoilRecovery();
   private readonly hudFeed: HudFeed;
   private readonly grenades = new GrenadeTracker();
@@ -319,20 +320,10 @@ export class GameView {
   recordInput(frame: InputFrame) {
     if (this.disposed) return;
     const wall = performance.now();
-    const latest = this.snapshotBuffer[this.snapshotBuffer.length - 1];
-    // The server judges a new trigger press, the knife and a cook on the body before this tick's move.
-    // A reference is enough: a move replaces or clears the vault, never edits it.
-    const vaultBefore = this.prediction.movement.state.vault;
-    const moved = this.prediction.record(frame, wall, !!latest && wall - latest.received < 500 && this.localPlaying());
+    const latest = this.snapshotBuffer[this.snapshotBuffer.length - 1], playing = this.localPlaying();
+    const { moved, events } = this.local.send(frame, wall, !!latest && wall - latest.received < 500 && playing, playing, this.motion.ads);
     const state = this.prediction.movement.state;
     if (moved) this.landing = Math.max(this.landing, this.landings.tick(moved, isPlayerGrounded(state), state.posture));
-    const now = moved ? this.prediction.movement.time : this.serverTime(wall) + this.prediction.clockLead;
-    const pressVault = moved ? vaultBefore : state.vault;
-    const events = this.weapon.step(frame, {
-      now, alive: this.localPlaying(), sprinting: !!state.sprinting, dashing: !!state.dashing,
-      vaultProgress: vaultProgress(state.vault, now), pressVaultProgress: vaultProgress(pressVault, now), vaultingBefore: !!pressVault,
-      ads: this.motion.ads,
-    });
     for (const event of events) this.weaponEvent(event, frame);
     if (!frame.fire) this.recoil.release(this.weapon.spec.recoil.recovery);
   }
@@ -366,7 +357,7 @@ export class GameView {
         if (spec.pellets > 1 || event.burst % 3 === 0) {
           // Until the sights are fully up the server rolls this bullet inside a random cone, so a streak
           // along the crosshair could show a hit that is really a miss: the server's shot event draws it.
-          if (shotCone(spec, event.aim) > 0) this.serverTracers.expect(event.weapon, event.at);
+          if (shotCone(spec, event.aim) > 0) this.serverTracers.expect(event.weapon, frame.seq);
           else this.localTracer(frame, event.weapon, eye, event.aim);
         }
         break;
@@ -455,7 +446,7 @@ export class GameView {
     } else if (event.playerId === localId) {
       // Muzzle, sound and recoil were predicted when the input was sent, and so was the tracer, except for
       // a shot inside a random cone: only this event knows where that one went.
-      const tracer = this.serverTracers.take(event.weapon, event.at);
+      const tracer = this.serverTracers.take(event.weapon, event.seq);
       this.effects.shot(event, this.viewModel.muzzleWorld(this.camera, this.scratch), { local: true, tracer, viewerId: localId });
       const kind = shotMarker(event, localId);
       if (kind) { this.hudFeed.marker(kind, now); this.audio.hitMarker(kind); }
@@ -591,24 +582,12 @@ export class GameView {
     if (self) input.setRewards(self.rewards ?? []);
     const alive = local.health > 0 && local.connected;
     const spawned = this.firstLocalSnapshot || roundReset || (!this.lastAlive && alive);
-    // A reconnect makes the server count my inputs again from 0. Every frame still held went down with
-    // the old socket or was simulated before the drop, so the weapon and the body take the server's
-    // state and replay none. (The server keeps my weapon slot, so this is not a new life.)
-    const restarted = !spawned && local.lastInputSeq < this.lastAck;
-    this.lastAck = local.lastInputSeq;
-    // The server time my acknowledged input ran at: a queued input can run behind the tick.
-    const ranAt = self?.lastInputTime ?? snapshot.serverTime;
     if (spawned) {
       input.resetSpawnView(local.yaw, local.pitch);
       this.firstLocalSnapshot = false; this.killer = null; this.recoil.reset(); this.serverTracers.clear();
-      if (self) this.weapon.reset(self, ranAt);
-    } else if (self) {
-      if (restarted) this.weapon.reset(self, ranAt);
-      else this.weapon.reconcile(self, local.lastInputSeq, ranAt);
     }
     this.lastAlive = alive;
-    const snapped = this.prediction.receive(self ? { ...local, ...self } : local, snapshot.serverTime, local.lastInputSeq,
-      { playing: snapshot.phase === 'playing', alive, spawned, restarted }, now);
+    const snapped = this.local.receive(snapshot, local, self, spawned, now);
     // Teleports and respawns should never drag a camera through the arena.
     const state = this.prediction.movement.state;
     if (snapped) { this.fpCamera.snap(state, state.posture); this.motion.reset(state.posture); this.landings.reset(); this.landing = 0; }

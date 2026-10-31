@@ -339,22 +339,23 @@ test('only the Heron 7 rolls a random cone: wide from the hip, none once fully s
   assert.equal(shotCone(WEAPONS.longbow, NaN), WEAPONS.longbow.hipSpread);
 });
 
-test('a shot whose tracer is left to the server is matched to its confirmation by weapon and tick time', () => {
+test('a shot whose tracer is left to the server is matched to its confirmation by weapon and the frame that fired it', () => {
   const tracers = new ServerTracers();
-  assert.equal(tracers.take('longbow', 10_000), false, 'Nothing expected: the tracer was already drawn');
-  tracers.expect('longbow', 10_000);
-  assert.equal(tracers.take('kr5', 10_010), false, 'Another weapon is not that shot');
-  assert.equal(tracers.take('longbow', 10_030), true);
-  assert.equal(tracers.take('longbow', 10_030), false, 'Each expected shot is drawn once');
+  assert.equal(tracers.take('longbow', 100), false, 'Nothing expected: the tracer was already drawn');
+  tracers.expect('longbow', 100);
+  assert.equal(tracers.take('kr5', 100), false, 'Another weapon is not that shot');
+  assert.equal(tracers.take('longbow', 100), true);
+  assert.equal(tracers.take('longbow', 100), false, 'Each expected shot is drawn once');
   // The first predicted round never went off on the server; the second did.
-  tracers.expect('longbow', 20_000); tracers.expect('longbow', 21_300);
-  assert.equal(tracers.take('longbow', 21_290), true, 'A shot the server never fired falls away');
-  assert.equal(tracers.take('longbow', 21_300), false);
-  tracers.expect('longbow', 30_000);
-  assert.equal(tracers.take('longbow', 29_000), false, 'A confirmation from well before the predicted shot is not it');
-  assert.equal(tracers.take('longbow', 30_100), true);
-  tracers.expect('longbow', 40_000); tracers.clear();
-  assert.equal(tracers.take('longbow', 40_000), false);
+  tracers.expect('longbow', 200); tracers.expect('longbow', 238);
+  assert.equal(tracers.take('longbow', 238), true, 'A shot the server never fired falls away');
+  assert.equal(tracers.take('longbow', 238), false);
+  tracers.expect('longbow', 300);
+  assert.equal(tracers.take('longbow', 299), false, 'A confirmation from an earlier frame is not it');
+  assert.equal(tracers.take('longbow', undefined), false, 'nor one with no frame');
+  assert.equal(tracers.take('longbow', 300), true);
+  tracers.expect('longbow', 400); tracers.clear();
+  assert.equal(tracers.take('longbow', 400), false);
 });
 
 test('a new trigger press, the knife and a cook are judged on the body before the move; the held trigger after it', () => {

@@ -1,9 +1,10 @@
-import { clamp, directionFromAngles, normalize, reached, rightFromYaw } from '../../shared/physics';
+import { clamp, directionFromAngles, normalize, reached, rightFromYaw, TIME_EPSILON_MS } from '../../shared/physics';
 import { RULES, type InputFrame, type Loadout, type PlayerState, type Slot, type Vec3, type WeaponId } from '../../shared/protocol';
 import {
   DEEP_POCKETS_EXTRA_MAGS, DEFAULT_LOADOUT, EXPLOSIVES, fireIntervalMs, hasPerk, PELLET_PATTERN, QUICK_HANDS_FACTOR, STEADY_AIM_ADS_FACTOR, weaponFor,
   type WeaponSpec,
 } from '../../shared/weapons';
+import { TICK_MS } from './MovementPrediction';
 
 /** The local player's weapon as the server will run it, predicted for instant presentation.
  * Times are predicted server milliseconds. The server's ammo, reload and timers win: every
@@ -110,24 +111,23 @@ export function shotDirections(spec: WeaponSpec, yaw: number, pitch: number, aim
   }));
 }
 
-/** How far apart (ms) a predicted shot and the server's confirmation of it may be. */
-const TRACER_MATCH_MS = 250;
 /** The local player's shots that left inside a random cone: the client cannot know where they went,
  * so their tracer is drawn from the server's shot event instead of along the crosshair. Each confirmed
- * shot is matched to the expected one by weapon and tick time; shots the server never fired fall away. */
+ * shot is matched to the expected one by weapon and the input frame that fired it; shots arrive in
+ * frame order, so an expected shot the server never fired falls away at the next later one. */
 export class ServerTracers {
-  private expected: Array<{ weapon: WeaponId; at: number }> = [];
-  expect(weapon: WeaponId, at: number) {
-    if (!Number.isFinite(at)) return;
-    this.expected.push({ weapon, at });
+  private expected: Array<{ weapon: WeaponId; seq: number }> = [];
+  expect(weapon: WeaponId, seq: number) {
+    if (!Number.isFinite(seq)) return;
+    this.expected.push({ weapon, seq });
     if (this.expected.length > 8) this.expected.shift();
   }
   /** True when this confirmed local shot is one whose tracer was left to the server. */
-  take(weapon: WeaponId | 'drone', at: number): boolean {
-    if (!Number.isFinite(at)) return false;
-    while (this.expected.length && this.expected[0]!.at < at - TRACER_MATCH_MS) this.expected.shift();
+  take(weapon: WeaponId | 'drone', seq: number | undefined): boolean {
+    if (seq === undefined || !Number.isFinite(seq)) return false;
+    while (this.expected.length && this.expected[0]!.seq < seq) this.expected.shift();
     const next = this.expected[0];
-    if (!next || next.weapon !== weapon || next.at > at + TRACER_MATCH_MS) return false;
+    if (!next || next.seq !== seq || next.weapon !== weapon) return false;
     this.expected.shift();
     return true;
   }
@@ -206,7 +206,7 @@ export class LocalWeapon {
   }
 
   /** Server state after input `ackSeq`, which ran at server time `ranAt`, replaces the prediction;
-   * later inputs replay silently. */
+   * later inputs replay silently, each one frame step after the one before it, as the server runs them. */
   reconcile(self: PlayerState, ackSeq: number, ranAt: number) {
     this.loadout = self.loadout ?? this.loadout;
     const pending = this.history.filter(entry => entry.seq > ackSeq);
@@ -215,7 +215,8 @@ export class LocalWeapon {
     this.state = base;
     if (pending.length) this.previous = pending[0]!.previous;
     this.history = [];
-    for (const entry of pending) this.advance(entry.input, entry.ctx, null);
+    // Counted like the body's replay: across a respawn the acknowledged input is the last life's.
+    pending.forEach((entry, index) => this.advance(entry.input, { ...entry.ctx, now: ranAt + (index + 1) * TICK_MS }, null));
   }
 
   /** One sent input. Returns what the player should see and hear now. */
@@ -263,22 +264,29 @@ export class LocalWeapon {
     if (Number.isFinite(self.readyAt)) state.readyAt = self.readyAt;
     if (Number.isFinite(self.meleeUntil)) state.meleeUntil = self.meleeUntil;
     state.cookingSince = Number.isFinite(self.cookingSince) ? self.cookingSince : 0;
+    // Timers only the server's runtime keeps; null means never.
+    if (Array.isArray(self.nextFireAt)) state.nextFireAt = [self.nextFireAt[0] ?? -Infinity, self.nextFireAt[1] ?? -Infinity];
+    if (self.lastSprintAt !== undefined) { state.lastSprintAt = self.lastSprintAt ?? -Infinity; state.lastSprintDash = !!self.lastSprintDash; }
+    if (self.aimSince !== undefined) state.aimSince = self.aimSince;
+    if (self.triggerPending !== undefined) state.triggerPending = self.triggerPending;
     const reloadSlot = self.reloadSlot === 1 || self.reloadSlot === 2 ? self.reloadSlot : 0;
     if (!reloadSlot || !(self.reloadingUntil > 0)) {
       state.reloadSlot = 0; state.reloadingUntil = 0; state.shellsLeft = 0; return;
     }
-    // Keep the predicted timing when it agrees; otherwise derive it from the server's deadline.
-    if (state.reloadSlot === reloadSlot && Math.abs(state.reloadingUntil - self.reloadingUntil) <= 2) return;
+    // The server's deadline wins. The predicted reload's look (empty or not, when it began) stays when it agrees.
+    const agrees = state.reloadSlot === reloadSlot && Math.abs(state.reloadingUntil - self.reloadingUntil) <= TIME_EPSILON_MS;
     const spec = weaponFor(this.loadout, reloadSlot), index = reloadSlot - 1;
     state.reloadSlot = reloadSlot; state.reloadingUntil = self.reloadingUntil;
     if (spec.perShellMs) {
+      // Shells still to go in after `ranAt` (one due exactly then is in already).
       const per = spec.perShellMs * handlingFactor(this.loadout);
-      state.shellsLeft = Math.max(1, Math.min(spec.magazine - state.mag[index], state.reserve[index], Math.ceil((self.reloadingUntil - ranAt) / per)));
+      state.shellsLeft = Math.max(1, Math.min(spec.magazine - state.mag[index], state.reserve[index], Math.ceil((self.reloadingUntil - ranAt - TIME_EPSILON_MS) / per)));
       state.nextShellAt = self.reloadingUntil - (state.shellsLeft - 1) * per;
+      if (agrees) return;
       state.reloadEmpty = state.mag[index] === 0;
       state.reloadShells = Math.max(state.shellsLeft, spec.magazine - state.mag[index]);
       state.reloadStartedAt = self.reloadingUntil - shellReloadMs(spec, state.reloadShells, this.loadout);
-    } else {
+    } else if (!agrees) {
       state.reloadEmpty = state.mag[index] === 0;
       state.reloadStartedAt = self.reloadingUntil - reloadMs(spec, state.reloadEmpty, this.loadout);
     }

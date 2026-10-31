@@ -45,8 +45,8 @@ export const PLAYOUT_RELAX_MS = 5000;
 /** Every CLOCK_CHECK_FRAMES frames a streaming clock is compared with when its frames arrive. If even the least
  * delayed of them came more than two ticks before its clock (a shorter route than when the clock was set), or more
  * than a tick after it (a longer route, frames the page skipped), the clock moves towards them by at most
- * CLOCK_SLEW_MS a frame: too little to change a timer the client predicted. Jitter only delays frames, so it never
- * moves the clock. */
+ * CLOCK_SLEW_MS a frame. The player's own timers move with it (see shiftTimers), so no timer the client predicted
+ * changes. Jitter only delays frames, so it never moves the clock. */
 const CLOCK_CHECK_FRAMES = 30, CLOCK_SLEW_MS = 1;
 /** A clock this far behind the tick is put straight back on it. */
 const CLOCK_RESET_MS = 250;
@@ -171,6 +171,9 @@ interface Runtime {
    * vaults and weapon timers follow the client's predicted clock. `clockSeq` is null until a frame sets the clock
    * after a spawn, reconnect or silence. */
   clock: number; clockSeq: number | null;
+  /** The last frame simulated since a spawn, the round going live or a reconnect started the clock afresh, and how far
+   * the player's own timers have moved against the frame clock since then (see shiftTimers); null and 0 until one. */
+  ranSeq: number | null; shifted: number;
   /** Arrival times of the latest STREAM_FRAMES frames, and whether the player is streaming (see updatePlayer). */
   arrivals: Array<{ at: number; seq: number }>; streaming: boolean;
   /** Clock check: frames measured since the last one, the most any of them arrived before its clock, and the
@@ -201,7 +204,9 @@ interface Runtime {
 /** `origin` is where the frame that made the action left the player. */
 interface QueuedShot { player: PlayerState; frame: InputFrame; spec: WeaponSpec; slot: Slot; ads: number; origin: Pose }
 interface QueuedMelee { player: PlayerState; frame: InputFrame; origin: Pose }
-interface TickActions { shots: QueuedShot[]; melees: QueuedMelee[] }
+/** A frag held past its fuse, gone off in hand on the frame that reached the fuse. */
+interface QueuedBlast { player: PlayerState; from: Vec3; life: number }
+interface TickActions { shots: QueuedShot[]; melees: QueuedMelee[]; blasts: QueuedBlast[] }
 /** Actions one frame queues before its movement is known. */
 interface FrameActions { shots: Array<Omit<QueuedShot, 'origin'>>; melees: Array<Omit<QueuedMelee, 'origin'>> }
 interface PendingHit { attacker: PlayerState; target: PlayerState; amount: number; cause: DamageCause; weapon?: WeaponId; slot?: Slot; zone?: HitZone; from: Vec3; life: number }
@@ -278,7 +283,7 @@ export class MatchEngine {
     };
     this.players.set(profile.id, state);
     this.runtime.set(profile.id, {
-      input: idleInput(), receivedAt: 0, queue: [], presses: {}, clock: now, clockSeq: null, arrivals: [], streaming: false,
+      input: idleInput(), receivedAt: 0, queue: [], presses: {}, clock: now, clockSeq: null, ranSeq: null, shifted: 0, arrivals: [], streaming: false,
       checked: 0, earliest: -Infinity, slew: 0, startAt: now, playout: 0, late: false, earlySince: now, credit: FRAME_CREDIT_MS, creditAt: now,
       fireDown: false, jumpDown: false, crouchDown: false, aimSince: null, triggerPending: false,
       nextFireAt: [-Infinity, -Infinity], lastSprintAt: -Infinity, lastSprintDash: false, reload: null, pendingLoadout: null,
@@ -354,7 +359,11 @@ export class MatchEngine {
   }
   step(now: number, dt: number): void {
     this.tick++;
-    if (this.phase === 'countdown' && now >= this.countdownUntil) { this.phase = 'playing'; this.startedAt = now; }
+    if (this.phase === 'countdown' && now >= this.countdownUntil) {
+      this.phase = 'playing'; this.startedAt = now;
+      // Frames count from here: the countdown does not stretch a timer the first frame inherits (see shiftTimers).
+      for (const player of this.players.values()) this.resetClock(player, this.runtime.get(player.id)!, now);
+    }
     if (this.phase !== 'playing') return;
     if (now - this.startedAt >= RULES.matchSeconds * 1000) { this.finish('Time is up.', now); return; }
     const botsActive = !!this.bots && [...this.players.values()].some(p => !p.bot && p.connected);
@@ -369,7 +378,7 @@ export class MatchEngine {
         else this.freeze(player);
       }
     }
-    const actions: TickActions = { shots: [], melees: [] };
+    const actions: TickActions = { shots: [], melees: [], blasts: [] };
     for (const player of this.players.values()) {
       if (player.bot && !botsActive) continue;
       if (player.health <= 0) { if (now >= player.respawnAt && player.connected) this.respawn(player, now); continue; }
@@ -385,7 +394,7 @@ export class MatchEngine {
     const hits: PendingHit[] = [], droneHits: DroneHit[] = [];
     for (const shot of actions.shots) this.traceShot(shot, now, hits, droneHits);
     for (const melee of actions.melees) this.traceMelee(melee, now, hits);
-    this.advanceExplosives(now, hits);
+    this.advanceExplosives(now, hits, actions.blasts);
     this.fireDrones(now, hits);
     this.resolve(hits, droneHits, now);
     this.expireRecon(now);
@@ -408,7 +417,7 @@ export class MatchEngine {
       mode: this.mode, scoreLimit: this.scoreLimit,
       ...(this.mode === 'tdm' ? { teamScores: { ...this.teamScores } } : {}),
       players: [...this.players.values()].map(publicState),
-      ...(viewer ? { self: privateState(viewer) } : {}),
+      ...(viewer ? { self: { ...privateState(viewer), ...weaponTimers(this.runtime.get(viewer.id)!) } } : {}),
       winnerIds: [...this.winnerIds], ...(this.winningTeam ? { winningTeam: this.winningTeam } : {}),
       drones: this.drones.map(d => ({ id: d.id, ownerId: d.ownerId, ...(d.team ? { team: d.team } : {}), x: r3(d.x), y: r3(d.y), z: r3(d.z), yaw: r4(d.yaw), health: Math.max(0, Math.round(d.health)), until: Math.round(d.until) })),
       recon: this.recon.map(r => ({ ownerId: r.ownerId, ...(r.team ? { team: r.team } : {}), until: Math.round(r.until) })),
@@ -468,10 +477,28 @@ export class MatchEngine {
   private releaseControls(rt: Runtime) {
     rt.queue = []; rt.presses = {}; rt.fireDown = false; rt.jumpDown = false; rt.crouchDown = false; rt.aimSince = null; rt.triggerPending = false;
   }
-  /** A spawn or reconnect starts the player's clock afresh on the tick; the first frame sets it (see updatePlayer). */
+  /** A spawn, the round going live or a reconnect starts the player's clock afresh on the tick; the first frame runs
+   * one step after it (see updatePlayer). Silence counts from here too, so no idle frame moves the clock before the
+   * page's first frame can arrive. */
   private resetClock(player: PlayerState, rt: Runtime, now: number) {
-    rt.clock = now; this.endStream(rt); rt.earlySince = now;
+    rt.clock = now; rt.receivedAt = now; this.endStream(rt); rt.earlySince = now; rt.ranSeq = null; rt.shifted = 0;
     player.lastInputTime = now;
+  }
+  /** Moves the player's own timers by `delta` ms, as their frame clock moved by that much more than one step per
+   * frame: when a stream starts, the clock check slews it, it is put back on the tick, a frame is forced through a
+   * full queue, or the first frame of a life or after a silence runs. Every timer then counts the player's frames
+   * exactly as the page predicts them, and frame-aligned deadlines fall on the same frame on both sides. Shared and
+   * tick-based times (spawn protection, regeneration, respawns, grenades in flight) stay on the tick. */
+  private shiftTimers(player: PlayerState, rt: Runtime, delta: number) {
+    const shift = (ms: number) => (Number.isFinite(ms) && ms !== 0 ? ms + delta : ms);
+    player.readyAt = shift(player.readyAt); player.meleeUntil = shift(player.meleeUntil);
+    player.reloadingUntil = shift(player.reloadingUntil); player.cookingSince = shift(player.cookingSince);
+    player.slideUntil = shift(player.slideUntil); player.slideCooldownUntil = shift(player.slideCooldownUntil);
+    if (player.vault) { player.vault.start += delta; player.vault.end += delta; }
+    if (rt.reload) rt.reload.start += delta;
+    rt.nextFireAt = [shift(rt.nextFireAt[0]), shift(rt.nextFireAt[1])];
+    rt.lastSprintAt = shift(rt.lastSprintAt);
+    if (rt.aimSince !== null) rt.aimSince += delta;
   }
   /** The connection went quiet, or the life ended: the next frames start a stream (and its clock) afresh. */
   private endStream(rt: Runtime) {
@@ -623,7 +650,9 @@ export class MatchEngine {
     let simulated = 0;
     while (rt.queue.length && simulated < FRAMES_PER_TICK && rt.credit >= FRAME_MS - 1e-6) {
       const queued = rt.queue[0]!, behind = rt.queue.length - 1, own = rt.streaming && rt.clockSeq !== null;
-      let clock: number;
+      // How far this frame runs from one FRAME_MS step after the frame before it (by sequence number), which is where
+      // the page predicts it; the player's own timers move by as much (see below).
+      let clock: number, shift = 0;
       if (own) {
         const strict = rt.clock + (queued.input.seq - rt.clockSeq!) * FRAME_MS, onTick = now - behind * FRAME_MS - rt.playout;
         // Not due yet: wait. A full queue (a sender running ahead of real time) or a clock far ahead of the tick (a
@@ -634,19 +663,35 @@ export class MatchEngine {
         const step = player.vault || player.posture === 'slide' ? 0 : Math.max(-CLOCK_SLEW_MS, Math.min(CLOCK_SLEW_MS, rt.slew));
         rt.slew -= step;
         clock = Math.min(now, Math.max(rt.clock, strict < onTick - CLOCK_RESET_MS ? onTick : strict + step));
+        // A frame forced through runs on the tick and keeps real time: sending fast never makes a weapon faster.
+        if (!forced) shift = clock - strict;
         // The clock check (see CLOCK_CHECK_FRAMES): how long before its clock the least delayed frame arrived.
         rt.earliest = Math.max(rt.earliest, clock - queued.receivedAt);
         if (++rt.checked >= CLOCK_CHECK_FRAMES) {
           rt.slew = rt.earliest > 2 * FRAME_MS ? FRAME_MS - rt.earliest : rt.earliest < -FRAME_MS ? -rt.earliest : 0;
           rt.checked = 0; rt.earliest = -Infinity;
         }
-      } else if (rt.streaming) clock = Math.min(now, Math.max(rt.clock, rt.startAt)); // The frame that starts a stream.
-      else clock = Math.min(now, Math.max(now - behind * FRAME_MS, rt.clock + FRAME_MS));
+      } else if (rt.streaming) {
+        clock = Math.min(now, Math.max(rt.clock, rt.startAt)); // The frame that starts a stream.
+        shift = clock - (rt.clock + (rt.ranSeq === null ? 1 : queued.input.seq - rt.ranSeq) * FRAME_MS);
+      } else {
+        clock = Math.min(now, Math.max(now - behind * FRAME_MS, rt.clock + FRAME_MS));
+        // The first frame after the clock started afresh (a spawn, the round going live, a reconnect) runs where the
+        // page predicts it, one step after that start, so a raise begun at the spawn ends on the same frame.
+        if (rt.ranSeq === null) shift = clock - (rt.clock + FRAME_MS);
+      }
       rt.queue.shift(); rt.credit -= FRAME_MS; simulated++;
       // A frame that came less than a tick before it ran needed the playout.
       if (own && now - queued.receivedAt < FRAME_MS - CLOCK_TOLERANCE_MS) rt.earlySince = now;
+      // When a life's first frame runs, or a streaming player's clock starts, is slewed by the clock check or is put
+      // back on the tick, the player's own timers move with it, so they count frames exactly as the page predicts
+      // them. Other frames before a stream run on the tick's clock and their timers keep real time (a sparse or
+      // throttled page). The timers never get further ahead of the frame clock (itself never later than the tick)
+      // than the catch-up allowance.
+      shift = Math.max(shift, -FRAME_CREDIT_MS - rt.shifted);
+      if (Math.abs(shift) > CLOCK_TOLERANCE_MS) { this.shiftTimers(player, rt, shift); rt.shifted += shift; }
       this.simulate(player, rt, queued, clock, now, FRAME_SECONDS, actions);
-      rt.clockSeq = queued.input.seq;
+      rt.clockSeq = queued.input.seq; rt.ranSeq = queued.input.seq;
     }
     if (rt.streaming && rt.clockSeq !== null) {
       if (simulated) rt.late = false;
@@ -706,6 +751,11 @@ export class MatchEngine {
     // Only a real frame releases a cooked grenade. A stalled connection keeps it in hand while the fuse runs,
     // instead of throwing it wherever the player last looked.
     if (real && player.cookingSince > 0 && !input.grenade) this.throwGrenade(player, rt, input, now);
+    // Held past its fuse it goes off in hand, on this frame's own clock as the page predicts it (a silent
+    // connection's idle frames run on the tick, so a stall cannot hold it forever).
+    if (player.cookingSince > 0 && reached(now, player.cookingSince + EXPLOSIVES.frag.fuseMs)) {
+      player.cookingSince = 0; actions.blasts.push({ player, from: eyePosition(player), life: rt.life });
+    }
     if (streakPress) this.useReward(player, streakPress, now);
     if (input.reload || reloadPress?.slot === player.slot) this.startReload(player, rt, now);
     if (!earlyPress) {
@@ -879,7 +929,7 @@ export class MatchEngine {
       } else if (world) traces.push({ to: r3v(world.point), kind: 'world', normal: world.normal, surface: world.surface });
       else traces.push({ to, kind: 'range' });
     }
-    this.onEvent({ type: 'shot', playerId: player.id, weapon: spec.id, from: r3v(weaponMuzzle(eye, frame.yaw, frame.pitch)), traces, hit, at: now });
+    this.onEvent({ type: 'shot', playerId: player.id, weapon: spec.id, from: r3v(weaponMuzzle(eye, frame.yaw, frame.pitch)), traces, hit, at: now, seq: frame.seq });
   }
   /** The knife finds the nearest enemy in reach and in front, with a clear eye-to-eye line, at rewound positions. */
   private traceMelee({ player, frame, origin }: QueuedMelee, now: number, hits: PendingHit[]) {
@@ -896,11 +946,9 @@ export class MatchEngine {
     this.onEvent({ type: 'melee', playerId: player.id, ...(best ? { targetId: best.target.id } : {}), at: now });
     if (best && best.target.protectedUntil <= now) hits.push({ attacker: player, target: best.target, amount: RULES.meleeDamage, cause: 'melee', zone: 'torso', from: eye, life: rt.life });
   }
-  private advanceExplosives(now: number, hits: PendingHit[]) {
-    // Holding a cooked grenade past its fuse ends badly.
-    for (const player of this.players.values()) if (player.health > 0 && player.cookingSince > 0 && reached(now, player.cookingSince + EXPLOSIVES.frag.fuseMs)) {
-      player.cookingSince = 0; this.explode('frag', player, eyePosition(player), now, hits, this.runtime.get(player.id)!.life, `frag-${++this.entityCount}`);
-    }
+  private advanceExplosives(now: number, hits: PendingHit[], blasts: readonly QueuedBlast[]) {
+    // Holding a cooked grenade past its fuse ends badly (see simulate).
+    for (const blast of blasts) if (blast.player.health > 0) this.explode('frag', blast.player, blast.from, now, hits, blast.life, `frag-${++this.entityCount}`);
     for (let i = 0; i < this.grenades.length; i++) {
       const grenade = this.grenades[i]!;
       grenade.trajectory.advanceTo(Math.min(now, grenade.explodeAt) - grenade.thrownAt);
@@ -1122,6 +1170,15 @@ export function publicState(p: PlayerState): PublicPlayerState {
     respawnAt: Math.round(p.respawnAt), protectedUntil: Math.round(p.protectedUntil), reloadingUntil: Math.round(p.reloadingUntil),
     posture: p.posture, vault: roundVault(p.vault), slideUntil: Math.round(p.slideUntil), cookingSince: Math.round(p.cookingSince),
     lastInputSeq: p.lastInputSeq, ...(p.bot ? { bot: true } : {}), aiming: !!p.aiming, sprinting: !!p.sprinting, dashing: !!p.dashing,
+  };
+}
+/** The viewer's own weapon timers that live in the server's runtime, for the page to adopt with `self`: each slot's
+ * next shot, the last sprinting frame, when aim went down and a too-early press still held. Never-set times are null. */
+function weaponTimers(rt: Runtime): Partial<PlayerState> {
+  const time = (ms: number) => (Number.isFinite(ms) ? r3(ms) : null);
+  return {
+    nextFireAt: [time(rt.nextFireAt[0]), time(rt.nextFireAt[1])], lastSprintAt: time(rt.lastSprintAt), lastSprintDash: rt.lastSprintDash,
+    aimSince: rt.aimSince === null ? null : r3(rt.aimSince), triggerPending: rt.triggerPending,
   };
 }
 /** The receiving player's own full state. Timers keep their fractions (frame clocks are 1000/30 ms apart), so

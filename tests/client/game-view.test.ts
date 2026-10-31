@@ -7,8 +7,9 @@ import type { GameEvent, InputFrame, Loadout, PlayerState, PublicPlayerState, Wo
 import { LOADOUT_PRESETS, WEAPONS } from '../../shared/weapons';
 import { CombatEffects, type ShotOptions } from '../../src/game/CombatEffects';
 import { GameView } from '../../src/game/GameView';
-import { LocalWeapon, RecoilRecovery, ServerTracers, shotDirections, spawnFrags, spawnReserve } from '../../src/game/LocalWeapon';
-import { LocalPrediction, TICK_MS } from '../../src/game/MovementPrediction';
+import { LocalPlayer } from '../../src/game/LocalPlayer';
+import { RecoilRecovery, ServerTracers, shotDirections, spawnFrags, spawnReserve, type LocalWeapon } from '../../src/game/LocalWeapon';
+import { TICK_MS, type LocalPrediction } from '../../src/game/MovementPrediction';
 
 // The real GameView methods on a receiver holding real prediction and weapon state, with every
 // renderer-facing part replaced by a recorder (the full view needs WebGL).
@@ -65,11 +66,12 @@ function view(t: TestContext, loadout: Loadout = LOADOUT_PRESETS.assault, fields
   const document = page(t);
   const calls: Calls = {};
   const record = (name: string, result?: (...args: unknown[]) => unknown) => (...args: unknown[]) => { (calls[name] ??= []).push(args); return result?.(...args); };
+  const local = new LocalPlayer(loadout);
   const receiver = Object.assign(Object.create(GameView.prototype) as Receiver, {
     disposed: false, snapshot: null, snapshotBuffer: [], lastProcessedTick: -1, firstLocalSnapshot: true, localRespawnAt: 0,
-    lastAlive: false, lastAck: 0, killer: null, landing: 0, lastFrame: 0, frames: 0, statsTime: 0, slowTime: 0,
+    lastAlive: false, killer: null, landing: 0, lastFrame: 0, frames: 0, statsTime: 0, slowTime: 0,
     scratch: new THREE.Vector3(), camera: new THREE.PerspectiveCamera(), heldGrenades: new Map(), whistled: new Set(),
-    prediction: new LocalPrediction(), weapon: new LocalWeapon(loadout), recoil: new RecoilRecovery(), serverTracers: new ServerTracers(),
+    local, prediction: local.prediction, weapon: local.weapon, recoil: new RecoilRecovery(), serverTracers: new ServerTracers(),
     tier: { postprocessing: false },
     options: {
       getPlayerId: () => 'me',
@@ -165,12 +167,12 @@ test('a Heron 7 shot from the hip draws no tracer along the crosshair; the serve
   assert.equal(count('viewModel.fire'), 1, 'The shot itself is predicted at once');
   assert.equal(count('effects.shot'), 0, 'but its tracer is not: the server rolls it inside the hip cone');
   const confirmed: ShotEvent = {
-    type: 'shot', playerId: 'me', weapon: 'longbow', from: { x: -6, y: 1.5, z: 20 }, hit: false, at: 10_033,
+    type: 'shot', playerId: 'me', weapon: 'longbow', from: { x: -6, y: 1.5, z: 20 }, hit: false, at: 10_033, seq: 1,
     traces: [{ to: { x: 14, y: 2.1, z: 21.3 }, kind: 'world', normal: { x: -1, y: 0, z: 0 }, surface: 'concrete' }],
   };
   subject.shotEvent(confirmed, 'me', performance.now());
   assert.deepEqual(optionsOf(calls), { local: true, tracer: true, viewerId: 'me' }, 'The tracer comes from the real end points');
-  subject.shotEvent({ ...confirmed, at: 11_500 }, 'me', performance.now());
+  subject.shotEvent({ ...confirmed, at: 11_500, seq: 40 }, 'me', performance.now());
   assert.equal(optionsOf(calls).tracer, false, 'Only for the shot that left it to the server');
 });
 
@@ -186,7 +188,7 @@ test('fully scoped, the Heron 7 tracer is drawn at once along the crosshair, and
   assert.deepEqual(options, { local: true, tracer: true, viewerId: 'me' });
   const eye = predicted.from, end = predicted.traces[0]!.to, along = new THREE.Vector3(end.x - eye.x, end.y - eye.y, end.z - eye.z).normalize();
   assert.ok(along.x > 0.9999, 'Straight down the crosshair (east)');
-  subject.shotEvent({ ...predicted, playerId: 'me', at: 10_000 + 13 * TICK_MS }, 'me', performance.now());
+  subject.shotEvent({ ...predicted, playerId: 'me', at: 10_000 + 13 * TICK_MS, seq: 13 }, 'me', performance.now());
   assert.equal(optionsOf(calls).tracer, false);
 });
 

@@ -237,7 +237,8 @@ test('a cooked frag explodes in hand at the fuse and hurts only what it can see,
   assert.equal(sees(torsoCenter(a), torsoCenter(c)), false, 'The garage wall stands between them.');
   send(engine, 'a', 3100, { grenade: true }); engine.step(3100, 0);
   assert.deepEqual([a.cookingSince, a.frags], [3100, 1]);
-  for (let now = 3134; now < 6500; now += 33) { send(engine, 'a', now, { grenade: true }); engine.step(now, 0); }
+  // Frames at 30 a second: the fuse runs out on the frame whose own clock reaches it.
+  for (let frame = 1; frame < 102; frame++) { const now = 3100 + frame * TICK; send(engine, 'a', now, { grenade: true }); engine.step(now, 0); }
   assert.equal(of(events, 'explosion').length, 0);
   send(engine, 'a', 6500, { grenade: true }); engine.step(6500, 0);
   const [blast] = of(events, 'explosion');

@@ -100,6 +100,10 @@ export interface PlayerState extends PublicPlayerState {
    * 1000/30 ms step after the one before it, so the local prediction replays its unacknowledged inputs from here
    * (not from `serverTime`, the tick's time, which a queued input can run behind). */
   lastInputTime?: number;
+  /** Sent only in `self`, for the weapon's prediction: each slot's earliest next shot, the last frame spent
+   * sprinting and whether it was the dash, when aim went down, and a too-early press still held. Null: never. */
+  nextFireAt?: [number | null, number | null];
+  lastSprintAt?: number | null; lastSprintDash?: boolean; aimSince?: number | null; triggerPending?: boolean;
 }
 export interface Vec3 { x: number; y: number; z: number }
 /** Presentation of an authoritative ray, in pellet order (centre first). */
@@ -114,7 +118,8 @@ export interface DroneState { id: string; ownerId: string; team?: Team; x: numbe
 export interface ReconState { ownerId: string; team?: Team; until: number }
 export interface MortarState { id: string; ownerId: string; team?: Team; x: number; z: number; impacts: number[] }
 export type GameEvent =
-  | { type: 'shot'; playerId: string; weapon: WeaponId | 'drone'; from: Vec3; traces: ShotTrace[]; hit: boolean; at: number }
+  /** `seq`: the shooter's input frame that fired it (not for drones). */
+  | { type: 'shot'; playerId: string; weapon: WeaponId | 'drone'; from: Vec3; traces: ShotTrace[]; hit: boolean; at: number; seq?: number }
   | { type: 'damage'; playerId: string; attackerId: string; amount: number; cause: DamageCause; zone?: HitZone; from: Vec3; at: number }
   | { type: 'elimination'; playerId: string; attackerId: string; cause: DamageCause; weapon?: WeaponId; headshot: boolean; distance: number; assists: string[]; at: number }
   | { type: 'respawn'; playerId: string; at: number }
