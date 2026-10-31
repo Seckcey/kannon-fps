@@ -36,6 +36,27 @@ test('the real map produces both sunlit and shaded cells', () => {
   assert.equal(grid.sample(-14, 0, 3.2), 0);
 });
 
+test('golden hour: the low sun throws the teal house shadow across the street', () => {
+  const grid = buildSunVisibility(raycastMap);
+  // In front of the teal house the street is in its long shadow; both street ends stay sunlit.
+  assert.equal(grid.sample(-6, 0, 0), 0);
+  assert.equal(grid.sample(-6, -4, 0), 0);
+  assert.equal(grid.sample(0, -19, 0), 1);
+  assert.equal(grid.sample(0, 19, 0), 1);
+  let cells = 0, shaded = 0;
+  for (let x = -9; x <= 9; x++) for (let z = -6; z <= 6; z++) { cells++; if (grid.sample(x, z, 0) < 0.5) shaded++; }
+  assert.ok(shaded / cells > 0.5 && shaded / cells < 0.9, `${(100 * shaded / cells).toFixed(0)}% of the central street is in shade`);
+});
+
+test('the default sun is the atmosphere sun', () => {
+  // A wall to the west shades only when the sun comes from the west, as the golden-hour sun does.
+  const westWall = (origin: { x: number; y: number; z: number }, direction: { x: number; y: number; z: number }, limit: number) =>
+    direction.x < 0 && origin.x > -2 ? 1 : limit;
+  const grid = buildSunVisibility(westWall, { half: 4, cells: 4, heights: [1.2, 4.6] });
+  assert.equal(grid.sample(0, 0, 0), 0);
+  assert.equal(buildSunVisibility(westWall, { half: 4, cells: 4, heights: [1.2, 4.6], sun: { x: 1, y: 1, z: 0 } }).sample(0, 0, 0), 1);
+});
+
 test('character patch scales only the directional light', () => {
   const patched = patchSunVisibilityFragment(THREE.ShaderLib.standard.fragmentShader);
   assert.ok(patched.includes('uniform float uSunVisibility;'));

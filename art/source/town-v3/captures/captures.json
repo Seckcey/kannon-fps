@@ -1,0 +1,2057 @@
+{
+  "capturedAt": "2026-10-31T04:59:24.682Z",
+  "url": "http://127.0.0.1:5194/graphics-test.html",
+  "note": "Before = Kannon Town v2 under v2 exposure, fog and daylight; After = v3 under the golden-hour light. Both sides share the v3 sky dome.",
+  "captures": [
+    {
+      "file": "town-v3-checkpoint-north-before-desktop.jpg",
+      "title": "Checkpoint from the north end",
+      "view": "checkpoint-north",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3,
+          1.62,
+          -21
+        ],
+        "quaternion": [
+          0.00542467355374325,
+          0.9802054807331698,
+          0.027123367768716242,
+          -0.19604109614663395
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 98,
+      "triangles": 363706
+    },
+    {
+      "file": "town-v3-checkpoint-north-after-desktop.jpg",
+      "title": "Checkpoint from the north end",
+      "view": "checkpoint-north",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3,
+          1.62,
+          -21
+        ],
+        "quaternion": [
+          0.00542467355374325,
+          0.9802054807331698,
+          0.027123367768716242,
+          -0.19604109614663395
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 124,
+      "triangles": 441038
+    },
+    {
+      "file": "town-v3-checkpoint-south-before-desktop.jpg",
+      "title": "Checkpoint from the south end",
+      "view": "checkpoint-south",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -1.5,
+          1.62,
+          21
+        ],
+        "quaternion": [
+          -0.020154299157837483,
+          -0.09851740688925911,
+          -0.00199566889941254,
+          0.994929214603188
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 97,
+      "triangles": 363124
+    },
+    {
+      "file": "town-v3-checkpoint-south-after-desktop.jpg",
+      "title": "Checkpoint from the south end",
+      "view": "checkpoint-south",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -1.5,
+          1.62,
+          21
+        ],
+        "quaternion": [
+          -0.020154299157837483,
+          -0.09851740688925911,
+          -0.00199566889941254,
+          0.994929214603188
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 126,
+      "triangles": 442748
+    },
+    {
+      "file": "town-v3-truck-before-desktop.jpg",
+      "title": "Cargo truck",
+      "view": "truck",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          6.2,
+          1.62,
+          -6.2
+        ],
+        "quaternion": [
+          -0.0025220294691412704,
+          0.978610019958833,
+          0.012018482924843898,
+          0.2053573087857226
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 96,
+      "triangles": 355071
+    },
+    {
+      "file": "town-v3-truck-after-desktop.jpg",
+      "title": "Cargo truck",
+      "view": "truck",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          6.2,
+          1.62,
+          -6.2
+        ],
+        "quaternion": [
+          -0.0025220294691412704,
+          0.978610019958833,
+          0.012018482924843898,
+          0.2053573087857226
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 121,
+      "triangles": 415991
+    },
+    {
+      "file": "town-v3-burnt-car-before-desktop.jpg",
+      "title": "Burnt-out car and ammo crates",
+      "view": "burnt-car",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          8.5,
+          1.62,
+          -12.5
+        ],
+        "quaternion": [
+          -0.06019012581243068,
+          0.3865180501174538,
+          0.025288450991963887,
+          0.919968173326943
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 85,
+      "triangles": 324457
+    },
+    {
+      "file": "town-v3-burnt-car-after-desktop.jpg",
+      "title": "Burnt-out car and ammo crates",
+      "view": "burnt-car",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          8.5,
+          1.62,
+          -12.5
+        ],
+        "quaternion": [
+          -0.06019012581243068,
+          0.3865180501174538,
+          0.025288450991963887,
+          0.919968173326943
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 92,
+      "triangles": 363862
+    },
+    {
+      "file": "town-v3-barrier-before-desktop.jpg",
+      "title": "Concrete barrier",
+      "view": "barrier",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          3.2,
+          1.62,
+          -6.2
+        ],
+        "quaternion": [
+          -0.10665073298882466,
+          -0.38694607664332165,
+          -0.045111475103466345,
+          0.9148023336968901
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 89,
+      "triangles": 347427
+    },
+    {
+      "file": "town-v3-barrier-after-desktop.jpg",
+      "title": "Concrete barrier",
+      "view": "barrier",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          3.2,
+          1.62,
+          -6.2
+        ],
+        "quaternion": [
+          -0.10665073298882466,
+          -0.38694607664332165,
+          -0.045111475103466345,
+          0.9148023336968901
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 105,
+      "triangles": 424244
+    },
+    {
+      "file": "town-v3-yard-sandbags-before-desktop.jpg",
+      "title": "Back-yard sandbags",
+      "view": "yard-sandbags",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -21.5,
+          1.62,
+          12.5
+        ],
+        "quaternion": [
+          -0.07055147749777652,
+          0.44165530143385995,
+          0.03486460855893461,
+          0.8937267718985928
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 68,
+      "triangles": 244657
+    },
+    {
+      "file": "town-v3-yard-sandbags-after-desktop.jpg",
+      "title": "Back-yard sandbags",
+      "view": "yard-sandbags",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -21.5,
+          1.62,
+          12.5
+        ],
+        "quaternion": [
+          -0.07055147749777652,
+          0.44165530143385995,
+          0.03486460855893461,
+          0.8937267718985928
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 85,
+      "triangles": 331012
+    },
+    {
+      "file": "town-v3-teal-shadow-before-desktop.jpg",
+      "title": "Long shadows across the street",
+      "view": "teal-shadow",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          6.5,
+          1.62,
+          15
+        ],
+        "quaternion": [
+          -0.009097429875278347,
+          0.19111110831468292,
+          0.0017713461418691688,
+          0.9815246524572084
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 95,
+      "triangles": 351489
+    },
+    {
+      "file": "town-v3-teal-shadow-after-desktop.jpg",
+      "title": "Long shadows across the street",
+      "view": "teal-shadow",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          6.5,
+          1.62,
+          15
+        ],
+        "quaternion": [
+          -0.009097429875278347,
+          0.19111110831468292,
+          0.0017713461418691688,
+          0.9815246524572084
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 122,
+      "triangles": 428833
+    },
+    {
+      "file": "town-v3-street-before-desktop.jpg",
+      "title": "Main street",
+      "view": "street",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          3.5,
+          3.8,
+          19.5
+        ],
+        "quaternion": [
+          -0.032052660133614595,
+          0.1983257626218587,
+          0.0064893123491856905,
+          0.9795904285384028
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 97,
+      "triangles": 358624
+    },
+    {
+      "file": "town-v3-street-after-desktop.jpg",
+      "title": "Main street",
+      "view": "street",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          3.5,
+          3.8,
+          19.5
+        ],
+        "quaternion": [
+          -0.032052660133614595,
+          0.1983257626218587,
+          0.0064893123491856905,
+          0.9795904285384028
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 125,
+      "triangles": 436248
+    },
+    {
+      "file": "town-v3-teal-front-before-desktop.jpg",
+      "title": "Teal house front",
+      "view": "teal-front",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3.5,
+          3,
+          -11.5
+        ],
+        "quaternion": [
+          0.0033204059694774825,
+          0.9555091864910188,
+          -0.010764104005698558,
+          0.29474616791473984
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 94,
+      "triangles": 352535
+    },
+    {
+      "file": "town-v3-teal-front-after-desktop.jpg",
+      "title": "Teal house front",
+      "view": "teal-front",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -3.5,
+          3,
+          -11.5
+        ],
+        "quaternion": [
+          0.0033204059694774825,
+          0.9555091864910188,
+          -0.010764104005698558,
+          0.29474616791473984
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 116,
+      "triangles": 411932
+    },
+    {
+      "file": "town-v3-teal-room-before-desktop.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 91,
+      "triangles": 344792
+    },
+    {
+      "file": "town-v3-teal-room-after-desktop.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 110,
+      "triangles": 404093
+    },
+    {
+      "file": "town-v3-yellow-upstairs-before-desktop.jpg",
+      "title": "Yellow house upstairs window",
+      "view": "yellow-upstairs",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          14,
+          4.9,
+          4.8
+        ],
+        "quaternion": [
+          -0.02080312980759757,
+          0.3581748176875194,
+          0.007982909928657207,
+          0.9333886130191386
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 95,
+      "triangles": 351489
+    },
+    {
+      "file": "town-v3-yellow-upstairs-after-desktop.jpg",
+      "title": "Yellow house upstairs window",
+      "view": "yellow-upstairs",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          14,
+          4.9,
+          4.8
+        ],
+        "quaternion": [
+          -0.02080312980759757,
+          0.3581748176875194,
+          0.007982909928657207,
+          0.9333886130191386
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 123,
+      "triangles": 429113
+    },
+    {
+      "file": "town-v3-bus-gameplay-before-desktop.jpg",
+      "title": "Bus, player view",
+      "view": "bus-gameplay",
+      "variant": "before",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -7,
+          1.62,
+          -13
+        ],
+        "quaternion": [
+          0.0030415307188599396,
+          0.9698680874150403,
+          0.012123982556690577,
+          -0.24330978433212103
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 96,
+      "triangles": 356571
+    },
+    {
+      "file": "town-v3-bus-gameplay-after-desktop.jpg",
+      "title": "Bus, player view",
+      "view": "bus-gameplay",
+      "variant": "after",
+      "label": "desktop",
+      "camera": {
+        "position": [
+          -7,
+          1.62,
+          -13
+        ],
+        "quaternion": [
+          0.0030415307188599396,
+          0.9698680874150403,
+          0.012123982556690577,
+          -0.24330978433212103
+        ],
+        "fov": 68,
+        "projection": [
+          0.8339405447884163,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        1280,
+        720
+      ],
+      "quality": "high",
+      "tier": "desktop-high",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 123,
+      "triangles": 417783
+    },
+    {
+      "file": "town-v3-checkpoint-north-before-phone.jpg",
+      "title": "Checkpoint from the north end",
+      "view": "checkpoint-north",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -3,
+          1.62,
+          -21
+        ],
+        "quaternion": [
+          0.00542467355374325,
+          0.9802054807331698,
+          0.027123367768716242,
+          -0.19604109614663395
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 76,
+      "triangles": 356272
+    },
+    {
+      "file": "town-v3-checkpoint-north-after-phone.jpg",
+      "title": "Checkpoint from the north end",
+      "view": "checkpoint-north",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -3,
+          1.62,
+          -21
+        ],
+        "quaternion": [
+          0.00542467355374325,
+          0.9802054807331698,
+          0.027123367768716242,
+          -0.19604109614663395
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 96,
+      "triangles": 435416
+    },
+    {
+      "file": "town-v3-teal-shadow-before-phone.jpg",
+      "title": "Long shadows across the street",
+      "view": "teal-shadow",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          6.5,
+          1.62,
+          15
+        ],
+        "quaternion": [
+          -0.009097429875278347,
+          0.19111110831468292,
+          0.0017713461418691688,
+          0.9815246524572084
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 72,
+      "triangles": 341055
+    },
+    {
+      "file": "town-v3-teal-shadow-after-phone.jpg",
+      "title": "Long shadows across the street",
+      "view": "teal-shadow",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          6.5,
+          1.62,
+          15
+        ],
+        "quaternion": [
+          -0.009097429875278347,
+          0.19111110831468292,
+          0.0017713461418691688,
+          0.9815246524572084
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 97,
+      "triangles": 420319
+    },
+    {
+      "file": "town-v3-teal-room-before-phone.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 67,
+      "triangles": 330858
+    },
+    {
+      "file": "town-v3-teal-room-after-phone.jpg",
+      "title": "Teal house ground floor",
+      "view": "teal-room",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -10.7,
+          1.75,
+          4.8
+        ],
+        "quaternion": [
+          -0.026829923065405926,
+          0.30732709001381886,
+          0.008668715675241707,
+          0.9511861375884766
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 86,
+      "triangles": 390383
+    },
+    {
+      "file": "town-v3-bus-gameplay-before-phone.jpg",
+      "title": "Bus, player view",
+      "view": "bus-gameplay",
+      "variant": "before",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -7,
+          1.62,
+          -13
+        ],
+        "quaternion": [
+          0.0030415307188599396,
+          0.9698680874150403,
+          0.012123982556690577,
+          -0.24330978433212103
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 3.3,
+        "hemisphere": 0.8,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 73,
+      "triangles": 344636
+    },
+    {
+      "file": "town-v3-bus-gameplay-after-phone.jpg",
+      "title": "Bus, player view",
+      "view": "bus-gameplay",
+      "variant": "after",
+      "label": "phone",
+      "camera": {
+        "position": [
+          -7,
+          1.62,
+          -13
+        ],
+        "quaternion": [
+          0.0030415307188599396,
+          0.9698680874150403,
+          0.012123982556690577,
+          -0.24330978433212103
+        ],
+        "fov": 68,
+        "projection": [
+          0.6838573481520034,
+          0,
+          0,
+          0,
+          0,
+          1.48256096851274,
+          0,
+          0,
+          0,
+          0,
+          -1.0001714432665656,
+          -1,
+          0,
+          0,
+          -0.12001028659599393,
+          0
+        ]
+      },
+      "canvas": [
+        852,
+        393
+      ],
+      "quality": "auto",
+      "tier": "phone",
+      "lighting": {
+        "exposure": 1,
+        "toneMapping": 4,
+        "sun": 5.2,
+        "hemisphere": 1.4,
+        "environment": 0.055,
+        "shadows": true,
+        "streetReflection": {
+          "size": 128,
+          "position": [
+            0,
+            2.3,
+            -3.5
+          ],
+          "static": true
+        }
+      },
+      "drawCalls": 94,
+      "triangles": 405672
+    }
+  ],
+  "desktopErrors": [],
+  "phoneErrors": []
+}
