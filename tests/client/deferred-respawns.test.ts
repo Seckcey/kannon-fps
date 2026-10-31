@@ -1,17 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import type { PlayerState, WorldSnapshot } from '../../shared/protocol';
+import type { PublicPlayerState, WorldSnapshot } from '../../shared/protocol';
+import { DEFAULT_LOADOUT } from '../../shared/weapons';
 import { DeferredRespawns } from '../../src/game/DeferredRespawns';
 
+type PlayerState = PublicPlayerState;
 const player = (id: string, overrides: Partial<PlayerState> = {}): PlayerState => ({
   id, name: id, color: '#ffffff', x: 17, y: 2, z: -11, yaw: .4, pitch: 0,
-  vx: 0, vy: 0, vz: 0, health: 100, shield: 50, slot: 1,
-  ammoAR: 30, ammoShotgun: 6, heals: 2, kills: 0, deaths: 1,
-  connected: true, respawnAt: 0, protectedUntil: 12_000, healingUntil: 0,
-  reloadingUntil: 0, lastInputSeq: 10, ...overrides,
+  vx: 0, vy: 0, vz: 0, health: 100, slot: 1, weapon: 'kr5', loadout: DEFAULT_LOADOUT,
+  kills: 0, deaths: 1, assists: 0, score: 0, streak: 0,
+  connected: true, respawnAt: 0, protectedUntil: 12_000, reloadingUntil: 0,
+  posture: 'stand', vault: null, slideUntil: 0, cookingSince: 0, lastInputSeq: 10, ...overrides,
 });
 const snapshot = (serverTime: number, players: PlayerState[], phase: WorldSnapshot['phase'] = 'playing'): WorldSnapshot => ({
-  tick: 42, serverTime, phase, timeRemaining: 200, players, winnerIds: [],
+  tick: 42, serverTime, phase, timeRemaining: 200, mode: 'ffa', scoreLimit: 15, players, winnerIds: [], drones: [], recon: [], mortars: [],
 });
 
 test('respawn feedback waits for a fresh alive snapshot and uses its actual spawn exactly once', () => {

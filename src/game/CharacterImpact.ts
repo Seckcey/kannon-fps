@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import type { PlayerState } from '../../shared/protocol';
+import type { PublicPlayerState } from '../../shared/protocol';
 
-export type CharacterImpactKind = 'shield' | 'armor' | 'break';
-type LifeState = Pick<PlayerState, 'health' | 'connected' | 'protectedUntil'>;
+/** A body hit, a headshot, or an explosion/knife: a brief, bounded warm flash (never gore). */
+export type CharacterImpactKind = 'hit' | 'head' | 'blast';
+type LifeState = Pick<PublicPlayerState, 'health' | 'connected' | 'protectedUntil'>;
 
 export interface CharacterImpact {
   impact(kind: CharacterImpactKind): void;
@@ -11,10 +12,13 @@ export interface CharacterImpact {
 }
 
 const pulses = {
-  shield: { color: new THREE.Color('#78dfff'), strength: 0.20, duration: 180 },
-  armor: { color: new THREE.Color('#ffe0b5'), strength: 0.14, duration: 150 },
-  break: { color: new THREE.Color('#d0faff'), strength: 0.34, duration: 290 },
+  hit: { color: new THREE.Color('#ffe0b5'), strength: 0.14, duration: 150 },
+  head: { color: new THREE.Color('#fff2dc'), strength: 0.24, duration: 200 },
+  blast: { color: new THREE.Color('#ffc58f'), strength: 0.32, duration: 290 },
 } as const;
+/** Body surfaces that pulse; accents, visors, lights and lenses keep their own look. */
+const BODY_SURFACE = /^(ScoutSurface|OperatorSurface|Operator_Body|OperatorBody)$/;
+const NEVER_PULSE = /PlayerAccent|Visor|StatusLight|Lens|Glass/i;
 
 /** Changes emission only. Absolute time also expires a pulse after a suspended tab. */
 function materialPulse(materials: THREE.MeshStandardMaterial[], now: () => number, release: () => void): CharacterImpact {
@@ -49,7 +53,7 @@ function materialPulse(materials: THREE.MeshStandardMaterial[], now: () => numbe
 
   return {
     impact(kind) {
-      if (disposed || !alive) return;
+      if (disposed || !alive || !pulses[kind]) return;
       const time = now();
       if (!Number.isFinite(time)) { clear(); return; }
       // A new accepted hit replaces the pulse; repeated hits cannot accumulate brightness.
@@ -76,25 +80,45 @@ function materialPulse(materials: THREE.MeshStandardMaterial[], now: () => numbe
   };
 }
 
-/** The temporary procedural scout already owns its accent material. */
+/** The temporary procedural stand-in already owns its accent material. */
 export function createAccentImpact(material: THREE.MeshStandardMaterial, now = () => performance.now()): CharacterImpact {
   return materialPulse([material], now, () => {});
 }
 
-/** Clone only the skinned body's packed PBR surface, never the cached weapon or accent materials. */
+/** `Material.clone` drops shader hooks. The pulse copy keeps its source's, such as the
+ * per-character sun shading, or the body would draw fully sunlit while standing in baked shade. */
+function cloneWithShaderHooks(material: THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+  const copy = material.clone();
+  if (Object.hasOwn(material, 'onBeforeCompile')) copy.onBeforeCompile = material.onBeforeCompile;
+  if (Object.hasOwn(material, 'customProgramCacheKey')) copy.customProgramCacheKey = material.customProgramCacheKey;
+  return copy;
+}
+
+/** Clone only the skinned body's packed PBR surface, never the cached weapon or accent materials.
+ * The scout names it `ScoutSurface` on `scout_body`; an operator export without those names pulses
+ * every non-accent standard material on its skinned meshes instead. */
 export function createCharacterImpact(model: THREE.Object3D, now = () => performance.now()): CharacterImpact {
   const copies = new Map<THREE.MeshStandardMaterial, THREE.MeshStandardMaterial>();
   const bindings: { mesh: THREE.Mesh; original: THREE.Material | THREE.Material[]; assigned: THREE.Material | THREE.Material[] }[] = [];
-  model.getObjectByName('scout_body')?.traverse(object => {
+  const body = model.getObjectByName('scout_body') ?? model.getObjectByName('operator_body');
+  const named = (material: THREE.Material) => BODY_SURFACE.test(material.name);
+  let hasNamedSurface = false;
+  (body ?? model).traverse(object => {
     if (!(object instanceof THREE.SkinnedMesh)) return;
+    for (const material of Array.isArray(object.material) ? object.material : [object.material]) if (named(material)) hasNamedSurface = true;
+  });
+  const eligible = (material: THREE.Material): material is THREE.MeshStandardMaterial => material instanceof THREE.MeshStandardMaterial
+    && (hasNamedSurface ? named(material) : !NEVER_PULSE.test(material.name));
+  (body ?? model).traverse(object => {
+    if (!(object instanceof THREE.SkinnedMesh) || !object.visible) return;
     const original = object.material;
     const materials = Array.isArray(original) ? original : [original];
     let changed = false;
     const replaced = materials.map(material => {
-      if (!(material instanceof THREE.MeshStandardMaterial) || material.name !== 'ScoutSurface') return material;
+      if (!eligible(material)) return material;
       let copy = copies.get(material);
       if (!copy) {
-        copy = material.clone();
+        copy = cloneWithShaderHooks(material);
         // Keep dark fabric and armor details in the pulse. The exported body's
         // zero emission makes this invisible at rest; bind once before first render
         // so accepted hits never change shader defines or texture/UV transforms.

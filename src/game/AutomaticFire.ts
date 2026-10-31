@@ -1,31 +1,41 @@
-import type { PlayerState, Vec3 } from '../../shared/protocol';
-import { add, magnitude, normalize, PLAYER_HEIGHT, PLAYER_RADIUS, rayBox, raycastMap, scale, subtract } from '../../shared/physics';
+import type { GameMode, PublicPlayerState, Team, Vec3 } from '../../shared/protocol';
+import { add, magnitude, normalize, rayHitboxes, raycastMap, scale, subtract } from '../../shared/physics';
 
-/** Input assistance only: the normal server raycast still decides every hit.
- * Use displayed opponent positions and the actual camera ray, with a second
- * obstruction check from the muzzle so shoulder peeking cannot fire through cover. */
-export function reticleTarget(origin: Vec3, direction: Vec3, muzzle: Vec3, targets: readonly PlayerState[], localId: string, now: number, range: number): string | null {
-  let distance = raycastMap(origin, direction, range), selected: PlayerState | null = null;
+export type ReticleCandidate = Pick<PublicPlayerState, 'id' | 'x' | 'y' | 'z' | 'posture' | 'health' | 'connected' | 'protectedUntil'> & { team?: Team };
+
+/** Input assistance only: the normal server trace still decides every hit.
+ * Uses displayed opponent positions, their posture hitboxes and the actual eye ray, with a
+ * second obstruction check from the weapon muzzle so a lowered barrel cannot fire through cover.
+ * Teammates are not targets (bullets pass through them). */
+export function reticleTarget(origin: Vec3, direction: Vec3, muzzle: Vec3, targets: readonly ReticleCandidate[], localId: string, now: number, range: number,
+  team?: { mode: GameMode; team?: Team }): string | null {
+  let distance = raycastMap(origin, direction, range), selected: ReticleCandidate | null = null;
   for (const target of targets) {
     if (target.id === localId || !target.connected || target.health <= 0) continue;
-    const hit = rayBox(origin, direction,
-      { x: target.x - PLAYER_RADIUS, y: target.y, z: target.z - PLAYER_RADIUS },
-      { x: target.x + PLAYER_RADIUS, y: target.y + PLAYER_HEIGHT, z: target.z + PLAYER_RADIUS }, distance);
-    if (hit < distance) { selected = target; distance = hit; }
+    if (team?.mode === 'tdm' && team.team && target.team === team.team) continue;
+    const hit = rayHitboxes(origin, direction, { x: target.x, y: target.y, z: target.z, posture: target.posture ?? 'stand' }, distance);
+    if (hit && hit.distance < distance) { selected = target; distance = hit.distance; }
   }
   if (!selected || selected.protectedUntil > now) return null;
   const aimPoint = add(origin, scale(direction, distance + 0.01));
   const barrel = subtract(aimPoint, muzzle), length = magnitude(barrel);
-  if (raycastMap(muzzle, normalize(barrel), length) < length - 0.025) return null;
+  if (length > 1e-6 && raycastMap(muzzle, normalize(barrel), length) < length - 0.025) return null;
   return selected.id;
 }
 
+/** Simple-mode trigger: fires after the reticle has rested on one target for 100 ms. Semi-automatic
+ * weapons fire once per press, so their trigger is pulsed on alternate network frames. */
 export class AutomaticFire {
   private target: string | null = null;
   private acquired = 0;
-  update(target: string | null, now: number): boolean {
-    if (target !== this.target) { this.target = target; this.acquired = now; }
-    return !!target && now - this.acquired >= 100;
+  private pulse = false;
+  update(target: string | null, now: number, semiAutomatic = false): boolean {
+    if (target !== this.target) { this.target = target; this.acquired = now; this.pulse = false; }
+    const engaged = !!target && now - this.acquired >= 100;
+    if (!engaged) { this.pulse = false; return false; }
+    if (!semiAutomatic) return true;
+    this.pulse = !this.pulse;
+    return this.pulse;
   }
-  reset() { this.target = null; this.acquired = 0; }
+  reset() { this.target = null; this.acquired = 0; this.pulse = false; }
 }

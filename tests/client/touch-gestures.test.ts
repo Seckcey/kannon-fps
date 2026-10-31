@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test, type TestContext } from 'node:test';
-import { InputController } from '../../src/game/InputController.js';
-import { TouchGestures } from '../../src/game/TouchGestures.js';
+import { InputController, type InputSettings } from '../../src/game/InputController.js';
+import { TOUCH_ROLES, TouchGestures } from '../../src/game/TouchGestures.js';
 
-function fixture(t: TestContext, hybrid = false) {
+function fixture(t: TestContext, hybrid = false, settings: Partial<InputSettings> = {}) {
   class ElementStub extends EventTarget {
     dataset: { touch?: string };
     constructor(role?: string) { super(); this.dataset = { touch: role }; }
@@ -23,7 +23,9 @@ function fixture(t: TestContext, hybrid = false) {
     Object.defineProperty(globalThis, key, { value, configurable: true });
   }
   const root = new ElementStub(), move = new ElementStub('move'), look = new ElementStub('look'), fire = new ElementStub('fire');
-  const input = new InputController(); let stick = [0, 0];
+  const fireLeft = new ElementStub('fire-left'), grenade = new ElementStub('grenade'), melee = new ElementStub('melee'), jump = new ElementStub('jump');
+  const clock = { now: 1_000 };
+  const input = new InputController(undefined, settings, { clock: () => clock.now }); let stick = [0, 0];
   const controls = new TouchGestures(root as unknown as HTMLElement, input, (x, y) => { stick = [x, y]; });
   type Finger = { identifier: number; clientX: number; clientY: number };
   const finger = (identifier: number, clientX = 65, clientY = 21): Finger => ({ identifier, clientX, clientY });
@@ -41,8 +43,12 @@ function fixture(t: TestContext, hybrid = false) {
     controls.dispose(); input.dispose();
     for (const [key, descriptor] of originals) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else Reflect.deleteProperty(globalThis, key); }
   });
-  return { input, controls, window, document, root, move, look, fire, finger, touch, pointer, stick: () => stick };
+  return { input, controls, window, document, root, move, look, fire, fireLeft, grenade, melee, jump, clock, finger, touch, pointer, stick: () => stick, make: (role: string) => new ElementStub(role) };
 }
+
+test('the documented touch roles are exactly the first-person controls', () => {
+  assert.deepEqual([...TOUCH_ROLES], ['move', 'look', 'fire', 'fire-left', 'jump', 'reload', 'grenade', 'melee']);
+});
 
 test('iPhone touch release stops movement even if pointerup and lost capture never arrive', t => {
   const f = fixture(t), first = f.finger(11);
@@ -92,7 +98,7 @@ test('capture failure, cancellation, orientation and death reset held actions an
   assert.equal(f.input.current().moveZ, 0, 'Respawn requires a fresh touch.');
 });
 
-test('Advanced fire supports aiming drag and AR ADS while shotgun retains hip fire', t => {
+test('Advanced fire supports an aiming drag and ADS on the primary while the secondary keeps hip fire', t => {
   const f = fixture(t); f.input.setSettings({ firingMode: 'advanced' });
   f.touch('touchstart', f.fire, [f.finger(1)], [f.finger(1)]);
   f.touch('touchmove', f.root, [f.finger(1, 100, 40)], [f.finger(1, 100, 40)]);
@@ -101,6 +107,54 @@ test('Advanced fire supports aiming drag and AR ADS while shotgun retains hip fi
   assert.equal(f.input.current().fire, false); assert.equal(f.input.peek().aim, false);
   f.input.setSlot(2); f.touch('touchstart', f.fire, [f.finger(2)], [f.finger(2)]);
   assert.equal(f.input.current().fire, true); assert.equal(f.input.peek().aim, false);
+});
+
+test('left and right triggers share one fire action and only the right one aims by dragging', t => {
+  const f = fixture(t), right = f.finger(1, 400, 170), left = f.finger(2, 80, 170);
+  f.touch('touchstart', f.fireLeft, [left], [left]);
+  assert.equal(f.input.current().fire, true);
+  f.touch('touchmove', f.root, [f.finger(2, 140, 200)], [f.finger(2, 140, 200)]);
+  assert.equal(f.input.yaw, 0, 'The left trigger is a plain button');
+  f.touch('touchstart', f.fire, [right], [f.finger(2, 140, 200), right]);
+  f.touch('touchend', f.root, [f.finger(2, 140, 200)], [right]);
+  assert.equal(f.input.current().fire, true, 'Lifting one trigger keeps the other firing');
+  f.touch('touchmove', f.root, [f.finger(1, 430, 170)], [f.finger(1, 430, 170)]);
+  assert.ok(f.input.yaw > 0);
+  f.touch('touchend', f.root, [f.finger(1, 430, 170)], []);
+  assert.equal(f.input.current().fire, false);
+});
+
+test('grenade holds the cook until release and knife and jump are one-tap presses', t => {
+  const f = fixture(t);
+  f.touch('touchstart', f.grenade, [f.finger(3)], [f.finger(3)]);
+  assert.equal(f.input.current().grenade, true); assert.equal(f.input.current().grenade, true);
+  f.touch('touchend', f.root, [f.finger(3)], []);
+  assert.equal(f.input.current().grenade, false, 'Lifting the finger throws');
+  f.touch('touchstart', f.grenade, [f.finger(4)], [f.finger(4)]);
+  f.touch('touchcancel', f.root, [f.finger(4)], []);
+  assert.equal(f.input.current().grenade, true, 'A cancelled cook still leaves the hand once');
+  assert.equal(f.input.current().grenade, false);
+  f.touch('touchstart', f.melee, [f.finger(5)], [f.finger(5)]); f.touch('touchend', f.root, [f.finger(5)], []);
+  assert.equal(f.input.current().melee, true); assert.equal(f.input.current().melee, false);
+  f.touch('touchstart', f.jump, [f.finger(6)], [f.finger(6)]); f.touch('touchcancel', f.root, [f.finger(6)], []);
+  assert.equal(f.input.current().jump, false, 'A cancelled jump never queues');
+  const unknown = f.make('aim');
+  f.touch('touchstart', unknown, [f.finger(7)], [f.finger(7)]);
+  assert.equal(f.input.peek().aim, false, 'Toggles are ordinary buttons, not touch roles');
+});
+
+test('with auto sprint the stick past 95% forward sprints and a second push within 300 ms dashes', t => {
+  const f = fixture(t, false, { sprintMode: 'auto' });
+  f.touch('touchstart', f.move, [f.finger(1, 65, 50)], [f.finger(1, 65, 50)]);
+  assert.equal(f.input.current().sprint, false, 'A partial push walks');
+  f.touch('touchmove', f.root, [f.finger(1, 65, 15)], [f.finger(1, 65, 15)]);
+  let frame = f.input.current(); assert.equal(frame.sprint, true); assert.equal(frame.dash, false); assert.ok(Math.abs(frame.moveZ - 1) < 1e-9);
+  f.touch('touchmove', f.root, [f.finger(1, 65, 50)], [f.finger(1, 65, 50)]);
+  f.clock.now += 180;
+  f.touch('touchmove', f.root, [f.finger(1, 65, 10)], [f.finger(1, 65, 10)]);
+  frame = f.input.current(); assert.equal(frame.sprint, true); assert.equal(frame.dash, true);
+  f.touch('touchend', f.root, [f.finger(1, 65, 10)], []);
+  frame = f.input.current(); assert.equal(frame.sprint, false); assert.equal(frame.dash, false);
 });
 
 test('a hybrid browser transfers its first pointer contact to native touch and ignores the later pointer cancel', t => {

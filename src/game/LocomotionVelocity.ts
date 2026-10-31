@@ -1,7 +1,9 @@
-import type { PlayerState } from '../../shared/protocol';
-import { SPRINT_SPEED } from '../../shared/physics';
+import type { PublicPlayerState } from '../../shared/protocol';
+import { MOVE } from '../../shared/physics';
 
-type MotionSample = Pick<PlayerState, 'x' | 'y' | 'z' | 'vx' | 'vz' | 'health' | 'connected' | 'protectedUntil'>;
+type MotionSample = Pick<PublicPlayerState, 'x' | 'y' | 'z' | 'vx' | 'vz' | 'health' | 'connected' | 'protectedUntil'>;
+/** Fastest legitimate travel: a slide's entry speed (dash is 8.2 m/s). */
+export const MAX_TRAVEL_SPEED = Math.max(MOVE.slideSpeed, MOVE.dash);
 
 /** Character motion follows visible travel after collision and interpolation.
  * This owns presentation state only; it never changes physics or snapshots.
@@ -35,7 +37,7 @@ export class LocomotionVelocity {
     // Local input can stop animation immediately. Remote input and interpolation
     // intervals can advance ahead of the last visible displacement, so remote
     // gait uses measured travel with only the global movement-speed ceiling.
-    const speedLimit = source === 'remote' ? SPRINT_SPEED : Math.min(SPRINT_SPEED, Math.hypot(player.vx, player.vz));
+    const speedLimit = source === 'remote' ? MAX_TRAVEL_SPEED : Math.min(MAX_TRAVEL_SPEED, Math.hypot(player.vx, player.vz));
     if (reset || speedLimit < .001) {
       this.velocity.vx = 0; this.velocity.vz = 0;
       return this.velocity;

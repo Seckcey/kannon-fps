@@ -5,11 +5,16 @@ export interface ConnectionState {
   playerId: string;
   room: RoomSnapshot | null;
   snapshot: WorldSnapshot | null;
+  /** The last EVENT_LIMIT events of every kind, oldest first. */
   events: GameEvent[];
+  /** The last FEED_LIMIT events other than `shot` and `damage` (kill feed, medals, scores, rewards). */
+  feed: GameEvent[];
   error: string;
   latency: number;
 }
-const initial: ConnectionState = { status: 'idle', playerId: '', room: null, snapshot: null, events: [], error: '', latency: 0 };
+export const EVENT_LIMIT = 128;
+export const FEED_LIMIT = 40;
+const initial: ConnectionState = { status: 'idle', playerId: '', room: null, snapshot: null, events: [], feed: [], error: '', latency: 0 };
 const HEARTBEAT_MS = 2000;
 const SILENT_CONNECTION_MS = 8000;
 
@@ -87,12 +92,19 @@ export class ArenaConnection {
         }
         case 'room': this.roomCode = data.room.code; this.update({ room: data.room, error: '' }); break;
         case 'snapshot': this.update({ snapshot: data.snapshot }); break;
-        case 'event': this.update({ events: [...this.state.events.slice(-23), data.event] }); break;
+        case 'event': {
+          const event = data.event;
+          if (!event || typeof event.type !== 'string') break;
+          // Frequent combat events must not push eliminations, medals and rewards out of the feed.
+          const feed = event.type === 'shot' || event.type === 'damage' ? this.state.feed : [...this.state.feed.slice(1 - FEED_LIMIT), event];
+          this.update({ events: [...this.state.events.slice(1 - EVENT_LIMIT), event], feed });
+          break;
+        }
         case 'pong': this.update({ latency: Math.max(0, Date.now() - data.t) }); break;
         case 'error':
           if (data.code === 'ROOM_EXPIRED' || data.code === 'ROOM_NOT_FOUND') {
             this.roomCode = '';
-            this.update({ error: data.message, room: null, snapshot: null, events: [] });
+            this.update({ error: data.message, room: null, snapshot: null, events: [], feed: [] });
           } else this.update({ error: data.message });
           if (this.opening) { this.rejectOpen?.(new Error(data.message)); this.resetOpening(); }
           break;
@@ -112,7 +124,7 @@ export class ArenaConnection {
     socket.close();
     if (code === 4001 || code === 1008) {
       this.roomCode = '';
-      this.update({ status: 'offline', room: null, snapshot: null, events: [], error: code === 4001 ? 'This player opened the game on another tab or device. Use a different player to play together.' : this.state.error || 'The connection was stopped. Rejoin when you are ready.' });
+      this.update({ status: 'offline', room: null, snapshot: null, events: [], feed: [], error: code === 4001 ? 'This player opened the game on another tab or device. Use a different player to play together.' : this.state.error || 'The connection was stopped. Rejoin when you are ready.' });
       return;
     }
     const retry = !!this.roomCode && this.attempts < 8;
@@ -158,7 +170,7 @@ export class ArenaConnection {
     // Also retire connected sockets: already queued room updates must not pull
     // someone back into a match after they deliberately returned to the menu.
     const socket = this.socket; this.socket = null; socket?.close();
-    this.update({ status: 'offline', room: null, snapshot: null, events: [], error: '' });
+    this.update({ status: 'offline', room: null, snapshot: null, events: [], feed: [], error: '' });
   }
   dispose() {
     this.disposed = true; this.closed = true; clearTimeout(this.timer); clearInterval(this.pingTimer); clearTimeout(this.probeTimer);

@@ -1,6 +1,6 @@
 import { LoopOnce, type AnimationAction } from 'three';
 
-export type BaseAnimationName = 'idle' | 'walk' | 'run' | 'jump' | 'aim';
+export type BaseAnimationName = 'idle' | 'walk' | 'run' | 'jump' | 'aim' | 'crouch' | 'crouchwalk' | 'slide';
 
 interface BaseAction {
   name: BaseAnimationName;
@@ -11,9 +11,11 @@ interface BaseAction {
   donor?: boolean;
 }
 
-const BASE_NAMES: readonly BaseAnimationName[] = ['idle', 'walk', 'run', 'jump', 'aim'];
+/** Optional posture clips (crouch, crouch walk, slide) join when the operator export has them. */
+const BASE_NAMES: readonly BaseAnimationName[] = ['idle', 'walk', 'run', 'jump', 'aim', 'crouch', 'crouchwalk', 'slide'];
+const GAIT_NAMES: ReadonlySet<BaseAnimationName> = new Set(['walk', 'run', 'crouchwalk']);
 
-/** Owns the five base poses; additive weapon actions remain independent.
+/** Owns the base poses; additive weapon actions remain independent.
  * Call update before AnimationMixer.update. Interruptions start from the current
  * weight vector, so a partially faded pose never jumps back to full strength.
  */
@@ -30,7 +32,7 @@ export class CharacterBlend {
       const action = actions.get(name);
       if (!action) continue;
       const weight = action.isScheduled() && action.enabled ? action.getEffectiveWeight() : 0;
-      this.actions.push({ name, action, weight, fromWeight: weight, gait: name === 'walk' || name === 'run' });
+      this.actions.push({ name, action, weight, fromWeight: weight, gait: GAIT_NAMES.has(name) });
       if (!this.selected || name === 'idle') this.selected = this.actions[this.actions.length - 1]!;
     }
     if (!this.selected) return;
@@ -45,6 +47,8 @@ export class CharacterBlend {
 
   get target(): AnimationAction | null { return this.selected?.action ?? null; }
   get transitionRemaining(): number { return this.remaining; }
+  /** Whether the export supplied a base clip, e.g. to choose a procedural crouch otherwise. */
+  has(name: BaseAnimationName): boolean { return this.actions.some(entry => entry.name === name && !entry.donor); }
 
   update(name: BaseAnimationName, playbackRate: number, dt: number): void {
     if (!this.selected) return;
