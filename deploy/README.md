@@ -47,6 +47,27 @@ it, set `ALLOWED_ORIGINS` to the game's exact HTTPS origin in the deployment
 environment (comma-separated for multiple explicitly approved origins). This lets
 the WebSocket origin check recognize the public site.
 
+The server's rate limits count requests per client address, and by default that is
+the address the connection comes from. Behind a proxy that is the proxy itself, so
+every player would share one set of limits and a few busy visitors could stop
+everyone from joining. If the proxy writes the real client address into a header
+that clients cannot set, put that header's name in `TRUSTED_CLIENT_IP_HEADER`
+(`cf-connecting-ip` behind Cloudflare Tunnel; the Coastline override sets it). The
+server uses the first address in that header, and the connection's own address when
+the header is missing or is not a valid IP address. IPv6 addresses count by their
+/64 network, the block one household is given. Leave it unset when players
+reach the server directly, or when the server can be reached without going through
+that proxy, because a client could then pick its own value.
+
+`WS_COMPRESSION=1` (exactly `1`) turns on WebSocket compression, which shrinks a
+full room's snapshots roughly tenfold. It is off by default until it has been
+checked on real iPhones.
+
+`deploy/compose.yml` passes `ALLOWED_ORIGINS`, `WS_COMPRESSION` and
+`TRUSTED_CLIENT_IP_HEADER` from your shell or `--env-file` into the container, so
+set them there. Other values in an env file only fill in the Compose files (such as
+`PORT`, `BIND_ADDRESS` and the image tag); they do not reach the server.
+
 A static hosting service alone cannot run matches. Two browser tabs on one
 computer do not prove play from separate homes. Before calling a release ready for
 family internet play, complete the following on the actual HTTPS address:
@@ -55,8 +76,11 @@ family internet play, complete the following on the actual HTTPS address:
 2. Create a private crew, join it by invitation, and confirm its leaderboard is
    accessible only to its members.
 3. Join the same match, start it, and confirm movement and combat are visible to
-   both players. Check touch aiming, weapon slots, and healing in landscape.
-4. Finish a match, inspect the result on both devices, then rematch.
+   both players. On the phone in landscape, check looking and aiming, both Fire
+   buttons, Aim, Crouch and slide, Jump and vault, Reload, Swap, Grenade, Knife and
+   a reward button. Check that health refills a few seconds after taking damage.
+4. Play one Free-for-all and one Team Deathmatch match. Change class between lives.
+   Finish each match, inspect the result on both devices, then rematch.
 5. Reconnect a player during a match; refresh after a completed match and check
    that the saved profile and relevant leaderboard result remain available.
 6. Verify a server restart preserves stored profiles and crew membership.
@@ -80,6 +104,12 @@ Build and run an updated image with the same Compose project name and volume. Ke
 the previous image and a matching backup until the new version has passed the
 internet-play checks. Rolling back application code is separate from restoring
 player data; never overwrite a live volume merely to revert an image.
+
+An update ends active matches. When `/health` reports a new `worldVersion` (the
+first-person release moves to `kannon-town-v3`), ask players to refresh their open
+game pages: an older page cannot start or play a match until it is refreshed. The
+first-person release did not change the database, so rolling back to the previous
+image keeps using the same volume.
 
 Do not horizontally scale this first release behind a load balancer: rooms are
 owned by a single process and the persistent store is SQLite. A future multi-server

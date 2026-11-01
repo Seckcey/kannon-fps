@@ -1,41 +1,195 @@
-import { movePlayer, type KinematicState } from '../../shared/physics';
-import type { InputFrame, PlayerState, Slot } from '../../shared/protocol';
+import { clamp, moveDefaults, movePlayer, reached, type MoveContext, type MoveEvents, type MoveState } from '../../shared/physics';
+import { RULES, type InputFrame, type Loadout, type PlayerState, type PublicPlayerState, type Vec3 } from '../../shared/protocol';
+import { DEFAULT_LOADOUT, weaponFor } from '../../shared/weapons';
 
-/** Movement restrictions confirmed by the latest authoritative snapshot.
- * Replay advances from that snapshot's server time, not the wall clock at which
- * old inputs happen to be replayed. New reload/heal starts remain server-owned.
- * The existing one-step-per-pending-input replay is an estimate: the server can
- * coalesce inputs, and its exact future arrival/tick assignment is not known.
- */
+/** What a snapshot tells the predictor: the public pose plus, for the local player, `self`. */
+export type PredictionSource = PublicPlayerState & Partial<Pick<PlayerState, 'stamina' | 'slideCooldownUntil' | 'meleeUntil' | 'frags' | 'lastInputTime'>>;
+/** The previous accepted input's held buttons; rising edges are measured against it. */
+export type InputEdges = Pick<InputFrame, 'jump' | 'crouch' | 'melee' | 'grenade'>;
+const released: InputEdges = { jump: false, crouch: false, melee: false, grenade: false };
+export const TICK_SECONDS = 1 / 30;
+export const TICK_MS = 1000 / 30;
+
+/** The server's per-tick movement context, shared by prediction and its replay-parity tests:
+ * rising edges from the previous accepted input, the equipped weapon's movement factors, and
+ * no sprint while cooking a grenade or knifing. */
+export function serverMoveContext(input: InputFrame, previous: InputEdges, loadout: Loadout, now: number, dt: number,
+  limits: { cooking: boolean; meleeUntil: number }): MoveContext {
+  const weapon = weaponFor(loadout, input.slot);
+  return {
+    now, dt,
+    jumpPressed: input.jump && !previous.jump, crouchPressed: input.crouch && !previous.crouch,
+    moveFactor: weapon.moveFactor, adsFactor: weapon.adsMoveFactor,
+    canSprint: !limits.cooking && reached(now, limits.meleeUntil),
+  };
+}
+
+/** Replays `movePlayer` for the local player from the latest authoritative snapshot, one server
+ * tick per sent input. Replay advances from the server time the acknowledged input ran at, not the
+ * wall clock at which old inputs are replayed. As on the server, this tick's knife and cook start
+ * before the move, so they stop a sprint on the same tick; both are refused while a vault is under
+ * way (judged on the body before the move), and the frag leaves the belt when the cook starts. The
+ * server runs every input once, one step each, on a clock of the player's own. */
 export class MovementPrediction {
-  private time = 0;
-  private slot: Slot = 1;
-  private healingUntil = 0;
-  private reloadingUntil = 0;
+  readonly state: MoveState = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, ...moveDefaults() };
+  /** Predicted server time of the last step. */
+  time = 0;
+  private previous: InputEdges = { ...released };
+  private loadout: Loadout = DEFAULT_LOADOUT;
+  private cooking = false;
+  private cookingSince = 0;
+  private meleeUntil = 0;
+  private frags: number = RULES.fragsPerLife;
 
-  reset(player: Pick<PlayerState, 'slot' | 'healingUntil' | 'reloadingUntil'>, serverTime: number): void {
+  /** Adopt an authoritative pose. `acknowledged` is the last input the server processed (edge baseline). */
+  reset(source: PredictionSource, serverTime: number, acknowledged: InputEdges | null = null): MoveState {
+    const s = this.state;
+    s.x = source.x; s.y = source.y; s.z = source.z; s.vx = source.vx; s.vy = source.vy; s.vz = source.vz;
+    s.yaw = source.yaw; s.pitch = source.pitch;
+    s.posture = source.posture ?? 'stand'; s.vault = source.vault ? { ...source.vault } : null;
+    s.slideUntil = source.slideUntil ?? 0; s.slideCooldownUntil = source.slideCooldownUntil ?? 0;
+    s.stamina = Number.isFinite(source.stamina) ? clamp(source.stamina!, 0, 1) : 1;
+    s.sprinting = !!source.sprinting; s.dashing = !!source.dashing;
     this.time = serverTime;
-    this.slot = player.slot;
-    this.healingUntil = player.healingUntil;
-    this.reloadingUntil = player.reloadingUntil;
+    this.loadout = source.loadout ?? DEFAULT_LOADOUT;
+    this.cookingSince = source.cookingSince ?? 0; this.cooking = this.cookingSince > 0;
+    this.meleeUntil = source.meleeUntil ?? 0;
+    this.frags = source.frags ?? RULES.fragsPerLife;
+    this.previous = acknowledged ? { jump: acknowledged.jump, crouch: acknowledged.crouch, melee: acknowledged.melee, grenade: acknowledged.grenade } : { ...released };
+    return s;
   }
 
-  /** Returns the effective sprint state for camera presentation. */
-  step(state: KinematicState, input: InputFrame, dt: number, canJump = true): boolean {
-    const seconds = Number.isFinite(dt) ? Math.max(0, Math.min(0.1, dt)) : 0;
-    this.time += seconds * 1_000;
-    // The server cancels either action on a slot change before moving. Keep
-    // this state across replay inputs so switching back cannot restore a lock.
-    if (input.slot !== this.slot) {
-      this.slot = input.slot;
-      this.healingUntil = this.reloadingUntil = 0;
+  /** One server tick with this input. Always a whole tick: stepping by render frames would judge
+   * presses against a body the server never had. */
+  step(input: InputFrame): MoveEvents {
+    this.time += TICK_MS;
+    // The server's order: the knife and a cook start before the move, both refused while a vault is
+    // under way on the body before it, and the cook takes the frag as it starts.
+    const vaulting = !!this.state.vault;
+    if (input.melee && !this.previous.melee && reached(this.time, this.meleeUntil) && !this.cooking && !vaulting) this.meleeUntil = this.time + RULES.meleeMs;
+    if (input.grenade && !this.previous.grenade && !this.cooking && this.frags > 0 && reached(this.time, this.meleeUntil) && !vaulting) {
+      this.cooking = true; this.cookingSince = this.time; this.frags--;
     }
-    const sprint = input.sprint && !this.healingUntil && !this.reloadingUntil;
-    movePlayer(state, { ...input, sprint }, seconds, canJump);
-    // MatchEngine moves first, then completes timed actions. The first step
-    // reaching/passing the deadline is still limited; the following step is not.
-    if (this.healingUntil && this.time >= this.healingUntil) this.healingUntil = 0;
-    if (this.reloadingUntil && this.time >= this.reloadingUntil) this.reloadingUntil = 0;
-    return sprint && !input.aim;
+    const ctx = serverMoveContext(input, this.previous, this.loadout, this.time, TICK_SECONDS, { cooking: this.cooking, meleeUntil: this.meleeUntil });
+    const events = movePlayer(this.state, input, ctx);
+    // A release throws after the move, and a fuse that runs out goes off in hand; the frag is already gone.
+    if (this.cooking && (!input.grenade || reached(this.time, this.cookingSince + RULES.fragFuseMs))) { this.cooking = false; this.cookingSince = 0; }
+    this.previous = { jump: input.jump, crouch: input.crouch, melee: input.melee, grenade: input.grenade };
+    return events;
   }
+
+  /** Progress of the current vault 0..1, or 1 when not vaulting (firing waits for 0.7). */
+  vaultProgress(now = this.time): number { return vaultProgress(this.state.vault, now); }
+}
+
+/** Corrections larger than this are teleports or respawns: the view jumps instead of gliding. */
+export const SNAP_DISTANCE = 3.5;
+const MAX_PENDING = 120;
+const copyPoint = (target: Vec3, source: Vec3) => { target.x = source.x; target.y = source.y; target.z = source.z; };
+
+/** The local player's prediction between snapshots. The predicted path advances only with inputs
+ * actually sent, one server tick each, so every press is judged against the same body the server
+ * judges it against: a jump pressed on the frame the view lands cannot become a vault the server
+ * never does. The body is drawn between the last two predicted ticks. A correction offset glides
+ * it onto the authoritative path after each snapshot (and over send-timer jitter). */
+export class LocalPrediction {
+  readonly movement = new MovementPrediction();
+  /** Drawn minus predicted position; it decays so corrections never jump the camera. */
+  readonly correction = { x: 0, y: 0, z: 0 };
+  pending: InputFrame[] = [];
+  /** A snapshot has supplied the local player. */
+  active = false;
+  private acknowledged: InputFrame | null = null;
+  /** Feet at the predicted tick before the latest one; the body is drawn between the two. */
+  private readonly prior: Vec3 = { x: 0, y: 0, z: 0 };
+  /** Wall-clock time (ms) the latest tick was predicted, and the smoothed time between sent inputs. */
+  private steppedAt = -Infinity;
+  private interval = TICK_MS;
+
+  /** One input actually sent to the server, at wall-clock `now` (ms). While `live` (the server will
+   * simulate it), the prediction also advances one tick, and that tick's events are returned. */
+  record(frame: InputFrame, now: number, live: boolean): MoveEvents | null {
+    this.pending.push({ ...frame });
+    if (this.pending.length > MAX_PENDING) this.pending.splice(0, this.pending.length - MAX_PENDING);
+    if (!live || !this.active) return null;
+    const drawn = this.feet(now);
+    copyPoint(this.prior, this.movement.state);
+    const events = this.movement.step(frame);
+    const elapsed = now - this.steppedAt;
+    if (elapsed > 0 && elapsed < 4 * TICK_MS) this.interval += (clamp(elapsed, TICK_MS / 2, TICK_MS * 2) - this.interval) * 0.1;
+    this.steppedAt = now;
+    // A send timer that fires a little early or late must not jump the drawn body.
+    this.hold(drawn, now);
+    return events;
+  }
+
+  /** Adopt the server's pose after input `ack` and replay the inputs still in flight. Outside live
+   * play the server ignores inputs, so none survive; a new life also starts with none. `restarted`
+   * means the server began counting this player's inputs again at 0 (a reconnect): every frame still
+   * held went down with the old socket or was already simulated, so none replays and the held keys
+   * count as released (as the server releases them).
+   * Returns true when the view should jump (spawn, first snapshot or a teleport). */
+  receive(source: PredictionSource, serverTime: number, ack: number,
+    live: { playing: boolean; alive: boolean; spawned: boolean; restarted?: boolean }, now: number): boolean {
+    if (live.restarted) { this.pending = []; this.acknowledged = null; }
+    const acknowledged = this.pending.filter(frame => frame.seq <= ack).at(-1);
+    if (acknowledged) this.acknowledged = acknowledged;
+    this.pending = live.playing && !live.spawned ? this.pending.filter(frame => frame.seq > ack) : [];
+    if (live.spawned) this.acknowledged = null;
+    const drawn = this.active && !live.spawned ? this.feet(now) : null;
+    // Replay from the server time input `ack` ran at (`lastInputTime`): a queued input can run behind
+    // the tick.
+    const ranAt = live.playing && live.alive && Number.isFinite(source.lastInputTime) ? source.lastInputTime! : serverTime;
+    const state = this.movement.reset(source, ranAt, this.acknowledged);
+    copyPoint(this.prior, state);
+    if (live.playing && live.alive) {
+      this.pending.forEach((frame, index) => {
+        if (index === this.pending.length - 1) copyPoint(this.prior, state);
+        this.movement.step(frame);
+      });
+    }
+    this.active = true;
+    if (drawn) this.hold(drawn, now);
+    if (!drawn || Math.hypot(this.correction.x, this.correction.y, this.correction.z) > SNAP_DISTANCE) {
+      this.correction.x = this.correction.y = this.correction.z = 0;
+      copyPoint(this.prior, state);
+      return true;
+    }
+    return false;
+  }
+
+  /** Let the correction glide away over a render frame. */
+  settle(dt: number) {
+    const k = Math.exp(-(Number.isFinite(dt) ? Math.max(0, dt) : 0) * 10);
+    this.correction.x *= k; this.correction.y *= k; this.correction.z *= k;
+  }
+
+  /** Where the local body is drawn at wall-clock `now` (ms): between the last two predicted ticks,
+   * plus the gliding correction. */
+  feet(now: number): Vec3 {
+    const state = this.movement.state, prior = this.prior, t = this.blend(now);
+    return {
+      x: prior.x + (state.x - prior.x) * t + this.correction.x,
+      y: prior.y + (state.y - prior.y) * t + this.correction.y,
+      z: prior.z + (state.z - prior.z) * t + this.correction.z,
+    };
+  }
+
+  /** 0 just after a tick is predicted, rising to 1 as the next sent input falls due. */
+  private blend(now: number): number {
+    return Number.isFinite(now) && Number.isFinite(this.steppedAt) ? clamp((now - this.steppedAt) / this.interval, 0, 1) : 1;
+  }
+
+  /** Keep the body drawn at `drawn` now, whatever the predicted ticks just did; it glides from there. */
+  private hold(drawn: Vec3, now: number) {
+    this.correction.x = this.correction.y = this.correction.z = 0;
+    const base = this.feet(now);
+    this.correction.x = drawn.x - base.x; this.correction.y = drawn.y - base.y; this.correction.z = drawn.z - base.z;
+  }
+}
+
+/** Mirrors the shared rule that a vault blocks firing until 70% of the way through. */
+export function vaultProgress(vault: MoveState['vault'], now: number): number {
+  if (!vault) return 1;
+  return clamp((now - vault.start) / Math.max(1, vault.end - vault.start), 0, 1);
 }

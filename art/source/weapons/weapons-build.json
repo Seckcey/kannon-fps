@@ -1,0 +1,565 @@
+{
+  "generator": "scripts/blender/generate_weapons.py",
+  "units": "metres",
+  "up": "glTF +Y",
+  "forward": "glTF -Z",
+  "models": {
+    "kr5": {
+      "root": "weapon_kr5",
+      "triangles": 11168,
+      "texture": 2048,
+      "nodes": [
+        "action",
+        "body",
+        "mag",
+        "eject",
+        "grip_l",
+        "grip_r",
+        "muzzle",
+        "sight"
+      ],
+      "anchors": {
+        "grip_r": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.09954,
+            0.1546,
+            -0.01566,
+            0.98283
+          ]
+        },
+        "grip_l": {
+          "translation": [
+            0.0,
+            0.07,
+            -0.335
+          ],
+          "rotation": [
+            0.17857,
+            -0.22815,
+            0.04261,
+            0.95616
+          ]
+        },
+        "muzzle": {
+          "translation": [
+            0.0,
+            0.0745,
+            -0.578
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "sight": {
+          "translation": [
+            0.0,
+            0.135,
+            -0.0496
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "eject": {
+          "translation": [
+            0.019,
+            0.0785,
+            -0.04
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "extras": {
+        "boreHeight": 0.0745,
+        "sightHeight": 0.135,
+        "trigger": [
+          0.0,
+          0.00787,
+          -0.07199
+        ]
+      }
+    },
+    "hornet9": {
+      "root": "weapon_hornet9",
+      "triangles": 7164,
+      "texture": 1024,
+      "nodes": [
+        "action",
+        "body",
+        "mag",
+        "eject",
+        "grip_l",
+        "grip_r",
+        "muzzle",
+        "sight"
+      ],
+      "anchors": {
+        "grip_r": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.12096,
+            0.1549,
+            -0.01228,
+            0.98042
+          ]
+        },
+        "grip_l": {
+          "translation": [
+            -0.003,
+            0.061,
+            -0.2
+          ],
+          "rotation": [
+            0.17857,
+            -0.22815,
+            0.04261,
+            0.95616
+          ]
+        },
+        "muzzle": {
+          "translation": [
+            0.0,
+            0.069,
+            -0.322
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "sight": {
+          "translation": [
+            0.0,
+            0.121,
+            -0.0255
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "eject": {
+          "translation": [
+            0.017,
+            0.072,
+            -0.032
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "extras": {
+        "boreHeight": 0.069,
+        "sightHeight": 0.121,
+        "trigger": [
+          0.0,
+          0.01101,
+          -0.07158
+        ]
+      }
+    },
+    "breaker12": {
+      "root": "weapon_breaker12",
+      "triangles": 8944,
+      "texture": 1024,
+      "nodes": [
+        "action",
+        "body",
+        "mag",
+        "eject",
+        "grip_l",
+        "grip_r",
+        "muzzle",
+        "sight"
+      ],
+      "anchors": {
+        "grip_r": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.12096,
+            0.1549,
+            -0.01228,
+            0.98042
+          ]
+        },
+        "grip_l": {
+          "translation": [
+            0.0,
+            0.0455,
+            -0.405
+          ],
+          "rotation": [
+            0.18642,
+            -0.22178,
+            0.07595,
+            0.95409
+          ]
+        },
+        "muzzle": {
+          "translation": [
+            0.0,
+            0.072,
+            -0.642
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "sight": {
+          "translation": [
+            0.0,
+            0.116,
+            -0.004
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "eject": {
+          "translation": [
+            0.019,
+            0.076,
+            -0.104
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "extras": {
+        "boreHeight": 0.072,
+        "sightHeight": 0.11599999999999999,
+        "trigger": [
+          0.0,
+          0.01101,
+          -0.07158
+        ],
+        "magKind": "shell"
+      }
+    },
+    "longbow": {
+      "root": "weapon_longbow",
+      "triangles": 10708,
+      "texture": 1024,
+      "nodes": [
+        "action",
+        "body",
+        "mag",
+        "eject",
+        "grip_l",
+        "grip_r",
+        "muzzle",
+        "sight"
+      ],
+      "anchors": {
+        "grip_r": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.16361,
+            0.15529,
+            -0.00551,
+            0.97421
+          ]
+        },
+        "grip_l": {
+          "translation": [
+            0.0,
+            0.065,
+            -0.42
+          ],
+          "rotation": [
+            0.19405,
+            -0.21514,
+            0.1092,
+            0.95086
+          ]
+        },
+        "muzzle": {
+          "translation": [
+            0.0,
+            0.073,
+            -0.82
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "sight": {
+          "translation": [
+            0.0,
+            0.14,
+            0.112
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "eject": {
+          "translation": [
+            0.02,
+            0.077,
+            -0.05
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "extras": {
+        "boreHeight": 0.073,
+        "sightHeight": 0.13999999999999999,
+        "trigger": [
+          0.0,
+          0.0172,
+          -0.07035
+        ],
+        "scope": true
+      }
+    },
+    "sentry9": {
+      "root": "weapon_sentry9",
+      "triangles": 2672,
+      "texture": 1024,
+      "nodes": [
+        "action",
+        "body",
+        "mag",
+        "eject",
+        "grip_l",
+        "grip_r",
+        "muzzle",
+        "sight"
+      ],
+      "anchors": {
+        "grip_r": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            0.18059,
+            0.15536,
+            -0.0028,
+            0.97121
+          ]
+        },
+        "grip_l": {
+          "translation": [
+            -0.01,
+            -0.00511,
+            -0.00678
+          ],
+          "rotation": [
+            0.37809,
+            -0.22362,
+            -0.12368,
+            0.8898
+          ]
+        },
+        "muzzle": {
+          "translation": [
+            0.0,
+            0.0669,
+            -0.143
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "sight": {
+          "translation": [
+            0.0,
+            0.0932,
+            0.03
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "eject": {
+          "translation": [
+            0.008,
+            0.0839,
+            -0.012
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        }
+      },
+      "extras": {
+        "boreHeight": 0.0669,
+        "sightHeight": 0.0932,
+        "trigger": [
+          0.0,
+          0.01965,
+          -0.0697
+        ]
+      }
+    },
+    "knife": {
+      "root": "knife",
+      "triangles": 1030,
+      "texture": 512,
+      "nodes": [
+        "body",
+        "grip_r"
+      ],
+      "anchors": {
+        "grip_r": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            -0.48594,
+            0.11721,
+            -0.10201,
+            0.86007
+          ]
+        }
+      },
+      "extras": {
+        "edge": "-Y (glTF) / down",
+        "length": 0.3
+      }
+    },
+    "frag": {
+      "root": "frag",
+      "triangles": 1426,
+      "texture": 512,
+      "nodes": [
+        "body"
+      ],
+      "anchors": {},
+      "extras": {
+        "diameter": 0.064
+      }
+    },
+    "arm_left": {
+      "root": "arm_left",
+      "triangles": 7710,
+      "texture": 1024,
+      "nodes": [
+        "arm",
+        "hold"
+      ],
+      "anchors": {
+        "hold": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            -0.04557,
+            0.28611,
+            0.42629,
+            0.85694
+          ]
+        }
+      },
+      "extras": {
+        "heldAxis": [
+          -0.451509,
+          -0.322038,
+          -0.832125
+        ]
+      }
+    },
+    "arm_right": {
+      "root": "arm_right",
+      "triangles": 7710,
+      "texture": 1024,
+      "nodes": [
+        "arm"
+      ],
+      "anchors": {},
+      "extras": {
+        "heldAxis": [
+          0.10248,
+          0.859798,
+          -0.500246
+        ]
+      }
+    }
+  },
+  "materials": {
+    "WeaponReflexGlass": {
+      "alphaMode": "BLEND",
+      "baseColorFactor": [
+        0.14996,
+        0.32314,
+        0.36625,
+        0.16
+      ],
+      "roughnessFactor": 0.05,
+      "metallicFactor": 0.0
+    }
+  }
+}

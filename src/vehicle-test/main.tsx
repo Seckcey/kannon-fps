@@ -2,43 +2,41 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
 import { GameView } from '../game/GameView';
+import { HudStore } from '../game/hud';
 import { VEHICLE_TEST_ASSETS } from '../game/assets';
 import { InputController } from '../game/InputController';
-import { TouchControls } from '../components/TouchControls';
-import { movePlayer } from '../../shared/physics';
-import type { PlayerState, WorldSnapshot } from '../../shared/protocol';
+import { EXPOSURE, FOG, HEMISPHERE, SUN_COLOR, SUN_INTENSITY } from '../game/Atmosphere';
+import { movePlayer, moveDefaults } from '../../shared/physics';
+import { DEFAULT_LOADOUT } from '../../shared/weapons';
+import type { InputFrame, PlayerState, PublicPlayerState, WorldSnapshot } from '../../shared/protocol';
+import { ReviewTouch } from './ReviewTouch';
+import { TOWN_VIEWS, VEHICLE_VIEWS, type ReviewView } from './views';
 import '../styles.css';
 import './review.css';
 
 type Variant = 'current' | 'improved';
 type Quality = 'auto' | 'high' | 'low';
-type Vec = [number, number, number];
-const views: Record<string, { label: string; player: Vec; yaw: number; pitch: number; camera?: Vec; target?: Vec }> = {
-  'bus-close': { label: 'Bus · close detail', player: [-7, 0, -13], yaw: 2.65, pitch: -.04, camera: [-8.2, 3.1, -14.3], target: [-2.4, 1.5, -6.2] },
-  'bus-gameplay': { label: 'Bus · third person', player: [-7, 0, -13], yaw: 2.65, pitch: -.025 },
-  'bus-detail': { label: 'Bus · wheel and panel detail', player: [-7, 0, -13], yaw: 2.65, pitch: -.025, camera: [-6.1, 1.8, -10.6], target: [-3.0, 1.25, -8.0] },
-  'south-close': { label: 'South car · close detail', player: [-7, 0, 20.7], yaw: .6, pitch: -.04, camera: [-7.5, 2.3, 19.3], target: [-3.9, .95, 16.2] },
-  'south-gameplay': { label: 'South car · third person', player: [-7, 0, 20.7], yaw: .6, pitch: -.06 },
-  'south-detail': { label: 'South car · wheel and panel detail', player: [-7, 0, 20.7], yaw: .6, pitch: -.06, camera: [-5.7, 1.25, 18.7], target: [-4.7, .68, 16.65] },
-  'north-close': { label: 'North car · close detail', player: [0, 0, -12.5], yaw: .686, pitch: -.04, camera: [.2, 2.3, -14.2], target: [4, .95, -17.4] },
-  'north-gameplay': { label: 'North car · third person', player: [0, 0, -12.5], yaw: .686, pitch: -.06 },
-};
 const params = new URLSearchParams(location.search);
 const townMode = location.pathname.endsWith('/graphics-test.html');
-if (townMode) Object.assign(views, {
-  'street': { label: 'Main street · architecture', player: [0, 0, 17], yaw: 0, pitch: -.04, camera: [3.5, 3.8, 19.5], target: [-6, 2.2, -3] },
-  'teal-front': { label: 'Teal house · siding and windows', player: [-5, 0, -9], yaw: -1, pitch: 0, camera: [-3.5, 3, -11.5], target: [-11, 3.3, -.5] },
-  'yellow-front': { label: 'Yellow house · facade and garage', player: [5, 0, 16], yaw: 2, pitch: 0, camera: [4.2, 3.4, 18.8], target: [12, 3, 3.5] },
-  'roof-detail': { label: 'Roof · ridge and gutter detail', player: [-7, 0, -13], yaw: 0, pitch: 0, camera: [-9, 7.6, -13.7], target: [-16, 6.8, -3.5] },
-  'teal-room': { label: 'Teal house · ground floor', player: [-13, 0, 0], yaw: 0, pitch: 0, camera: [-10.7, 1.75, 4.8], target: [-16.4, 1.2, -3.1] },
-  'yellow-upstairs': { label: 'Yellow house · upstairs', player: [13, 3.2, 1], yaw: 0, pitch: 0, camera: [14, 4.9, 4.8], target: [9.5, 4.6, -.2] },
-  'yard': { label: 'Backyard · fence and trees', player: [-28, 0, -18.5], yaw: 1.57, pitch: -.04, camera: [-25.5, 2, -16], target: [-32.5, 2.4, -10] },
-  'spawn-gameplay': { label: 'Spawn · normal third person', player: [-28, 0, -18.5], yaw: Math.PI/2, pitch: -.04 },
-});
+const views: Record<string, ReviewView> = { ...VEHICLE_VIEWS, ...(townMode ? TOWN_VIEWS : {}) };
 const original = params.get('original') === '1';
-// ?graphics=v2 compares the shipped town (Before) with the lightmapped Kannon Town v2 (After).
+// ?graphics=v2 compares the refined town (Before) with Kannon Town v2 (After);
+// ?graphics=v3 compares Kannon Town v2 (Before) with the v3 checkpoint at golden hour (After).
 const v2 = townMode && params.get('graphics') === 'v2';
+const v3 = townMode && params.get('graphics') === 'v3';
+const phoneTier = params.get('tier') === 'phone';
 const initialQuality: Quality = ['high', 'low', 'auto'].includes(params.get('quality') ?? '') ? params.get('quality') as Quality : 'high';
+/** Real-time light for each side of a v3 comparison: v2 shipped with this exposure, fog and
+ *  daylight; v3 uses the golden-hour values the bake was calibrated against. */
+const LIGHT = {
+  current: { exposure: 1.0, fog: { color: '#b2cbd0', near: 100, far: 460 }, sun: { color: '#fff4e4', intensity: 3.3 }, hemisphere: { sky: '#d9edff', ground: '#8e7357', intensity: 0.8 } },
+  improved: { exposure: EXPOSURE, fog: FOG, sun: { color: SUN_COLOR, intensity: SUN_INTENSITY }, hemisphere: HEMISPHERE },
+} as const;
+/** GameView's options as this page passes them. `hud` is spelled out because the contract adds it
+ *  to GameViewOptions in the first-person overhaul; everything else, graphicsTest included, is
+ *  checked against GameView's own type, so a rename there breaks this build instead of silently
+ *  dropping the artwork and light overrides. */
+type ReviewOptions = ConstructorParameters<typeof GameView>[1] & { hud: HudStore };
 type TestApi = {
   ready: boolean; selectView: (name: string) => void; setVariant: (variant: Variant) => void;
   setQuality: (quality: Quality) => void; walk: () => void;
@@ -46,13 +44,14 @@ type TestApi = {
 };
 declare global { interface Window { vehicleTest: TestApi } }
 const percentile = (values: number[], p: number) => values.length ? [...values].sort((a, b) => a - b)[Math.min(values.length - 1, Math.floor(values.length * p))] : null;
+const publicState = ({ mag: _mag, reserve: _reserve, frags: _frags, rewards: _rewards, reloadSlot: _reloadSlot, readyAt: _readyAt, meleeUntil: _meleeUntil, stamina: _stamina, slideCooldownUntil: _slideCooldown, lastDamageAt: _lastDamage, ...rest }: PlayerState): PublicPlayerState => rest;
 
 function Review() {
   const container = useRef<HTMLDivElement>(null);
   const api = useRef<TestApi | null>(null);
   const [input] = useState(() => new InputController(undefined, { firingMode: 'advanced' }));
   const [variant, setVariant] = useState<Variant>('improved');
-  const [selected, setSelected] = useState(townMode ? 'street' : 'bus-close');
+  const [selected, setSelected] = useState(townMode ? (v3 ? 'checkpoint-north' : 'street') : 'bus-close');
   const [walking, setWalking] = useState(false);
   const [quality, setQuality] = useState<Quality>(initialQuality);
   const [ready, setReady] = useState(false);
@@ -62,46 +61,72 @@ function Review() {
   const [result, setResult] = useState('');
   useEffect(() => {
     if (!container.current) return;
-    let activeView = townMode ? 'street' : 'bus-close', activeVariant: Variant = 'improved', activeQuality = initialQuality, free = false;
+    let activeView = townMode ? (v3 ? 'checkpoint-north' : 'street') : 'bus-close', activeVariant: Variant = 'improved', activeQuality = initialQuality, free = false;
     let scene: THREE.Scene | undefined, camera: THREE.PerspectiveCamera | undefined, renderer: THREE.WebGLRenderer | undefined;
-    let seq = 0, lastJump = false, sampleActive = false, sampleInterrupted = false, gpuDisjointEvents = 0;
+    let seq = 0, lastJump = false, lastCrouch = false, sampleActive = false, sampleInterrupted = false, gpuDisjointEvents = 0;
     const changedSurface = () => { if (sampleActive) sampleInterrupted = true; };
     document.addEventListener('visibilitychange', changedSurface);
     window.addEventListener('resize', changedSurface);
     window.addEventListener('orientationchange', changedSurface);
     const requireIdle = () => { if (sampleActive) throw new Error('Wait for the current measurement to finish.'); };
     const frames: number[] = [], cpu: number[] = [], gpu: number[] = [];
-    const player: PlayerState = { id: 'vehicle-review', name: 'Graphics review', color: '#64bdda', x: -7, y: 0, z: -13, yaw: 2.65, pitch: -.04, vx: 0, vy: 0, vz: 0, health: 100, shield: 50, slot: 1, ammoAR: 30, ammoShotgun: 6, heals: 2, kills: 0, deaths: 0, connected: true, respawnAt: 0, protectedUntil: 0, healingUntil: 0, reloadingUntil: 0, lastInputSeq: 0 };
-    let snapshot: WorldSnapshot = { tick: 0, serverTime: Date.now(), phase: 'waiting', timeRemaining: 300, players: [{ ...player }], winnerIds: [] };
+    const player: PlayerState = {
+      id: 'vehicle-review', name: 'Graphics review', color: '#64bdda', x: views[activeView].player[0], y: views[activeView].player[1], z: views[activeView].player[2],
+      yaw: views[activeView].yaw, pitch: views[activeView].pitch, vx: 0, vy: 0, vz: 0,
+      health: 100, slot: 1, weapon: DEFAULT_LOADOUT.primary, loadout: DEFAULT_LOADOUT, kills: 0, deaths: 0, assists: 0, score: 0, streak: 0,
+      connected: true, respawnAt: 0, protectedUntil: 0, reloadingUntil: 0, cookingSince: 0, lastInputSeq: 0,
+      mag: [30, 12], reserve: [120, 48], frags: 1, rewards: [], reloadSlot: 0, readyAt: 0, meleeUntil: 0, lastDamageAt: 0,
+      ...moveDefaults(),
+    };
+    const snapshotOf = (tick: number, phase: WorldSnapshot['phase']): WorldSnapshot => ({
+      tick, serverTime: Date.now(), phase, timeRemaining: 300, mode: 'ffa', scoreLimit: 15,
+      players: [publicState(player)], self: { ...player }, winnerIds: [], drones: [], recon: [], mortars: [],
+    });
+    let snapshot = snapshotOf(0, 'waiting');
     input.setPaused(true);
     let gl: WebGL2RenderingContext | undefined;
     let timerExt: { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number } | null = null;
     let query: WebGLQuery | null = null;
     const pending: Array<{ query: WebGLQuery; measured: boolean }> = [];
-    const view = new GameView(container.current, {
-      input, getSnapshot: () => snapshot, getPlayerId: () => player.id,
+    const hud = new HudStore();
+    const applyLight = (s: THREE.Scene, r: THREE.WebGLRenderer) => {
+      // Each side of a v3 comparison is shown under the real-time light it was made for.
+      const light = LIGHT[activeVariant];
+      r.toneMappingExposure = light.exposure;
+      if (s.fog instanceof THREE.Fog) { s.fog.color.set(light.fog.color); s.fog.near = light.fog.near; s.fog.far = light.fog.far; }
+      for (const object of s.children) {
+        if (object instanceof THREE.DirectionalLight) { object.color.set(light.sun.color); object.intensity = light.sun.intensity; }
+        if (object instanceof THREE.HemisphereLight) { object.color.set(light.hemisphere.sky); object.groundColor.set(light.hemisphere.ground); object.intensity = light.hemisphere.intensity; }
+      }
+    };
+    const townUrls = v3
+      ? { before: phoneTier ? VEHICLE_TEST_ASSETS.townV2Phone : VEHICLE_TEST_ASSETS.townV2, after: phoneTier ? VEHICLE_TEST_ASSETS.townV3Phone : VEHICLE_TEST_ASSETS.townV3 }
+      : v2 ? { before: VEHICLE_TEST_ASSETS.refinedTown, after: phoneTier ? VEHICLE_TEST_ASSETS.townV2Phone : VEHICLE_TEST_ASSETS.townV2 }
+      : townMode ? { before: VEHICLE_TEST_ASSETS.originalTown, after: VEHICLE_TEST_ASSETS.refinedTown } : null;
+    const options = {
+      input, hud, getSnapshot: () => snapshot, getPlayerId: () => player.id,
       settings: { quality: initialQuality, volume: 0 }, onStats: setStats,
       onAssetsReady: () => { window.vehicleTest.ready = true; setReady(true); }, onError: setError,
       graphicsTest: {
         lockQuality: true,
-        artwork: original ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown } : v2 ? { environmentUrl: VEHICLE_TEST_ASSETS.refinedTown, environmentVisible: false, vehicles: [
-          { name: 'TownVariant_improved', url: params.get('tier') === 'phone' ? VEHICLE_TEST_ASSETS.townV2Phone : VEHICLE_TEST_ASSETS.townV2, visible: true },
-        ] } : townMode ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown, environmentVisible: false, vehicles: [
-          { name: 'TownVariant_improved', url: VEHICLE_TEST_ASSETS.refinedTown, visible: true },
+        artwork: original ? { environmentUrl: VEHICLE_TEST_ASSETS.originalTown } : townUrls ? { environmentUrl: townUrls.before, environmentVisible: false, vehicles: [
+          { name: 'TownVariant_improved', url: townUrls.after, visible: true },
         ] } : { environmentUrl: '/models/environment-vehicle-test.glb', vehicles: [
           { name: 'VehicleVariant_current', url: '/models/vehicles-current.glb', visible: false },
           { name: 'VehicleVariant_improved', url: '/models/vehicles-improved.glb', visible: true },
         ] },
-        beforeRender(s, c, r) {
+        beforeRender(s: THREE.Scene, c: THREE.PerspectiveCamera, r: THREE.WebGLRenderer) {
           scene = s; camera = c; renderer = r;
+          if (v3) applyLight(s, r);
           const preset = views[activeView];
           if (!free && preset.camera) {
             c.position.fromArray(preset.camera); c.lookAt(new THREE.Vector3().fromArray(preset.target!)); c.fov = 68; c.updateProjectionMatrix();
           }
-          // The actual Scout stays visible in normal third-person captures.
+          // Player views leave the character to GameView (which hides it around a first-person
+          // camera); fixed cameras hide it unless the view asks to show it (shadow checks).
           for (const obj of s.children) if (obj instanceof THREE.Group && obj !== s.getObjectByName('VehicleTestTown')) {
             let skinned = false; obj.traverse(child => { if (child instanceof THREE.SkinnedMesh) skinned = true; });
-            if (skinned && !free && preset.camera) obj.visible = false;
+            if (skinned && !free && preset.camera) obj.visible = !!preset.showPlayer;
           }
           s.getObjectByName('VehicleVariant_current')?.traverse(obj => { if (obj.name === 'VehicleVariant_current') obj.visible = activeVariant === 'current'; });
           s.getObjectByName('VehicleVariant_improved')?.traverse(obj => { if (obj.name === 'VehicleVariant_improved') obj.visible = activeVariant === 'improved'; });
@@ -124,12 +149,13 @@ function Review() {
             if (pending.length < 8 && sampleActive) { query = gl.createQuery(); gl.beginQuery(timerExt.TIME_ELAPSED_EXT, query!); }
           }
         },
-        afterRender(_r, submitMs, frameMs) {
+        afterRender(_r: THREE.WebGLRenderer, submitMs: number, frameMs: number) {
           if (query && gl && timerExt) { gl.endQuery(timerExt.TIME_ELAPSED_EXT); pending.push({ query, measured: sampleActive }); query = null; }
           if (sampleActive) { frames.push(frameMs); cpu.push(submitMs); }
         },
       },
-    });
+    } satisfies ReviewOptions;
+    const view = new GameView(container.current, options);
     const selectView = (name: string) => {
       requireIdle();
       if (!views[name]) throw new Error(`Unknown view: ${name}`);
@@ -181,18 +207,22 @@ function Review() {
     };
     api.current = window.vehicleTest = testApi;
     const timer = setInterval(() => {
-      const frame = input.current();
-      if (free) { movePlayer(player, frame, 1 / 30, !lastJump); player.slot = frame.slot; lastJump = frame.jump; view.recordInput(frame); }
+      const frame: InputFrame = input.current();
+      if (free) {
+        // Same shared movement as the server: walk, sprint, crouch, slide, jump and vault.
+        movePlayer(player, frame, { now: Date.now(), dt: 1 / 30, jumpPressed: frame.jump && !lastJump, crouchPressed: !!frame.crouch && !lastCrouch, moveFactor: 1, adsFactor: 1, canSprint: true });
+        player.slot = frame.slot; lastJump = frame.jump; lastCrouch = !!frame.crouch; view.recordInput(frame);
+      }
       player.lastInputSeq = frame.seq;
-      snapshot = { ...snapshot, tick: ++seq, serverTime: Date.now(), phase: free ? 'playing' : 'waiting', players: [{ ...player }] };
+      snapshot = snapshotOf(++seq, free ? 'playing' : 'waiting');
     }, 1000 / 30);
-    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', changedSurface); window.removeEventListener('resize', changedSurface); window.removeEventListener('orientationchange', changedSurface); view.dispose(); input.dispose(); for (const p of pending) gl?.deleteQuery(p.query); };
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', changedSurface); window.removeEventListener('resize', changedSurface); window.removeEventListener('orientationchange', changedSurface); view.dispose(); input.dispose(); hud.clear(); for (const p of pending) gl?.deleteQuery(p.query); };
   }, [input]);
   return <main className={`vehicle-review ${walking ? 'walking' : ''}`}>
     <div className="review-canvas" ref={container}/>
     <header className="review-toolbar">
       <div className="review-title"><strong>Kannon Arena <span>{townMode ? 'Town graphics' : 'Vehicle test'}</span></strong><small>Local Three.js gameplay renderer · review only</small></div>
-      <div className="review-switch" aria-label="Vehicle version">
+      <div className="review-switch" aria-label="Version">
         <button disabled={!ready || original || measuring} aria-pressed={variant === 'current'} onClick={() => api.current?.setVariant('current')}>Before</button>
         <button disabled={!ready || original || measuring} aria-pressed={variant === 'improved'} onClick={() => api.current?.setVariant('improved')}>After</button>
       </div>
@@ -201,11 +231,11 @@ function Review() {
       <button disabled={!ready || measuring} onClick={() => walking ? api.current?.selectView(selected) : api.current?.walk()}>{walking ? 'Return to fixed view' : 'Walk around'}</button>
       <a href={`/?graphics=${variant === 'improved' ? 'improved' : 'current'}`}>Full practice match ↗</a>
     </header>
-    <div className="review-caption"><b>{original ? 'ORIGINAL UNSPLIT' : variant === 'improved' ? 'AFTER' : 'BEFORE'}</b><span>{walking ? 'Walk-around · combat is in Full practice match' : views[selected].label}</span><small>{quality.toUpperCase()} · fixed quality · {stats.fps} FPS · {stats.drawCalls} draws</small><small className="portrait-note">Landscape shows more of each vehicle.</small></div>
-    {(!ready || error) && <div className="review-loading" role="status">{error || 'Loading both vehicle sets and the game renderer…'}</div>}
-    {walking && input.isTouch && <TouchControls input={input} healingSlot={false}/>}
+    <div className="review-caption"><b>{original ? 'ORIGINAL UNSPLIT' : variant === 'improved' ? 'AFTER' : 'BEFORE'}</b><span>{walking ? 'Walk-around · combat is in Full practice match' : views[selected].label}</span><small>{quality.toUpperCase()} · fixed quality · {stats.fps} FPS · {stats.drawCalls} draws</small><small className="portrait-note">Landscape shows more of each scene.</small></div>
+    {(!ready || error) && <div className="review-loading" role="status">{error || 'Loading both versions and the game renderer…'}</div>}
+    {walking && input.isTouch && <ReviewTouch input={input}/>}
     {walking && <div className="review-reticle">+</div>}
-    <footer className="review-footer"><span>{walking ? 'WASD / joystick · mouse / drag to look · Space to jump · Esc releases mouse. Combat is in Full practice match.' : 'Switch Before / After without moving the camera. Third-person views retain the normal gameplay camera.'}</span>
+    <footer className="review-footer"><span>{walking ? 'WASD or the stick to move · mouse or drag to look · Space or Jump to jump · C to crouch · Esc releases the mouse. Combat is in Full practice match.' : 'Switch Before / After without moving the camera. Player views keep the normal game camera.'}</span>
       <button disabled={!ready || measuring || walking} onClick={async () => { setResult('Measuring 20 seconds…'); try { const r = await api.current!.sample(20000); setResult(`${Number(r.fps).toFixed(1)} FPS · p95 ${(r.frameMs as { p95: number }).p95.toFixed(1)} ms`); } catch (e) { setResult(e instanceof Error ? e.message : 'Measurement failed.'); } }}>{measuring ? 'Measuring…' : 'Measure 20 s'}</button><output>{result}</output>
     </footer>
   </main>;
@@ -214,4 +244,4 @@ if (import.meta.env.DEV) {
   const reactRoot = createRoot(document.getElementById('root')!); reactRoot.render(<Review/>);
   import.meta.hot?.dispose(() => reactRoot.unmount());
 }
-else document.body.textContent = 'This vehicle graphics experiment is local review only.';
+else document.body.textContent = 'This graphics review is local only.';

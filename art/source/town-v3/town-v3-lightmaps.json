@@ -1,0 +1,345 @@
+{
+  "atlases": {
+    "LM_arch": "LM_arch.png",
+    "LM_ground": "LM_ground.png",
+    "LM_foliage": "LM_foliage.png",
+    "LM_props": "LM_props.png",
+    "LM_pots": "LM_pots.png"
+  },
+  "sunMasks": {
+    "LM_arch": "LM_arch_sun.png",
+    "LM_ground": "LM_ground_sun.png",
+    "LM_foliage": "LM_foliage_sun.png",
+    "LM_props": "LM_props_sun.png",
+    "LM_pots": "LM_pots_sun.png"
+  },
+  "materials": {
+    "V2_Bark": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Concrete": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Fence": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_FloorWood": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Glass": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Metal": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Plaster": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Roof": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Siding": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Trim": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V3_SofaFabric": {
+      "atlas": "LM_arch",
+      "intensity": 6.760000000000001
+    },
+    "V2_Asphalt": {
+      "atlas": "LM_ground",
+      "intensity": 6.760000000000001
+    },
+    "V2_Concrete__LM_ground": {
+      "atlas": "LM_ground",
+      "intensity": 6.760000000000001
+    },
+    "V2_Grass": {
+      "atlas": "LM_ground",
+      "intensity": 6.760000000000001
+    },
+    "V2_Markings": {
+      "atlas": "LM_ground",
+      "intensity": 6.760000000000001
+    },
+    "V2_Leaves": {
+      "atlas": "LM_foliage",
+      "intensity": 6.760000000000001
+    },
+    "Prop_aircon_exterior_aircon_unit_01": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_aircon_exterior_aircon_unit_02": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_bench_painted_wooden_bench": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_cardboard_box_cardboard_box_01": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_generator_portable_generator": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_generator_portable_generator_glass": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_hand_truck_hand_truck": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_hose_garden_hose_wall_mounted_01": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_hydrant_fire_hydrant": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_ladder_ladder_sectioned_01": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_manhole_water_manhole_cover": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_patio_set_outdoor_table_chair_set_01_chair": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_patio_set_outdoor_table_chair_set_01_table": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_picnic_table_wooden_picnic_table_bottom": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_picnic_table_wooden_picnic_table_table": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_planter_planter_box_02": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_propane_propane_tank": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_security_light_security_light": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_security_light_security_light_bulb": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_security_light_security_light_glass": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_street_lamp_street_lamp_01": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_street_lamp_street_lamp_01_bulb": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_street_lamp_street_lamp_01_glass": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_trash_can_metal_trash_can": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_trash_can_rust_metal_trash_can_rust.002": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_trash_can_rust_metal_trash_can_rust.003": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_trashbag_trashbag": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_tyre_old_tyre": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_utility_box_utility_box_01": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Prop_wheel_rim_rusted_wheel_rim_01": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "TownPaint": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "TownRubber": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V2_Glass__LM_props": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Barrier": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Boards": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Burlap": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Burnt": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_BusPaint": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Canvas": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Cone": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Paint": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_AmberLens": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_BlackPolymer": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_BrushedAluminium": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_DeepRecess": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_HeadlampGlass": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_RedLens": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_RoadDust": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_SeaGreen_Metallic": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_TintedAutomotiveGlass": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_TireRubber": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "Vehicle_WheelSteel": {
+      "atlas": "LM_props",
+      "intensity": 6.760000000000001
+    },
+    "V3_Pot": {
+      "atlas": "LM_pots",
+      "intensity": 6.760000000000001
+    }
+  },
+  "alphaMask": [
+    "V2_GrassCard",
+    "V2_Leaves"
+  ],
+  "doubleSided": [
+    "V2_GrassCard",
+    "V2_Leaves",
+    "V3_Smoke"
+  ],
+  "alphaBlend": [
+    "V3_Smoke",
+    "V3_WindowGlass"
+  ],
+  "calibration": {
+    "sunDirection": [
+      -0.8461,
+      0.3584,
+      0.3946
+    ],
+    "sunColorSrgb": [
+      1.0,
+      0.788,
+      0.561
+    ],
+    "sunIntensity": 5.2,
+    "sunStrengthBlender": 4.0,
+    "skyStrengthBlender": 0.0816,
+    "blenderToRuntime": 1.3,
+    "skyUp": [
+      0.6344,
+      1.0773,
+      1.8651
+    ],
+    "sunPerpendicular": [
+      5.2655,
+      3.0649,
+      1.4357
+    ],
+    "openStreetHorizontal": [
+      2.3582,
+      1.9239,
+      2.0117
+    ],
+    "groundBounceDown": [
+      0.2555,
+      0.2004,
+      0.1806
+    ],
+    "normaliser": 1.6552114081557117,
+    "lightMapIntensity": 6.760000000000001
+  }
+}

@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import WebSocket from 'ws';
-import { RULES, type Crew, type InputFrame, type LeaderboardEntry, type MatchHistory } from '../../shared/protocol.js';
-import { fixture, startReady } from './helpers.js';
-
-const input = (seq: number, changes: Partial<InputFrame> = {}): InputFrame => ({ seq, moveX: 0, moveZ: 0, yaw: 0, pitch: 0, fire: false, aim: false, jump: false, sprint: false, reload: false, slot: 1, ...changes });
+import { RULES, type Crew, type LeaderboardEntry, type MatchHistory } from '../../shared/protocol.js';
+import { DEFAULT_LOADOUT } from '../../shared/weapons.js';
+import { fixture, frame as input, startReady } from './helpers.js';
 
 test('HTTP identity cannot be impersonated by nickname and survives a server restart', async t => {
   const f = await fixture(t);
@@ -102,26 +101,31 @@ test('private multiplayer enforces crew access, host control, countdown, fixed l
     guest.wait('snapshot', message => message.snapshot.phase === 'playing', guestMark),
   ]);
   assert.equal(hostPlaying.snapshot.players.length, 2);
-  assert.deepEqual(hostPlaying.snapshot.players, guestPlaying.snapshot.players);
+  assert.deepEqual(hostPlaying.snapshot.players, guestPlaying.snapshot.players, 'Everyone sees the same public world.');
   for (const player of hostPlaying.snapshot.players) {
-    assert.equal(player.health, RULES.health); assert.equal(player.shield, RULES.shield); assert.equal(player.heals, 2);
-    assert.equal(player.slot, 1); assert.equal(player.ammoAR, RULES.arMagazine); assert.equal(player.ammoShotgun, RULES.shotgunMagazine);
+    assert.equal(player.health, RULES.health); assert.equal(player.slot, 1); assert.equal(player.weapon, DEFAULT_LOADOUT.primary);
+    assert.deepEqual(player.loadout, DEFAULT_LOADOUT); assert.equal(player.posture, 'stand');
     assert.equal(player.kills, 0); assert.equal(player.deaths, 0);
+    assert.equal('mag' in player, false, 'Ammunition stays private to its owner.');
   }
+  // Each socket gets its own full state, and only its own.
+  assert.equal(hostPlaying.snapshot.self?.id, owner.profile.id); assert.equal(guestPlaying.snapshot.self?.id, friend.profile.id);
+  assert.deepEqual(hostPlaying.snapshot.self.mag, [30, 12]); assert.deepEqual(hostPlaying.snapshot.self.reserve, [180, 72]); assert.equal(hostPlaying.snapshot.self.frags, 2);
+  assert.deepEqual([hostPlaying.snapshot.mode, hostPlaying.snapshot.scoreLimit, hostPlaying.snapshot.drones], ['ffa', RULES.ffaScoreLimit, []]);
   const before = hostPlaying.snapshot.players.find(player => player.id === owner.profile.id)!;
   const mark = host.mark();
   // The wire accepts input intent only: injected coordinates and score fields have no authority.
   host.socket.send(JSON.stringify({ type: 'input', input: { ...input(1, { moveX: 999_999, slot: 2 }), x: 1000, health: 999, kills: 15 } }));
   const moved = await host.wait('snapshot', message => message.snapshot.players.some(player => player.id === owner.profile.id && player.lastInputSeq === 1), mark);
   const after = moved.snapshot.players.find(player => player.id === owner.profile.id)!;
-  assert.equal(after.slot, 2); assert.equal(after.health, RULES.health); assert.equal(after.kills, 0);
+  assert.equal(after.slot, 2); assert.equal(after.weapon, 'sentry9'); assert.equal(after.health, RULES.health); assert.equal(after.kills, 0);
   const elapsed = (moved.snapshot.serverTime - hostPlaying.snapshot.serverTime) / 1000;
   assert.ok(Math.hypot(after.x - before.x, after.z - before.z) <= 9 * elapsed + 0.5, 'Movement must be bounded by server speed, even for huge client input.');
-  const staleMark = host.mark(); host.send({ type: 'input', input: input(1, { slot: 3 }) });
+  const staleMark = host.mark(); host.send({ type: 'input', input: input(1, { slot: 1 }) });
   const stale = await host.wait('snapshot', message => message.snapshot.tick > moved.snapshot.tick, staleMark);
   assert.equal(stale.snapshot.players.find(player => player.id === owner.profile.id)!.slot, 2, 'Replayed input must not alter the player.');
   const stoppedMark = host.mark();
-  const stopped = await host.wait('snapshot', message => message.snapshot.serverTime > moved.snapshot.serverTime + 400, stoppedMark);
+  const stopped = await host.wait('snapshot', message => message.snapshot.serverTime > moved.snapshot.serverTime + 800, stoppedMark);
   const stoppedPlayer = stopped.snapshot.players.find(player => player.id === owner.profile.id)!;
   assert.equal(stoppedPlayer.vx, 0); assert.equal(stoppedPlayer.vz, 0, 'Dropped inputs must not keep moving a disconnected controller.');
   const friendDisconnectedMark = host.mark(); guest.close();

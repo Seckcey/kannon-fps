@@ -1,0 +1,277 @@
+{
+  "input": "<temp>/kannon-weapons-v1/weapons-raw.glb",
+  "out": "public/models/weapons-v1.glb",
+  "bytes": 3980700,
+  "sha256": "784123593bd676fe7655d017172a21ce2b13760738cbb1814eb698e6bbc72643",
+  "triangles": {
+    "arm_left": 7710,
+    "arm_right": 7710,
+    "frag": 1426,
+    "knife": 1030,
+    "weapon_breaker12": 8944,
+    "weapon_hornet9": 7164,
+    "weapon_kr5": 11168,
+    "weapon_longbow": 10708,
+    "weapon_sentry9": 2672
+  },
+  "materials": [
+    "W_arm_left",
+    "W_arm_right",
+    "W_frag",
+    "W_knife",
+    "W_weapon_breaker12",
+    "WeaponGlowGreen",
+    "W_weapon_hornet9",
+    "WeaponReflexGlass",
+    "WeaponGlowRed",
+    "W_weapon_kr5",
+    "W_weapon_longbow",
+    "WeaponLens",
+    "W_weapon_sentry9"
+  ],
+  "textures": [
+    {
+      "name": "arm_left_Normal",
+      "mime": "image/ktx2",
+      "bytes": 94562,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "arm_left_ORM",
+      "mime": "image/ktx2",
+      "bytes": 57475,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "arm_left_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 103413,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "arm_right_Normal",
+      "mime": "image/ktx2",
+      "bytes": 79705,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "arm_right_ORM",
+      "mime": "image/ktx2",
+      "bytes": 60504,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "arm_right_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 112042,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "frag_Normal",
+      "mime": "image/ktx2",
+      "bytes": 24269,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "frag_ORM",
+      "mime": "image/ktx2",
+      "bytes": 21297,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "frag_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 40323,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "knife_Normal",
+      "mime": "image/ktx2",
+      "bytes": 41690,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "knife_ORM",
+      "mime": "image/ktx2",
+      "bytes": 15078,
+      "size": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "knife_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 30018,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "weapon_breaker12_Normal",
+      "mime": "image/ktx2",
+      "bytes": 109613,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_breaker12_ORM",
+      "mime": "image/ktx2",
+      "bytes": 80953,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "weapon_breaker12_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 171079,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_hornet9_Normal",
+      "mime": "image/ktx2",
+      "bytes": 138634,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_hornet9_ORM",
+      "mime": "image/ktx2",
+      "bytes": 73877,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "weapon_hornet9_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 153149,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_kr5_Normal",
+      "mime": "image/ktx2",
+      "bytes": 436276,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "weapon_kr5_ORM",
+      "mime": "image/ktx2",
+      "bytes": 198164,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_kr5_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 455226,
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "name": "weapon_longbow_Normal",
+      "mime": "image/ktx2",
+      "bytes": 133228,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_longbow_ORM",
+      "mime": "image/ktx2",
+      "bytes": 82235,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "weapon_longbow_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 163265,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_sentry9_Normal",
+      "mime": "image/ktx2",
+      "bytes": 124933,
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "name": "weapon_sentry9_ORM",
+      "mime": "image/ktx2",
+      "bytes": 64917,
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "name": "weapon_sentry9_BaseColor",
+      "mime": "image/ktx2",
+      "bytes": 136855,
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  ]
+}

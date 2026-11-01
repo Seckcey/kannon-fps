@@ -14,6 +14,11 @@ services:
       PORT: "3001"
       DATA_DIR: /app/data
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-}"
+      # Exactly 1 turns on WebSocket compression; empty or any other value leaves it off.
+      WS_COMPRESSION: "${WS_COMPRESSION:-}"
+      # Header a trusted proxy sets to the visitor's address, for per-visitor rate limits. Leave empty unless only
+      # that proxy can reach the published port.
+      TRUSTED_CLIENT_IP_HEADER: "${TRUSTED_CLIENT_IP_HEADER:-}"
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-3001}:3001"
     volumes:

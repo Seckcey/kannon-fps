@@ -12,7 +12,7 @@ Muzzle flares, tracers, contact sparks, stone dust/chips, elimination fragments 
 
 The actual skinned scout body uses one private PBR material copy per character. Its existing atlas modulates restrained cyan shield, warm armor and pale shield-break emission, preserving the dark undersuit and surface detail. Peak strengths are 0.20/0.14/0.34 with 180/150/290 ms decay. The atlas is bound before first render; hits change emission uniforms without changing shader defines. The loading fallback uses its already private accent material.
 
-Respawn effects wait for a fresh authoritative living snapshot, then appear at the new position. A separate local respawn latch resets the camera when that life arrives, including after backgrounding. Hidden or stale combat presentation is discarded; visibility changes clear existing particles and pending respawn visuals instead of replaying them on return.
+Respawn effects wait for a fresh authoritative living snapshot, then appear at the new position. A separate local respawn latch resets the camera when that life arrives, including after backgrounding. Hidden or stale combat presentation is discarded; visibility changes clear moving effects (particles, tracers, ejected brass, muzzle lights) and pending respawn visuals instead of replaying them on return, but keep bullet holes, scorch marks and broken glass, and the game's sound pauses while the page is hidden. A new round (a new round id) clears everything.
 
 ## Invariants
 

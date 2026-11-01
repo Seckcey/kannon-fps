@@ -7,6 +7,9 @@ services:
         BUILD_REVISION: ${KANNON_VERSION:?Set the tested source commit}
     environment:
       ALLOWED_ORIGINS: https://kpop.8westventures.com
+      # Every player arrives through the Cloudflare Tunnel on loopback, so rate limits use the visitor address
+      # Cloudflare puts in this header (it replaces any copy a browser sends). Only cloudflared reaches the port.
+      TRUSTED_CLIENT_IP_HEADER: cf-connecting-ip
     mem_limit: 512m
     cpus: 1.0
     pids_limit: 128

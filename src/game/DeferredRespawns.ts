@@ -1,4 +1,4 @@
-import type { PlayerState, WorldSnapshot } from '../../shared/protocol';
+import type { PublicPlayerState, WorldSnapshot } from '../../shared/protocol';
 
 interface RespawnEvent {
   at: number;
@@ -23,7 +23,7 @@ export class DeferredRespawns {
     this.events.set(playerId, { at, receivedNow, pending: true });
   }
 
-  flush(snapshot: WorldSnapshot, now: number, emit: (player: PlayerState) => void): void {
+  flush(snapshot: WorldSnapshot, now: number, emit: (player: PublicPlayerState) => void): void {
     if (this.disposed || !Number.isFinite(now)) return;
     if (snapshot.phase !== 'playing') { this.clear(); return; }
     // Snapshot the bounded entries so an emit callback may safely clear, dispose

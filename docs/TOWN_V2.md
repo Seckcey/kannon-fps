@@ -1,6 +1,6 @@
 # Kannon Town v2 — textures, props and baked light, September 10, 2026
 
-Frank asked for the visual quality to move toward Call of Duty Mobile without leaving the browser. The [design](superpowers/specs/2026-09-09-kannon-town-visual-overhaul-design.md) chose to stay on Three.js, buy or source real assets, keep the stylised-realistic look, put phones first, hold the first download near 40 MB, and re-skin the existing scout. Purchases need Frank's card, so this release uses CC0 assets throughout; a paid kit can replace pieces later (see [art/PURCHASED_ASSETS.md](../art/PURCHASED_ASSETS.md)).
+Frank asked for the visual quality to move toward a polished commercial mobile shooter without leaving the browser. The [design](superpowers/specs/2026-09-09-kannon-town-visual-overhaul-design.md) chose to stay on Three.js, buy or source real assets, keep the stylised-realistic look, put phones first, hold the first download near 40 MB, and re-skin the existing scout. Purchases need Frank's card, so this release uses CC0 assets throughout; a paid kit can replace pieces later (see [art/PURCHASED_ASSETS.md](../art/PURCHASED_ASSETS.md)).
 
 The town layout, all 150 collision boxes, spawns, stair routes, weapons, scoring, networking and storage are unchanged. This is a visual release on the same game.
 

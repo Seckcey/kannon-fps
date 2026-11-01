@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { RULES, type Crew, type InputFrame, type LeaderboardEntry, type MatchHistory, type RoomSnapshot, type WorldSnapshot } from '../../shared/protocol.js';
-import { fixture, startReady, type Peer } from './helpers.js';
+import { RULES, type Crew, type LeaderboardEntry, type MatchHistory, type RoomSnapshot, type WorldSnapshot } from '../../shared/protocol.js';
+import { fixture, frame, startReady, type Peer } from './helpers.js';
 
-const input = (seq: number): InputFrame => ({ seq, moveX: 1, moveZ: 1, yaw: 1, pitch: .2, fire: true, aim: true, jump: true, sprint: true, reload: true, slot: 2 });
+/** Every action held at once, the way a hostile page would try to arm a first-frame action. */
+const input = (seq: number) => frame(seq, { moveX: 1, moveZ: 1, yaw: 1, pitch: .2, fire: true, aim: true, jump: true, sprint: true, reload: true, slot: 2, crouch: true, dash: true, melee: true, grenade: true });
 const preparationId = (room: RoomSnapshot) => {
   assert.equal(room.phase, 'preparing');
   assert.ok(room.preparation?.id, 'An attempt needs its own server-issued readiness nonce.');
@@ -19,7 +20,7 @@ const latestRoom = (peer: Peer) => {
 const playerReady = (peer: Peer, id: string, value: boolean, after: number) => peer.wait('room', message => message.room.players.some(player => player.id === id && player.ready === value), after);
 const barrier = async (peer: Peer) => { const nonce = Date.now(); await peer.command({ type: 'ping', t: nonce }, 'pong', message => message.t === nonce); };
 const freshAfter = (peer: Peer, at: number, after: number) => peer.wait('snapshot', message => message.snapshot.serverTime >= at, after);
-const spawnState = (snapshot: WorldSnapshot) => snapshot.players.map(player => ({ id: player.id, x: player.x, y: player.y, z: player.z, yaw: player.yaw, pitch: player.pitch, health: player.health, shield: player.shield, kills: player.kills, deaths: player.deaths, ammoAR: player.ammoAR, ammoShotgun: player.ammoShotgun, heals: player.heals, slot: player.slot }));
+const spawnState = (snapshot: WorldSnapshot) => snapshot.players.map(player => ({ id: player.id, x: player.x, y: player.y, z: player.z, yaw: player.yaw, pitch: player.pitch, health: player.health, kills: player.kills, deaths: player.deaths, slot: player.slot, weapon: player.weapon, posture: player.posture, cookingSince: player.cookingSince, reloadingUntil: player.reloadingUntil }));
 
 test('private readiness waits beyond the old countdown and rejects outsiders and pre-start action latches', async t => {
   const f = await fixture(t);
@@ -69,7 +70,8 @@ test('private readiness waits beyond the old countdown and rejects outsiders and
   assert.ok(playing.snapshot.serverTime >= acceptedAt + RULES.countdownMs - 20, 'The new countdown is not shortened by preparation time.');
   assert.ok(playing.snapshot.serverTime > nearStart.snapshot.serverTime);
   assert.deepEqual(spawnState(playing.snapshot), spawnState(initial.snapshot), 'Preparation/countdown inputs must not change first-frame position, view, loadout or score.');
-  assert.equal(host.messages.slice(initialMark).some(message => message.type === 'event' && ['shot', 'damage', 'heal', 'elimination'].includes(message.event.type)), false);
+  assert.equal(host.messages.slice(initialMark).some(message => message.type === 'event' && ['shot', 'damage', 'elimination', 'melee', 'grenade', 'explosion'].includes(message.event.type)), false);
+  assert.deepEqual(playing.snapshot.self?.mag, initial.snapshot.self?.mag, 'No round was spent before play.');
 });
 
 test('withdrawal and replaced-session recovery require a fresh acknowledgement without losing the reserved roster', async t => {
@@ -179,7 +181,8 @@ test('a completed abandoned round requires a fresh rematch readiness nonce and c
   const countdown = await host.wait('snapshot', message => message.snapshot.phase === 'countdown', rematchMark);
   assert.equal(countdown.snapshot.roundId, nextId, 'A rematch cannot reuse the previous rendered round proof.');
   assert.ok(countdown.snapshot.timeRemaining > 2.5);
-  assert.ok(countdown.snapshot.players.every(player => player.health === RULES.health && player.shield === RULES.shield && player.ammoAR === RULES.arMagazine && player.ammoShotgun === RULES.shotgunMagazine && player.heals === RULES.healCharges && player.slot === 1 && player.kills === 0 && player.deaths === 0));
+  assert.ok(countdown.snapshot.players.every(player => player.health === RULES.health && player.weapon === 'kr5' && player.slot === 1 && player.kills === 0 && player.deaths === 0 && player.streak === 0));
+  assert.deepEqual(countdown.snapshot.self?.mag, [30, 12]); assert.deepEqual(countdown.snapshot.self?.rewards, []);
   for (const period of ['all', 'month']) {
     const response = await f.request(`/api/leaderboard?crewId=${crew.id}&period=${period}`, { token: owner.token });
     assert.ok(response.ok);
@@ -189,20 +192,24 @@ test('a completed abandoned round requires a fresh rematch readiness nonce and c
 });
 
 test('a stale-map reconnect cannot move or shoot in an already playing round', async t => {
-  const f = await fixture(t), identity = await f.profile('Map Recovery');
-  const modern = await f.connect(identity.token);
-  await modern.command({ type: 'create', ranked: false, practice: true }, 'room');
-  await startReady(modern, [modern]);
-  await modern.wait('snapshot', message => message.snapshot.phase === 'playing');
-  const stale = await f.connect();
-  await stale.command({ type: 'hello', token: identity.token, readyProtocol: 1, worldVersion: 'sunbreak-coastal-v1' }, 'welcome');
-  await stale.wait('room', message => message.room.phase === 'playing');
-  const mark = stale.mark();
-  await stale.command({ type: 'input', input: input(1) }, 'error', message => message.code === 'GAME_UPDATE_REQUIRED');
-  const observed = await stale.wait('snapshot', message => message.snapshot.players.some(player => player.id === identity.profile.id), mark);
-  const player = observed.snapshot.players.find(player => player.id === identity.profile.id)!;
-  assert.equal(player.vx, 0); assert.equal(player.vz, 0); assert.equal(player.lastInputSeq, 0);
-  assert.ok(!stale.messages.slice(mark).some(message => message.type === 'event' && message.event.type === 'shot' && message.event.playerId === identity.profile.id));
+  // Also the page production serves before this release (kannon-town-v1): it sends on a 33 ms timer, 30.3 frames a
+  // second, which this server's one-step-per-frame movement would queue and drop.
+  for (const worldVersion of ['sunbreak-coastal-v1', 'kannon-town-v1']) {
+    const f = await fixture(t), identity = await f.profile('Map Recovery');
+    const modern = await f.connect(identity.token);
+    await modern.command({ type: 'create', ranked: false, practice: true }, 'room');
+    await startReady(modern, [modern]);
+    await modern.wait('snapshot', message => message.snapshot.phase === 'playing');
+    const stale = await f.connect();
+    await stale.command({ type: 'hello', token: identity.token, readyProtocol: 1, worldVersion }, 'welcome');
+    await stale.wait('room', message => message.room.phase === 'playing');
+    const mark = stale.mark();
+    await stale.command({ type: 'input', input: input(1) }, 'error', message => message.code === 'GAME_UPDATE_REQUIRED');
+    const observed = await stale.wait('snapshot', message => message.snapshot.players.some(player => player.id === identity.profile.id), mark);
+    const player = observed.snapshot.players.find(player => player.id === identity.profile.id)!;
+    assert.equal(player.vx, 0, worldVersion); assert.equal(player.vz, 0); assert.equal(player.lastInputSeq, 0);
+    assert.ok(!stale.messages.slice(mark).some(message => message.type === 'event' && message.event.type === 'shot' && message.event.playerId === identity.profile.id));
+  }
 });
 
 test('readiness-capable pages with missing or stale map versions cannot start a mismatched world', async t => {

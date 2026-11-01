@@ -59,18 +59,20 @@ test('model warmup shares retained buffers, rejects corrupt responses, and retri
 
   await t.test('warmup and multiple parsers share one download and successful buffers outlive the request deadline', async cached => {
     cached.mock.timers.enable({ apis: ['setTimeout'] });
-    let resolveResponse!: (response: Response) => void;
-    respond = () => new Promise(resolve => { resolveResponse = resolve; });
+    const resolvers: Array<(response: Response) => void> = [];
+    respond = () => new Promise(resolve => { resolvers.push(resolve); });
     const before = requests.length;
     const character = getArenaAssetBuffer(ARENA_ASSETS.character), warm = warmArenaAssets();
     const parsers = Array.from({ length: 8 }, () => getArenaAssetBuffer(ARENA_ASSETS.character));
-    assert.ok(parsers.every(parser => parser === character)); assert.equal(requests.length, before + 1);
-    resolveResponse(new Response(valid));
+    assert.ok(parsers.every(parser => parser === character));
+    assert.deepEqual(requests.slice(before).map(request => request.url), [ARENA_ASSETS.character, ARENA_ASSETS.weapons],
+      'One download each for the operator and the first-person weapons; the cached town is not fetched again');
+    for (const resolve of resolvers) resolve(new Response(valid));
     const characterBuffer = await character; await warm;
     assert.ok((await Promise.all(parsers)).every(buffer => buffer === characterBuffer));
     assert.equal(await getArenaAssetBuffer(ARENA_ASSETS.environment), environmentBuffer, 'Retrying one asset must preserve the other buffer.');
     cached.mock.timers.tick(60_001); assert.equal(requests.at(-1)!.init?.signal?.aborted, false, 'A completed request must clear its abort deadline.');
-    await warmArenaAssets(); assert.equal(requests.length, before + 1, 'A later room must not depend on another model request.');
+    await warmArenaAssets(); assert.equal(requests.length, before + 2, 'A later room must not depend on another model request.');
     assert.deepEqual(new Uint8Array(characterBuffer), new Uint8Array(valid));
   });
 });

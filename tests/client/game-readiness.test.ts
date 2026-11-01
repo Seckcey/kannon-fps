@@ -1,82 +1,84 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import type { Phase } from '../../shared/protocol';
 import { GameView } from '../../src/game/GameView';
 
 interface ReadinessView {
-  disposed: boolean; assetsAnnounced: boolean; environmentReady: boolean; characterReady: boolean;
-  snapshot: { phase: Phase };
-  players: Map<string, { model: { root: { visible: boolean } } }>;
-  renderer: { getContext: () => { isContextLost: () => boolean } };
-  options: { getPlayerId: () => string; onAssetsReady: () => void };
-}
-const afterRender = (GameView.prototype as unknown as { checkAssetsReady(this: ReadinessView): void }).checkAssetsReady;
-interface PreparationView extends ReadinessView {
-  renderedPreparationId: string;
+  disposed: boolean; assetsAnnounced: boolean; environmentReady: boolean; characterReady: boolean; weaponsReady: boolean;
+  firstPersonFrame: boolean; renderedPreparationId: string;
   snapshot: { phase: Phase; roundId?: string; players: Array<{ id: string; health: number; connected: boolean }> };
-  options: ReadinessView['options'] & { getPreparationId: () => string | undefined; onPreparationRendered: (id: string) => void };
+  renderer: { getContext: () => { isContextLost: () => boolean } };
+  options: { getPlayerId: () => string; onAssetsReady: () => void; getPreparationId?: () => string | undefined; onPreparationRendered?: (id: string) => void };
+  checkAssetsReady(): void;
+  checkPreparationRendered(): void;
 }
-const afterPreparedFrame = (GameView.prototype as unknown as { checkPreparationRendered(this: PreparationView): void }).checkPreparationRendered;
-
-test('first-render readiness waits for parsed environment and local model; dead recovery can show results', t => {
+/** The real GameView readiness methods on a receiver holding only the state they read. */
+function view(fields: Omit<ReadinessView, 'checkAssetsReady' | 'checkPreparationRendered'>): ReadinessView {
+  return Object.assign(Object.create(GameView.prototype) as ReadinessView, fields);
+}
+function hiddenDocument(t: TestContext) {
   const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
   const document = { hidden: false };
   Object.defineProperty(globalThis, 'document', { configurable: true, value: document });
   t.after(() => { if (previous) Object.defineProperty(globalThis, 'document', previous); else Reflect.deleteProperty(globalThis, 'document'); });
+  return document;
+}
+
+test('first-render readiness waits for the town, operator model, weapons and a drawn first-person view; dead recovery can show results', t => {
+  const document = hiddenDocument(t);
   let ready = 0, contextLost = false;
-  const view: ReadinessView = {
-    disposed: false, assetsAnnounced: false, environmentReady: false, characterReady: false,
-    snapshot: { phase: 'preparing' }, players: new Map(),
+  const subject = view({
+    disposed: false, assetsAnnounced: false, environmentReady: false, characterReady: false, weaponsReady: false,
+    firstPersonFrame: false, renderedPreparationId: '', snapshot: { phase: 'preparing', players: [] },
     renderer: { getContext: () => ({ isContextLost: () => contextLost }) },
     options: { getPlayerId: () => 'local', onAssetsReady: () => { ready++; } },
-  };
-  afterRender.call(view);
-  view.environmentReady = true; afterRender.call(view);
-  view.characterReady = true; afterRender.call(view);
-  assert.equal(ready, 0);
-  view.players.set('local', { model: { root: { visible: false } } }); afterRender.call(view);
-  assert.equal(ready, 0, 'Preparation must render the visible local scout.');
-  view.players.get('local')!.model.root.visible = true;
-  document.hidden = true; afterRender.call(view); assert.equal(ready, 0);
-  document.hidden = false; contextLost = true; afterRender.call(view); assert.equal(ready, 0);
-  contextLost = false; afterRender.call(view); afterRender.call(view); assert.equal(ready, 1);
-  view.assetsAnnounced = false; view.snapshot.phase = 'finished'; view.players.get('local')!.model.root.visible = false;
-  afterRender.call(view); assert.equal(ready, 2, 'An intentionally hidden dead scout must not obscure recovered results forever.');
-  view.assetsAnnounced = false; view.snapshot.phase = 'playing'; afterRender.call(view);
-  assert.equal(ready, 3, 'A reconnect during a respawn can show the arena while the local scout is dead.');
-  view.assetsAnnounced = false; view.disposed = true; afterRender.call(view); assert.equal(ready, 3);
+  });
+  subject.checkAssetsReady();
+  subject.environmentReady = true; subject.checkAssetsReady();
+  subject.characterReady = true; subject.checkAssetsReady();
+  subject.weaponsReady = true; subject.checkAssetsReady();
+  assert.equal(ready, 0, 'The local player must be in the snapshot');
+  subject.snapshot.players.push({ id: 'local', health: 100, connected: true }); subject.checkAssetsReady();
+  assert.equal(ready, 0, 'Preparation must draw the first-person view first.');
+  subject.firstPersonFrame = true;
+  document.hidden = true; subject.checkAssetsReady(); assert.equal(ready, 0);
+  document.hidden = false; contextLost = true; subject.checkAssetsReady(); assert.equal(ready, 0);
+  contextLost = false; subject.checkAssetsReady(); subject.checkAssetsReady(); assert.equal(ready, 1);
+  subject.assetsAnnounced = false; subject.snapshot.phase = 'finished'; subject.firstPersonFrame = false;
+  subject.checkAssetsReady(); assert.equal(ready, 2, 'Results after the round need no first-person view.');
+  subject.assetsAnnounced = false; subject.snapshot.phase = 'playing'; subject.snapshot.players[0]!.health = 0; subject.checkAssetsReady();
+  assert.equal(ready, 3, 'A reconnect during a respawn can show the arena while the local player is down.');
+  subject.assetsAnnounced = false; subject.weaponsReady = false; subject.checkAssetsReady(); assert.equal(ready, 3, 'Weapons are required');
+  subject.weaponsReady = true; subject.disposed = true; subject.checkAssetsReady(); assert.equal(ready, 3);
 });
 
-test('a rematch needs a newly rendered matching round with a living visible local scout', t => {
-  const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
-  const document = { hidden: false };
-  Object.defineProperty(globalThis, 'document', { configurable: true, value: document });
-  t.after(() => { if (previous) Object.defineProperty(globalThis, 'document', previous); else Reflect.deleteProperty(globalThis, 'document'); });
+test('a rematch needs a newly rendered matching round with a living first-person view', t => {
+  const document = hiddenDocument(t);
   let currentPreparation: string | undefined = 'new-round', contextLost = false;
   const rendered: string[] = [];
-  const view: PreparationView = {
-    disposed: false, assetsAnnounced: true, environmentReady: true, characterReady: true, renderedPreparationId: 'old-round',
+  const subject = view({
+    disposed: false, assetsAnnounced: true, environmentReady: true, characterReady: true, weaponsReady: true, firstPersonFrame: true,
+    renderedPreparationId: 'old-round',
     snapshot: { phase: 'finished', roundId: 'old-round', players: [{ id: 'local', health: 100, connected: true }] },
-    players: new Map([['local', { model: { root: { visible: true } } }]]),
     renderer: { getContext: () => ({ isContextLost: () => contextLost }) },
     options: { getPlayerId: () => 'local', onAssetsReady: () => {}, getPreparationId: () => currentPreparation, onPreparationRendered: id => rendered.push(id) },
-  };
-  afterPreparedFrame.call(view);
-  view.snapshot.phase = 'preparing'; afterPreparedFrame.call(view);
+  });
+  subject.checkPreparationRendered();
+  subject.snapshot.phase = 'preparing'; subject.checkPreparationRendered();
   assert.deepEqual(rendered, [], 'Warm assets and an old preparing world cannot admit a new room nonce.');
-  view.snapshot.roundId = 'new-round'; view.snapshot.players[0]!.health = 0; afterPreparedFrame.call(view);
-  view.snapshot.players[0]!.health = 100; view.snapshot.players[0]!.connected = false; afterPreparedFrame.call(view);
-  view.snapshot.players[0]!.connected = true; view.players.get('local')!.model.root.visible = false; afterPreparedFrame.call(view);
+  subject.snapshot.roundId = 'new-round'; subject.snapshot.players[0]!.health = 0; subject.checkPreparationRendered();
+  subject.snapshot.players[0]!.health = 100; subject.snapshot.players[0]!.connected = false; subject.checkPreparationRendered();
+  subject.snapshot.players[0]!.connected = true; subject.firstPersonFrame = false; subject.checkPreparationRendered();
   assert.deepEqual(rendered, []);
-  view.players.get('local')!.model.root.visible = true; document.hidden = true; afterPreparedFrame.call(view);
-  document.hidden = false; contextLost = true; afterPreparedFrame.call(view);
-  contextLost = false; view.assetsAnnounced = false; afterPreparedFrame.call(view); assert.deepEqual(rendered, []);
-  view.assetsAnnounced = true; afterPreparedFrame.call(view); afterPreparedFrame.call(view);
+  subject.firstPersonFrame = true; document.hidden = true; subject.checkPreparationRendered();
+  document.hidden = false; contextLost = true; subject.checkPreparationRendered();
+  contextLost = false; subject.assetsAnnounced = false; subject.checkPreparationRendered(); assert.deepEqual(rendered, []);
+  subject.assetsAnnounced = true; subject.checkPreparationRendered(); subject.checkPreparationRendered();
   assert.deepEqual(rendered, ['new-round']);
-  currentPreparation = 'next-round'; afterPreparedFrame.call(view); assert.equal(rendered.length, 1);
-  view.snapshot.roundId = 'next-round'; afterPreparedFrame.call(view);
+  currentPreparation = 'next-round'; subject.checkPreparationRendered(); assert.equal(rendered.length, 1);
+  subject.snapshot.roundId = 'next-round'; subject.checkPreparationRendered();
   assert.deepEqual(rendered, ['new-round', 'next-round']);
-  currentPreparation = undefined; view.snapshot.roundId = 'obsolete-late-frame'; afterPreparedFrame.call(view);
-  currentPreparation = 'disposed-round'; view.snapshot.roundId = currentPreparation; view.disposed = true; afterPreparedFrame.call(view);
+  currentPreparation = undefined; subject.snapshot.roundId = 'obsolete-late-frame'; subject.checkPreparationRendered();
+  currentPreparation = 'disposed-round'; subject.snapshot.roundId = currentPreparation; subject.disposed = true; subject.checkPreparationRendered();
   assert.equal(rendered.length, 2);
 });
