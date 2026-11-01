@@ -34,6 +34,10 @@ export const FRAMES_PER_TICK = 2;
  * still simulates every frame of a 150 ms jitter spike; it is also the most a client that holds back its frames can
  * spend at double speed afterwards (about 1.1 m of sprint). */
 export const FRAME_CREDIT_MS = 5 * FRAME_MS;
+/** How fast a player's own timers get back the allowance they used (see shiftTimers), in ms per ms. A new stream can
+ * use up to a frame of it, so this keeps up with a connection stalling every couple of seconds. It is also the most a
+ * modified page can keep gaining: about 2% on a rate of fire. */
+const ALLOWANCE_REFILL = 0.02;
 /** A player is streaming once this many frames arrived within STREAM_WINDOW_MS, spread over at least
  * STREAM_SPREAD_MS and with no gap over STREAM_GAP_MS between them (a client sending its 30 a second, not one burst
  * and not across a pause), until the connection goes quiet. */
@@ -166,7 +170,8 @@ interface Runtime {
   queue: QueuedFrame[];
   /** Presses from frames dropped on overflow, used by the next simulated frame. */
   presses: Partial<Record<PressAction, PendingPress>>;
-  /** Server time of the last simulated frame (published as `lastInputTime`), never later than the tick. While
+  /** Server time of the last simulated frame, never later than the tick (a frame the page sent publishes it as
+   * `lastInputTime`, which its later frames count from). While
    * streaming, each frame is one FRAME_MS step after the frame `clockSeq` (one step per sequence number), so slides,
    * vaults and weapon timers follow the client's predicted clock. `clockSeq` is null until a frame sets the clock
    * after a spawn, reconnect or silence. */
@@ -174,7 +179,8 @@ interface Runtime {
   /** The last frame simulated since a spawn, the round going live or a reconnect started the clock afresh; null until one. */
   ranSeq: number | null;
   /** How much of the catch-up allowance the player's own timers are using: how far ahead they stand of where they have
-   * been at their latest, 0 or less (see shiftTimers). `cookShifted` is how far the current cook has moved. */
+   * been at their latest, 0 or less, coming back slowly and whole with each life (see shiftTimers). `cookShifted` is
+   * how far the current cook has moved. */
   shifted: number; cookShifted: number;
   /** Arrival times of the latest STREAM_FRAMES frames, and whether the player is streaming (see updatePlayer). */
   arrivals: Array<{ at: number; seq: number }>; streaming: boolean;
@@ -483,7 +489,7 @@ export class MatchEngine {
    * one step after it (see updatePlayer), however long the round trip keeps it away: until then an idle frame leaves
    * the clock where it is. */
   private resetClock(player: PlayerState, rt: Runtime, now: number) {
-    rt.clock = now; rt.receivedAt = now; this.endStream(rt); rt.earlySince = now; rt.ranSeq = null; rt.shifted = 0;
+    rt.clock = now; rt.receivedAt = now; this.endStream(rt); rt.earlySince = now; rt.ranSeq = null;
     player.lastInputTime = now;
   }
   /** Moves the player's own timers by `delta` ms, as their frame clock moved by that much more than one step per
@@ -562,7 +568,7 @@ export class MatchEngine {
     rt.reload = null; rt.nextFireAt = [-Infinity, -Infinity]; rt.lastSprintAt = -Infinity; rt.lastSprintDash = false; this.releaseControls(rt);
     // Multi-kills pair kills from one life only.
     rt.chain = 0; rt.lastKillAt = -Infinity;
-    rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0; this.resetClock(player, rt, now);
+    rt.input = { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: 0 }; rt.receivedAt = 0; this.resetClock(player, rt, now); rt.shifted = 0;
     rt.history = [{ t: now, x: player.x, y: player.y, z: player.z, posture: player.posture }]; rt.aliveSince = now; rt.life++;
     rt.regenStart = NaN; rt.damageBy.clear();
     if (announce) this.onEvent({ type: 'respawn', playerId: player.id, at: now });
@@ -653,7 +659,9 @@ export class MatchEngine {
       if (queued) this.simulate(player, rt, queued, now, now, dt, actions);
       return;
     }
-    rt.credit = Math.min(FRAME_CREDIT_MS, rt.credit + Math.max(0, now - rt.creditAt)); rt.creditAt = now;
+    const elapsed = Math.max(0, now - rt.creditAt);
+    rt.credit = Math.min(FRAME_CREDIT_MS, rt.credit + elapsed); rt.creditAt = now;
+    rt.shifted = Math.min(0, rt.shifted + elapsed * ALLOWANCE_REFILL);
     if (!rt.streaming) this.startStream(rt, now);
     let simulated = 0;
     while (rt.queue.length && simulated < FRAMES_PER_TICK && rt.credit >= FRAME_MS - 1e-6) {
@@ -719,19 +727,21 @@ export class MatchEngine {
       this.simulate(player, rt, idle, now, now, dt, actions, false);
       this.endStream(rt);
       // Before the first frame since the clock started afresh it stays there, where the page counts its frames from.
-      if (rt.ranSeq === null) { rt.clock = clock; player.lastInputTime = clock; }
+      if (rt.ranSeq === null) rt.clock = clock;
       return;
     }
-    // Waiting for a frame: nothing moves. Off the stream a reload still finishes on the tick; a streaming player's
-    // reload finishes on their own clock, with their next frame.
-    if (!rt.streaming) this.advanceReload(player, rt, now);
+    // Waiting for a frame: nothing moves. Off the stream a reload still finishes on the tick, and later frames run
+    // after it: none shoots from a clock behind the rounds going in. A streaming player's reload finishes on their
+    // own clock, with their next frame.
+    if (!rt.streaming && this.advanceReload(player, rt, now)) rt.clock = Math.max(rt.clock, now);
   }
   /** One frame, completely and in order, at its own server time `now`: presses, swap, knife, cook, move, throw,
    * reward, reload and trigger. Shots and knife swings are traced once every player has moved, from where this
-   * frame left the player. `real` is false for a silent connection's idle frame, which never releases a frag. */
+   * frame left the player. `real` is false for a silent connection's idle frame, which never releases a frag and is
+   * no frame of the page's, whose later frames still count from the last one that was. */
   private simulate(player: PlayerState, rt: Runtime, queued: QueuedFrame, now: number, tickNow: number, dt: number, actions: TickActions, real = true) {
     const input = queued.input, frameActions: FrameActions = { shots: [], melees: [] };
-    rt.clock = now; player.lastInputTime = now;
+    rt.clock = now; if (real) player.lastInputTime = now;
     const take = (action: PressAction): InputFrame | undefined => {
       const own = queued.presses.includes(action), kept = rt.presses[action]; delete rt.presses[action];
       if (kept && tickNow - kept.receivedAt <= INPUT_TIMEOUT_MS) {
@@ -809,10 +819,11 @@ export class MatchEngine {
       ? ((spec.shellStartMs ?? 0) + Math.min(missing, spare) * spec.perShellMs) * k
       : (player.mag[index] === 0 ? spec.emptyReloadMs : spec.reloadMs) * k);
   }
-  private advanceReload(player: PlayerState, rt: Runtime, now: number) {
+  /** Puts in what is due by `now` and returns whether anything went in. */
+  private advanceReload(player: PlayerState, rt: Runtime, now: number): boolean {
     const reload = rt.reload;
-    if (!reload || !player.reloadingUntil) return;
-    const index = reload.slot - 1, spec = weaponFor(player.loadout, reload.slot), k = handling(player.loadout);
+    if (!reload || !player.reloadingUntil) return false;
+    const index = reload.slot - 1, spec = weaponFor(player.loadout, reload.slot), k = handling(player.loadout), loaded = player.mag[index]!;
     if (spec.perShellMs) {
       // Shell n goes in at start + (shellStartMs + n × perShellMs); a shot can stop the reload between shells.
       while (player.mag[index]! < spec.magazine && player.reserve[index]! > 0 && reached(now, reload.start + ((spec.shellStartMs ?? 0) + (reload.shells + 1) * spec.perShellMs) * k)) {
@@ -823,6 +834,7 @@ export class MatchEngine {
       const take = Math.min(spec.magazine - player.mag[index]!, player.reserve[index]!);
       player.mag[index]! += take; player.reserve[index]! -= take; this.cancelReload(player, rt);
     }
+    return player.mag[index]! !== loaded;
   }
   private adsProgress(player: PlayerState, rt: Runtime, frame: InputFrame, spec: WeaponSpec, now: number) {
     if (!frame.aim || rt.aimSince === null) return 0;
