@@ -91,8 +91,8 @@ interface Outcome {
   body: Array<Mismatch & { cm: number }>; weapon: Mismatch[];
   /** The frames that fired, and that threw a frag or let it go off in hand, as predicted and on the server. */
   pageShots: number[]; serverShots: number[]; pageThrows: string[]; serverThrows: string[];
-  /** Frames the server ran (a frame that reaches it after its player went down never runs), and the first frame of each new life. */
-  serverFrames: Set<number>; lives: number[];
+  /** Frames the server ran (a frame that reaches it after its player went down never runs), the first frame of each new life, and when each frame was sent. */
+  serverFrames: Set<number>; lives: number[]; sent: Map<number, number>;
   snapshots: number;
   /** The most the drawn raise fell from one drawn frame to the next within a life. */
   raiseDrop: number;
@@ -100,8 +100,8 @@ interface Outcome {
 interface Scenario {
   /** The page's own player dies this long after LIVE, as if shot. */
   killAt?: number;
-  /** Frames the page sends in this window (after LIVE) reach the server only when it ends. */
-  uplinkStall?: [start: number, length: number];
+  /** Frames the page sends in these windows (after LIVE) reach the server only when each ends. */
+  uplinkStalls?: Array<[start: number, length: number]>;
   /** Snapshots the server sends in this window (after LIVE) reach the page only when it ends. */
   downlinkStall?: [start: number, length: number];
   /** Stop sending and checking once the page's player goes down. */
@@ -118,7 +118,7 @@ type Simulate = (this: MatchEngine, player: PlayerState, rt: unknown, queued: { 
  * alive and still sending (a page in play never stops; a silent one is stood down by the server) is
  * checked against the prediction it replaces. */
 function play(loadout: Loadout, setup: (a: PlayerState) => void, script: Script, frames: number, link: Link, seed: number, scenario: Scenario = {}): Outcome {
-  const outcome: Outcome = { body: [], weapon: [], pageShots: [], serverShots: [], pageThrows: [], serverThrows: [], serverFrames: new Set(), lives: [], snapshots: 0, raiseDrop: 0 };
+  const outcome: Outcome = { body: [], weapon: [], pageShots: [], serverShots: [], pageThrows: [], serverThrows: [], serverFrames: new Set(), lives: [], sent: new Map(), snapshots: 0, raiseDrop: 0 };
   const settle = scenario.settle ?? SETTLE, from = scenario.from ?? LIVE;
   const events: GameEvent[] = [];
   // What each of player a's frames did on the server (shot events carry the tick's time, not the frame's).
@@ -186,11 +186,13 @@ function play(loadout: Loadout, setup: (a: PlayerState) => void, script: Script,
       if (sent < frames && next <= end) at(next, 2, () => wake(next));
       for (let i = 0; i < due && sent < frames && page.inputLive && !(died && scenario.firstLifeOnly); i++) {
         const frame: InputFrame = { ...idleInput(++sent), ...script(sent - 1, page.player.prediction.movement.state, page.player.prediction.movement.time) };
+        outcome.sent.set(frame.seq, wall);
         for (const event of page.send(frame, wall)) {
           if (event.type === 'shot') outcome.pageShots.push(frame.seq);
           if (event.type === 'throw') outcome.pageThrows.push(`${frame.seq} ${event.inHand ? 'in hand' : 'thrown'}`);
         }
-        const stall = scenario.uplinkStall, held = stall && wall >= LIVE + stall[0] && wall < LIVE + stall[0] + stall[1] ? LIVE + stall[0] + stall[1] : wall;
+        const stall = scenario.uplinkStalls?.find(([start, length]) => wall >= LIVE + start && wall < LIVE + start + length);
+        const held = stall ? LIVE + stall[0] + stall[1] : wall;
         arrived = Math.max(arrived, held + link.up(ups, wall - LIVE));
         const viewTime = Math.max(0, Math.round(page.serverTime(wall) - 100)), arrival = arrived;
         at(arrival, 0, () => { engine.acceptInput('a', { ...frame, viewTime }, Math.floor(arrival)); });
@@ -256,20 +258,20 @@ function play(loadout: Loadout, setup: (a: PlayerState) => void, script: Script,
 }
 
 const describe = (list: Mismatch[]) => list.slice(0, 4).map(entry => `frame ${entry.ack}: ${entry.text}`).join('; ');
-/** What to leave out: snapshots adopted before wall time `from`, shots before frame `firstFrame`, and the first
- * `grace` frames of each new life. */
-interface Skip { from?: number; firstFrame?: number; grace?: number }
+/** What to leave out: snapshots adopted before wall time `from`, shots before frame `firstFrame`, the first
+ * `grace` frames of each new life, and anything `except` picks by its frame. */
+interface Skip { from?: number; firstFrame?: number; grace?: number; except?: (seq: number) => boolean }
 const inGrace = (outcome: Outcome, seq: number, grace: number) => outcome.lives.some(first => seq >= first && seq < first + grace);
 /** No snapshot moved the predicted body by a centimetre or changed the predicted weapon. */
-function agrees(outcome: Outcome, label: string, { from = -Infinity, grace = 0 }: Skip = {}) {
-  const kept = (entry: Mismatch) => entry.wall >= from && !inGrace(outcome, entry.ack, grace);
+function agrees(outcome: Outcome, label: string, { from = -Infinity, grace = 0, except }: Skip = {}) {
+  const kept = (entry: Mismatch) => entry.wall >= from && !inGrace(outcome, entry.ack, grace) && !except?.(entry.ack);
   const body = outcome.body.filter(entry => kept(entry) && entry.cm >= 1), weapon = outcome.weapon.filter(kept);
   assert.deepEqual(body.map(entry => `frame ${entry.ack}: ${entry.cm.toFixed(2)} cm (${entry.text})`), [], `${label}: the body jumped`);
   assert.equal(describe(weapon), '', `${label}: a snapshot changed the predicted weapon`);
 }
 /** The page predicted exactly the frames that fired on the server, among the frames the server ran. */
-function sameShots(outcome: Outcome, label: string, { firstFrame = 0, grace = 0 }: Skip = {}) {
-  const kept = (seq: number) => seq >= firstFrame && outcome.serverFrames.has(seq) && !inGrace(outcome, seq, grace);
+function sameShots(outcome: Outcome, label: string, { firstFrame = 0, grace = 0, except }: Skip = {}) {
+  const kept = (seq: number) => seq >= firstFrame && outcome.serverFrames.has(seq) && !inGrace(outcome, seq, grace) && !except?.(seq);
   const pageShots = outcome.pageShots.filter(kept), serverShots = outcome.serverShots.filter(kept);
   const server = new Set(serverShots), page = new Set(pageShots);
   const pageOnly = pageShots.filter(seq => !server.has(seq)), serverOnly = serverShots.filter(seq => !page.has(seq));
@@ -516,10 +518,27 @@ test('after a 450 ms uplink stall mid-burst, the prediction is back in step with
   for (const link of LINKS.slice(0, 4)) for (const seed of SEEDS) {
     const run = firingRoutine(Array.from({ length: 8 }, () => [[40, { fire: true }], [5, {}]] as Array<[number, Partial<InputFrame>]>).flat());
     const label = `Hornet 9, ${link.name}, seed ${seed}`;
-    const outcome = play(LOADOUT_PRESETS.close, run.setup, run.script, run.frames, link, seed, { uplinkStall: [3000, 450] });
+    const outcome = play(LOADOUT_PRESETS.close, run.setup, run.script, run.frames, link, seed, { uplinkStalls: [[3000, 450]] });
     // The server stood the silent player down and ran the backlog as it came; everything after settles.
     agrees(outcome, label, { from: LIVE + 3000 + 450 + 500 });
     sameShots(outcome, label, { firstFrame: Math.ceil((3000 + 450 + 500) / TICK) });
+  }
+});
+
+test('on an uplink that stalls every few seconds for a minute, the prediction stays in step between the stalls', () => {
+  for (const [every, length] of [[3000, 350], [5000, 350], [5000, 500], [8000, 350]]) {
+    const stalls: Array<[number, number]> = [];
+    for (let at = 3000; at < 60000; at += every!) stalls.push([at, length!]);
+    for (const [name, loadout] of [['Hornet 9', LOADOUT_PRESETS.close], ['KR-5', LOADOUT_PRESETS.assault]] as const) {
+      for (const link of LINKS.slice(1, 4)) for (const seed of SEEDS) {
+        const run = firingRoutine(Array.from({ length: 40 }, () => [[40, { fire: true }], [5, {}]] as Array<[number, Partial<InputFrame>]>).flat());
+        const label = `${name}, ${length} ms every ${every! / 1000} s, ${link.name}, seed ${seed}`;
+        const outcome = play(loadout, run.setup, run.script, run.frames, link, seed, { uplinkStalls: stalls });
+        // Frames sent from the start of a stall until a second after its end may be out of step.
+        const except = (seq: number) => { const sent = outcome.sent.get(seq)! - LIVE; return stalls.some(([start, span]) => sent >= start && sent < start + span + 1000); };
+        sameShots(outcome, label, { except, firstFrame: SETTLE });
+      }
+    }
   }
 });
 

@@ -468,22 +468,86 @@ test('a sequence jump as a stream restarts moves running timers one step at most
   for (const skip of [2, 12, 40, 1000]) {
     const s = scripted(LOADOUT_PRESETS.marksman);
     const t = s.stream(3010, 30);
+    s.a.mag[0] = 1;
     s.stream(t, 1, () => ({ reload: true }));
     const until = s.a.reloadingUntil;
+    assert.ok(until > 0, 'setup: reloading');
     s.restart(skip);
+    assert.ok(s.a.reloadingUntil > 0, 'setup: still reloading');
     assert.ok(until - s.a.reloadingUntil <= TICK + 1e-6, `${skip} numbers skipped moved the reload ${(until - s.a.reloadingUntil).toFixed(1)} ms sooner`);
   }
 });
 
 test('no timer moves further ahead of the frame clock than what is left of the catch-up allowance', () => {
   const s = scripted(LOADOUT_PRESETS.marksman), t = s.stream(3010, 30);
+  s.a.mag[0] = 1;
   s.stream(t, 1, () => ({ reload: true }));
+  const next = s.stream(s.now() + 320, 7);
   // Nearly all of it used, as the clock check and stream starts can use it over a life.
   s.rt.shifted = -FRAME_CREDIT_MS + 5;
   const until = s.a.reloadingUntil;
-  s.restart(40);
-  assert.ok(until - s.a.reloadingUntil <= 5 + 1e-6, `The reload moved ${(until - s.a.reloadingUntil).toFixed(1)} ms sooner`);
+  assert.ok(until > 0, 'setup: reloading');
+  s.send(next, {}, 40); s.until(next + TICK);
+  // What it had left, and the sliver that came back over those ticks.
+  const moved = until - s.a.reloadingUntil;
+  assert.ok(moved > 4 && moved <= 7, `The reload moved ${moved.toFixed(1)} ms sooner`);
   assert.ok(s.rt.shifted >= -FRAME_CREDIT_MS - 1e-6, `${s.rt.shifted.toFixed(1)} ms used`);
+});
+
+test('the catch-up allowance comes back slowly, whole with each life, and not with a reconnect', () => {
+  const s = scripted(LOADOUT_PRESETS.assault);
+  s.stream(3010, 30);
+  s.rt.shifted = -100;
+  const from = s.now();
+  s.until(from + 1000);
+  assert.ok(Math.abs(s.rt.shifted + 80) < 2, `A second gives back 20 ms: ${s.rt.shifted.toFixed(1)}`);
+  s.rt.shifted = -100;
+  s.engine.setConnected('a', false);
+  s.engine.addPlayer({ id: 'a', name: 'a', color: '#fff' }, s.now());
+  assert.equal(s.rt.shifted, -100, 'Leaving and joining again gives none back');
+  s.engine.damage(s.a, s.b, 1000, s.now());
+  while (s.a.health <= 0) s.until(s.now());
+  assert.equal(s.rt.shifted, 0, 'A new life starts with all of it');
+});
+
+test('off the stream, a frame after a reload finished on the tick cannot shoot from a clock behind it', t => {
+  // A modified page stands still through the reload, sends one frame a quarter of a second before its end, then six at once.
+  const ran = recordFrames(t), s = scripted(LOADOUT_PRESETS.assault);
+  const next = s.stream(3010, 30);
+  s.a.mag[0] = 1;
+  s.stream(next, 1, () => ({ reload: true }));
+  const until = s.a.reloadingUntil;
+  assert.ok(until > 0, 'setup: reloading');
+  s.send(until - 250); s.until(until - 200);
+  s.until(until + 40);
+  assert.equal(s.a.mag[0], WEAPONS.kr5.magazine, 'setup: reloaded on the tick');
+  const burst = s.now();
+  for (let i = 0; i < 6; i++) s.send(burst, { fire: true });
+  s.until(burst + 6 * TICK);
+  const [shot] = of(s.events, 'shot');
+  assert.ok(shot, 'setup: fired');
+  const clock = ran.filter(frame => frame.seq === shot.seq).at(-1)!.clock;
+  assert.ok(clock >= until, `The shot's frame clock ${clock.toFixed(1)} is behind the reload's end ${until.toFixed(1)}`);
+});
+
+test('each cook has the whole of the clock\'s room to move', () => {
+  const s = scripted(LOADOUT_PRESETS.assault);
+  let next = s.stream(3010, 30);
+  next = s.stream(next, 1, () => ({ grenade: true }));
+  s.rt.cookShifted = FRAME_CREDIT_MS;
+  next = s.stream(next, 1);
+  assert.ok(s.a.frags > 0, 'setup: a frag left');
+  s.stream(next, 1, () => ({ grenade: true }));
+  assert.ok(s.a.cookingSince > 0, 'setup: cooking again');
+  assert.equal(s.rt.cookShifted, 0);
+});
+
+test('a silent player\'s idle frames leave the time the page counts its frames from', () => {
+  const s = scripted(LOADOUT_PRESETS.assault);
+  const next = s.stream(3010, 30), ranAt = s.a.lastInputTime!;
+  s.until(next + 1000);
+  assert.ok(s.rt.clock > ranAt + 900, 'setup: idle frames ran on the tick');
+  assert.equal(s.a.lastInputTime, ranAt);
 });
 
 test('however far apart the frames come, a frag held in hand goes off close to its fuse', () => {
