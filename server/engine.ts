@@ -171,9 +171,11 @@ interface Runtime {
    * vaults and weapon timers follow the client's predicted clock. `clockSeq` is null until a frame sets the clock
    * after a spawn, reconnect or silence. */
   clock: number; clockSeq: number | null;
-  /** The last frame simulated since a spawn, the round going live or a reconnect started the clock afresh, and how far
-   * the player's own timers have moved against the frame clock since then (see shiftTimers); null and 0 until one. */
-  ranSeq: number | null; shifted: number;
+  /** The last frame simulated since a spawn, the round going live or a reconnect started the clock afresh; null until one. */
+  ranSeq: number | null;
+  /** How much of the catch-up allowance the player's own timers are using: how far ahead they stand of where they have
+   * been at their latest, 0 or less (see shiftTimers). `cookShifted` is how far the current cook has moved. */
+  shifted: number; cookShifted: number;
   /** Arrival times of the latest STREAM_FRAMES frames, and whether the player is streaming (see updatePlayer). */
   arrivals: Array<{ at: number; seq: number }>; streaming: boolean;
   /** Clock check: frames measured since the last one, the most any of them arrived before its clock, and the
@@ -283,7 +285,7 @@ export class MatchEngine {
     };
     this.players.set(profile.id, state);
     this.runtime.set(profile.id, {
-      input: idleInput(), receivedAt: 0, queue: [], presses: {}, clock: now, clockSeq: null, ranSeq: null, shifted: 0, arrivals: [], streaming: false,
+      input: idleInput(), receivedAt: 0, queue: [], presses: {}, clock: now, clockSeq: null, ranSeq: null, shifted: 0, cookShifted: 0, arrivals: [], streaming: false,
       checked: 0, earliest: -Infinity, slew: 0, startAt: now, playout: 0, late: false, earlySince: now, credit: FRAME_CREDIT_MS, creditAt: now,
       fireDown: false, jumpDown: false, crouchDown: false, aimSince: null, triggerPending: false,
       nextFireAt: [-Infinity, -Infinity], lastSprintAt: -Infinity, lastSprintDash: false, reload: null, pendingLoadout: null,
@@ -478,8 +480,8 @@ export class MatchEngine {
     rt.queue = []; rt.presses = {}; rt.fireDown = false; rt.jumpDown = false; rt.crouchDown = false; rt.aimSince = null; rt.triggerPending = false;
   }
   /** A spawn, the round going live or a reconnect starts the player's clock afresh on the tick; the first frame runs
-   * one step after it (see updatePlayer). Silence counts from here too, so no idle frame moves the clock before the
-   * page's first frame can arrive. */
+   * one step after it (see updatePlayer), however long the round trip keeps it away: until then an idle frame leaves
+   * the clock where it is. */
   private resetClock(player: PlayerState, rt: Runtime, now: number) {
     rt.clock = now; rt.receivedAt = now; this.endStream(rt); rt.earlySince = now; rt.ranSeq = null; rt.shifted = 0;
     player.lastInputTime = now;
@@ -488,17 +490,23 @@ export class MatchEngine {
    * frame: when a stream starts, the clock check slews it, it is put back on the tick, a frame is forced through a
    * full queue, or the first frame of a life or after a silence runs. Every timer then counts the player's frames
    * exactly as the page predicts them, and frame-aligned deadlines fall on the same frame on both sides. Shared and
-   * tick-based times (spawn protection, regeneration, respawns, grenades in flight) stay on the tick. */
+   * tick-based times (spawn protection, regeneration, respawns, grenades in flight) stay on the tick.
+   *
+   * Moving later costs a player time on every timer but one, and it buys no allowance back beyond what the timers
+   * were using: time saved while nothing runs is not there to spend. The exception is the frag, whose fuse a later
+   * clock lengthens, so one cook moves at most the allowance in all. */
   private shiftTimers(player: PlayerState, rt: Runtime, delta: number) {
     const shift = (ms: number) => (Number.isFinite(ms) && ms !== 0 ? ms + delta : ms);
     player.readyAt = shift(player.readyAt); player.meleeUntil = shift(player.meleeUntil);
-    player.reloadingUntil = shift(player.reloadingUntil); player.cookingSince = shift(player.cookingSince);
+    player.reloadingUntil = shift(player.reloadingUntil);
+    if (player.cookingSince > 0) { const move = Math.min(delta, FRAME_CREDIT_MS - rt.cookShifted); player.cookingSince += move; rt.cookShifted += move; }
     player.slideUntil = shift(player.slideUntil); player.slideCooldownUntil = shift(player.slideCooldownUntil);
     if (player.vault) { player.vault.start += delta; player.vault.end += delta; }
     if (rt.reload) rt.reload.start += delta;
     rt.nextFireAt = [shift(rt.nextFireAt[0]), shift(rt.nextFireAt[1])];
     rt.lastSprintAt = shift(rt.lastSprintAt);
     if (rt.aimSince !== null) rt.aimSince += delta;
+    rt.shifted = Math.min(0, rt.shifted + delta);
   }
   /** The connection went quiet, or the life ended: the next frames start a stream (and its clock) afresh. */
   private endStream(rt: Runtime) {
@@ -673,7 +681,8 @@ export class MatchEngine {
         }
       } else if (rt.streaming) {
         clock = Math.min(now, Math.max(rt.clock, rt.startAt)); // The frame that starts a stream.
-        shift = clock - (rt.clock + (rt.ranSeq === null ? 1 : queued.input.seq - rt.ranSeq) * FRAME_MS);
+        // Never more than a step back, however many sequence numbers it skips: a jump in them is not time.
+        shift = Math.max(-FRAME_MS, clock - (rt.clock + (rt.ranSeq === null ? 1 : queued.input.seq - rt.ranSeq) * FRAME_MS));
       } else {
         clock = Math.min(now, Math.max(now - behind * FRAME_MS, rt.clock + FRAME_MS));
         // The first frame after the clock started afresh (a spawn, the round going live, a reconnect) runs where the
@@ -686,10 +695,10 @@ export class MatchEngine {
       // When a life's first frame runs, or a streaming player's clock starts, is slewed by the clock check or is put
       // back on the tick, the player's own timers move with it, so they count frames exactly as the page predicts
       // them. Other frames before a stream run on the tick's clock and their timers keep real time (a sparse or
-      // throttled page). The timers never get further ahead of the frame clock (itself never later than the tick)
-      // than the catch-up allowance.
+      // throttled page). No timer gets further ahead of the frame clock (itself never later than the tick) than the
+      // catch-up allowance.
       shift = Math.max(shift, -FRAME_CREDIT_MS - rt.shifted);
-      if (Math.abs(shift) > CLOCK_TOLERANCE_MS) { this.shiftTimers(player, rt, shift); rt.shifted += shift; }
+      if (Math.abs(shift) > CLOCK_TOLERANCE_MS) this.shiftTimers(player, rt, shift);
       this.simulate(player, rt, queued, clock, now, FRAME_SECONDS, actions);
       rt.clockSeq = queued.input.seq; rt.ranSeq = queued.input.seq;
     }
@@ -706,8 +715,11 @@ export class MatchEngine {
     if (!rt.queue.length && now - rt.receivedAt > INPUT_TIMEOUT_MS) {
       // A silent connection brakes and falls, keeping its view, weapon and any cooked frag. Its clock starts afresh.
       const idle: QueuedFrame = { input: { ...idleInput(rt.input.seq), yaw: player.yaw, pitch: player.pitch, slot: player.slot, viewTime: now }, receivedAt: now, presses: [] };
+      const clock = rt.clock;
       this.simulate(player, rt, idle, now, now, dt, actions, false);
       this.endStream(rt);
+      // Before the first frame since the clock started afresh it stays there, where the page counts its frames from.
+      if (rt.ranSeq === null) { rt.clock = clock; player.lastInputTime = clock; }
       return;
     }
     // Waiting for a frame: nothing moves. Off the stream a reload still finishes on the tick; a streaming player's
@@ -751,8 +763,9 @@ export class MatchEngine {
     // Only a real frame releases a cooked grenade. A stalled connection keeps it in hand while the fuse runs,
     // instead of throwing it wherever the player last looked.
     if (real && player.cookingSince > 0 && !input.grenade) this.throwGrenade(player, rt, input, now);
-    // Held past its fuse it goes off in hand, on this frame's own clock as the page predicts it (a silent
-    // connection's idle frames run on the tick, so a stall cannot hold it forever).
+    // Held past its fuse it goes off in hand, on this frame's own clock as the page predicts it. A silent
+    // connection's idle frames run on the tick and a cook moves only so far with the clock, so frames held back or
+    // sent far apart cannot keep it for long.
     if (player.cookingSince > 0 && reached(now, player.cookingSince + EXPLOSIVES.frag.fuseMs)) {
       player.cookingSince = 0; actions.blasts.push({ player, from: eyePosition(player), life: rt.life });
     }
@@ -843,7 +856,7 @@ export class MatchEngine {
   }
   private startCook(player: PlayerState, rt: Runtime, now: number) {
     if (player.cookingSince > 0 || player.frags <= 0 || !reached(now, player.meleeUntil) || player.vault) return;
-    player.cookingSince = now; player.frags--; this.cancelReload(player, rt);
+    player.cookingSince = now; rt.cookShifted = 0; player.frags--; this.cancelReload(player, rt);
   }
   private throwGrenade(player: PlayerState, rt: Runtime, input: InputFrame, now: number) {
     const throwFrom = grenadeLaunch(eyePosition(player), input.yaw, input.pitch, player, EXPLOSIVES.frag.throwSpeed, EXPLOSIVES.frag.throwLift);

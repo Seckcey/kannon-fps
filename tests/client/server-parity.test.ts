@@ -47,9 +47,14 @@ class Page {
   }
   /** Returns true when this snapshot starts a life (the prediction starts afresh rather than being checked). */
   receive(snapshot: WorldSnapshot, wall: number): boolean {
+    const previous = this.snapshot;
+    const roundReset = (snapshot.phase === 'preparing' && previous?.phase !== 'preparing')
+      || (snapshot.phase === 'countdown' && previous?.phase !== 'countdown' && previous?.phase !== 'preparing')
+      || (snapshot.phase === 'playing' && previous?.phase === 'finished')
+      || (!!snapshot.roundId && !!previous?.roundId && snapshot.roundId !== previous.roundId);
     this.snapshot = snapshot; this.received = wall;
     const local = this.local()!, self = snapshot.self!;
-    const alive = local.health > 0 && local.connected, spawned = this.first || (!this.lastAlive && alive);
+    const alive = local.health > 0 && local.connected, spawned = this.first || roundReset || (!this.lastAlive && alive);
     this.first = false; this.lastAlive = alive;
     this.player.receive(snapshot, local, self, spawned, wall);
     return spawned;
@@ -89,14 +94,22 @@ interface Outcome {
   /** Frames the server ran (a frame that reaches it after its player went down never runs), and the first frame of each new life. */
   serverFrames: Set<number>; lives: number[];
   snapshots: number;
+  /** The most the drawn raise fell from one drawn frame to the next within a life. */
+  raiseDrop: number;
 }
 interface Scenario {
   /** The page's own player dies this long after LIVE, as if shot. */
   killAt?: number;
   /** Frames the page sends in this window (after LIVE) reach the server only when it ends. */
   uplinkStall?: [start: number, length: number];
+  /** Snapshots the server sends in this window (after LIVE) reach the page only when it ends. */
+  downlinkStall?: [start: number, length: number];
   /** Stop sending and checking once the page's player goes down. */
   firstLifeOnly?: boolean;
+  /** Snapshots acknowledging frames up to this one are not checked, nor are new lives before it (default SETTLE). */
+  settle?: number;
+  /** The page is on from this wall time (before LIVE, through the countdown) rather than from LIVE. */
+  from?: number;
 }
 type Simulate = (this: MatchEngine, player: PlayerState, rt: unknown, queued: { input: InputFrame }, now: number, tickNow: number, dt: number,
   actions: { shots: unknown[]; blasts: unknown[] }, real?: boolean) => void;
@@ -105,7 +118,8 @@ type Simulate = (this: MatchEngine, player: PlayerState, rt: unknown, queued: { 
  * alive and still sending (a page in play never stops; a silent one is stood down by the server) is
  * checked against the prediction it replaces. */
 function play(loadout: Loadout, setup: (a: PlayerState) => void, script: Script, frames: number, link: Link, seed: number, scenario: Scenario = {}): Outcome {
-  const outcome: Outcome = { body: [], weapon: [], pageShots: [], serverShots: [], pageThrows: [], serverThrows: [], serverFrames: new Set(), lives: [], snapshots: 0 };
+  const outcome: Outcome = { body: [], weapon: [], pageShots: [], serverShots: [], pageThrows: [], serverThrows: [], serverFrames: new Set(), lives: [], snapshots: 0, raiseDrop: 0 };
+  const settle = scenario.settle ?? SETTLE, from = scenario.from ?? LIVE;
   const events: GameEvent[] = [];
   // What each of player a's frames did on the server (shot events carry the tick's time, not the frame's).
   const proto = MatchEngine.prototype as unknown as { simulate: Simulate }, simulate = proto.simulate;
@@ -122,7 +136,8 @@ function play(loadout: Loadout, setup: (a: PlayerState) => void, script: Script,
     const engine = new MatchEngine({ practiceSeed: 'server-parity', onEvent: event => events.push(event) });
     for (const id of ['a', 'b']) engine.addPlayer({ id, name: id, color: '#fff' }, 0);
     assert.equal(engine.setLoadout('a', loadout), true);
-    engine.start(0); engine.step(LIVE, 0);
+    engine.start(0);
+    if (from >= LIVE) engine.step(LIVE, 0);
     const a = engine.players.get('a')!, b = engine.players.get('b')!;
     for (const player of [a, b]) player.protectedUntil = 0;
     Object.assign(b, { x: 28, y: 0, z: 20, vx: 0, vy: 0, vz: 0 });
@@ -147,16 +162,18 @@ function play(loadout: Loadout, setup: (a: PlayerState) => void, script: Script,
 
     // The server: ticks carry their scheduled times (server/app.ts TickSchedule); frames are stamped
     // with the whole millisecond they arrive.
-    let scheduled = LIVE, ran = LIVE, delivered = -Infinity;
+    const startTick = from >= LIVE ? LIVE : 0;
+    let scheduled = startTick, ran = startTick, delivered = -Infinity;
     for (let n = 1; scheduled + TICK <= end; n++) {
-      scheduled += TICK; ran = Math.max(ran, scheduled + link.tickLate(ticks));
+      scheduled = startTick + n * TICK; ran = Math.max(ran, scheduled + link.tickLate(ticks));
       const tickTime = scheduled, wall = ran, snapshotDue = n % 2 === 0;
       at(wall, 1, () => {
         if (scenario.killAt !== undefined && !killed && tickTime >= LIVE + scenario.killAt) { killed = true; engine.damage(a, b, 1000, tickTime); }
         engine.step(tickTime, TICK / 1000);
         if (!snapshotDue) return;
-        const snapshot = engine.snapshot(tickTime, 'a');
-        delivered = Math.max(delivered, wall + link.down(downs));
+        const snapshot = engine.snapshot(tickTime, 'a'), stall = scenario.downlinkStall;
+        const held = stall && wall >= LIVE + stall[0] && wall < LIVE + stall[0] + stall[1] ? LIVE + stall[0] + stall[1] : wall;
+        delivered = Math.max(delivered, held + link.down(downs));
         at(delivered, 0, () => { newest = snapshot; });
       });
     }
@@ -179,42 +196,58 @@ function play(loadout: Loadout, setup: (a: PlayerState) => void, script: Script,
         at(arrival, 0, () => { engine.acceptInput('a', { ...frame, viewTime }, Math.floor(arrival)); });
       }
     };
-    const first = LIVE + sends() * TICK;
+    const first = from + sends() * TICK;
     at(first, 2, () => wake(first));
-    // Drawn frames at 60 Hz adopt the newest snapshot.
+    // Adopts the newest snapshot, as a drawn frame does, and checks it. Returns true when it starts a life.
+    const adopt = (wall: number): boolean => {
+      const snapshot = newest;
+      if (!snapshot || snapshot === adopted) return false;
+      adopted = snapshot;
+      const body = { ...page.player.prediction.movement.state }, weapon = structuredClone(page.player.weapon.state);
+      const clock = page.player.weaponTime(wall);
+      if (page.receive(snapshot, wall)) { if (sent > settle) outcome.lives.push(sent + 1); return true; }
+      const ack = snapshot.self!.lastInputSeq;
+      if (page.local()!.health <= 0) died = true;
+      if (ack <= settle || ack >= sent && sent >= frames || page.local()!.health <= 0 || (died && scenario.firstLifeOnly)) return false;
+      outcome.snapshots++;
+      const after = page.player.prediction.movement.state;
+      const moved = Math.hypot(after.x - body.x, after.y - body.y, after.z - body.z);
+      if (moved >= 0.001) outcome.body.push({ wall, ack, cm: moved * 100, text: `${body.posture}${body.vault ? ', vaulting' : ''} → ${after.posture}${after.vault ? ', vaulting' : ''}` });
+      const now = page.player.weapon.state, differences: string[] = [];
+      for (const key of ['slot', 'frags', 'reloadSlot', 'triggerPending', 'lastSprintDash'] as const) if (now[key] !== weapon[key]) differences.push(`${key} ${weapon[key]} → ${now[key]}`);
+      for (const key of ['mag', 'reserve'] as const) if (now[key][0] !== weapon[key][0] || now[key][1] !== weapon[key][1]) differences.push(`${key} ${weapon[key]} → ${now[key]}`);
+      // Timers count from the predicted clock of the newest frame (which the snapshot may move, along with every
+      // timer, when the server moved this player's clock), and arrive to the microsecond.
+      const shift = page.player.weaponTime(wall) - clock, set = (ms: number) => ms !== 0 && Number.isFinite(ms);
+      const timers: Array<[string, number, number]> = [
+        ['readyAt', weapon.readyAt, now.readyAt], ['meleeUntil', weapon.meleeUntil, now.meleeUntil], ['reloadingUntil', weapon.reloadingUntil, now.reloadingUntil],
+        ['cookingSince', weapon.cookingSince, now.cookingSince], ['lastSprintAt', weapon.lastSprintAt, now.lastSprintAt],
+        ['nextFireAt 1', weapon.nextFireAt[0], now.nextFireAt[0]], ['nextFireAt 2', weapon.nextFireAt[1], now.nextFireAt[1]],
+        ['aimSince', weapon.aimSince ?? 0, now.aimSince ?? 0],
+      ];
+      // The same reload looks the same on both sides of the snapshot: the drawn progress, shell count and pump sound follow this.
+      if (weapon.reloadSlot && now.reloadSlot === weapon.reloadSlot) {
+        for (const key of ['reloadShells', 'reloadEmpty'] as const) if (now[key] !== weapon[key]) differences.push(`${key} ${weapon[key]} → ${now[key]}`);
+        timers.push(['reloadStartedAt', weapon.reloadStartedAt, now.reloadStartedAt]);
+      }
+      for (const [key, before, after] of timers) {
+        if (set(before) !== set(after) || (set(before) && !(Math.abs(after - shift - before) <= 0.01))) differences.push(`${key} ${before.toFixed(3)} → ${after.toFixed(3)} (clock ${shift.toFixed(3)})`);
+      }
+      if (differences.length) outcome.weapon.push({ wall, ack, text: differences.join(', ') });
+      return false;
+    };
+    // Drawn frames at 60 Hz adopt the newest snapshot and draw the raise.
     const drawPhase = sends() * 16;
-    for (let index = 0; LIVE + drawPhase + index * 1000 / 60 <= end; index++) {
-      const wall = LIVE + drawPhase + index * 1000 / 60;
+    let drawnRaise: number | null = null;
+    for (let index = 0; from + drawPhase + index * 1000 / 60 <= end; index++) {
+      const wall = from + drawPhase + index * 1000 / 60;
       if (unblocked(wall) !== wall) continue;
       at(wall, 3, () => {
-        const snapshot = newest;
-        if (!snapshot || snapshot === adopted) return;
-        adopted = snapshot;
-        const body = { ...page.player.prediction.movement.state }, weapon = structuredClone(page.player.weapon.state);
-        const clock = page.player.prediction.movement.time;
-        if (page.receive(snapshot, wall)) { if (sent > SETTLE) outcome.lives.push(sent + 1); return; }
-        const ack = snapshot.self!.lastInputSeq;
-        if (page.local()!.health <= 0) died = true;
-        if (ack <= SETTLE || ack >= sent && sent >= frames || page.local()!.health <= 0 || (died && scenario.firstLifeOnly)) return;
-        outcome.snapshots++;
-        const after = page.player.prediction.movement.state;
-        const moved = Math.hypot(after.x - body.x, after.y - body.y, after.z - body.z);
-        if (moved >= 0.001) outcome.body.push({ wall, ack, cm: moved * 100, text: `${body.posture}${body.vault ? ', vaulting' : ''} → ${after.posture}${after.vault ? ', vaulting' : ''}` });
-        const now = page.player.weapon.state, differences: string[] = [];
-        for (const key of ['slot', 'frags', 'reloadSlot', 'triggerPending'] as const) if (now[key] !== weapon[key]) differences.push(`${key} ${weapon[key]} → ${now[key]}`);
-        for (const key of ['mag', 'reserve'] as const) if (now[key][0] !== weapon[key][0] || now[key][1] !== weapon[key][1]) differences.push(`${key} ${weapon[key]} → ${now[key]}`);
-        // Timers count from the predicted clock of the newest frame (which the snapshot may move, along with every
-        // timer, when the server moved this player's clock), and arrive to the microsecond.
-        const shift = page.player.prediction.movement.time - clock, set = (ms: number) => ms !== 0 && Number.isFinite(ms);
-        const timers: Array<[string, number, number]> = [
-          ['readyAt', weapon.readyAt, now.readyAt], ['meleeUntil', weapon.meleeUntil, now.meleeUntil], ['reloadingUntil', weapon.reloadingUntil, now.reloadingUntil],
-          ['cookingSince', weapon.cookingSince, now.cookingSince], ['lastSprintAt', weapon.lastSprintAt, now.lastSprintAt],
-          ['nextFireAt 1', weapon.nextFireAt[0], now.nextFireAt[0]], ['nextFireAt 2', weapon.nextFireAt[1], now.nextFireAt[1]],
-        ];
-        for (const [key, before, after] of timers) {
-          if (set(before) !== set(after) || (set(before) && !(Math.abs(after - shift - before) <= 0.01))) differences.push(`${key} ${before.toFixed(3)} → ${after.toFixed(3)} (clock ${shift.toFixed(3)})`);
-        }
-        if (differences.length) outcome.weapon.push({ wall, ack, text: differences.join(', ') });
+        if (adopt(wall)) drawnRaise = null;
+        if (!page.inputLive) { drawnRaise = null; return; }
+        const raise = page.player.weapon.raise(page.player.weaponTime(wall));
+        if (drawnRaise !== null) outcome.raiseDrop = Math.max(outcome.raiseDrop, drawnRaise - raise);
+        drawnRaise = raise;
       });
     }
     while (queue.length) queue.shift()!.run();
@@ -357,6 +390,8 @@ const ROUTINES: Array<{ name: string; loadout: Loadout; steps: Array<[number, Pa
   { name: 'Hornet 9', loadout: LOADOUT_PRESETS.close, steps: [[50, { fire: true }], [4, {}], [30, { fire: true }], [10, { moveZ: 1, sprint: true }], [40, { fire: true }], [1, { reload: true }], [80, {}], [20, { fire: true }], [6, { moveZ: 1, sprint: true, dash: true }], [30, { fire: true }]] },
   { name: 'Heron 7', loadout: LOADOUT_PRESETS.marksman, steps: [...tap(5, 40, { aim: true }), [1, { slot: 2 }], ...tap(4, 6, { slot: 2 }), [1, {}], [30, {}], [12, { aim: true, fire: true }], [40, {}]] },
   { name: 'Breaker 12 shotgun', loadout: { ...LOADOUT_PRESETS.close, primary: 'breaker12' }, steps: [...tap(4, 30), [1, { reload: true }], [60, {}], [1, { fire: true }], [40, {}], ...tap(3, 25), [1, { reload: true }], [20, {}], [1, { slot: 2 }], [30, { slot: 2 }]] },
+  // A reload from empty, whose pump sound depends on its look surviving every snapshot.
+  { name: 'Breaker 12 shotgun from empty', loadout: { ...LOADOUT_PRESETS.close, primary: 'breaker12' }, steps: [...tap(6, 30), [1, { reload: true }], [90, {}]] },
 ];
 
 for (const routine of ROUTINES) {
@@ -386,6 +421,94 @@ test('a new life fires from its first frames: exactly on a steady link, and on e
       agrees(outcome, label, skip);
       sameShots(outcome, label, skip);
     }
+  }
+});
+
+const steadyLink = (up: number, down = up): Link => ({ name: `steady ${up}/${down} ms link`, up: () => up, down: () => down, sendLate: 0, tickLate: () => 0 });
+const bursts = () => Array.from({ length: 12 }, () => [[30, { fire: true }], [6, {}]] as Array<[number, Partial<InputFrame>]>).flat();
+
+test('a new life fires where the page predicts it however long the round trip keeps its first frame away', () => {
+  for (const [name, loadout] of [['Hornet 9 with Quick Hands', LOADOUT_PRESETS.close], ['KR-5', LOADOUT_PRESETS.assault], ['Heron 7', LOADOUT_PRESETS.marksman]] as const) {
+    for (const leg of [100, 120, 150, 250]) for (const seed of SEEDS) {
+      const run = firingRoutine(bursts()), label = `${name}, ${leg} ms each way, seed ${seed}`;
+      const outcome = play(loadout, run.setup, run.script, run.frames, steadyLink(leg), seed, { killAt: 2500 });
+      assert.equal(outcome.lives.length, 1, `${label}: setup, one new life`);
+      agrees(outcome, label);
+      sameShots(outcome, label);
+    }
+  }
+});
+
+test('the drawn raise climbs without a dip through a new life, wherever the first frame runs', () => {
+  for (const leg of [5, 20, 40, 60, 100, 150, 250]) for (const seed of SEEDS) {
+    const run = firingRoutine(bursts()), label = `KR-5, ${leg} ms each way, seed ${seed}`;
+    const outcome = play(LOADOUT_PRESETS.assault, run.setup, run.script, run.frames, steadyLink(leg), seed, { killAt: 2500 });
+    assert.equal(outcome.lives.length, 1, `${label}: setup, one new life`);
+    assert.ok(outcome.raiseDrop <= 0.001, `${label}: the drawn raise fell by ${outcome.raiseDrop.toFixed(3)}`);
+  }
+});
+
+test('from the very first frame of a round, shots and timers match the server', () => {
+  // Sights up from the first frame, with the shot soon after and the aim still rising, and the trigger held from the first frame.
+  const scripts: Array<[string, Loadout, Script]> = [
+    ['Heron 7 aimed from the first frame', LOADOUT_PRESETS.marksman, index => ({ yaw: Math.PI / 2, pitch: 0.1, aim: true, fire: index === 7 })],
+    ['KR-5 held from the first frame', LOADOUT_PRESETS.assault, () => ({ yaw: Math.PI / 2, pitch: 0.1, fire: true })],
+  ];
+  for (const [name, loadout, script] of scripts) for (const seed of SEEDS) {
+    const run = firingRoutine([]), label = `${name}, seed ${seed}`;
+    const outcome = play(loadout, run.setup, script, 90, LINKS[0]!, seed, { settle: 0 });
+    assert.ok(outcome.snapshots > 30, `${label}: setup, ${outcome.snapshots} snapshots checked`);
+    agrees(outcome, label);
+    sameShots(outcome, label);
+  }
+});
+
+test('a page that sent frames all through the countdown replays only the frames the server can run', () => {
+  // About frame 90 is the first the page sends knowing the round is live; the frames before it never reached a live round.
+  const FIRST = 90, tapping = (index: number) => index + 1 >= FIRST && (index + 1 - FIRST) % 5 === 0;
+  const scripts: Array<[string, Loadout, Script]> = [
+    ['the Sentry 9 tapped', LOADOUT_PRESETS.assault, index => ({ yaw: Math.PI / 2, pitch: 0.1, slot: 2, fire: tapping(index) })],
+    ['the KR-5 held', LOADOUT_PRESETS.assault, index => ({ yaw: Math.PI / 2, pitch: 0.1, fire: index + 1 >= FIRST })],
+  ];
+  // The frames sent just before the round goes live take longer to arrive, or the page stops just before it.
+  const links: Link[] = [
+    { ...steadyLink(40), name: 'a 150 ms spike on the frames around the start', up: (_random, sent) => (sent >= -60 && sent < -25 ? 190 : 40) },
+    { ...steadyLink(40), name: 'a 160 ms page stall just before the start', stalls: [[-120, 160]] },
+  ];
+  for (const [name, loadout, script] of scripts) for (const link of links) for (const seed of SEEDS) {
+    const run = firingRoutine([]), label = `${name}, ${link.name}, seed ${seed}`;
+    const outcome = play(loadout, run.setup, script, FIRST + 90, link, seed, { settle: FIRST + 15, from: 150 });
+    assert.ok(outcome.snapshots > 30, `${label}: setup, ${outcome.snapshots} snapshots checked`);
+    agrees(outcome, label);
+    sameShots(outcome, label, { firstFrame: FIRST });
+  }
+});
+
+test('a route change that puts the clock back on the tick, at any moment of a run, moves nothing the page predicted', () => {
+  const longerRoute = (at: number): Link => ({ ...steadyLink(40), name: `an uplink that jumps from 40 to 300 ms ${at} ms in`, up: (_random, sent) => (sent < at ? 40 : 300) });
+  const routes: Array<[string, Loadout, () => Run]> = [
+    ['barrier run', LOADOUT_PRESETS.assault, barrierRun],
+    ['street run', LOADOUT_PRESETS.assault, streetRun],
+    // Sights up just before the clock moves and a shot just after it: the aim progress moves with it too.
+    ['Heron 7', LOADOUT_PRESETS.marksman, () => ({ ...firingRoutine(tap(6, 40, { aim: true })), check: () => {} })],
+  ];
+  for (const [name, loadout, route] of routes) for (let at = 1100; at <= 3300; at += 100) {
+    const run = route(), link = longerRoute(at), label = `${name}, ${link.name}`;
+    const outcome = play(loadout, run.setup, run.script, run.frames, link, 1);
+    run.check(label);
+    agrees(outcome, label);
+    // The frames held up by the jump run on the same frames as predicted, which is all the page can know.
+    if (name === 'Heron 7') sameShots(outcome, label);
+  }
+});
+
+test('with no snapshot reaching the page for 1.5 s, the frames it goes on sending still fire as it predicted', () => {
+  for (const link of LINKS.slice(0, 3)) for (const seed of SEEDS) {
+    const run = firingRoutine(Array.from({ length: 6 }, () => [[40, { fire: true }], [5, {}]] as Array<[number, Partial<InputFrame>]>).flat());
+    const label = `Hornet 9, ${link.name}, seed ${seed}`;
+    const outcome = play(LOADOUT_PRESETS.close, run.setup, run.script, run.frames, link, seed, { downlinkStall: [2000, 1500] });
+    agrees(outcome, label);
+    sameShots(outcome, label);
   }
 });
 

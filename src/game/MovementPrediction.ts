@@ -91,19 +91,15 @@ const copyPoint = (target: Vec3, source: Vec3) => { target.x = source.x; target.
  * actually sent, one server tick each, so every press is judged against the same body the server
  * judges it against: a jump pressed on the frame the view lands cannot become a vault the server
  * never does. The body is drawn between the last two predicted ticks. A correction offset glides
- * it onto the authoritative path after each snapshot (and over send-timer jitter), and the
- * predicted clock leads the snapshot clock by about one round trip. */
+ * it onto the authoritative path after each snapshot (and over send-timer jitter). */
 export class LocalPrediction {
   readonly movement = new MovementPrediction();
   /** Drawn minus predicted position; it decays so corrections never jump the camera. */
   readonly correction = { x: 0, y: 0, z: 0 };
   pending: InputFrame[] = [];
-  /** Predicted server time minus the snapshot time; smoothed and kept across lives. */
-  clockLead = 0;
   /** A snapshot has supplied the local player. */
   active = false;
   private acknowledged: InputFrame | null = null;
-  private leadMeasured = false;
   /** Feet at the predicted tick before the latest one; the body is drawn between the two. */
   private readonly prior: Vec3 = { x: 0, y: 0, z: 0 };
   /** Wall-clock time (ms) the latest tick was predicted, and the smoothed time between sent inputs. */
@@ -130,8 +126,8 @@ export class LocalPrediction {
   /** Adopt the server's pose after input `ack` and replay the inputs still in flight. Outside live
    * play the server ignores inputs, so none survive; a new life also starts with none. `restarted`
    * means the server began counting this player's inputs again at 0 (a reconnect): every frame still
-   * held went down with the old socket or was already simulated, so none replays, the held keys count
-   * as released (as the server releases them) and the snapshot says nothing about the round trip.
+   * held went down with the old socket or was already simulated, so none replays and the held keys
+   * count as released (as the server releases them).
    * Returns true when the view should jump (spawn, first snapshot or a teleport). */
   receive(source: PredictionSource, serverTime: number, ack: number,
     live: { playing: boolean; alive: boolean; spawned: boolean; restarted?: boolean }, now: number): boolean {
@@ -142,7 +138,7 @@ export class LocalPrediction {
     if (live.spawned) this.acknowledged = null;
     const drawn = this.active && !live.spawned ? this.feet(now) : null;
     // Replay from the server time input `ack` ran at (`lastInputTime`): a queued input can run behind
-    // the tick. The lead below is still measured against the tick, which the wall clock extrapolates.
+    // the tick.
     const ranAt = live.playing && live.alive && Number.isFinite(source.lastInputTime) ? source.lastInputTime! : serverTime;
     const state = this.movement.reset(source, ranAt, this.acknowledged);
     copyPoint(this.prior, state);
@@ -151,11 +147,6 @@ export class LocalPrediction {
         if (index === this.pending.length - 1) copyPoint(this.prior, state);
         this.movement.step(frame);
       });
-      if (!live.spawned && !live.restarted) {
-        const lead = this.movement.time - serverTime;
-        this.clockLead = this.leadMeasured ? this.clockLead * 0.8 + lead * 0.2 : lead;
-        this.leadMeasured = true;
-      }
     }
     this.active = true;
     if (drawn) this.hold(drawn, now);

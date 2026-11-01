@@ -224,27 +224,25 @@ test('local prediction keeps only unacknowledged inputs, and none outside live p
   assert.equal(local.pending.length, 120, 'The in-flight list is bounded');
 });
 
-test('after a reconnect restarts the server count at 0, no held frame is replayed and the round trip estimate is kept', () => {
+test('after a reconnect restarts the server count at 0, no held frame is replayed', () => {
   const east = { moveZ: 1, yaw: Math.PI / 2 };
   const drive = (restarted: boolean) => {
     const local = new LocalPrediction();
     local.receive(source(standing(-6)), 1_000, 0, { ...live, spawned: true }, 0);
     for (let seq = 1; seq <= 3; seq++) local.record(frame(seq, east), seq * TICK, true);
     local.receive(source(standing(-6)), 1_033, 0, live, 100);
-    const lead = local.clockLead;
     // The socket dies silently: the walk goes on into it for three seconds, then the server takes the
     // player back where they were frozen, reporting input 0 as the last one processed.
     for (let seq = 4; seq <= 93; seq++) local.record(frame(seq, east), seq * TICK, seq < 20);
     local.receive(source(standing(-6)), 4_200, 0, { ...live, restarted }, 3_200);
-    return { local, lead };
+    return local;
   };
-  const { local, lead } = drive(true);
+  const local = drive(true);
   assert.equal(local.pending.length, 0, 'Frames lost with the old socket or already simulated are not in flight');
   assert.ok(Math.abs(local.movement.state.x + 6) < 1e-9, 'The body stays where the server froze it');
-  assert.equal(local.clockLead, lead, 'A restart is not a round-trip sample');
   local.record(frame(94, east), 3_233, true);
   assert.deepEqual(local.pending.map(input => input.seq), [94], 'New frames are in flight again');
-  const stale = drive(false).local;
+  const stale = drive(false);
   assert.ok(stale.movement.state.x > -6 + 10, `Without it, the 90 held frames replay down the street (x ${stale.movement.state.x.toFixed(2)})`);
 });
 
@@ -259,20 +257,6 @@ test('corrections glide the drawn body onto the server path, while spawns and te
   assert.equal(local.receive(source(standing(-6.3 + SNAP_DISTANCE + 0.5)), 1_066, 0, live, 1_066), true, 'A teleport jumps');
   assert.deepEqual(local.correction, { x: 0, y: 0, z: 0 });
   assert.equal(local.receive(source(standing(-6)), 1_100, 0, { ...live, spawned: true }, 1_100), true, 'A new life jumps');
-});
-
-test('the predicted clock leads the snapshot by the inputs in flight, smoothed and kept across lives', () => {
-  const local = new LocalPrediction();
-  for (let seq = 1; seq <= 3; seq++) local.record(frame(seq), seq * TICK, false);
-  local.receive(source(standing(-6)), 1_000, 0, live, 100);
-  assert.ok(Math.abs(local.clockLead - 3 * TICK) < 1e-6, 'The first measurement is taken directly');
-  for (let seq = 4; seq <= 6; seq++) local.record(frame(seq), seq * TICK, false);
-  local.receive(source(standing(-6)), 1_033, 0, live, 200);
-  assert.ok(Math.abs(local.clockLead - (0.8 * 3 * TICK + 0.2 * 6 * TICK)) < 1e-6, 'Later measurements are smoothed');
-  const lead = local.clockLead;
-  local.receive(source(standing(-6)), 1_066, 6, { ...live, spawned: true }, 233);
-  local.receive(source(standing(-6)), 1_100, 6, { ...live, playing: false }, 266);
-  assert.equal(local.clockLead, lead, 'Respawns and countdowns keep the round-trip estimate');
 });
 
 test('each sent input in live play moves the body one server tick, and frames draw it between the last two ticks', () => {

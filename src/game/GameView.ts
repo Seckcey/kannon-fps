@@ -484,7 +484,7 @@ export class GameView {
     const input = this.options.input, now = performance.now();
     const localId = this.options.getPlayerId(), local = this.localState(), snapshot = this.snapshot;
     const fresh = !!this.snapshotBuffer.length && now - this.snapshotBuffer[this.snapshotBuffer.length - 1]!.received < 500;
-    const time = this.serverTime(now), predicted = time + this.prediction.clockLead, spec = this.weapon.spec, state = this.prediction.movement.state;
+    const time = this.serverTime(now), predicted = this.local.weaponTime(now), spec = this.weapon.spec, state = this.prediction.movement.state;
     const tracking = this.assetsAnnounced && fresh && input.acceptsInput && input.isTouch && input.firingMode === 'simple'
       && snapshot?.phase === 'playing' && !!local && local.health > 0;
     let target: string | null = null;
@@ -644,7 +644,7 @@ export class GameView {
     }
     const controller = this.options.input, input = controller.peek(), snapshot = this.snapshot;
     const local = this.localState(), self = this.self(), motion = this.motion, prediction = this.prediction;
-    const serverNow = this.serverTime(now), predictedNow = serverNow + prediction.clockLead;
+    const serverNow = this.serverTime(now), predictedNow = this.local.weaponTime(now);
     const alive = !!local && local.health > 0 && local.connected;
     const firstPerson = !!snapshot && prediction.active && alive && snapshot.phase !== 'finished';
     // The body only moves with sent inputs (recordInput); a frame draws it between the last two ticks.

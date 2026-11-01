@@ -206,10 +206,11 @@ export class LocalWeapon {
   }
 
   /** Server state after input `ackSeq`, which ran at server time `ranAt`, replaces the prediction;
-   * later inputs replay silently, each one frame step after the one before it, as the server runs them. */
-  reconcile(self: PlayerState, ackSeq: number, ranAt: number) {
+   * later inputs replay silently, each one frame step after the one before it, as the server runs them.
+   * Outside live play (`playing` false) the server refuses inputs, so none is left to replay. */
+  reconcile(self: PlayerState, ackSeq: number, ranAt: number, playing = true) {
     this.loadout = self.loadout ?? this.loadout;
-    const pending = this.history.filter(entry => entry.seq > ackSeq);
+    const pending = playing ? this.history.filter(entry => entry.seq > ackSeq) : [];
     const base = pending.length ? copy(pending[0]!.before) : copy(this.state);
     this.adopt(base, self, ranAt);
     this.state = base;
@@ -274,7 +275,8 @@ export class LocalWeapon {
       state.reloadSlot = 0; state.reloadingUntil = 0; state.shellsLeft = 0; return;
     }
     // The server's deadline wins. The predicted reload's look (empty or not, when it began) stays when it agrees.
-    const agrees = state.reloadSlot === reloadSlot && Math.abs(state.reloadingUntil - self.reloadingUntil) <= TIME_EPSILON_MS;
+    const showing = state.reloadSlot === reloadSlot, moved = self.reloadingUntil - state.reloadingUntil;
+    const agrees = showing && Math.abs(moved) <= TIME_EPSILON_MS;
     const spec = weaponFor(this.loadout, reloadSlot), index = reloadSlot - 1;
     state.reloadSlot = reloadSlot; state.reloadingUntil = self.reloadingUntil;
     if (spec.perShellMs) {
@@ -282,7 +284,8 @@ export class LocalWeapon {
       const per = spec.perShellMs * handlingFactor(this.loadout);
       state.shellsLeft = Math.max(1, Math.min(spec.magazine - state.mag[index], state.reserve[index], Math.ceil((self.reloadingUntil - ranAt - TIME_EPSILON_MS) / per)));
       state.nextShellAt = self.reloadingUntil - (state.shellsLeft - 1) * per;
-      if (agrees) return;
+      // Once shells are in, its look cannot be worked out again: a reload on show moves with its deadline instead.
+      if (showing) { state.reloadStartedAt += moved; return; }
       state.reloadEmpty = state.mag[index] === 0;
       state.reloadShells = Math.max(state.shellsLeft, spec.magazine - state.mag[index]);
       state.reloadStartedAt = self.reloadingUntil - shellReloadMs(spec, state.reloadShells, this.loadout);

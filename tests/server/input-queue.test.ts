@@ -5,7 +5,7 @@ import { PRACTICE_RIVALS, PracticeBots } from '../../server/bots.js';
 import { OBSTACLES } from '../../shared/map.js';
 import { eyePosition, isPlayerGrounded, MOVE, movePlayer, PLAYER_RADIUS, subtract, type MoveState } from '../../shared/physics.js';
 import { type GameEvent, type InputFrame, type Loadout, type PlayerState, type Vec3 } from '../../shared/protocol.js';
-import { DEFAULT_LOADOUT, hasPerk, LOADOUT_PRESETS, QUICK_HANDS_FACTOR, weaponFor, WEAPONS } from '../../shared/weapons.js';
+import { DEFAULT_LOADOUT, EXPLOSIVES, fireIntervalMs, hasPerk, LOADOUT_PRESETS, QUICK_HANDS_FACTOR, weaponFor, WEAPONS } from '../../shared/weapons.js';
 
 const TICK = 1000 / 30;
 type Of<T extends GameEvent['type']> = Extract<GameEvent, { type: T }>;
@@ -386,4 +386,157 @@ test('rivals still hand over one frame per tick, simulated with the tick\'s own 
       assert.equal(bot.lastInputTime, now, `${bot.id}: on the tick's clock`);
     });
   }
+});
+
+/** Frames on a script: `send` queues a frame for its arrival, and `until` runs the server's exact 30 Hz ticks, handing
+ * each frame over as its arrival comes up. Player a stands in the open street, b far away. */
+function scripted(loadout: Loadout = DEFAULT_LOADOUT) {
+  const { engine, events, a, b, rt } = playing(loadout);
+  place(a, -28, -20); place(b, 28, 20);
+  let tick = 1, seq = 0, last = -Infinity;
+  const pending: Array<{ at: number; frame: InputFrame }> = [];
+  const now = () => 3000 + tick * TICK;
+  const until = (time: number) => {
+    for (; now() <= time + 1e-9; tick++) {
+      while (pending[0] && pending[0].at <= now()) { const { at, frame } = pending.shift()!; engine.acceptInput('a', frame, at); }
+      engine.step(now(), TICK / 1000);
+    }
+  };
+  /** One frame arriving at `at` (or after the frame before it), `skip` sequence numbers on from the last. */
+  const send = (at: number, changes: Partial<InputFrame> = {}, skip = 1) => {
+    seq += skip; last = Math.max(last, at);
+    pending.push({ at: last, frame: { ...idleInput(seq), yaw: Math.PI / 2, pitch: 0.1, viewTime: last, ...changes } });
+  };
+  /** `count` frames at 30 a second from `from`, run through. Returns when the next is due. */
+  const stream = (from: number, count: number, changes: (index: number) => Partial<InputFrame> = () => ({})) => {
+    for (let i = 0; i < count; i++) send(from + i * TICK, changes(i));
+    until(from + count * TICK);
+    return from + count * TICK;
+  };
+  /** One frame every `every` ms for `span` ms: each lands far behind its clock, which is put back on the tick. */
+  const sparse = (from: number, span: number, every = 280) => {
+    let at = from;
+    for (; at < from + span; at += every) { send(at); until(at); }
+    return at;
+  };
+  /** Silence until the player is stood down, the frames that build a new stream, and a frame skipping `skip` numbers. */
+  const restart = (skip: number, changes: Partial<InputFrame> = {}) => {
+    const next = stream(now() + 320, 7);
+    send(next, changes, skip); until(next + TICK);
+    return next + TICK;
+  };
+  return { engine, events, a, b, rt, now, until, send, stream, sparse, restart, sequence: () => seq };
+}
+
+/** How far behind the tick a frame clock can run before it is put back on it (CLOCK_RESET_MS, a full playout and a
+ * frame). A frame that came that late starts its timers there: lag tolerance, spent once and paid back by the next
+ * late frame. */
+const CLOCK_LAG = 250 + MAX_PLAYOUT_MS + TICK;
+
+test('time saved while no timer runs buys nothing: frames far apart and a sequence jump as a stream restarts leave a bolt and a reload their time', t => {
+  const bolt = fireIntervalMs(WEAPONS.longbow), reload = WEAPONS.longbow.reloadMs * (hasPerk(LOADOUT_PRESETS.marksman, 'quick-hands') ? QUICK_HANDS_FACTOR : 1);
+  const ran = recordFrames(t), clockOf = (seq: number) => ran.filter(frame => frame.seq === seq).at(-1)!.clock;
+  for (const saved of [0, 2000, 6000]) {
+    const shot = scripted(LOADOUT_PRESETS.marksman);
+    let next = shot.stream(shot.sparse(shot.stream(3010, 30), saved), 15);
+    assert.ok(shot.rt.shifted <= 0, `${saved} ms saved: ${shot.rt.shifted.toFixed(1)} ms of allowance banked`);
+    next = shot.stream(next, 2, i => ({ fire: i === 0 }));
+    next = shot.restart(40, { fire: true });
+    for (let i = 0; i < 90 && of(shot.events, 'shot').length < 2; i++) next = shot.stream(next, 1, () => ({ fire: i % 2 === 0 }));
+    const [first, second] = of(shot.events, 'shot');
+    assert.ok(second, 'setup: a second shot');
+    const boltClock = clockOf(second.seq!) - clockOf(first!.seq!), boltTick = second.at - first!.at;
+    assert.ok(boltClock >= bolt - 2 * TICK, `${saved} ms saved: the bolt took ${boltClock.toFixed(1)} ms of ${bolt} on the frame clock`);
+    assert.ok(boltTick >= bolt - CLOCK_LAG, `${saved} ms saved: the bolt took ${boltTick.toFixed(1)} ms of ${bolt}`);
+
+    const reloading = scripted(LOADOUT_PRESETS.marksman);
+    next = reloading.stream(reloading.sparse(reloading.stream(3010, 30), saved), 15);
+    reloading.a.mag[0] = 1;
+    next = reloading.stream(next, 1, () => ({ reload: true }));
+    assert.ok(reloading.a.reloadingUntil > 0, 'setup: reloading');
+    const startedClock = reloading.rt.clock, startedTick = reloading.now() - TICK;
+    next = reloading.restart(90);
+    for (let i = 0; i < 150 && reloading.a.mag[0] === 1; i++) next = reloading.stream(next, 1);
+    assert.equal(reloading.a.mag[0], WEAPONS.longbow.magazine, 'setup: reloaded');
+    const reloadClock = reloading.rt.clock - startedClock, reloadTick = reloading.now() - TICK - startedTick;
+    assert.ok(reloadClock >= reload - 2 * TICK, `${saved} ms saved: the reload took ${reloadClock.toFixed(1)} ms of ${reload} on the frame clock`);
+    assert.ok(reloadTick >= reload - CLOCK_LAG, `${saved} ms saved: the reload took ${reloadTick.toFixed(1)} ms of ${reload}`);
+  }
+});
+
+test('a sequence jump as a stream restarts moves running timers one step at most', () => {
+  for (const skip of [2, 12, 40, 1000]) {
+    const s = scripted(LOADOUT_PRESETS.marksman);
+    const t = s.stream(3010, 30);
+    s.stream(t, 1, () => ({ reload: true }));
+    const until = s.a.reloadingUntil;
+    s.restart(skip);
+    assert.ok(until - s.a.reloadingUntil <= TICK + 1e-6, `${skip} numbers skipped moved the reload ${(until - s.a.reloadingUntil).toFixed(1)} ms sooner`);
+  }
+});
+
+test('no timer moves further ahead of the frame clock than what is left of the catch-up allowance', () => {
+  const s = scripted(LOADOUT_PRESETS.marksman), t = s.stream(3010, 30);
+  s.stream(t, 1, () => ({ reload: true }));
+  // Nearly all of it used, as the clock check and stream starts can use it over a life.
+  s.rt.shifted = -FRAME_CREDIT_MS + 5;
+  const until = s.a.reloadingUntil;
+  s.restart(40);
+  assert.ok(until - s.a.reloadingUntil <= 5 + 1e-6, `The reload moved ${(until - s.a.reloadingUntil).toFixed(1)} ms sooner`);
+  assert.ok(s.rt.shifted >= -FRAME_CREDIT_MS - 1e-6, `${s.rt.shifted.toFixed(1)} ms used`);
+});
+
+test('however far apart the frames come, a frag held in hand goes off close to its fuse', () => {
+  const fuse = EXPLOSIVES.frag.fuseMs;
+  for (const every of [TICK, 100, 200, 250, 290]) {
+    const s = scripted(LOADOUT_PRESETS.assault);
+    let t = s.stream(3010, 30);
+    t = s.stream(t, 1, () => ({ grenade: true }));
+    const cooked = s.a.cookingSince;
+    assert.ok(cooked > 0, 'setup: cooking');
+    for (let at = t; at < t + 6000; at += every) { s.send(at, { grenade: true }); s.until(at); }
+    const [blast] = of(s.events, 'explosion');
+    assert.ok(blast, `${every} ms apart: it went off in hand`);
+    // It is judged on the frames: the allowance, a clock as far behind the tick as it goes, and the wait for one more frame.
+    const held = blast.at - cooked;
+    assert.ok(held >= fuse - 2 * TICK && held <= fuse + FRAME_CREDIT_MS + CLOCK_LAG + every, `${every} ms apart: held ${held.toFixed(0)} ms on a ${fuse} ms fuse`);
+    // Thrown after a long hold, its fuse has moved no further either.
+    const thrower = scripted(LOADOUT_PRESETS.assault);
+    t = thrower.stream(3010, 30);
+    t = thrower.stream(t, 1, () => ({ grenade: true }));
+    const start = thrower.a.cookingSince;
+    const release = t + 2000;
+    for (let at = t; at < release; at += every) { thrower.send(at, { grenade: true }); thrower.until(at); }
+    thrower.send(release, {}); thrower.until(release + 400);
+    const [thrown] = of(thrower.events, 'grenade');
+    assert.ok(thrown, `${every} ms apart: thrown`);
+    assert.ok(thrown.explodeAt - start <= fuse + FRAME_CREDIT_MS + 1, `${every} ms apart: the thrown fuse ran ${thrown.explodeAt - start} ms`);
+  }
+});
+
+test('a life\'s first frame runs one step after its spawn however late it arrives, so the raise ends on the same frame', () => {
+  for (const loadout of [LOADOUT_PRESETS.assault, LOADOUT_PRESETS.marksman]) for (const delay of [50, 100, 250, 290, 310, 350, 450, 1000]) {
+    const s = scripted(loadout);
+    s.stream(3010, 45);
+    s.engine.damage(s.a, s.b, 1000, s.now() - TICK);
+    while (s.a.health <= 0) s.until(s.now());
+    const spawn = s.rt.aliveSince, raise = s.a.readyAt - spawn, before = s.sequence();
+    s.until(spawn + delay - 1);
+    assert.equal(s.a.lastInputTime, spawn, `first frame ${delay} ms after the spawn: idle frames leave the clock at the spawn`);
+    s.stream(spawn + delay, 40, () => ({ fire: true }));
+    const shot = of(s.events, 'shot').find(event => event.at >= spawn);
+    assert.ok(shot, 'setup: fired');
+    assert.equal(shot.seq! - before, Math.ceil((raise - 0.01) / TICK), `first frame ${delay} ms after the spawn: the frame the raise ended on`);
+  }
+});
+
+test('a player who joined during the countdown counts their frames from the round going live', () => {
+  const engine = new MatchEngine({ practiceSeed: 'input-queue' });
+  for (const id of ['a', 'b']) engine.addPlayer({ id, name: id, color: '#fff' }, 0);
+  engine.start(0); engine.step(2700, 0);
+  const c = engine.addPlayer({ id: 'c', name: 'c', color: '#fff' }, 2700);
+  assert.equal(c.lastInputTime, 2700);
+  engine.step(3000, 0);
+  assert.equal(c.lastInputTime, 3000);
+  assert.equal(engine.runtime.get('c')!.clock, 3000);
 });

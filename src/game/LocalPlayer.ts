@@ -1,4 +1,4 @@
-import type { MoveEvents } from '../../shared/physics';
+import { clamp, type MoveEvents } from '../../shared/physics';
 import type { InputFrame, Loadout, PlayerState, PublicPlayerState, WorldSnapshot } from '../../shared/protocol';
 import { LocalWeapon, type WeaponEvent } from './LocalWeapon';
 import { LocalPrediction, TICK_MS, vaultProgress } from './MovementPrediction';
@@ -13,9 +13,19 @@ export class LocalPlayer {
   /** Frames sent since the body last stepped (the page was not live): each still runs a frame step later. */
   private unstepped = 0;
   private lastAck = 0;
+  /** Wall-clock time (ms) the newest frame was sent. */
+  private sentAt = -Infinity;
 
   /** `loadout` until the first snapshot brings mine. */
   constructor(loadout?: Loadout) { this.weapon = new LocalWeapon(loadout); }
+
+  /** The clock the weapon's timers count on, at wall-clock `wall` (ms): the newest sent frame's predicted server time,
+   * gliding on to the next frame's as it falls due. A raise, reload or cook is drawn on it: when the server moves this
+   * player's clock, the snapshot moves the timers and this clock together, and nothing on screen jumps. */
+  weaponTime(wall: number): number {
+    const glide = Number.isFinite(wall) && Number.isFinite(this.sentAt) ? clamp((wall - this.sentAt) / TICK_MS, 0, 1) : 0;
+    return this.prediction.movement.time + (this.unstepped + glide) * TICK_MS;
+  }
 
   /** One frame actually sent at wall-clock `wall` (ms). `live`: the server is simulating my frames now and the
    * newest snapshot is fresh, so the body steps too; `alive`: the server runs my weapon. `ads` is the sights'
@@ -25,7 +35,7 @@ export class LocalPlayer {
     // A reference is enough: a move replaces or clears the vault, never edits it.
     const vaultBefore = this.prediction.movement.state.vault;
     const moved = this.prediction.record(frame, wall, live);
-    this.unstepped = moved ? 0 : this.unstepped + 1;
+    this.unstepped = moved ? 0 : this.unstepped + 1; this.sentAt = wall;
     const state = this.prediction.movement.state, now = this.prediction.movement.time + this.unstepped * TICK_MS;
     const pressVault = moved ? vaultBefore : state.vault;
     const events = this.weapon.step(frame, {
@@ -48,7 +58,7 @@ export class LocalPlayer {
     const ranAt = self?.lastInputTime ?? snapshot.serverTime;
     if (self) {
       if (spawned || restarted) this.weapon.reset(self, ranAt);
-      else this.weapon.reconcile(self, local.lastInputSeq, ranAt);
+      else this.weapon.reconcile(self, local.lastInputSeq, ranAt, snapshot.phase === 'playing');
     }
     this.unstepped = 0;
     return this.prediction.receive(self ? { ...local, ...self } : local, snapshot.serverTime, local.lastInputSeq,
