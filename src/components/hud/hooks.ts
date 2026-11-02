@@ -14,16 +14,55 @@ export function useHudValue<T extends string | number | boolean | null>(hud: Hud
   return useSyncExternalStore(hud.subscribe, read, read);
 }
 
-const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
-export function useViewport(): { width: number; height: number } {
-  const [size, setSize] = useState(viewport);
+export interface VisibleArea { left: number; top: number; width: number; height: number }
+export type ViewportSource = EventTarget & Pick<Window, 'innerWidth' | 'innerHeight'> & { visualViewport: (EventTarget & Pick<VisualViewport, 'width' | 'height' | 'offsetLeft' | 'offsetTop'>) | null };
+
+/** The part of the page the player can see. A phone can zoom the page in when it turns, and a match
+ * blocks the pinch that would undo it, so the game follows this rather than the size of the whole page. */
+export function readVisibleArea(view: ViewportSource): VisibleArea {
+  const visible = view.visualViewport;
+  if (!visible || !(visible.width > 0) || !(visible.height > 0)) return { left: 0, top: 0, width: view.innerWidth, height: view.innerHeight };
+  return { left: Math.round(visible.offsetLeft), top: Math.round(visible.offsetTop), width: Math.round(visible.width), height: Math.round(visible.height) };
+}
+
+/** Phones can report their new size after the events of a turn, so each event is read again until it settles. */
+export const VIEWPORT_SETTLE_MS = [100, 300, 600, 1000, 1500] as const;
+export function watchVisibleArea(view: ViewportSource, onRead: (area: VisibleArea) => void): () => void {
+  let timers: ReturnType<typeof setTimeout>[] = [];
+  const read = () => onRead(readVisibleArea(view));
+  const settle = () => { read(); timers.forEach(clearTimeout); timers = VIEWPORT_SETTLE_MS.map(delay => setTimeout(read, delay)); };
+  view.addEventListener('resize', settle); view.addEventListener('orientationchange', settle);
+  view.visualViewport?.addEventListener('resize', settle); view.visualViewport?.addEventListener('scroll', read);
+  return () => {
+    timers.forEach(clearTimeout);
+    view.removeEventListener('resize', settle); view.removeEventListener('orientationchange', settle);
+    view.visualViewport?.removeEventListener('resize', settle); view.visualViewport?.removeEventListener('scroll', read);
+  };
+}
+
+export function useViewport(): VisibleArea {
+  const [area, setArea] = useState(() => readVisibleArea(window));
   useEffect(() => {
-    const update = () => setSize(previous => { const next = viewport(); return next.width === previous.width && next.height === previous.height ? previous : next; });
-    window.addEventListener('resize', update); window.addEventListener('orientationchange', update);
-    window.visualViewport?.addEventListener('resize', update);
-    return () => { window.removeEventListener('resize', update); window.removeEventListener('orientationchange', update); window.visualViewport?.removeEventListener('resize', update); };
+    const update = (next: VisibleArea) => setArea(previous => next.left === previous.left && next.top === previous.top && next.width === previous.width && next.height === previous.height ? previous : next);
+    update(readVisibleArea(window));
+    return watchVisibleArea(window, update);
   }, []);
-  return size;
+  return area;
+}
+
+/** Page zoom limits that also pull an already zoomed page back to normal size. */
+export function lockedViewportContent(content: string): string {
+  return /maximum-scale/.test(content) ? content : `${content}, minimum-scale=1, maximum-scale=1`;
+}
+/** Keeps the page at normal size for as long as the caller is on screen; zoom comes back in the menus. */
+export function usePageZoomLock() {
+  useEffect(() => {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    if (!meta) return;
+    const content = meta.content;
+    meta.content = lockedViewportContent(content);
+    return () => { meta.content = content; };
+  }, []);
 }
 
 const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
