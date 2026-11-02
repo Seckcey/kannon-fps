@@ -20,7 +20,7 @@ import { CombatHud, ScopeLayer } from './hud/CombatHud';
 import { CombatCallouts, KillFeed, ScoreBar } from './hud/MatchHud';
 import { Scoreboard } from './hud/Scoreboard';
 import { crosshairReach } from './hud/combat';
-import { useHudValue, useSafeArea, useViewport } from './hud/hooks';
+import { useHudValue, usePageZoomLock, useSafeArea, useViewport } from './hud/hooks';
 import { clock, eliminatedBy, killFeed, matchResult, nameLookup, recentMedals, rewardReady, scoreboard, scorePopups, scoreSummary, threatNotices, topScorer, type Viewer } from './hud/match';
 import { feedStyle, minimapSpec, touchHudLayout, touchLayout } from './hud/touchLayout';
 
@@ -50,6 +50,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const [localNow, setLocalNow] = useState(Date.now());
   const lastEvent = useRef<GameEvent | null>(null);
   const viewport = useViewport(), safe = useSafeArea();
+  usePageZoomLock();
   const rewardKey = useHudValue(hud, frame => frame?.rewards.join(',') ?? '');
   const targeting = useHudValue(hud, frame => !!frame?.mortarTargeting);
   const heldWeapon = useHudValue(hud, frame => frame?.weapon ?? null);
@@ -187,7 +188,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const roomLabel = state.room?.practice ? `${practiceLevelName(state.room.practiceDifficulty)} bot match` : state.room?.ranked ? 'Ranked crew match' : state.room?.visibility === 'public' ? 'Public match' : 'Private match';
   const respawnIn = Math.max(1, Math.ceil(((me?.respawnAt || serverNow) - serverNow) / 1000));
 
-  return <main className={`game-screen ${touch ? 'touch-game' : 'desktop-game'} ${damaged ? 'taking-damage' : ''}`}>
+  return <main className={`game-screen ${touch ? 'touch-game' : 'desktop-game'} ${damaged ? 'taking-damage' : ''}`} style={{ left: viewport.left, top: viewport.top, width: viewport.width, height: viewport.height, right: 'auto', bottom: 'auto' }}>
     <div ref={container} className="game-canvas" aria-label="Kannon Town 3D arena"/>
     {(loading || loadError) && <div className="game-cover"><h2>{loadError ? 'Graphics unavailable' : 'Entering Kannon Town…'}</h2><p>{loadError || 'Preparing the arena and your loadout.'}</p><button className={`button ${loadError ? 'primary' : 'secondary'}`} onClick={onLeave}>Back to menu</button></div>}
     {/* Before the HUD layer and under the touch controls, so the buttons stay visible through a scope. */}
