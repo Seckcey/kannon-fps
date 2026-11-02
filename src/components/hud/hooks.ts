@@ -22,7 +22,8 @@ export type ViewportSource = EventTarget & Pick<Window, 'innerWidth' | 'innerHei
 export function readVisibleArea(view: ViewportSource): VisibleArea {
   const visible = view.visualViewport;
   if (!visible || !(visible.width > 0) || !(visible.height > 0)) return { left: 0, top: 0, width: view.innerWidth, height: view.innerHeight };
-  return { left: Math.round(visible.offsetLeft), top: Math.round(visible.offsetTop), width: Math.round(visible.width), height: Math.round(visible.height) };
+  // Rounded up: a fractional Android size must not leave a hairline at the edge of the screen.
+  return { left: Math.round(visible.offsetLeft), top: Math.round(visible.offsetTop), width: Math.ceil(visible.width), height: Math.ceil(visible.height) };
 }
 
 /** Phones can report their new size after the events of a turn, so each event is read again until it settles. */
@@ -80,10 +81,9 @@ export function useSafeArea(): Insets {
       setInsets(previous => previous.top === next.top && previous.right === next.right && previous.bottom === next.bottom && previous.left === next.left ? previous : next);
     };
     read();
-    // Insets change after rotation settles, so read again on the next frame too.
-    const update = () => { read(); requestAnimationFrame(read); };
-    window.addEventListener('resize', update); window.addEventListener('orientationchange', update);
-    return () => { window.removeEventListener('resize', update); window.removeEventListener('orientationchange', update); probe.remove(); };
+    // Insets change after rotation settles, so they are read again along with the visible area.
+    const stop = watchVisibleArea(window, read);
+    return () => { stop(); probe.remove(); };
   }, []);
   return insets;
 }
