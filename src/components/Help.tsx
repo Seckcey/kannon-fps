@@ -31,6 +31,7 @@ export function Help() {
       <div><dt>Rewards</dt><dd>Tap a reward button when it appears</dd></div>
       <div><dt>Gyroscope</dt><dd>Enable in Settings to aim by tilting</dd></div>
       <div><dt>Best view</dt><dd>Turn your phone sideways</dd></div>
+      <div><dt>Full screen</dt><dd>Android and iPad: tap Ready to play. iPhone: tap Play full screen for the steps</dd></div>
     </dl><p className="muted">Settings let you choose hold or toggle for aim and crouch, how sprint works, your field of view and aim sensitivity. Set graphics to Low if your phone needs a smoother frame rate.</p></section></div>
     <section className="rules-section"><h2>Pick a loadout. Earn your rewards.</h2>
       <div className="help-classes">{(['assault', 'close', 'marksman'] as const).map(preset => <div key={preset}><strong>{PRESET_INFO[preset].name}</strong><p>{PRESET_INFO[preset].summary}</p></div>)}<div><strong>{PRESET_INFO.custom.name}</strong><p>Pick a primary from {Object.values(WEAPONS).filter(w => w.slot === 1).map(w => w.name).join(', ')}, then one perk from each slot, such as {PERKS['quick-hands'].name} or {PERKS['steady-aim'].name}.</p></div></div>

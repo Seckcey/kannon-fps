@@ -11,6 +11,7 @@
     "vehicle-test": "node scripts/build-ktx2-worker.mjs && node scripts/vehicle-test/serve.mjs",
     "vehicle-test:assets": "node scripts/blender/split_vehicle_baseline.mjs --check && node scripts/blender/validate_vehicle_test.mjs",
     "vehicle-test:browser": "node scripts/vehicle-test/verify-browser.mjs",
+    "phone-fit": "node scripts/phone-fit/verify.mjs",
     "dev": "node scripts/build-ktx2-worker.mjs && concurrently -k -n server,client \"tsx watch server/index.ts\" \"vite --host 0.0.0.0\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite --host 0.0.0.0",

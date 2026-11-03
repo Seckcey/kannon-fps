@@ -12,6 +12,8 @@ export interface TouchLayoutOptions {
 }
 export interface TouchLayout {
   scale: number;
+  /** The usual stack of buttons does not fit under the top of the screen, as under Safari's bars. */
+  compact: boolean;
   /** Square around the movement stick ring. */
   stick: Rect;
   /** Drag-to-look area; buttons sit above it. */
@@ -22,47 +24,60 @@ export interface TouchLayout {
   status: Rect;
 }
 export const MIN_TARGET = 44;
-const STATUS_HEIGHT = 64;
+const STATUS_HEIGHT = 64, COMPACT_STATUS_HEIGHT = 48;
+const MIN_STICK = 110;
+/** The short-screen layout needs room for four buttons along the bottom right and the status panel. */
+const COMPACT_MIN_WIDTH = 580, COMPACT_MIN_STATUS = 150;
 
 export function touchLayout({ width, height, safe = {}, sprintButton = false, rewards = 0 }: TouchLayoutOptions): TouchLayout {
   const inset: Insets = { top: safe.top ?? 0, right: safe.right ?? 0, bottom: safe.bottom ?? 0, left: safe.left ?? 0 };
   const scale = clamp(Math.min(width / 844, height / 390), 0.9, 1.3);
   const px = (value: number, min = MIN_TARGET) => Math.max(min, Math.round(value * scale));
-  const fire = px(76), big = px(56), small = px(50, MIN_TARGET + 2), fireLeft = px(64), stickSize = px(132, 110);
+  const fire = px(76), big = px(56), small = px(50, MIN_TARGET + 2), fireLeft = px(64);
   const gap = px(10, 8), margin = px(12, 8);
   const left = inset.left + margin, right = width - inset.right - margin, bottom = height - inset.bottom - margin;
+  // The usual stack up the right edge, with a row of rewards on top, has to end below the top-right buttons.
+  // This never depends on the rewards held, so earning one does not move a button under the player's thumbs.
+  const topClear = hudEdges(safe, true).top + TOUCH_TOP_ACTIONS.h + CLEARANCE;
+  const compact = width >= COMPACT_MIN_WIDTH && bottom - (big + fire + 2 * small + 3 * gap) < topClear;
+  const stickSize = compact ? MIN_STICK : px(132, MIN_STICK);
 
   const at = (x: number, y: number, size: number): Rect => ({ x: Math.round(x), y: Math.round(y), w: size, h: size });
   // Right thumb: Jump in the corner, Crouch beside it, Fire above Jump with Aim and Reload to its left,
-  // Grenade and Knife above Fire, Swap at the bottom left of the cluster.
+  // Grenade and Knife above Fire, Swap at the bottom left of the cluster. On a short screen nothing fits
+  // above Fire: Grenade goes left of Reload and Knife left of Swap.
   const jump = at(right - big, bottom - big, big);
   const crouch = at(jump.x - gap - big, bottom - big, big);
   const swap = at(crouch.x - gap - small, bottom - small, small);
   const fireButton = at(right - fire, jump.y - gap - fire, fire);
   const aim = at(fireButton.x - gap - big, fireButton.y + (fire - big) / 2, big);
   const reload = at(aim.x - gap - small, fireButton.y + (fire - small) / 2, small);
-  const knife = at(right - small, fireButton.y - gap - small, small);
-  const grenade = at(knife.x - gap - small, knife.y, small);
-  const rewardRects = Array.from({ length: Math.max(0, Math.min(3, Math.floor(rewards))) }, (_, index) =>
-    at(right - small - index * (small + gap), knife.y - gap - small, small));
+  const knife = compact ? at(swap.x - gap - small, swap.y, small) : at(right - small, fireButton.y - gap - small, small);
+  const grenade = compact ? at(reload.x - gap - small, reload.y, small) : at(knife.x - gap - small, knife.y, small);
 
   // Left thumb: the stick in the corner, Fire left above its inner edge, Sprint above its outer edge.
+  // On a short screen Fire left goes beside the stick, with Sprint and the rewards above it.
   const stick = at(left, bottom - stickSize, stickSize);
-  const fireLeftButton = at(stick.x + stick.w - fireLeft * 0.6, stick.y - gap - fireLeft, fireLeft);
-  const sprint = sprintButton ? at(left, stick.y - gap - small, small) : undefined;
+  const fireLeftButton = compact ? at(stick.x + stick.w + gap, bottom - fireLeft, fireLeft) : at(stick.x + stick.w - fireLeft * 0.6, stick.y - gap - fireLeft, fireLeft);
+  const columns = [fireLeftButton.x, fireLeftButton.x + small + gap], rows = [fireLeftButton.y - gap - small, fireLeftButton.y - 2 * (gap + small)];
+  const slot = (column: number, row: number) => at(columns[column]!, rows[row]!, small);
+  const sprint = !sprintButton ? undefined : compact ? slot(0, 0) : at(left, stick.y - gap - small, small);
+  const rewardSlots = sprintButton ? [slot(0, 1), slot(1, 0), slot(1, 1)] : [slot(0, 0), slot(0, 1), slot(1, 0)];
+  const rewardRects = Array.from({ length: Math.max(0, Math.min(3, Math.floor(rewards))) }, (_, index) =>
+    compact ? rewardSlots[index]! : at(right - small - index * (small + gap), knife.y - gap - small, small));
 
   const buttons: TouchLayout['buttons'] = { fire: fireButton, fireLeft: fireLeftButton, aim, crouch, jump, reload, grenade, knife, swap, ...(sprint ? { sprint } : {}) };
   const placed = [stick, ...Object.values(buttons), ...rewardRects].filter((rect): rect is Rect => !!rect);
-  const leftEdge = Math.max(stick.x + stick.w, fireLeftButton.x + fireLeftButton.w, sprint ? sprint.x + sprint.w : 0) + gap;
-  const rightEdge = Math.min(reload.x, swap.x) - gap;
-  const statusWidth = Math.min(340, rightEdge - leftEdge);
+  const leftEdge = Math.max(stick.x + stick.w, fireLeftButton.x + fireLeftButton.w, sprint && !compact ? sprint.x + sprint.w : 0) + gap;
+  const rightEdge = (compact ? knife.x : Math.min(reload.x, swap.x)) - gap;
+  const statusWidth = Math.min(340, rightEdge - leftEdge), statusHeight = compact ? COMPACT_STATUS_HEIGHT : STATUS_HEIGHT;
   // Between the thumbs when there is room (landscape); otherwise above every control (portrait).
-  const status: Rect = statusWidth >= 180
-    ? { x: Math.round(leftEdge + (rightEdge - leftEdge - statusWidth) / 2), y: bottom - STATUS_HEIGHT, w: Math.round(statusWidth), h: STATUS_HEIGHT }
-    : { x: left, y: Math.min(...placed.map(rect => rect.y)) - gap - STATUS_HEIGHT, w: right - left, h: STATUS_HEIGHT };
+  const status: Rect = statusWidth >= (compact ? COMPACT_MIN_STATUS : 180)
+    ? { x: Math.round(leftEdge + (rightEdge - leftEdge - statusWidth) / 2), y: bottom - statusHeight, w: Math.round(statusWidth), h: statusHeight }
+    : { x: left, y: Math.min(...placed.map(rect => rect.y)) - gap - statusHeight, w: right - left, h: statusHeight };
   const lookTop = inset.top + px(52, 40);
   const lookLeft = Math.round(width * 0.36);
-  return { scale, stick, buttons, rewards: rewardRects, status, look: { x: lookLeft, y: lookTop, w: width - lookLeft, h: height - lookTop } };
+  return { scale, compact, stick, buttons, rewards: rewardRects, status, look: { x: lookLeft, y: lookTop, w: width - lookLeft, h: height - lookTop } };
 }
 
 /** HUD spacing from the screen edges, never inside the notch or home-indicator insets. The game screen
@@ -73,7 +88,8 @@ export function hudEdges(safe: Partial<Insets> = {}, touch: boolean): Insets {
 }
 /** Minimap size in CSS pixels and how many metres it shows from its centre to its edge. */
 export function minimapSpec(width: number, height: number, touch: boolean): { size: number; range: number } {
-  return touch ? { size: Math.min(width, height) < 500 ? 96 : 128, range: 20 } : { size: Math.round(clamp(height * 0.2, 150, 240)), range: 30 };
+  const shortest = Math.min(width, height);
+  return touch ? { size: shortest < 300 ? 80 : shortest < 500 ? 96 : 128, range: 20 } : { size: Math.round(clamp(height * 0.2, 150, 240)), range: 30 };
 }
 
 /** Kill feed rows on touch screens, in CSS pixels (applied inline by the HUD). */
@@ -115,7 +131,11 @@ export function touchHudLayout({ width, height, safe = {}, controls, minimapSize
   const topActions: Rect = { x: width - edges.right - actionsWidth, y: edges.top, w: actionsWidth, h: TOUCH_TOP_ACTIONS.h };
   // Portrait has no room beside the minimap, so the CSS moves the score bar under it.
   const scoreBar: Rect = { x: Math.round(centre - TOUCH_SCORE_BAR.w / 2), y: portrait ? minimap.y + minimap.h + 8 : edges.top, ...TOUCH_SCORE_BAR };
-  const calloutWidth = Math.round(portrait ? Math.min(320, width - edges.left - edges.right) : clamp(width * 0.36, 200, 320));
+  const calloutBottom = Math.floor(height / 2 - reach - 8);
+  // On a short screen Sprint and the rewards can reach this far in from the left, under the score bar.
+  const leftControls = controls.compact ? [controls.buttons.sprint, ...controls.rewards].filter((rect): rect is Rect => !!rect && rect.y < calloutBottom) : [];
+  const calloutRoom = 2 * (centre - Math.max(0, ...leftControls.map(rect => rect.x + rect.w)) - 6);
+  const calloutWidth = Math.round(Math.min(portrait ? Math.min(320, width - edges.left - edges.right) : clamp(width * 0.36, 200, 320), calloutRoom));
 
   // Kill feed under the minimap (under the score bar in portrait): left of the centred messages in
   // landscape, above them in portrait, and only as many rows as fit above the highest control beneath it.
@@ -128,14 +148,20 @@ export function touchHudLayout({ width, height, safe = {}, controls, minimapSize
   const feed = { x: edges.left, y: feedTop, w: feedWidth, h: rows > 0 ? rows * FEED_ROW + (rows - 1) * FEED_GAP : 0, rows };
 
   const calloutTop = Math.max(scoreBar.y + scoreBar.h + 6, portrait ? feed.y + feed.h + 6 : 0);
-  const calloutBottom = Math.floor(height / 2 - reach - 8);
   const callouts: Rect = { x: Math.round(centre - calloutWidth / 2), y: calloutTop, w: calloutWidth, h: Math.max(0, calloutBottom - calloutTop) };
 
   const { status } = controls;
-  const standingsTop = scoreBar.y + scoreBar.h + 6;
+  const standingsTop = scoreBar.y + scoreBar.h + 6, standingsBottom = status.y - 6;
+  // On a short screen buttons sit level with the standings, on both sides of the panel.
+  let standingsLeft = status.x, standingsRight = status.x + status.w;
+  if (controls.compact) for (const rect of [...Object.values(controls.buttons), ...controls.rewards]) {
+    if (!rect || rect.y >= standingsBottom || rect.y + rect.h <= standingsTop) continue;
+    if (rect.x + rect.w / 2 < centre) standingsLeft = Math.max(standingsLeft, rect.x + rect.w + 6);
+    else standingsRight = Math.min(standingsRight, rect.x - 6);
+  }
   const standings: Rect = portrait
-    ? { x: edges.left, y: standingsTop, w: width - edges.left - edges.right, h: Math.max(0, status.y - 6 - standingsTop) }
-    : { x: status.x, y: standingsTop, w: status.w, h: Math.max(0, status.y - 6 - standingsTop) };
+    ? { x: edges.left, y: standingsTop, w: width - edges.left - edges.right, h: Math.max(0, standingsBottom - standingsTop) }
+    : { x: standingsLeft, y: standingsTop, w: standingsRight - standingsLeft, h: Math.max(0, standingsBottom - standingsTop) };
   const hintLeft = minimap.x + minimap.w + 8;
   const hint: Rect | null = portrait ? { x: hintLeft, y: edges.top, w: Math.max(0, topActions.x - 8 - hintLeft), h: minimap.h } : null;
   return { edges, minimap, scoreBar, topActions, feed, callouts, standings, hint };

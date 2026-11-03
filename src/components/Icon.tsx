@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 
 export type IconName = 'play' | 'users' | 'clock' | 'target' | 'settings' | 'close' | 'arrow' | 'copy' | 'check' | 'shield' | 'heal' | 'ar' | 'shotgun' | 'trophy' | 'volume' | 'phone' | 'desktop' | 'reload' | 'jump' | 'aim' | 'leave' | 'link' | 'pause'
-  | 'smg' | 'sniper' | 'pistol' | 'knife' | 'grenade' | 'mortar' | 'drone' | 'radar' | 'crouch' | 'swap' | 'head' | 'sprint' | 'list' | 'class';
+  | 'smg' | 'sniper' | 'pistol' | 'knife' | 'grenade' | 'mortar' | 'drone' | 'radar' | 'crouch' | 'swap' | 'head' | 'sprint' | 'list' | 'class' | 'fullscreen';
 export function Icon({ name, size = 24, className = '', style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {
   const paths: Record<IconName, React.ReactNode> = {
     play: <path d="m8 4 13 8L8 20z" fill="currentColor" stroke="none" />,
@@ -32,6 +32,7 @@ export function Icon({ name, size = 24, className = '', style }: { name: IconNam
     class: <><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9h10M7 13h6M7 16.5h8"/></>,
     trophy: <><path d="M7 3h10v6a5 5 0 0 1-10 0zM12 14v5m-5 2h10M7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4"/></>,
     volume: <><path d="M3 9h4l5-5v16l-5-5H3zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></>,
+    fullscreen: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>,
     phone: <><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></>,
     desktop: <><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M12 17v4m-5 0h10"/></>,
     reload: <><path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 14-2m0 10A8 8 0 0 1 5 2" transform="translate(0 1)"/></>,

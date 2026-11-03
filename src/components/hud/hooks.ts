@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { HudFrame, HudStore } from '../../game/hud';
+import { browserFullscreen, exitFullscreen, fullscreenMode, installedApp, isIPhone, type FullscreenMode } from '../../lib/fullscreen';
 import type { Insets } from './touchLayout';
 
 // The third argument of useSyncExternalStore only serves rendering to markup (the Node tests); the game
@@ -49,6 +50,21 @@ export function useViewport(): VisibleArea {
     return watchVisibleArea(window, update);
   }, []);
   return area;
+}
+
+/** Where this device stands on full screen, kept current; the game leaves full screen with the caller. */
+export function useFullscreen(): FullscreenMode {
+  const read = () => fullscreenMode(browserFullscreen(), { installed: installedApp(), iPhone: isIPhone() });
+  const [mode, setMode] = useState(read);
+  useEffect(() => {
+    const update = () => setMode(read());
+    document.addEventListener('fullscreenchange', update); document.addEventListener('webkitfullscreenchange', update);
+    return () => {
+      document.removeEventListener('fullscreenchange', update); document.removeEventListener('webkitfullscreenchange', update);
+      exitFullscreen(browserFullscreen());
+    };
+  }, []);
+  return mode;
 }
 
 /** Page zoom limits that also pull an already zoomed page back to normal size. */
