@@ -114,6 +114,7 @@ async function play(browser, size) {
   await named('Enter bot match').tap();
   await page.getByText('Your arena is ready.').waitFor({ state: 'visible', timeout: 120000 });
   await check('ready');
+  if (await list.evaluate(el => el.children.length <= 4 && el.scrollHeight > el.clientHeight + 1)) report.unreachable.push('four names do not fit in the player list');
   const help = named('Play full screen');
   if (await help.count()) {
     await press(help, 'Play full screen');
