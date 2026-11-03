@@ -63,6 +63,26 @@ test('a scope darkens the arena under the touch controls, while the HUD stays on
   assert.ok(scope <= hud, 'on desktop the HUD still draws over the scope (it comes later in the page)');
 });
 
+test('the readiness panel can never leave Ready to play under the edge of the screen', () => {
+  const first = (selector: string) => rules(css).find(([selectors]) => selectors.includes(selector))![1];
+  assert.match(first('.preparation-panel'), /overflow-y:\s*auto/, 'it scrolls rather than spills');
+  assert.match(first('.preparation-panel > .button'), /position:\s*sticky/, 'Ready to play stays in view while it scrolls');
+  // On a landscape phone it is measured from the game itself, whatever the browser bars are doing.
+  const start = css.indexOf('@media (max-height: 500px) and (min-width: 560px)');
+  assert.ok(start >= 0, 'landscape phones have their own panels');
+  const landscape = rules(block(css, start).body);
+  const inLandscape = (selector: string) => landscape.find(([selectors]) => selectors.includes(selector))![1];
+  const panel = inLandscape('.preparation-panel');
+  assert.match(panel, /max-height:\s*calc\(100%/);
+  assert.match(panel, /display:\s*grid/, 'two columns: wide, not tall');
+  assert.match(panel, /safe-area-inset-left/, 'clear of the notch');
+  // As the height runs out, the row above Ready to play gives way, and it clips rather than spills over the button.
+  assert.match(panel, /grid-template-rows:\s*auto auto minmax\(0, 1fr\) auto/);
+  assert.match(inLandscape('.preparation-panel > .button'), /grid-row:\s*4/);
+  assert.match(inLandscape('.preparation-panel .loadout-summary'), /grid-row:\s*3/);
+  assert.match(inLandscape('.preparation-panel .loadout-summary'), /overflow:\s*hidden/);
+});
+
 test('live standings never blur the game behind them', () => {
   const live = rules(css).filter(([selectors]) => selectors.some(selector => selector.includes('.scoreboard-overlay.live') || selector.includes('.scoreboard-overlay.placed')));
   assert.ok(live.some(([, body]) => /backdrop-filter:\s*none/.test(body)));

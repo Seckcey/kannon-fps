@@ -8,10 +8,12 @@ import { HudStore } from '../game/hud';
 import { InputController } from '../game/InputController';
 import { GyroscopeInput } from '../game/Gyroscope';
 import { PreparationReadiness, type ReadinessState } from '../game/PreparationReadiness';
+import { browserFullscreen, enterFullscreen } from '../lib/fullscreen';
 import { practiceLevelName } from '../lib/practice';
 import { Icon } from './Icon';
 import { TouchControls } from './TouchControls';
 import { SettingsDialog } from './SettingsDialog';
+import { FullscreenHelp } from './FullscreenHelp';
 import { LoadoutDialog, LoadoutSummary } from './Loadout';
 import { MODE_INFO, TEAM_NAMES } from './labels';
 import { PRESET_INFO } from './loadoutInfo';
@@ -20,7 +22,7 @@ import { CombatHud, ScopeLayer } from './hud/CombatHud';
 import { CombatCallouts, KillFeed, ScoreBar } from './hud/MatchHud';
 import { Scoreboard } from './hud/Scoreboard';
 import { crosshairReach } from './hud/combat';
-import { useHudValue, usePageZoomLock, useSafeArea, useViewport } from './hud/hooks';
+import { useFullscreen, useHudValue, usePageZoomLock, useSafeArea, useViewport } from './hud/hooks';
 import { clock, eliminatedBy, killFeed, matchResult, nameLookup, recentMedals, rewardReady, scoreboard, scorePopups, scoreSummary, threatNotices, topScorer, type Viewer } from './hud/match';
 import { feedStyle, minimapSpec, touchHudLayout, touchLayout } from './hud/touchLayout';
 
@@ -42,7 +44,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const [readiness, setReadiness] = useState<ReadinessState>({ ready: false, pending: false, error: '' });
   const [renderedPreparationId, setRenderedPreparationId] = useState('');
   const preparation = useRef<PreparationReadiness | null>(null);
-  const availability = useRef({ assetsReady: false, renderedPreparationId: '', error: false, paused: false, settings: false, loadout: false });
+  const availability = useRef({ assetsReady: false, renderedPreparationId: '', error: false, paused: false, settings: false, loadout: false, help: false });
   const syncControls = useRef<() => void>(() => {});
   const [touch] = useState(isTouchDevice);
   const [tabScore, setTabScore] = useState(false);
@@ -51,6 +53,9 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const lastEvent = useRef<GameEvent | null>(null);
   const viewport = useViewport(), safe = useSafeArea();
   usePageZoomLock();
+  const fullscreen = useFullscreen();
+  const [showFullscreenHelp, setShowFullscreenHelp] = useState(false);
+  const [enteringFullscreen, setEnteringFullscreen] = useState(false);
   const rewardKey = useHudValue(hud, frame => frame?.rewards.join(',') ?? '');
   const targeting = useHudValue(hud, frame => !!frame?.mortarTargeting);
   const heldWeapon = useHudValue(hud, frame => frame?.weapon ?? null);
@@ -79,7 +84,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     availability.current.assetsReady = false;
     availability.current.renderedPreparationId = '';
     availability.current.error = false;
-    const menuOpen = () => availability.current.paused || availability.current.settings || availability.current.loadout;
+    const menuOpen = () => availability.current.paused || availability.current.settings || availability.current.loadout || availability.current.help;
     const ready = new PreparationReadiness(controller, () => {
       const current = connection.getSnapshot();
       return { roomId: current.room?.id ?? '', phase: current.room?.phase, preparationId: current.room?.preparation?.id,
@@ -146,7 +151,14 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   }, [state.events]);
   const pause = () => { availability.current.paused = true; syncControls.current(); setPaused(true); };
   const settingsOpen = (open: boolean) => { availability.current.settings = open; syncControls.current(); setShowSettings(open); };
+  const fullscreenHelpOpen = (open: boolean) => { availability.current.help = open; syncControls.current(); setShowFullscreenHelp(open); };
   const loadoutOpen = (open: boolean) => { availability.current.loadout = open; syncControls.current(); setShowLoadout(open); if (!open) onLoadoutDone?.(); };
+  // Touch engagement needs no gesture of its own, so it can wait for full screen: entering it can briefly take
+  // the focus, which would cancel a Ready sent at the same moment.
+  const readyUp = async () => {
+    if (touch && fullscreen === 'available') { setEnteringFullscreen(true); await enterFullscreen(browserFullscreen()); setEnteringFullscreen(false); }
+    await preparation.current?.engage(touch);
+  };
   const resume = () => {
     availability.current.paused = false; syncControls.current(); setPaused(false);
     // Preparing needs its own explicit acknowledgement; countdown/playing can recapture without changing the round.
@@ -165,7 +177,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const loaded = !loading && !loadError;
   const live = playing && !dead && loaded;
   const mapVisible = (playing || countdown) && loaded;
-  const menu = paused || showSettings || showLoadout;
+  const menu = paused || showSettings || showLoadout || showFullscreenHelp;
   const standingsOpen = !finished && (tabScore || touchScores) && !menu;
   const layout = touch ? touchLayout({ ...viewport, safe, sprintButton: settings.sprintMode !== 'auto', rewards: rewards.length }) : null;
   const minimap = minimapSpec(viewport.width, viewport.height, touch);
@@ -188,7 +200,7 @@ export default function GameScreen({ connection, settings, setSettings, player, 
   const roomLabel = state.room?.practice ? `${practiceLevelName(state.room.practiceDifficulty)} bot match` : state.room?.ranked ? 'Ranked crew match' : state.room?.visibility === 'public' ? 'Public match' : 'Private match';
   const respawnIn = Math.max(1, Math.ceil(((me?.respawnAt || serverNow) - serverNow) / 1000));
 
-  return <main className={`game-screen ${touch ? 'touch-game' : 'desktop-game'} ${damaged ? 'taking-damage' : ''}`} style={{ left: viewport.left, top: viewport.top, width: viewport.width, height: viewport.height, right: 'auto', bottom: 'auto' }}>
+  return <main className={`game-screen ${touch ? 'touch-game' : 'desktop-game'} ${layout?.compact ? 'compact-touch' : ''} ${damaged ? 'taking-damage' : ''}`} style={{ left: viewport.left, top: viewport.top, width: viewport.width, height: viewport.height, right: 'auto', bottom: 'auto' }}>
     <div ref={container} className="game-canvas" aria-label="Kannon Town 3D arena"/>
     {(loading || loadError) && <div className="game-cover"><h2>{loadError ? 'Graphics unavailable' : 'Entering Kannon Town…'}</h2><p>{loadError || 'Preparing the arena and your loadout.'}</p><button className={`button ${loadError ? 'primary' : 'secondary'}`} onClick={onLeave}>Back to menu</button></div>}
     {/* Before the HUD layer and under the touch controls, so the buttons stay visible through a scope. */}
@@ -216,9 +228,11 @@ export default function GameScreen({ connection, settings, setSettings, player, 
     {preparing && loaded && !menu && state.status === 'connected' && <section className="preparation-panel" aria-label="Match readiness">
       <h2>{!preparationRendered ? 'Preparing your next round…' : readiness.ready ? 'Waiting for your rivals…' : 'Your arena is ready.'}</h2>
       <p>{!preparationRendered ? 'Getting everyone into position.' : readiness.ready ? 'The countdown starts when everyone is ready.' : 'Everyone gets the full countdown before the match begins.'}</p>
-      <ul>{state.room?.players.map(person => <li key={person.id}><span className="player-dot" style={{ background: person.color }}/><span>{person.name}{person.id === state.playerId ? ' (you)' : ''}</span>{mode === 'tdm' && person.team && <em className={`team-chip ${person.team === viewer.team ? 'rel-friend' : 'rel-enemy'}`}>{TEAM_NAMES[person.team]}</em>}<strong className={person.ready ? 'is-ready' : ''}>{!person.connected ? 'Reconnecting' : person.ready ? 'Ready' : 'Not ready'}</strong></li>)}</ul>
+      <div className="preparation-people"><ul>{state.room?.players.map(person => <li key={person.id}><span className="player-dot" style={{ background: person.color }}/><span>{person.name}{person.id === state.playerId ? ' (you)' : ''}</span>{mode === 'tdm' && person.team && <em className={`team-chip ${person.team === viewer.team ? 'rel-friend' : 'rel-enemy'}`}>{TEAM_NAMES[person.team]}</em>}<strong className={person.ready ? 'is-ready' : ''}>{!person.connected ? 'Reconnecting' : person.ready ? 'Ready' : 'Not ready'}</strong></li>)}</ul>
+        {touch && fullscreen === 'manual' && !readiness.ready && <button className="button secondary full-width fullscreen-button" onClick={() => fullscreenHelpOpen(true)}><Icon name="fullscreen"/>Play full screen</button>}
+      </div>
       <LoadoutSummary value={settings} compact onEdit={readiness.ready ? undefined : () => loadoutOpen(true)}/>
-      {preparationRendered && !readiness.ready && <button className="button primary full-width" disabled={!input || readiness.pending} onClick={() => void preparation.current?.engage(touch)}><Icon name="play"/>{readiness.pending ? 'Capturing mouse…' : 'Ready to play'}</button>}
+      {preparationRendered && !readiness.ready && <button className="button primary full-width" disabled={!input || readiness.pending || enteringFullscreen} onClick={() => void readyUp()}><Icon name="play"/>{readiness.pending ? 'Capturing mouse…' : 'Ready to play'}</button>}
       {readiness.error && <p className="error-message" role="alert">{readiness.error}</p>}
       {!touch && <small>{readiness.ready ? 'Esc releases your mouse and marks you not ready.' : 'Click to capture your mouse. Esc releases it.'}</small>}
     </section>}
@@ -242,9 +256,10 @@ export default function GameScreen({ connection, settings, setSettings, player, 
         detail: endEvent?.reason || 'Good game. Ready for another?', topScorer: top ? { name: top.name, score: top.score } : null } : undefined}>
       {finished && <><p className="result-rating">{endEvent?.ranked ? 'This result was saved to your crew leaderboard.' : 'This round did not change your crew rating.'}</p><div className="button-row">{state.room?.hostId === state.playerId ? <button className="button primary" onClick={() => { availability.current.paused = false; setPaused(false); connection.clearError(); connection.send({ type: 'rematch' }); }}><Icon name="play" size={20}/> Play again</button> : <p className="muted">Waiting for the host to start a rematch.</p>}<button className="button secondary" onClick={onLeave}>Back to menu</button></div></>}
     </Scoreboard>}
-    {paused && !finished && !showSettings && !showLoadout && <div className="pause-cover"><div className="pause-panel"><h2>Take a breath.</h2><p>{preparing ? 'The match waits until everyone is ready.' : 'The match keeps running while your menu is open.'}</p><button className="button primary full-width" onClick={resume}><Icon name="play"/> Resume game</button><button className="button secondary full-width" onClick={() => loadoutOpen(true)}><Icon name="class"/> Loadout</button><button className="button secondary full-width" onClick={() => settingsOpen(true)}><Icon name="settings"/> Settings</button><button className="text-button" onClick={onLeave}>Leave match</button><span className="muted small-type">{stats.fps ? `${Math.round(stats.fps)} FPS · ` : ''}{state.latency} ms round trip</span></div></div>}
+    {paused && !finished && !showSettings && !showLoadout && !showFullscreenHelp && <div className="pause-cover"><div className="pause-panel"><h2>Take a breath.</h2><p>{preparing ? 'The match waits until everyone is ready.' : 'The match keeps running while your menu is open.'}</p><button className="button primary full-width" onClick={resume}><Icon name="play"/> Resume game</button><button className="button secondary full-width" onClick={() => loadoutOpen(true)}><Icon name="class"/> Loadout</button><button className="button secondary full-width" onClick={() => settingsOpen(true)}><Icon name="settings"/> Settings</button>{touch && (fullscreen === 'available' || fullscreen === 'manual') && <button className="button secondary full-width pause-fullscreen" onClick={() => { if (fullscreen === 'available') void enterFullscreen(browserFullscreen()); else fullscreenHelpOpen(true); }}><Icon name="fullscreen"/> Full screen</button>}<button className="text-button" onClick={onLeave}>Leave match</button><span className="muted small-type">{stats.fps ? `${Math.round(stats.fps)} FPS · ` : ''}{state.latency} ms round trip</span></div></div>}
     {showSettings && <SettingsDialog settings={settings} onChange={setSettings} player={player} onPlayer={() => {}} onClose={() => settingsOpen(false)} onTestSound={() => { void game.current?.testSound(); }} inGame touch={touch}/>}
     {showLoadout && <LoadoutDialog value={settings} onChange={choice => setSettings({ ...settings, ...choice })} onClose={() => loadoutOpen(false)} inGame
       respawn={dead && playing ? { seconds: respawnIn, closes: !paused } : undefined}/>}
+    {showFullscreenHelp && <FullscreenHelp onClose={() => fullscreenHelpOpen(false)}/>}
   </main>;
 }

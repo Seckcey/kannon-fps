@@ -1,6 +1,6 @@
 # Kannon Arena family playtest
 
-Kannon Arena is now a first-person game: you see your hands and your weapon. Refresh [Kannon Arena](https://kpop.8westventures.com) on both devices first. The play screen should show **Your loadout** with a class such as Assault. Turn the iPhone sideways. Keep each player's saved key private.
+Kannon Arena is now a first-person game: you see your hands and your weapon. Refresh [Kannon Arena](https://kpop.8westventures.com) on both devices first. The play screen should show **Your loadout** with a class such as Assault. Turn the iPhone sideways. Safari's bars take about a third of the screen then, so tap **Play full screen** on the ready screen to see how to hide them. Keep each player's saved key private.
 
 1. Choose **Create match**, pick **Free-for-all** and **Private**, and share the invitation. Or choose **Public** and have the other player use **Available Games → Join**. Turn **Fill to 4 players with bots** on for AI rivals or off for people only. The host starts, then each player selects **Ready to play** once the arena appears.
 2. In the lobby, tap **Change** under **Your loadout** and pick a class: Assault, Close Quarters, Marksman or Custom. You can change it again while waiting to respawn; the new class starts with your next life.
